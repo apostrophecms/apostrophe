@@ -187,7 +187,9 @@ const ORDER = Symbol('order');
  *   nothing.
  * - Objects recurse. Relationships compare their stored ids and fields.
  *   Any other value compares with its field type's `isEqual` when it has
- *   one, otherwise deeply, `null` and `undefined` being the same.
+ *   one, otherwise deeply. Two values empty by the field type's `isEmpty`
+ *   are the same; for a type without one, two blank values (`null`,
+ *   `undefined`, `''`, `[]`).
  * - A matched widget walks its type's schema. A rich text widget (a type
  *   with `getRichText`) then compares its markup as one `richText` row and
  *   nothing else, since the id lists it stores derive from the markup. Any
@@ -495,8 +497,7 @@ function canWalk(kind, older, newer) {
 }
 
 // Scalars compare with the field type's own `isEqual` when it has one,
-// otherwise deeply, with `null` and `undefined` folded together, as the
-// schema module compares documents
+// otherwise deeply. Two empty values are no change
 function walkLeaf(field, kind, older, newer, ctx, path, rows) {
   const type = ctx.getFieldType(field.type);
   const oldValue = older[field.name];
@@ -507,11 +508,12 @@ function walkLeaf(field, kind, older, newer, ctx, path, rows) {
     }
   } else if (_.isEqual(oldValue, newValue)) {
     return;
-  } else if ((oldValue == null) && (newValue == null)) {
-    return;
   }
   const oldEmpty = isEmpty(type, field, oldValue);
   const newEmpty = isEmpty(type, field, newValue);
+  if (oldEmpty && newEmpty) {
+    return;
+  }
   rows.push(row(
     path,
     changeType(oldEmpty, newEmpty),
@@ -528,12 +530,14 @@ function walkLeaf(field, kind, older, newer, ctx, path, rows) {
 function walkWhole(field, older, newer, path, rows) {
   const oldValue = older[field.name];
   const newValue = newer[field.name];
-  if (_.isEqual(oldValue, newValue) || ((oldValue == null) && (newValue == null))) {
+  const oldEmpty = isBlank(oldValue);
+  const newEmpty = isBlank(newValue);
+  if (_.isEqual(oldValue, newValue) || (oldEmpty && newEmpty)) {
     return;
   }
   rows.push(row(
     path,
-    changeType(isEmpty(null, field, oldValue), isEmpty(null, field, newValue)),
+    changeType(oldEmpty, newEmpty),
     field.type,
     'leaf',
     oldValue,
@@ -931,12 +935,20 @@ function changeType(oldEmpty, newEmpty) {
 }
 
 // Empty as the field type sees it, so that a value appearing in an empty
-// field reads as added rather than modified
+// field reads as added rather than modified. Nothing stored is empty for
+// every type; a type without `isEmpty` is empty when blank
 function isEmpty(type, field, value) {
-  if ((value == null) || (value === '') || (Array.isArray(value) && !value.length)) {
+  if (value == null) {
     return true;
   }
-  return type?.isEmpty ? Boolean(type.isEmpty(field, value)) : false;
+  return type?.isEmpty ? Boolean(type.isEmpty(field, value)) : isBlank(value);
+}
+
+// Blank whatever the field. A document saved before a field existed, or by
+// an older release, holds `null` or nothing where a save now stores `''`
+// or `[]`
+function isBlank(value) {
+  return (value == null) || (value === '') || (Array.isArray(value) && !value.length);
 }
 
 // The names along a row's path, the key two rows compare by. A rich text

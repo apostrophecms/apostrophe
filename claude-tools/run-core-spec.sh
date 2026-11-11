@@ -25,7 +25,7 @@ name="$(basename "$spec" .js)"
 log="$logdir/spec-$name-$adapter.log"
 : > "$log"
 
-echo "=== $spec ($adapter) $(date -Is) ===" | tee -a "$log"
+echo "=== $spec ($adapter) $(date +%Y-%m-%dT%H:%M:%S%z) ===" | tee -a "$log"
 
 cd "$root/packages/apostrophe"
 
@@ -34,7 +34,7 @@ if [[ "$adapter" == "postgres" ]]; then
   extra=(env PGPASSWORD=testpassword)
 fi
 
-APOS_TEST_DB_PROTOCOL="$adapter" "${extra[@]}" npx mocha -t 20000 "$spec" >> "$log" 2>&1
+APOS_TEST_DB_PROTOCOL="$adapter" ${extra[@]+"${extra[@]}"} npx mocha -t 20000 "$spec" >> "$log" 2>&1
 code=$?
 echo "=== exit=$code ===" | tee -a "$log"
 

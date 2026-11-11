@@ -18,8 +18,8 @@ const svgAnimationTags = [
   'animate', 'animatecolor', 'animatemotion', 'animatetransform', 'set'
 ];
 // Attribute names that always name a URL sink, whatever
-// `allowedSchemesAppliedToAttributes` has been narrowed to. A namespace prefix
-// is ignored when matching, so `xlink:href` and any other prefixed spelling of
+// `allowedSchemesAppliedToAttributes` has been narrowed to. Each colon-separated
+// part of a name is matched, so `xlink:href` and any other prefixed spelling of
 // `href` are covered.
 const alwaysUrlAttributes = [ 'href' ];
 
@@ -177,6 +177,19 @@ function sanitizeHtml(html, options, _fallback) {
 
   options = Object.assign({}, sanitizeHtml.defaults, options);
   options.parser = Object.assign({}, htmlParserDefaults, options.parser);
+
+  // Outside SVG and MathML, browsers parse `<![CDATA[` as a bogus comment that
+  // ends at the first `>`, but htmlparser2 reads it to `]]>`, which hides any
+  // markup between those two points from us, such as a `<noscript>` start tag
+  // that makes the browser treat what follows as raw text
+  // (GHSA-2rjc-9xvg-45j7). Spelling the `[` as a character reference makes
+  // htmlparser2 read a bogus comment ending at the first `>` too. In attribute
+  // values and text the reference decodes to the same characters. A real CDATA
+  // section in SVG or MathML is read the same way, so its text is dropped or
+  // sanitized as markup rather than kept as text.
+  if (typeof html === 'string' && !options.parser.xmlMode) {
+    html = html.replaceAll('<![CDATA[', '<!&#91;CDATA[');
+  }
 
   const logger = loggerFor(options);
 
@@ -668,12 +681,26 @@ function sanitizeHtml(html, options, _fallback) {
 
       if (options.disallowedTagsMode === 'completelyDiscard' && !tagAllowed(tag)) {
         text = '';
-      } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && ((tag === 'script') || (tag === 'style'))) {
-        // htmlparser2 gives us these as-is. Escaping them ruins the content. Allowing
+      } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && tag === 'script') {
+        // htmlparser2 gives us this as-is. Escaping it ruins the content. Allowing
         // script tags is, by definition, game over for XSS protection, so if that's
-        // your concern, don't allow them. The same is essentially true for style tags
-        // which have their own collection of XSS vectors.
+        // your concern, don't allow them.
         result += text;
+      } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && tag === 'style') {
+        // Style tags have their own collection of XSS vectors, but their content
+        // must at least not become markup. Inside svg or math (allowed or not,
+        // as parsed or as output by `transformTags`), a browser may parse a
+        // <style> as an SVG or MathML element whose content is markup where
+        // htmlparser2 saw an HTML raw-text element (e.g. inside
+        // <annotation-xml>), or htmlparser2 may have decoded `&lt;` in its
+        // content, so a `<` could open a tag. There, write it as a CSS escape,
+        // which means the same in a stylesheet and is plain text in markup.
+        // Other stylesheets are left alone (GHSA-6wrv-5cp6-h3c5).
+        result += stack.some(frame => [ frame.tag, frame.name ].some(
+          name => name === 'svg' || name === 'math'
+        ))
+          ? text.replace(/</g, '\\3c ')
+          : text;
       } else if (tag && tagAllowed(tag) && (options.disallowedTagsMode === 'discard' || options.disallowedTagsMode === 'completelyDiscard') && (tag === 'textarea' || tag === 'xmp')) {
         // <textarea> and <xmp> hold text that must not be re-emitted verbatim:
         // if a raw `<` survives into the output it can reopen a tag when the
@@ -900,7 +927,7 @@ function sanitizeHtml(html, options, _fallback) {
     // is followed by a 100% syntactically valid entity or not, and escaped
     // if it is not. If this bothers you, don't set parser.decodeEntities
     // to false. (The default is true.)
-    s = s.replace(/&(?![a-zA-Z0-9#]{1,20};)/g, '&amp;') // Match ampersands not part of existing HTML entity
+    s = s.replace(/&(?![a-zA-Z0-9#]+;)/g, '&amp;') // Match ampersands not part of existing HTML entity
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
     if (quote) {
@@ -1017,29 +1044,32 @@ function sanitizeHtml(html, options, _fallback) {
   // that are not URL sinks, such as `fill` or `opacity`, are unaffected.
   function animatesUrlAttribute(name, attribs) {
     // In an XML serialization a prefixed name such as `svg:animate` is the same
-    // element as `animate`, so match on the local name (GHSA-374f-7chj-9948).
-    if (svgAnimationTags.indexOf(localPart(name)) === -1) {
+    // element as `animate`, so match on the parts of the name
+    // (GHSA-374f-7chj-9948).
+    if (!nameParts(name).some(part => svgAnimationTags.includes(part))) {
       return false;
     }
     const schemeCheckedAttributes = options.allowedSchemesAppliedToAttributes || [];
     return Object.keys(attribs || {}).some(function(attributeName) {
-      if (localPart(attributeName) !== 'attributename') {
+      if (!nameParts(attributeName).includes('attributename')) {
         return false;
       }
       const target = (attribs[attributeName] || '').trim().toLowerCase();
-      // The target may be namespace prefixed (`xlink:href`). Which prefixes are
-      // in scope depends on the document, so consider the local name too.
-      const localName = target.slice(target.lastIndexOf(':') + 1);
-      return alwaysUrlAttributes.indexOf(localName) !== -1 ||
-        schemeCheckedAttributes.indexOf(target) !== -1 ||
-        schemeCheckedAttributes.indexOf(localName) !== -1;
+      // The target may be namespace prefixed (`xlink:href`), and which prefixes
+      // are in scope depends on the document. Browsers also differ in how they
+      // split a name with more than one colon: current Chrome resolves
+      // `xlink:href:x` to `xlink:href` (GHSA-8g6g-w2rq-xcmc). So consider the
+      // full name and every part of it.
+      return schemeCheckedAttributes.includes(target) ||
+        nameParts(target).some(part => alwaysUrlAttributes.includes(part) ||
+          schemeCheckedAttributes.includes(part));
     });
   }
 
-  // Lowercased name with any namespace prefix removed.
-  function localPart(name) {
-    const lower = name.toLowerCase();
-    return lower.slice(lower.lastIndexOf(':') + 1);
+  // The lowercased parts of a name between colons, any of which a browser may
+  // take as its local name.
+  function nameParts(name) {
+    return name.toLowerCase().split(':').map(part => part.trim());
   }
 
   function parseUrl(value) {

@@ -10,6 +10,7 @@ import { parseArgs } from 'node:util';
 import { createStore as defaultCreateStore } from '../core/store.js';
 import { createProject as defaultCreateProject } from '../core/create-project.js';
 import { isKnownKit } from '../core/kits.js';
+import { detectPackageManager, isRunnablePackageManager } from '../core/pm.js';
 import { assertSafeShortName } from '../core/validate.js';
 import { createTelemetry as defaultCreateTelemetry } from '../telemetry/index.js';
 import { DB_CHOICES } from '../telemetry/schema.js';
@@ -21,6 +22,10 @@ import {
 } from '../telemetry/commands.js';
 import { getAnonymousId, isKillSwitchOn } from '../telemetry/consent.js';
 import { runFlow as defaultRunFlow, renderInstallResult } from '../ui/flow.js';
+import {
+  renderPackageManagerNotice,
+  renderUnsupportedPackageManager
+} from '../ui/package-manager.js';
 import * as render from '../ui/render.js';
 import { UserCancelled } from '../ui/prompts.js';
 
@@ -93,6 +98,9 @@ ${render.bold('Environment:')}
  * @property {typeof defaultCreateTelemetry} [createTelemetry] Injected for tests
  *   to observe the resolved `consent` (e.g. the kill switch overriding
  *   --telemetry=on) without building a live transport.
+ * @property {NodeJS.ProcessEnv}      [env]            Defaults to
+ *   `process.env`. Injected for tests so the detected package manager does
+ *   not depend on what launched the test run.
  */
 
 /**
@@ -105,7 +113,8 @@ export async function main(argv, deps = {}) {
     createProject = defaultCreateProject,
     createStore = defaultCreateStore,
     createTelemetry = defaultCreateTelemetry,
-    runFlow = defaultRunFlow
+    runFlow = defaultRunFlow,
+    env = process.env
   } = deps;
   /** @type {{ values: Record<string, any>, positionals: string[] }} */
   let parsed;
@@ -143,14 +152,16 @@ export async function main(argv, deps = {}) {
     return runUnattended(values, {
       createProject,
       createStore,
-      createTelemetry
+      createTelemetry,
+      env
     });
   }
   return runInteractive({
     createProject,
     createStore,
     createTelemetry,
-    runFlow
+    runFlow,
+    env
   });
 }
 
@@ -169,10 +180,22 @@ export async function runInteractive(deps = {}) {
     createProject = defaultCreateProject,
     createStore = defaultCreateStore,
     createTelemetry = defaultCreateTelemetry,
-    runFlow = defaultRunFlow
+    runFlow = defaultRunFlow,
+    env = process.env
   } = deps;
   const cwd = process.cwd();
-  const env = process.env;
+
+  // Refuse an unsupported package manager before asking anything, rather
+  // than after the user has answered every prompt. No telemetry: consent
+  // has not been asked yet. createProject repeats the check for callers
+  // that skip this path.
+  const packageManager = detectPackageManager(env.npm_config_user_agent);
+  if (!isRunnablePackageManager(packageManager)) {
+    renderUnsupportedPackageManager(packageManager);
+    render.outro('Install did not start.');
+    return EXIT_FAIL;
+  }
+
   const store = createStore();
   /** @type {import('../ui/flow.js').FlowAnswers} */
   let answers;
@@ -180,7 +203,8 @@ export async function runInteractive(deps = {}) {
     answers = await runFlow({
       store,
       cliVersion: CLI_VERSION,
-      env
+      env,
+      packageManager
     });
   } catch (err) {
     if (err instanceof UserCancelled) {
@@ -205,6 +229,7 @@ export async function runInteractive(deps = {}) {
       dbUri: answers.dbUri,
       dbReset: answers.dbReset,
       admin: answers.admin,
+      packageManager,
       nonInteractive: false,
       confirmedAt: answers.confirmedAt
     },
@@ -229,9 +254,8 @@ export async function runInteractive(deps = {}) {
  * @returns {Promise<number>}
  */
 async function runUnattended(values, {
-  createProject, createStore, createTelemetry
+  createProject, createStore, createTelemetry, env
 }) {
-  const env = process.env;
   const issues = [];
 
   const shortName = values['project-name'];
@@ -292,6 +316,10 @@ async function runUnattended(values, {
   }
 
   const cwd = process.cwd();
+  // An unsupported manager is refused by createProject's preflight, which
+  // also reports it (consent is known from --telemetry here).
+  const packageManager = detectPackageManager(env.npm_config_user_agent);
+  renderPackageManagerNotice(packageManager);
   const store = createStore();
   const telemetry = createTelemetry({
     consent: telemetryConsent && !isKillSwitchOn(env),
@@ -315,6 +343,7 @@ async function runUnattended(values, {
       username,
       password
     },
+    packageManager,
     nonInteractive: true,
     confirmedAt
   };
@@ -341,7 +370,7 @@ async function runUnattended(values, {
     telemetryConsent,
     confirmedAt
   };
-  renderInstallResult(result, answers);
+  renderInstallResult(result, answers, { unattended: true });
   await telemetry.flush();
   return result.ok ? EXIT_OK : EXIT_FAIL;
 }

@@ -1765,10 +1765,10 @@ module.exports = {
                 }
               }
             } else if (field.type === 'array') {
-              if (doc[field.name]) {
+              // Content stored before the field became an array may not be one
+              if (Array.isArray(doc[field.name])) {
                 doc[field.name].forEach(item => {
                   item.metaType = 'arrayItem';
-                  item.scopedArrayName = field.scopedArrayName;
                   forSchema(field.schema, item);
                 });
               }
@@ -1776,7 +1776,6 @@ module.exports = {
               const value = doc[field.name];
               if (value) {
                 value.metaType = 'object';
-                value.scopedObjectName = field.scopedObjectName;
                 forSchema(field.schema, value);
               }
             } else if (field.type === 'relationship') {
@@ -1982,7 +1981,8 @@ module.exports = {
                 self.walkByMetaType(widget, handlers);
               }
             } else if (field.type === 'array') {
-              if (doc[field.name]) {
+              // Content stored before the field became an array may not be one
+              if (Array.isArray(doc[field.name])) {
                 doc[field.name].forEach(item => {
                   handlers.arrayItem(field, item);
                   forSchema(field.schema, item);

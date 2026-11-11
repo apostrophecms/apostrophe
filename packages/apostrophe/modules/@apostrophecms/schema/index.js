@@ -39,8 +39,6 @@ module.exports = {
   async init(self) {
     self.fieldTypes = {};
     self.fieldsById = {};
-    self.arrayManagers = {};
-    self.objectManagers = {};
     self.fieldMetadataComponents = [];
     self.uiManagerIndicators = [];
 
@@ -515,11 +513,13 @@ module.exports = {
       },
 
       // Index the object's fields for participation in Apostrophe search unless
-      // `searchable: false` is set for the field in question
+      // `searchable: false` is set for the field in question. Fields with a
+      // `viewPermission` are never indexed, since the search texts are
+      // visible to, and searchable by, users who may not view those fields
 
       indexFields(schema, object, texts) {
         _.each(schema, function (field) {
-          if (field.searchable === false) {
+          if ((field.searchable === false) || field.viewPermission) {
             return;
           }
           const fieldType = self.fieldTypes[field.type];
@@ -1386,7 +1386,7 @@ module.exports = {
       // storage needs required for relationships, arrays, etc.,
       // such as populating the idsStorage and fieldsStorage
       // properties of relationship fields, or setting the
-      // arrayName property of array items. This method is
+      // metaType property of array items. This method is
       // always invoked for you by @apostrophecms/doc-type in a
       // beforeSave handler. This method also recursively invokes
       // itself as needed for relationships nested in widgets,
@@ -1431,7 +1431,6 @@ module.exports = {
 
             object._id = object._id || self.apos.util.generateId();
             object.metaType = 'arrayItem';
-            object.scopedArrayName = field.scopedArrayName;
           },
           object: (field, object) => {
             if (!object || !can(field)) {
@@ -1439,7 +1438,6 @@ module.exports = {
             }
 
             object.metaType = 'object';
-            object.scopedObjectName = field.scopedObjectName;
           },
           relationship: (field, doc) => {
             if (!Array.isArray(doc[field.name]) || !can(field)) {
@@ -1461,6 +1459,9 @@ module.exports = {
         };
 
         self.apos.doc.walkByMetaType(doc, handlers);
+        // Not stored, but saves the doc from going unannotated until
+        // it is loaded again
+        self.annotateFieldIds(doc);
       },
 
       simulateRelationshipsFromStorage(req, doc) {
@@ -2053,9 +2054,7 @@ still output the value of this field with a regular template expression.`);
       //
       // metaType and type refer to the doc or widget that ultimately contains
       // this schema, even if it is nested as an array schema. `metaType` will
-      // be "doc" or "widget" and `type` will be the type name. This is used to
-      // dynamically assign sufficiently unique `arrayName` properties to array
-      // fields and may be used for similar scoping tasks.
+      // be "doc" or "widget" and `type` will be the type name.
       //
       // parentPath is a complete path describing the parent context
       // sufficiently to set the field _id from the field's position in the
@@ -2252,6 +2251,9 @@ still output the value of this field with a regular template expression.`);
 
       implementPatchOperators(patch, existingPage) {
         const clonedBases = {};
+        // An `@` reference names the document's own content, never what was
+        // loaded into it, such as a related document holding the same `_id`
+        const own = { ignoreDynamicProperties: true };
         if (patch.$push) {
           append(patch.$push);
         } else if (patch.$pullAll) {
@@ -2261,7 +2263,7 @@ still output the value of this field with a regular template expression.`);
               patch,
               key,
               _.differenceWith(
-                self.apos.util.get(patch, key) || [],
+                self.apos.util.get(patch, key, own) || [],
                 Array.isArray(val) ? val : [],
                 (a, b) => _.isEqual(a, b))
             );
@@ -2276,7 +2278,7 @@ still output the value of this field with a regular template expression.`);
               patch,
               key,
               _.differenceWith(
-                self.apos.util.get(patch, key) || [],
+                self.apos.util.get(patch, key, own) || [],
                 Array.isArray(val) ? val : [],
                 (a, b) => a._id === b
               ));
@@ -2287,7 +2289,7 @@ still output the value of this field with a regular template expression.`);
             if ((val == null) || (!((typeof val) === 'object'))) {
               return;
             }
-            const existing = self.apos.util.get(patch, key) || [];
+            const existing = self.apos.util.get(patch, key, own) || [];
             const index = existing.findIndex(item => item._id === val.$item);
             if (index === -1) {
               return;
@@ -2318,12 +2320,12 @@ still output the value of this field with a regular template expression.`);
             let atReference = false;
             if (key.charAt(0) === '@') {
               atReference = key;
-              key = self.apos.util.resolveAtReference(existingPage, key);
+              key = self.apos.util.resolveAtReference(existingPage, key, own);
               if (key && patch[key.split('.')[0]]) {
                 // This base has already been cloned into the patch, or it
                 // otherwise touches this base, so we need to re-resolve
                 // the reference or indexes may be incorrect
-                key = self.apos.util.resolveAtReference(patch, atReference);
+                key = self.apos.util.resolveAtReference(patch, atReference, own);
               }
             }
             // Simple replacement with a dot path
@@ -2338,7 +2340,7 @@ still output the value of this field with a regular template expression.`);
             cloneOriginalBase(key);
             if (val && val.$each) {
               const each = Array.isArray(val.$each) ? val.$each : [];
-              const existing = self.apos.util.get(patch, key) || [];
+              const existing = self.apos.util.get(patch, key, own) || [];
               if (!Array.isArray(existing)) {
                 throw self.apos.error('invalid', 'existing property is not an array', {
                   dotPath: key
@@ -2372,7 +2374,7 @@ still output the value of this field with a regular template expression.`);
                 .concat(existing.slice(position));
               self.apos.util.set(patch, key, updated);
             } else {
-              const existing = self.apos.util.get(patch, key) || [];
+              const existing = self.apos.util.get(patch, key, own) || [];
               existing.push(val);
               self.apos.util.set(patch, key, existing);
             }
@@ -2477,17 +2479,42 @@ still output the value of this field with a regular template expression.`);
 
         return result;
       },
-      // Array "managers" currently offer just a schema property, for
-      // parallelism with doc type and widget managers. This allows the
-      // getManagerOf method to operate on objects of any of three types: doc,
-      // widget or array item.
-      getArrayManager(name) {
-        return self.arrayManagers[name];
+      // The "manager" of an array item is its array field, which has a
+      // schema property for parallelism with doc type and widget managers.
+      // This allows the getManagerOf method to operate on objects of any of
+      // four types: doc, widget, array item or object.
+      //
+      // `_id` is the _id of the array field, as found in the _arrayFieldId
+      // property of its items
+      getArrayManager(_id) {
+        const field = self.fieldsById[_id];
+        return (field?.type === 'array') ? field : undefined;
       },
-      // This allows the getManagerOf method to operate on objects of type
-      // "object".
-      getObjectManager(name) {
-        return self.objectManagers[name];
+      // `_id` is the _id of the object field, as found in the _objectFieldId
+      // property of the object. See getArrayManager
+      getObjectManager(_id) {
+        const field = self.fieldsById[_id];
+        return (field?.type === 'object') ? field : undefined;
+      },
+      // Set _arrayFieldId on every array item and _objectFieldId on every
+      // object in `doc`, a doc or widget, to the _id of its own field, so
+      // that getManagerOf can find the schema of each. Field ids are unique
+      // even when a nested array or object shares the name of its parent.
+      // Like other properties beginning with `_` they are not stored. Called
+      // for you when docs are loaded and saved
+      annotateFieldIds(doc) {
+        self.apos.doc.walkByMetaType(doc, {
+          arrayItem(field, item) {
+            if (item && ((typeof item) === 'object')) {
+              item._arrayFieldId = field._id;
+            }
+          },
+          object(field, value) {
+            if (value && ((typeof value) === 'object') && !Array.isArray(value)) {
+              value._objectFieldId = field._id;
+            }
+          }
+        });
       },
       // Regenerate all array item, area and widget ids so they are considered
       // new. Useful when copying an entire doc.
@@ -2505,11 +2532,19 @@ still output the value of this field with a regular template expression.`);
             if (doc[field.name]) {
               doc[field.name]._originalId = doc[field.name]._id;
               doc[field.name]._id = self.apos.util.generateId();
-              for (const item of (doc[field.name].items || [])) {
+              // A copy drops widgets whose type has no module, as a save does
+              doc[field.name].items = (doc[field.name].items || []).filter(item => {
+                if (!self.apos.area.getWidgetManager(item.type)) {
+                  self.apos.area.warnMissingWidgetType(item.type);
+                  return false;
+                }
+                return true;
+              });
+              for (const item of doc[field.name].items) {
                 item._originalId = item._id;
                 item._id = self.apos.util.generateId();
-                const schema = self.apos.area.getWidgetManager(item.type).schema;
-                self.regenerateIds(req, schema, item);
+                const manager = self.apos.area.getWidgetManager(item.type);
+                self.regenerateIds(req, manager.schema, item);
               }
             }
           }

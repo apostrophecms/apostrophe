@@ -11,7 +11,7 @@ module.exports = async function(options) {
   const self = require('./moog')(options);
 
   if (!self.options.root) {
-    throw 'The root option is required. Pass the node variable "module" as root. This allows moog to require modules on your behalf.';
+    throw new Error('The root option is required. Pass the node variable "module" as root. This allows moog to require modules on your behalf.');
   }
 
   self.root = self.options.root;
@@ -24,15 +24,19 @@ module.exports = async function(options) {
     for (const bundleName of self.options.bundles) {
       const bundlePath = getNpmPath(self.root.filename, bundleName);
       if (!bundlePath) {
-        throw 'The configured bundle ' + bundleName + ' was not found in npm.';
+        throw new Error(
+          `The configured bundle ${bundleName} was not found in npm. ` +
+          'It must be a dependency in package.json, or symlinked ' +
+          `into node_modules beside it (${self.npmRoot || 'project root'}).`
+        );
       }
       const { default: imported } = await importFresh(bundlePath);
       if (!imported.bundle) {
-        throw 'The configured bundle ' + bundleName + ' does not export a bundle property.';
+        throw new Error(`The configured bundle ${bundleName} does not export a bundle property.`);
       }
       const modules = imported.bundle.modules;
       if (!modules) {
-        throw 'The configured bundle ' + bundleName + ' does not have a "modules" property within its "bundle" property.';
+        throw new Error(`The configured bundle ${bundleName} does not have a "modules" property within its "bundle" property.`);
       }
       Object.values(modules)
         .forEach(name => {

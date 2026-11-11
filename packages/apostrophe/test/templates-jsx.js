@@ -362,7 +362,7 @@ describe('Templates: JSX', function() {
       sections: [
         {
           metaType: 'arrayItem',
-          scopedArrayName: 'doc.jsx-field-test.sections',
+          _arrayFieldId: 'doc.jsx-field-test.sections',
           _id: 'jsx-field-section-1',
           _edit: edit,
           _docId: 'jsx-field-piece-1',
@@ -370,7 +370,7 @@ describe('Templates: JSX', function() {
         },
         {
           metaType: 'arrayItem',
-          scopedArrayName: 'doc.jsx-field-test.sections',
+          _arrayFieldId: 'doc.jsx-field-test.sections',
           _id: 'jsx-field-section-2',
           _edit: edit,
           _docId: 'jsx-field-piece-1',
@@ -501,6 +501,63 @@ describe('Templates: JSX', function() {
     assert.match(result, /<p>hello &amp; &lt;world&gt;<\/p>/);
     assert.doesNotMatch(result, /default body/);
     assert.doesNotMatch(result, /default title/);
+  });
+
+  describe('strings and markup passed to Nunjucks blocks', function() {
+    function renderPage(data) {
+      const req = apos.task.getAnonReq();
+      return apos.template.renderPageForModule(
+        req, 'njk-outer-blocks', data, apos.modules['jsx-bridge-test']
+      );
+    }
+
+    it('should show string props as text', async function() {
+      const result = await renderPage({
+        title: '</title><script>alert(1)</script>',
+        bodyClass: 'x" onclick="alert(1)',
+        main: 'a < b & c'
+      });
+      assert.match(
+        result,
+        /<title>&lt;\/title&gt;&lt;script&gt;alert\(1\)&lt;\/script&gt;<\/title>/
+      );
+      assert.match(result, /<body class="[^"]*x&quot; onclick=&quot;alert\(1\)"/);
+      assert.match(result, /a &lt; b &amp; c/);
+      assert.doesNotMatch(result, /<script>alert/);
+      assert.doesNotMatch(result, / onclick="alert/);
+    });
+
+    it('should pass markup marked with apos.template.safe()', async function() {
+      const result = await renderPage({
+        extraHtml: apos.template.safe('data-safe="1"'),
+        main: apos.template.safe('<b class="safe">safe</b>')
+      });
+      assert.match(result, /<html lang="en" dir="ltr" data-safe="1">/);
+      assert.match(result, /<b class="safe">safe<\/b>/);
+    });
+
+    it('should write a plain object as attributes', async function() {
+      const result = await renderPage({
+        extraHtml: {
+          'data-theme': 'a"b&c',
+          'data-on': true,
+          'data-off': false,
+          'data-none': null
+        }
+      });
+      assert.match(result, /<html lang="en" dir="ltr" data-theme="a&quot;b&amp;c" data-on>/);
+    });
+
+    it('should reject an attribute name that is not valid', async function() {
+      const req = apos.task.getAnonReq();
+      await assert.rejects(
+        apos.modules['jsx-bridge-test'].render(req, 'njk-outer-blocks', {
+          outerLayout: '@apostrophecms/template:outerLayout.html',
+          extraHtml: { 'x onload': 'alert(1)' }
+        }),
+        /"x onload" is not a valid attribute name/
+      );
+    });
   });
 
   // ---- JSX → JSX layout via Template + children ----

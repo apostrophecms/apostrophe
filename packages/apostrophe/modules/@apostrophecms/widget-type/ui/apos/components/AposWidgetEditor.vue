@@ -550,7 +550,7 @@ export default {
       }
     },
     updatePreview(value) {
-      if (!this.preview) {
+      if (!this.preview || this.triggerValidation || this.saving) {
         return;
       }
 
@@ -580,15 +580,22 @@ export default {
         return;
       }
       const now = Date.now();
-      if (!this.lastPreview || (now - this.lastPreview > 250)) {
-        // If we're still dragging the slider around, refresh every once in a
-        // while, no matter what
-        this.areaDebounceUpdate.skipDelay(now);
-      } else {
-        this.areaDebounceUpdate(now);
-      }
+      // If we're still dragging the slider around, refresh every once in a
+      // while, no matter what
+      const update = (!this.lastPreview || (now - this.lastPreview > 250))
+        ? this.areaDebounceUpdate.skipDelay(now)
+        : this.areaDebounceUpdate(now);
+      // Nothing awaits this, so a preview update canceled because the modal
+      // is saving or closing must not surface as an unhandled rejection
+      update?.catch?.(e => {
+        if (e.name !== 'debounce.canceled') {
+          // eslint-disable-next-line no-console
+          console.error('Error updating preview', e);
+        }
+      });
     },
     removePreview() {
+      this.areaDebounceUpdate.cancel?.();
       this.emitLivePreviewEnd(this.saving ? 'save' : 'cancel');
       if (!this.preview) {
         return;
@@ -712,6 +719,9 @@ export default {
             return;
           }
         }
+        // Canceling is permanent, so wait until the save is certain: if
+        // validation fails the modal stays open and must keep previewing
+        this.areaDebounceUpdate.cancel?.();
         const widget = this.getWidgetObject();
         this.saving = true;
         this.$emit('modal-result', widget);

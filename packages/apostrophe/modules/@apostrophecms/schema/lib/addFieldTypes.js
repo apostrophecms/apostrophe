@@ -358,7 +358,7 @@ module.exports = (self) => {
       });
     },
     isEmpty(field, value) {
-      return !value.length;
+      return (value == null) || (value === '');
     },
     validate(field, options, warn, fail) {
       if (field.direction && !_.includes([ 'ltr', 'rtl' ], field.direction)) {
@@ -1019,9 +1019,12 @@ module.exports = (self) => {
         throw self.apos.error('invalid');
       }
       // Allow for ranges to go unset `min` here does not imply requirement,
-      // it is the minimum value the range UI will represent
+      // it is the minimum value the range UI will represent. No input is
+      // unset too, unless the field has a default
+      const blank = (data[field.name] == null) || (data[field.name] === '');
       if (
         typeof destination[field.name] !== 'number' ||
+        (blank && (typeof field.def !== 'number')) ||
         data[field.name] < field.min ||
         data[field.name] > field.max
       ) {
@@ -1082,7 +1085,7 @@ module.exports = (self) => {
           _id
         };
         result.metaType = 'arrayItem';
-        result.scopedArrayName = field.scopedArrayName;
+        result._arrayFieldId = field._id;
         try {
           const options = {
             fetchRelationships,
@@ -1166,14 +1169,6 @@ module.exports = (self) => {
       }
     },
     register: function (metaType, type, field, fieldPath) {
-      // Unlike the field _id, scopedArrayName is stored on every array item in
-      // the database, so it keeps its original flat form and continues to
-      // honor arrayName. Changing it would require a migration
-      const localArrayName = field.arrayName || field.name;
-      field.scopedArrayName = `${metaType}.${type}.${localArrayName}`;
-      self.arrayManagers[field.scopedArrayName] = {
-        schema: field.schema
-      };
       self.register(metaType, type, field.schema, fieldPath);
     },
     isEqual(req, field, one, two) {
@@ -1234,20 +1229,13 @@ module.exports = (self) => {
         }
       }
       result.metaType = 'objectItem';
-      result.scopedObjectName = field.scopedObjectName;
+      result._objectFieldId = field._id;
       destination[field.name] = result;
       if (errors.length) {
         throw errors;
       }
     },
     register: function (metaType, type, field, fieldPath) {
-      // Stored in the database on every object, so it keeps its original flat
-      // form and continues to honor objectName. See scopedArrayName above
-      const localObjectName = field.objectName || field.name;
-      field.scopedObjectName = `${metaType}.${type}.${localObjectName}`;
-      self.objectManagers[field.scopedObjectName] = {
-        schema: field.schema
-      };
       self.register(metaType, type, field.schema, fieldPath);
     },
     validate: function (field, options, warn, fail) {

@@ -52,8 +52,8 @@ function csvEnv(name) {
 /**
  * @typedef {object} ApostropheIntegrationOptions
  * @property {string} aposHost - The Apostrophe backend URL
- *   (e.g. `http://localhost:3000`).  Can also be set via the
- *   `APOS_HOST` environment variable.
+ *   (e.g. `http://localhost:3000`).  Can also be set at build
+ *   time via the `APOS_HOST` environment variable.
  * @property {string} widgetsMapping - Import path to the widgets
  *   mapping module (e.g. `'./src/widgets/index.js'`).
  * @property {string} templatesMapping - Import path to the templates
@@ -75,7 +75,8 @@ function csvEnv(name) {
  * @property {string} [aposPrefix] - URL path prefix matching the
  *   Apostrophe backend `prefix` option (e.g. `'/my-repo'`).
  *   Auto-inferred from Astro's `base` config when omitted.
- *   Can also be set via the `APOS_PREFIX` environment variable.
+ *   Can also be set at build time via the `APOS_PREFIX`
+ *   environment variable.
  * @property {StaticBuildOptions} [staticBuild] - Options controlling
  *   static build behaviour (attachments, sizes, scope).
  */
@@ -216,6 +217,12 @@ export default function apostropheIntegration(options) {
             }
           }
         });
+        // `Astro.locals.aposFetch`, scoped to the current request. Needed in
+        // both modes: prerendered pages get the unscoped `aposFetch`.
+        addMiddleware({
+          order: 'pre',
+          entrypoint: '@apostrophecms/apostrophe-astro/lib/aposFetchMiddleware.js'
+        });
         // Proxy routes are only needed for SSR — in static mode all data
         // is fetched at build time via getStaticPaths / aposPageFetch.
         if (isStaticBuild) {
@@ -251,6 +258,20 @@ export default function apostropheIntegration(options) {
         injectRoute({
           pattern: '/api/v1/@apostrophecms/area/render-widget',
           entrypoint: '@apostrophecms/apostrophe-astro/endpoints/renderWidget.astro'
+        });
+      },
+      // Type `Astro.locals.aposFetch`, provided by aposFetchMiddleware.js
+      "astro:config:done": ({ injectTypes }) => {
+        injectTypes({
+          filename: 'locals.d.ts',
+          content: [
+            'declare namespace App {',
+            '  interface Locals {',
+            '    aposFetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;',
+            '  }',
+            '}',
+            ''
+          ].join('\n')
         });
       },
       // Write literal content entries (CSS, robots.txt, etc.) and

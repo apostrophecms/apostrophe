@@ -582,6 +582,163 @@ describe('cli/main — interactive path (mocked runFlow)', function () {
   });
 });
 
+describe('cli/main — package manager', function () {
+  let store;
+  beforeEach(function () {
+    store = isolatedStoreFactory();
+  });
+  afterEach(function () {
+    store.cleanup();
+  });
+
+  const PNPM_ENV = { npm_config_user_agent: 'pnpm/10.29.3 npm/? node/v22.23.1 darwin arm64' };
+  const YARN_ENV = { npm_config_user_agent: 'yarn/1.22.22 npm/? node/v22.23.1 darwin arm64' };
+  const NPM_ENV = { npm_config_user_agent: 'npm/11.6.0 node/v22.23.1 darwin arm64' };
+
+  const UNATTENDED = [
+    ...ARGV0,
+    '--unattended',
+    '--project-name=my-proj',
+    '--password=pw',
+    '--telemetry=off'
+  ];
+
+  it('interactive + yarn → refused before any prompt, exit 1, nothing run', async function () {
+    const cp = stubCreateProject();
+    let flowRan = false;
+    const { code, output } = await captureIO(() => main(
+      [ ...ARGV0 ],
+      {
+        createProject: cp.fn,
+        createStore: store.createStore,
+        env: YARN_ENV,
+        runFlow: async () => {
+          flowRan = true;
+        }
+      }
+    ));
+    assert.equal(code, 1);
+    assert.equal(flowRan, false);
+    assert.equal(cp.calls.length, 0);
+    assert.match(output, /yarn isn't supported yet/);
+    assert.match(output, /npm create apostrophe@latest/);
+    assert.doesNotMatch(output, /--unattended/);
+  });
+
+  it('interactive + pnpm → flow and createProject both get pnpm', async function () {
+    const cp = stubCreateProject();
+    let flowDeps;
+    const { code } = await captureIO(() => main(
+      [ ...ARGV0 ],
+      {
+        createProject: cp.fn,
+        createStore: store.createStore,
+        env: PNPM_ENV,
+        runFlow: async (deps) => {
+          flowDeps = deps;
+          return {
+            shortName: 'my-proj',
+            build: 'standalone',
+            startingPoint: 'essentials',
+            sampleContent: false,
+            kitId: 'apostrophe-essentials',
+            dbChoice: 'sqlite',
+            admin: {
+              username: 'admin',
+              password: 'pw'
+            },
+            telemetryConsent: false,
+            confirmedAt: Date.now()
+          };
+        }
+      }
+    ));
+    assert.equal(code, 0);
+    assert.equal(flowDeps.packageManager, 'pnpm');
+    assert.equal(cp.calls[0].options.packageManager, 'pnpm');
+  });
+
+  it('unattended + pnpm → says the project will use npm, passes pnpm through', async function () {
+    const cp = stubCreateProject();
+    const { code, output } = await captureIO(() => main(UNATTENDED, {
+      createProject: cp.fn,
+      createStore: store.createStore,
+      env: PNPM_ENV
+    }));
+    assert.equal(code, 0);
+    assert.equal(cp.calls[0].options.packageManager, 'pnpm');
+    assert.match(output, /This project will use npm/);
+    assert.match(output, /You started the installer with pnpm/);
+  });
+
+  it('unattended + pnpm success → final screen reminds them to use npm', async function () {
+    const cp = stubCreateProject({
+      ok: true,
+      kitId: 'apostrophe-essentials',
+      dbChoice: 'sqlite',
+      packageManager: 'pnpm',
+      durationMs: 1
+    });
+    const { code, output } = await captureIO(() => main(
+      [ ...UNATTENDED, '--kit=apostrophe-essentials' ],
+      {
+        createProject: cp.fn,
+        createStore: store.createStore,
+        env: PNPM_ENV
+      }
+    ));
+    assert.equal(code, 0);
+    assert.match(output, /Your project is ready/);
+    assert.match(output, /This project uses npm\. Run npm install and npm run dev here;/);
+    assert.match(output, /pnpm install would break the project\./);
+  });
+
+  it('npm success → no reminder on the final screen', async function () {
+    const cp = stubCreateProject();
+    const { output } = await captureIO(() => main(UNATTENDED, {
+      createProject: cp.fn,
+      createStore: store.createStore,
+      env: NPM_ENV
+    }));
+    assert.match(output, /Your project is ready/);
+    assert.doesNotMatch(output, /would break the project/);
+  });
+
+  it('unattended + npm → no package-manager notice', async function () {
+    const cp = stubCreateProject();
+    const { code, output } = await captureIO(() => main(UNATTENDED, {
+      createProject: cp.fn,
+      createStore: store.createStore,
+      env: NPM_ENV
+    }));
+    assert.equal(code, 0);
+    assert.equal(cp.calls[0].options.packageManager, 'npm');
+    assert.doesNotMatch(output, /This project will use npm/);
+  });
+
+  it('unattended + unsupported_pm result → re-run instruction with flags, exit 1', async function () {
+    const cp = stubCreateProject({
+      ok: false,
+      kitId: 'apostrophe-astro-demo',
+      dbChoice: 'sqlite',
+      packageManager: 'yarn',
+      durationMs: 0,
+      failStage: 'preflight',
+      errorCode: 'unsupported_pm'
+    });
+    const { code, output } = await captureIO(() => main(UNATTENDED, {
+      createProject: cp.fn,
+      createStore: store.createStore,
+      env: YARN_ENV
+    }));
+    assert.equal(code, 1);
+    assert.match(output, /yarn isn't supported yet/);
+    assert.match(output, /npm create apostrophe@latest -- --unattended \[flags]/);
+    // The generic block points at "messages above" that don't exist here.
+    assert.doesNotMatch(output, /See the messages above/);
+  });
+});
+
 describe('cli/main — telemetry subcommands', function () {
   let store;
   beforeEach(function () {

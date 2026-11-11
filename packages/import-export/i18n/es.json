@@ -3,6 +3,7 @@
   "errorCantImportType": "No se puede importar el tipo \"{{ type }}\"",
   "errorInsertingDocument": "La inserción/actualización falló con el mensaje: {{ message }}",
   "errorInvalidDocMode": "El modo de este documento no coincide con su ID",
+  "errorUnknown": "error desconocido",
   "export": "Exportar {{ type }}",
   "exportAttachmentError": "Algunos archivos adjuntos no se pudieron agregar al archivo {{ format }}",
   "exportFailed": "La exportación falló",

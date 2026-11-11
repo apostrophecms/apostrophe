@@ -141,7 +141,7 @@ module.exports = {
           throw self.apos.error('notfound');
         }
 
-        const manager = self.apos.doc.getManager(doc.type);
+        const manager = self.getManager(doc.type);
         const page = await self.getTimelinePage(req, self.getTimelineCriteria(doc), {
           before: beforeDate,
           consolidate: self.apos.launder.boolean(req.query.consolidate),
@@ -267,6 +267,8 @@ module.exports = {
         self.apos.migration.add('seed-publication-points', self.seedPublicationPoints);
         self.apos.migration.add('remove-previous-mode-docs', self.removePreviousModeDocs);
         self.apos.migration.add('set-legacy-change-counts', self.setChangeCountTask);
+        // Counts recorded while a blank value against another was a change
+        self.apos.migration.add('recount-blank-value-changes', self.setChangeCountTask);
       },
       addContextMenu() {
         self.apos.doc.addContextOperation({
@@ -347,15 +349,22 @@ module.exports = {
         } = moduleOptions;
         return versions === false && autopublish !== true && localized !== false;
       },
+      // The doc type module of `type`, `undefined` when it has none. The
+      // placeholder `@apostrophecms/page` registers for a type whose module
+      // is gone counts as none: it has none of the methods this module calls
+      getManager(type) {
+        const manager = self.apos.doc.getManager(type);
+        return manager?.orphan ? undefined : manager;
+      },
       // Whether the module keeps this document's full history: its type has
       // versions and it is not archived, which also leaves the archive page out
       isVersioned(doc) {
-        const manager = self.apos.doc.getManager(doc.type);
+        const manager = self.getManager(doc.type);
         return Boolean(manager) && self.hasVersions(manager.options) && !doc.archived;
       },
       // Whether the module keeps only this document's publication points
       isPublishedOnly(doc) {
-        const manager = self.apos.doc.getManager(doc.type);
+        const manager = self.getManager(doc.type);
         return Boolean(manager) &&
           self.recordsPublishedOnly(manager.options) &&
           !doc.archived;
@@ -364,7 +373,7 @@ module.exports = {
       // known and does not have them. The records of a type whose module
       // is gone stay readable
       isExcludedType(doc) {
-        const manager = self.apos.doc.getManager(doc.type);
+        const manager = self.getManager(doc.type);
         return Boolean(manager) && !self.hasVersions(manager.options);
       },
       // The mode a version records: the document's, or `published` for
@@ -500,7 +509,7 @@ module.exports = {
         // Every save of such a draft is republished at once, and that
         // publication is the version
         function isAutopublishedDraft(doc) {
-          const manager = self.apos.doc.getManager(doc.type);
+          const manager = self.getManager(doc.type);
           return Boolean(manager?.options.autopublish) && self.getMode(doc) === 'draft';
         }
       },
@@ -660,6 +669,7 @@ module.exports = {
         async function unpackVersion(version) {
           if (version.doc !== undefined) {
             version.doc = await self.unpack(version.doc);
+            self.apos.schema.annotateFieldIds(version.doc);
           }
           return version;
         }
@@ -899,7 +909,7 @@ module.exports = {
             self.findOne(req, { _id: item._id }),
             self.findOne(req, olderThan(criteria, oldest.createdAt))
           ]);
-          if (!self.apos.doc.getManager(newest.doc.type)) {
+          if (!self.getManager(newest.doc.type)) {
             return 0;
           }
           const base = previous ?? await self.findOne(req, { _id: oldest._id });
@@ -926,7 +936,7 @@ module.exports = {
             const previous = previousOf.get(item._id);
             item.changeCount = (
               version && previous && !item.restoredFrom &&
-              self.apos.doc.getManager(version.doc.type)
+              self.getManager(version.doc.type)
             )
               ? self.getChangeCount(req, version.doc, previous.doc, { forbidden })
               : 0;
@@ -967,7 +977,7 @@ module.exports = {
       async getOne(req, versionId, { annotate = false, consolidate = false } = {}) {
         const draftReq = req.clone({ mode: 'draft' });
         const version = await self.getEditableVersion(draftReq, versionId);
-        const manager = self.apos.doc.getManager(version.doc.type);
+        const manager = self.getManager(version.doc.type);
         const forbidden = manager
           ? self.getForbiddenFieldNames(req, manager)
           : new Set();
@@ -1123,8 +1133,8 @@ module.exports = {
         if (!item.versions.some(version => version.ai)) {
           return [];
         }
-        const created = item.previous ? [] : getCreatedRows(item.versions[0]);
-        if (!item.pairs.length || !self.apos.doc.getManager(previous.doc.type)) {
+        const created = item.previous ? [] : await getCreatedRows(item.versions[0]);
+        if (!item.pairs.length || !self.getManager(previous.doc.type)) {
           return created;
         }
         return self.getConsolidatedRows(req, item.pairs, { before: created })
@@ -1132,12 +1142,12 @@ module.exports = {
 
         // Every path of `version` when it was saved with AI: its changes
         // from a new document of its type
-        function getCreatedRows(version) {
-          const manager = self.apos.doc.getManager(version.doc.type);
-          if (!version.ai || !manager) {
+        async function getCreatedRows(version) {
+          const { type } = version.doc;
+          if (!version.ai || !self.getManager(type)) {
             return [];
           }
-          return self.getChangeRows(req, manager.newInstance(), version.doc);
+          return self.getChangeRows(req, await self.getEmptyDoc(req, type), version.doc);
         }
       },
       // The change list of a version (see `getChangeList`) and the versions it
@@ -1175,7 +1185,7 @@ module.exports = {
       // sees them. Empty for no pairs and for a type whose module is gone
       async getChangeList(req, pairs, { before } = {}) {
         let rows = [];
-        const manager = pairs.length && self.apos.doc.getManager(pairs.at(-1).newer.type);
+        const manager = pairs.length && self.getManager(pairs.at(-1).newer.type);
         if (manager) {
           const ctx = self.getDiffContext(req, pairs.at(-1).newer);
           const forbidden = self.getForbiddenFieldNames(req, manager);
@@ -1208,7 +1218,7 @@ module.exports = {
       // Every change from `older` to `newer`, two stored versions of one
       // document, as rows at full depth (see `lib/diff.js`)
       getChangeRows(req, older, newer) {
-        const manager = self.apos.doc.getManager(newer.type);
+        const manager = self.getManager(newer.type);
         return diff.walk(manager.schema, older, newer, self.getDiffContext(req, newer));
       },
       // The changes of consecutive versions of one document as one list,
@@ -1217,7 +1227,7 @@ module.exports = {
       // AI changed before them
       getConsolidatedRows(req, pairs, { before } = {}) {
         const { newer } = pairs.at(-1);
-        const manager = self.apos.doc.getManager(newer.type);
+        const manager = self.getManager(newer.type);
         return diff.consolidate(
           manager.schema,
           pairs,
@@ -1268,7 +1278,7 @@ module.exports = {
       // place (see `annotate` in `lib/diff.js`). Pass `rows` when the changes
       // are already listed; rows flagged `ai` mark their changes as AI's
       getAnnotatedDoc(req, older, newer, { rows } = {}) {
-        const manager = self.apos.doc.getManager(newer.type);
+        const manager = self.getManager(newer.type);
         return diff.annotate(
           manager.schema,
           older,
@@ -1290,6 +1300,25 @@ module.exports = {
         return forbidden?.size
           ? rows.filter(row => !forbidden.has(row.path[0].name)).length
           : rows.length;
+      },
+      // A new document of `type` as a save stores it: `newInstance()` leaves
+      // `null` where a save stores `[]` or `false`, so it is converted. A field
+      // that fails to convert, such as a required one, keeps what conversion
+      // wrote, else its `newInstance()` value
+      async getEmptyDoc(req, type) {
+        const manager = self.getManager(type);
+        const initial = manager.newInstance();
+        const doc = { ...initial };
+        try {
+          await self.apos.schema.convert(req, manager.schema, initial, doc, {
+            fetchRelationships: false
+          });
+        } catch (errors) {
+          if (!Array.isArray(errors)) {
+            throw errors;
+          }
+        }
+        return self.apos.util.clonePermanent(doc);
       },
       // What the diff engine needs from the rest of Apostrophe. `doc`, the
       // document compared, names it in the log when the engine recovers from
@@ -1377,7 +1406,7 @@ module.exports = {
         // `null` when the count stays as it is
         function countFor(version, before) {
           const { type } = version.doc;
-          if (!self.apos.doc.getManager(type)) {
+          if (!self.getManager(type)) {
             self.logWarn('set-change-count-no-manager', `No manager found for ${type}`, {
               docId,
               docType: type

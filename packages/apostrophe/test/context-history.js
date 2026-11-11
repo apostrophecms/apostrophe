@@ -4,9 +4,11 @@
 
 const assert = require('node:assert/strict');
 
-const getApplyPatch = async () => (await import(
+const getApplyPatchModule = async () => import(
   '../modules/@apostrophecms/area/ui/apos/lib/apply-patch.js'
-)).default;
+);
+const getApplyPatch = async () => (await getApplyPatchModule()).default;
+const getTakePrior = async () => (await getApplyPatchModule()).takePrior;
 const getHistory = async () => import(
   '../modules/@apostrophecms/rich-text-widget/ui/apos/lib/context-history.js'
 );
@@ -193,6 +195,94 @@ describe('Context history', function() {
       assert.equal(result.items[0]._relationship[0].title, 'A copy that must be left alone');
       assert.deepEqual(result.changed, [ 'layout' ]);
       assert.equal(nested[0].columns.items[0].title, 'Inner');
+    });
+
+    it('keeps the pre-preview widget as the inverse across live preview updates', async function() {
+      const applyPatch = await getApplyPatch();
+      const takePrior = await getTakePrior();
+      const beforePreview = {};
+      let next = [
+        {
+          _id: 'w1',
+          type: 'opacity',
+          imageOpacity: 40
+        }
+      ];
+
+      // Simulate `AposAreaEditor.update` during live preview (`autosave: false`)
+      for (const imageOpacity of [ 55, 70 ]) {
+        const preview = {
+          _id: 'w1',
+          type: 'opacity',
+          imageOpacity,
+          aposLivePreview: true
+        };
+        takePrior(next, beforePreview, preview, {
+          autosave: false,
+          reverting: false
+        });
+        next = next.map(w => (w._id === preview._id) ? preview : w);
+      }
+
+      // Final save (`autosave: true`): `takePrior` returns the state from
+      // before live preview started (`imageOpacity: 40`) and clears the stash
+      const saved = {
+        _id: 'w1',
+        type: 'opacity',
+        imageOpacity: 70
+      };
+      const prior = takePrior(next, beforePreview, saved, {
+        autosave: true,
+        reverting: false
+      });
+      assert.equal(prior.imageOpacity, 40);
+      assert.equal(beforePreview.w1, undefined);
+      next = next.map(w => (w._id === saved._id) ? saved : w);
+
+      // Applying the recorded inverse restores `imageOpacity: 40`
+      const undone = applyPatch(areaId, next, {
+        '@w1': prior
+      });
+      assert.equal(undone.items[0].imageOpacity, 40);
+    });
+
+    it('clears the stashed pre-preview widget when a live preview is cancelled', async function() {
+      const takePrior = await getTakePrior();
+      const beforePreview = {};
+      let next = [
+        {
+          _id: 'w1',
+          type: 'opacity',
+          imageOpacity: 40
+        }
+      ];
+
+      // Live preview update
+      const preview = {
+        _id: 'w1',
+        type: 'opacity',
+        imageOpacity: 70,
+        aposLivePreview: true
+      };
+      takePrior(next, beforePreview, preview, {
+        autosave: false,
+        reverting: false
+      });
+      next = [ preview ];
+      assert.equal(beforePreview.w1?.imageOpacity, 40);
+
+      // Cancel (`reverting: true`) restores the snapshot and clears `beforePreview`
+      const snapshot = {
+        _id: 'w1',
+        type: 'opacity',
+        imageOpacity: 40
+      };
+      takePrior(next, beforePreview, snapshot, {
+        autosave: false,
+        reverting: true
+      });
+      next = [ snapshot ];
+      assert.equal(beforePreview.w1, undefined);
     });
   });
 

@@ -173,3 +173,29 @@ function setPath(object, path, value) {
   target[keys[keys.length - 1]] = klona(value);
   return object;
 }
+
+// Return the widget in `items` that `updated` is replacing, for building the
+// inverse patch on save. Live preview updates (`autosave: false`) replace the
+// widget in `items` before the final save, so the pre-preview widget is kept
+// in `beforePreview` until the edit is saved (`autosave: true`) or cancelled
+// (`reverting: true`).
+export function takePrior(items, beforePreview, updated, {
+  autosave = true,
+  reverting = false
+} = {}) {
+  const current = items.find(widget => widget._id === updated._id);
+  if (
+    !autosave &&
+    !reverting &&
+    current &&
+    (current !== updated) &&
+    !beforePreview[updated._id]
+  ) {
+    beforePreview[updated._id] = klona(current);
+  }
+  const prior = beforePreview[updated._id] || current;
+  if (autosave || reverting) {
+    delete beforePreview[updated._id];
+  }
+  return prior;
+}

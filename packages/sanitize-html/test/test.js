@@ -1650,6 +1650,16 @@ describe('sanitizeHtml', function() {
     };
     assert.equal(sanitizeHtml(textIn, sanitizeHtmlOptions), expectedResult);
   });
+  it('Should not double encode ampersands on named HTML entities longer than 20 characters if decodeEntities is false', function() {
+    assert.equal(
+      sanitizeHtml('&CounterClockwiseContourIntegral; &amp;', {
+        parser: {
+          decodeEntities: false
+        }
+      }),
+      '&CounterClockwiseContourIntegral; &amp;'
+    );
+  });
   // TODO: make this test and similar tests for entities that are not
   // strictly valid pass, at which point decodeEntities: false is safe
   // to use.
@@ -2948,6 +2958,217 @@ describe('sanitizeHtml', function() {
       assert.strictEqual(
         sanitizeHtml('<div><style>.x{color:red}</style><p>ok</p></div>'),
         '<div><p>ok</p></div>'
+      );
+    });
+  });
+
+  describe('GHSA-2rjc-9xvg-45j7: CDATA section in HTML content hiding a nonTextTags start tag', function() {
+    // Outside SVG and MathML, browsers parse `<![CDATA[` as a bogus comment
+    // that ends at the first `>`, so a start tag after that `>` is real even if
+    // it comes before `]]>`.
+    const noscriptOptions = {
+      allowedTags: [ 'p', 'a', 'img' ],
+      allowedAttributes: {
+        a: [ 'href' ],
+        img: [ 'src' ]
+      },
+      nonTextTags: [ 'script', 'style', 'textarea', 'option', 'noscript' ]
+    };
+
+    it('should discard noscript content whose start tag follows a CDATA section\'s first >', function() {
+      assert.strictEqual(
+        sanitizeHtml('<p>Hi</p><![CDATA[ x > <noscript>]]><a href="https://evil.test">Reset your password</a><img src="https://evil.test/beacon.gif"></noscript>', noscriptOptions),
+        '<p>Hi</p> '
+      );
+    });
+
+    it('should discard the content of default nonTextTags hidden the same way', function() {
+      [ 'style', 'script', 'textarea', 'xmp' ].forEach(function(tag) {
+        assert.strictEqual(
+          sanitizeHtml('<p>Hi</p><![CDATA[ x > <' + tag + '>]]><a href="https://evil.test">Reset your password</a></' + tag + '><p>after</p>'),
+          '<p>Hi</p> <p>after</p>'
+        );
+      });
+    });
+
+    it('should end a CDATA section in HTML content at the first >', function() {
+      assert.strictEqual(
+        sanitizeHtml('<p>a<![CDATA[ x > y ]]>b</p>'),
+        '<p>a y ]]&gt;b</p>'
+      );
+    });
+
+    it('should end a CDATA section at the first > after an element that leaves SVG', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><p><![CDATA[ > <style>]]><a href="https://evil.test">Reset your password</a></style>'),
+        '<p> </p>'
+      );
+    });
+
+    it('should treat a CDATA section in SVG or MathML content as a bogus comment too', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><text><![CDATA[a > <b>]]></text></svg>', { allowedTags: [ 'svg', 'text' ] }),
+        '<svg><text> ]]&gt;</text></svg>'
+      );
+      assert.strictEqual(
+        sanitizeHtml('<math><ms><b>x</b></ms><![CDATA[a > <b>]]></math>', { allowedTags: [ 'math', 'ms', 'b' ] }),
+        '<math><ms><b>x</b></ms> <b>]]&gt;</b></math>'
+      );
+    });
+
+    it('should leave CDATA syntax in attribute values and RCDATA text unchanged', function() {
+      assert.strictEqual(
+        sanitizeHtml('<p title="<![CDATA[x]]>">z</p><textarea><![CDATA[t]]></textarea>', {
+          allowedTags: [ 'p', 'textarea' ],
+          allowedAttributes: { p: [ 'title' ] }
+        }),
+        '<p title="&lt;![CDATA[x]]&gt;">z</p><textarea>&lt;![CDATA[t]]&gt;</textarea>'
+      );
+    });
+  });
+
+  describe('GHSA-6wrv-5cp6-h3c5: markup in allowed style content', function() {
+    // htmlparser2 and browsers do not always agree on whether a <style> inside
+    // svg or math is an HTML raw-text element or a foreign (SVG/MathML)
+    // element whose content is markup, so no `<` in the content of such a
+    // style may reach the output where it could open a tag. Stylesheets
+    // outside svg and math are left alone.
+    const mathOptions = {
+      allowedTags: [ 'math', 'annotation-xml', 'style' ],
+      allowVulnerableTags: true
+    };
+    const svgOptions = {
+      allowedTags: [ 'svg', 'style' ],
+      allowVulnerableTags: true
+    };
+
+    it('should not emit a tag from style content inside annotation-xml', function() {
+      assert.strictEqual(
+        sanitizeHtml('<math><annotation-xml><style><img src=x onerror=alert(1)></style></annotation-xml></math>', mathOptions),
+        '<math><annotation-xml><style>\\3c img src=x onerror=alert(1)></style></annotation-xml></math>'
+      );
+    });
+
+    it('should not emit a tag from entity-encoded style content inside svg', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><style>&lt;img src=x onerror=alert(1)&gt;</style></svg>', svgOptions),
+        '<svg><style>\\3c img src=x onerror=alert(1)></style></svg>'
+      );
+    });
+
+    it('should not emit a tag from style content inside a discarded svg or math', function() {
+      [ 'svg', 'math' ].forEach(function(tag) {
+        assert.strictEqual(
+          sanitizeHtml('<' + tag + '><style>&lt;/style&gt;&lt;img src=x onerror=alert(1)&gt;</style></' + tag + '>', {
+            allowedTags: [ 'style' ],
+            allowVulnerableTags: true
+          }),
+          '<style>\\3c /style>\\3c img src=x onerror=alert(1)></style>'
+        );
+      });
+    });
+
+    it('should not emit a tag from style content inside a tag transformed into svg', function() {
+      assert.strictEqual(
+        sanitizeHtml('<div><style><img src=x onerror=alert(1)></style></div>', {
+          ...svgOptions,
+          transformTags: { div: 'svg' }
+        }),
+        '<svg><style>\\3c img src=x onerror=alert(1)></style></svg>'
+      );
+    });
+
+    it('should keep the meaning of < in a stylesheet inside svg', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><style>a > b::before { content: "<"; }</style></svg>', svgOptions),
+        '<svg><style>a > b::before { content: "\\3c "; }</style></svg>'
+      );
+    });
+
+    it('should leave a stylesheet outside svg and math unchanged', function() {
+      assert.strictEqual(
+        sanitizeHtml('<style><!-- a > b::before { content: "<"; } --></style>', {
+          allowedTags: [ 'style' ],
+          allowVulnerableTags: true
+        }),
+        '<style><!-- a > b::before { content: "<"; } --></style>'
+      );
+    });
+
+    it('should leave style content without < unchanged', function() {
+      assert.strictEqual(
+        sanitizeHtml('<style>.a > .b { color: red; background: url("x.png?a=1&b=2"); }</style>', {
+          allowedTags: [ 'style' ],
+          allowVulnerableTags: true
+        }),
+        '<style>.a > .b { color: red; background: url("x.png?a=1&b=2"); }</style>'
+      );
+    });
+  });
+
+  describe('GHSA-8g6g-w2rq-xcmc: SMIL attributeName with extra colons', function() {
+    // Browsers do not agree on how an `attributeName` with more than one colon
+    // is split into a prefix and a local name, and current Chrome resolves
+    // `xlink:href:x` to `xlink:href`, so no part of the name may name a URL
+    // attribute.
+    const permissive = {
+      allowedTags: false,
+      allowedAttributes: false,
+      allowedSchemes: [ 'http', 'https' ]
+    };
+    const allowlist = () => ({
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat([ 'svg', 'animate', 'set', 'text', 'rect', 'a' ]),
+      allowedAttributes: {
+        svg: [ 'xmlns', 'xmlns:xlink' ],
+        animate: [ 'href', 'attributename', 'values', 'dur', 'fill' ],
+        set: [ 'href', 'attributename', 'to', 'dur', 'fill' ],
+        a: [ 'href', 'id' ],
+        rect: [ 'width', 'height', 'fill' ],
+        text: [ 'x', 'y' ]
+      }
+    });
+    const payload = function(attributeName) {
+      return '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">' +
+        '<a id="q" href="https://safe.example/ok"><rect width="200" height="80" fill="blue"></rect>' +
+        '<text x="10" y="40">click</text></a>' +
+        '<animate href="#q" attributeName="' + attributeName + '" values="javascript:alert(1)" dur="0.01s" fill="freeze"></animate>' +
+        '<set href="#q" attributeName="' + attributeName + '" to="javascript:alert(1)"></set></svg>';
+    };
+    const spellings = [
+      'xlink:href:x',
+      'xlink:href:',
+      'XLINK:HREF:X',
+      ' xlink:href:x ',
+      'foo:href:bar',
+      'a:b:href',
+      'href:x',
+      ':href',
+      'xlink: href :x',
+      'x:src:y'
+    ];
+
+    it('should drop animations whose attributeName names a URL attribute among extra colons', function() {
+      [ permissive, allowlist() ].forEach(function(options) {
+        spellings.forEach(function(attributeName) {
+          const out = sanitizeHtml(payload(attributeName), options);
+          assert.ok(!/javascript:/i.test(out), attributeName + ' must not survive: ' + out);
+          assert.ok(/href="https:\/\/safe.example\/ok"/.test(out), 'the link itself is kept: ' + out);
+        });
+      });
+    });
+
+    it('should drop an animation element whose name has extra colons', function() {
+      const out = sanitizeHtml(
+        '<svg><a href="#safe"><svg:animate:x attributeName="href" values="javascript:alert(1)"></svg:animate:x><text>x</text></a></svg>',
+        permissive
+      );
+      assert.ok(!/javascript:/i.test(out), 'no javascript: URL may survive: ' + out);
+    });
+
+    it('should keep an animation of a harmless attribute with extra colons', function() {
+      assert.strictEqual(
+        sanitizeHtml('<svg><rect><animate attributeName="x:fill:y" values="red;blue"></animate></rect></svg>', permissive),
+        '<svg><rect><animate attributename="x:fill:y" values="red;blue"></animate></rect></svg>'
       );
     });
   });
