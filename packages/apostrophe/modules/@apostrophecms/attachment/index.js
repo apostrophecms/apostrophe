@@ -606,23 +606,28 @@ module.exports = {
         const tempFile = `${self.uploadfs.getTempPath()}/${self.apos.util.generateId()}.${info.extension}`;
         const croppedFile = `/attachments/${info._id}-${info.name}.${crop.left}.${crop.top}.${crop.width}.${crop.height}.${info.extension}`;
 
-        await Promise.promisify(self.uploadfs.copyOut)(originalFile, tempFile);
-        await Promise.promisify(self.uploadfs.copyImageIn)(tempFile, croppedFile, {
-          crop,
-          sizes: self.imageSizes
-        });
+        try {
+          await Promise.promisify(self.uploadfs.copyOut)(originalFile, tempFile);
+          await Promise.promisify(self.uploadfs.copyImageIn)(tempFile, croppedFile, {
+            crop,
+            sizes: self.imageSizes
+          });
 
-        await self.db.updateOne({
-          _id: info._id
-        }, {
-          $set: {
-            crops: [
-              ...crops,
-              crop
-            ]
-          }
-        });
-        await Promise.promisify(fs.unlink)(tempFile);
+          await self.db.updateOne({
+            _id: info._id
+          }, {
+            $set: {
+              crops: [
+                ...crops,
+                crop
+              ]
+            }
+          });
+        } finally {
+          // Also on failure (e.g. a corrupt original), so temporary
+          // copies never accumulate
+          await fs.promises.rm(tempFile, { force: true });
+        }
       },
       sanitizeCrop(crop) {
         const neededProps = [ 'top', 'left', 'width', 'height' ];
@@ -632,12 +637,19 @@ module.exports = {
           return null;
         }
 
-        return {
+        const sanitized = {
           top: sanitizeInteger(crop.top, 0, 0, 10000),
           left: sanitizeInteger(crop.left, 0, 0, 10000),
           width: sanitizeInteger(crop.width, 0, 0, 10000),
           height: sanitizeInteger(crop.height, 0, 0, 10000)
         };
+
+        // A crop must have a nonzero area
+        if (!sanitized.width || !sanitized.height) {
+          return null;
+        }
+
+        return sanitized;
       },
       // Given an attachment object and an optional crop,
       // return a clone with `_urls` fully populated for all
