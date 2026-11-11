@@ -452,7 +452,7 @@ module.exports = {
         });
         items = [];
         _.each(ids, function (_id) {
-          if (_.has(byId, _id)) {
+          if (Object.hasOwn(byId, _id)) {
             items.push(byId[_id]);
           }
         });
