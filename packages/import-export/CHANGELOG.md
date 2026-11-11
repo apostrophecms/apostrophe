@@ -1,5 +1,21 @@
 # Changelog
 
+## 3.7.2 (2026-11-11)
+
+### Fixes
+
+- When a document can't be imported because a field is invalid, such as an attachment whose record does not exist on this site (CSV and Excel exports can't carry files), the import report now says which field failed and why, instead of an empty message.
+
+### Security
+
+- Exports included the fields the exporting user may not view (`viewPermission`), in the exported documents and in the related documents exported with them, whatever the format (including the xlsx format of `@apostrophecms/import-export-xlsx`), along with the files of such attachment fields. Export now removes them before writing the file, the same way REST API responses do. In addition, for a relationship field the user may not view, REST API responses and exports included its stored ids and relationship fields (`<name>Ids` and `<name>Fields`), revealing which documents it links to, and exports included the documents it links to. These are now removed too. Saving a document never loses these fields. Exporting requires permission to edit the exported documents and to view the related ones, and only affects sites that use `viewPermission` (CWE-200, CWE-862, GHSA-p3m7-jjv4-357v).
+
+  Thanks to [Santh](https://github.com/santhreal) for reporting the vulnerability.
+
+- For types that are not localized (`localized: false`), import did not check that an archive document's `_id` matched its `aposDocId`. The duplicate shown to the user for confirmation is found by `aposDocId` while the document actually overwritten is found by `_id`, so confirming the replacement of one document could overwrite a different document of the same type. Such documents are now refused, as they already were for localized types. The overwrite was still subject to the importing user's permission to edit the document actually overwritten, so the main risk was importing an untrusted archive (CWE-20, CWE-639, GHSA-44gw-rrq5-fm92).
+
+  Thanks to [nokddubal](https://github.com/nokddubal) for reporting the vulnerability.
+
 ## 3.7.1 (2026-10-14)
 
 ### Fixes
