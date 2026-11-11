@@ -1,0 +1,43 @@
+{# ids must be unique doc-wide #}
+{% set id = apos.util.generateId() %}
+{% set labelId = id + '-label' %}
+{% set widget = data.widget %}
+{% set prependIfPrefix = apos.modules['@apostrophecms/form'].prependIfPrefix %}
+{% set hasRichLabel = not apos.area.isEmpty(widget, 'richLabel') %}
+
+{#
+  `data-apos-form-boolean` is required. The built-in checkbox field's browser
+  code uses it to collect the value on submit and to run conditional groups.
+#}
+<div data-apos-form-boolean class="apos-form-input-wrapper rich-text-boolean-field">
+  <input type="checkbox" id="{{ id }}"
+    class="apos-form-input {{ prependIfPrefix('__input') }}"
+    name="{{ widget.fieldName }}" value="true"
+    {% if hasRichLabel %}aria-labelledby="{{ labelId }}"{% endif %}
+    {% if widget.checked %}checked{% endif %}
+    {% if widget.required %}required{% endif %}
+  >
+  {% if hasRichLabel %}
+    {#
+      Rich text renders block elements (div, p), which are not valid inside
+      <label>. The input is named by aria-labelledby instead. Visitors tick
+      the box itself; links in the text open normally.
+    #}
+    <div id="{{ labelId }}"
+      class="apos-form-label rich-text-boolean-field__label {{ prependIfPrefix('_label') }}"
+    >
+      {% area widget, 'richLabel' %}
+      {% if widget.required %}<span>{{ __t("(Required)") }}</span>{% endif %}
+    </div>
+  {% else %}
+    {# No rich text yet: fall back to the plain-text label #}
+    <label for="{{ id }}" class="apos-form-label {{ prependIfPrefix('_label') }}">
+      {{ widget.fieldLabel }}
+      {% if widget.required %} {{ __t("(Required)") }}{% endif %}
+    </label>
+  {% endif %}
+  <span
+    class="apos-form-label-message {{ prependIfPrefix('__label-message') }}"
+    data-apos-input-message="{{ widget.fieldName }}" hidden
+  ></span>
+</div>

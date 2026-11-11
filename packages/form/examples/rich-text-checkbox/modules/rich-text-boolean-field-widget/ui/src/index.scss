@@ -1,0 +1,21 @@
+// The rich text label is a block element, so lay the checkbox and its label
+// out side by side.
+.rich-text-boolean-field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  align-items: flex-start;
+}
+
+.rich-text-boolean-field__label {
+  flex: 1;
+
+  p {
+    margin: 0;
+  }
+}
+
+// Put any validation message on its own line under the checkbox and label.
+.rich-text-boolean-field .apos-form-label-message {
+  flex-basis: 100%;
+}
