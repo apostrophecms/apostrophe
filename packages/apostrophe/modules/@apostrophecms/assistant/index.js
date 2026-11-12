@@ -46,6 +46,10 @@ module.exports = {
     // Set once the AI engine is active too
     self.active = false;
     self.askKinds = {};
+    self.addAskKind('browser', { accept: self.acceptBrowserAnswer });
+    for (const tool of require('./lib/standard-browser-tools')(self)) {
+      self.addBrowserTool(tool);
+    }
     self.enableBrowserData();
   },
   handlers(self) {
@@ -107,7 +111,8 @@ module.exports = {
           request: self.renderRequest(await self.answer(req, req.params._id, {
             tabId: req.body.tabId,
             callId: req.body.callId,
-            answer: req.body.answer
+            answer: req.body.answer,
+            screen: req.body.screen
           }))
         })),
         'chat/:_id/skip': route(async (req) => ({
@@ -171,6 +176,7 @@ module.exports = {
       ...require('./lib/store')(self),
       ...require('./lib/run')(self),
       ...require('./lib/asks')(self),
+      ...require('./lib/browser-tools')(self),
       ...require('./lib/screen')(self),
       ...require('./lib/reconcile')(self),
       ...require('./lib/events')(self),

@@ -19,7 +19,9 @@ describe('Assistant: module and options', function () {
     await withApos({}, async (apos) => {
       assert.equal(apos.assistant.active, false);
       await assertAbsent(apos);
-    });
+      assert.equal(apos.ai.getTool('read_screen'), undefined);
+      assert.equal(apos.ai.getTool('t_show'), undefined);
+    }, { modules: browserToolModule('keeps') });
   });
 
   it('adds nothing when enabled with no active AI engine', async function () {
@@ -127,11 +129,37 @@ describe('Assistant: module and options', function () {
       await assert.rejects(withApos(options, () => {}), pattern);
     }
   });
+
+  it('refuses a browser tool with no screen effect at startup', async function () {
+    await assert.rejects(
+      withApos({ enabled: true }, () => {}, { modules: browserToolModule('moves') }),
+      /The browser tool "t_show" needs a screenEffect: keeps or changes/
+    );
+  });
 });
+
+// A module adding a browser tool with this screen effect
+function browserToolModule(screenEffect) {
+  return {
+    'assistant-test-tools': {
+      init(self) {
+        self.apos.assistant.addBrowserTool({
+          name: 't_show',
+          description: 'Shows things.',
+          screenEffect,
+          input: {
+            type: 'object',
+            properties: {}
+          }
+        });
+      }
+    }
+  };
+}
 
 // A startup failure throws instead of exiting. The instance is captured for
 // cleanup by the AI engine's init, which runs before the assistant's
-async function withApos(options, fn, { provider = false } = {}) {
+async function withApos(options, fn, { provider = false, modules = {} } = {}) {
   let apos;
   try {
     await t.create({
@@ -151,7 +179,8 @@ async function withApos(options, fn, { provider = false } = {}) {
             }
           }
         },
-        '@apostrophecms/assistant': { options }
+        '@apostrophecms/assistant': { options },
+        ...modules
       }
     });
     await fn(apos);

@@ -246,6 +246,7 @@ export default {
     window.apos.adminBar.tabId = getTabId();
     window.apos.adminBar.editMode = false;
     window.apos.adminBar.seeChanges = false;
+    window.apos.adminBar.setEditMode = this.setEditMode;
     const lastBaseContext = JSON.parse(sessionStorage.getItem('aposLastBaseContext') || '{}');
     // Explicit query parameter beats our state on the previous page
     lastBaseContext.draftMode = this.queryDraftMode || lastBaseContext.draftMode;
@@ -780,6 +781,17 @@ export default {
           scrollcheck: e.action === 'history'
         });
       }
+    },
+    // `apos.adminBar.setEditMode(editing)`: edit mode switched from outside
+    // the admin bar, as its Edit and Preview buttons do, when they are
+    // offered. Resolves whether edit mode is on once the page shows it; a
+    // lock someone else holds may leave it off
+    async setEditMode(editing) {
+      if (this.contextBarActive && (editing !== this.editMode) &&
+        (editing || !this.hasCustomUi)) {
+        await this.switchEditMode(editing);
+      }
+      return this.editMode;
     },
     async switchEditMode(editing) {
       if (!editing) {

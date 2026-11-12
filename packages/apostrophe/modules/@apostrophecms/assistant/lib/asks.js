@@ -7,6 +7,8 @@
 //
 // Each kind of ask is registered with `addAskKind`; its `accept` turns a
 // posted answer into the input the tool reads on `args._context.input`.
+// An answer may carry the screen as it is now, which becomes the request's
+// screen, its locale included, for the rest of its runs.
 
 module.exports = (self) => {
   return {
@@ -15,9 +17,11 @@ module.exports = (self) => {
      *
      * @param {string} name The `kind` a tool's ask names.
      * @param {object} definition
-     * @param {(req: object, ask: object, answer: *) => *} definition.accept
-     *   Turns a posted answer into the input the asking tool reads, or
-     *   throws `invalid` to leave the ask waiting.
+     * @param {(req: object, ask: object, answer: *, context: { screen:
+     *   object|null }) => *} definition.accept Turns a posted answer into
+     *   the input the asking tool reads, or throws `invalid` to leave the
+     *   ask waiting. `screen` is the verified screen posted with the
+     *   answer, if any.
      */
     addAskKind(name, { accept }) {
       self.askKinds[name] = { accept };
@@ -33,10 +37,12 @@ module.exports = (self) => {
      * @param {string} input.tabId The answering browser tab.
      * @param {string} input.callId The tool call that asked.
      * @param {*} input.answer What the ask's kind accepts.
+     * @param {object} [input.screen] The screen after the answer, in the
+     *   locale of `req`; it replaces the request's.
      * @returns {Promise<object>} The request record.
      */
     async answer(req, chatId, {
-      tabId, callId, answer
+      tabId, callId, answer, screen
     } = {}) {
       const { chat, request } = await self.getWaiting(req, chatId, tabId);
       const ask = request.asks.find(ask => ask.callId === callId);
@@ -47,10 +53,19 @@ module.exports = (self) => {
       if (!kind) {
         throw self.apos.error('invalid', `no answer is accepted for an ask of kind "${ask.kind}"`);
       }
-      const input = await kind.accept(req, ask, answer);
+      const verified = (screen === undefined)
+        ? null
+        : await self.verifyScreen(req, screen);
+      if (verified && (verified.tabId !== request.tabId)) {
+        throw self.apos.error('invalid', 'the screen is of another browser tab');
+      }
+      const input = await kind.accept(req, ask, answer, { screen: verified });
       await self.claimWaiting(req, chat, request, tabId, {
         'openRequest.status': 'running'
       });
+      if (verified) {
+        request.screen = verified;
+      }
       await self.requests.updateOne({
         _id: request._id,
         ownerId: request.ownerId
@@ -58,7 +73,8 @@ module.exports = (self) => {
         $set: {
           status: 'running',
           asks: null,
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          ...(verified && { screen: verified })
         },
         // The earlier run's job is over; this run's is stored by `startRun`
         $unset: {

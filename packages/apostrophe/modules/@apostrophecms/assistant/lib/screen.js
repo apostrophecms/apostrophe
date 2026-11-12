@@ -82,34 +82,15 @@ module.exports = (self) => {
       }
       return verified;
 
-      // A document of the screen, once per id: `{ doc, ids, areas }` (see
-      // `indexIds`); `null` when the editor or the AI may not read it
+      // A document of the screen, once per id
       async function findDoc(_id) {
         if ((typeof _id !== 'string') || !_id) {
           return null;
         }
         if (!docs.has(_id)) {
-          docs.set(_id, await find(_id));
+          docs.set(_id, await self.findScreenDoc(req, _id));
         }
         return docs.get(_id);
-      }
-
-      async function find(_id) {
-        try {
-          const { doc, draftReq } = await self.apos.harness.findDraft(req, _id);
-          if (!self.apos.ai.can(draftReq, 'view', doc)) {
-            return null;
-          }
-          return {
-            doc,
-            ...indexIds(doc)
-          };
-        } catch (e) {
-          if (e.name === 'notfound') {
-            return null;
-          }
-          throw e;
-        }
       }
 
       async function getModal(modal) {
@@ -205,17 +186,43 @@ module.exports = (self) => {
     },
 
     /**
-     * The section the model reads the screen in, after the harness's
-     * instructions. Only what helps the model: no browser tab id, nothing
+     * A document as the screen and the browser tools name it, read in draft
+     * mode under the editor's permissions, in the locale its id names, else
+     * the request's: `{ doc, ids, areas }`, `ids` mapping every widget,
+     * area and array item id in it to its kind and `areas` each area to the
+     * ids of its widgets. `null` when it isn't found or the editor or the AI
+     * may not read it.
+     *
+     * @param {object} req
+     * @param {string} _id
+     * @returns {Promise<object|null>}
+     */
+    async findScreenDoc(req, _id) {
+      try {
+        const { doc, draftReq } = await self.apos.harness.findDraft(req, _id);
+        if (!self.apos.ai.can(draftReq, 'view', doc)) {
+          return null;
+        }
+        return {
+          doc,
+          ...indexIds(doc)
+        };
+      } catch (e) {
+        if (e.name === 'notfound') {
+          return null;
+        }
+        throw e;
+      }
+    },
+
+    /**
+     * A verified screen as the model reads it: no browser tab id, nothing
      * empty.
      *
-     * @param {object} screen A verified screen.
-     * @returns {string}
+     * @param {object} screen
+     * @returns {object}
      */
-    getScreenSection(screen) {
-      if (!screen) {
-        return '';
-      }
+    renderScreen(screen) {
       const shown = {};
       for (const key of [ 'url', 'locale', 'mode', 'editing', 'view', 'document',
         'modals', 'selection', 'field' ]) {
@@ -226,7 +233,21 @@ module.exports = (self) => {
         }
         shown[key] = value;
       }
-      return `${SCREEN_INTRO}\n${JSON.stringify(shown)}`;
+      return shown;
+    },
+
+    /**
+     * The section the model reads the screen in, after the harness's
+     * instructions.
+     *
+     * @param {object} screen A verified screen.
+     * @returns {string}
+     */
+    getScreenSection(screen) {
+      if (!screen) {
+        return '';
+      }
+      return `${SCREEN_INTRO}\n${JSON.stringify(self.renderScreen(screen))}`;
     },
 
     /**

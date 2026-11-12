@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { getTabId } from 'Modules/@apostrophecms/ui/utils';
 import { useScreen } from 'Modules/@apostrophecms/ui/composables/useScreen.js';
+import { browserTools } from '../lib/browser-tools.js';
 
 /**
  * The assistant's chats as this browser tab sees them. The records on the
@@ -12,6 +13,11 @@ import { useScreen } from 'Modules/@apostrophecms/ui/composables/useScreen.js';
  * The chat tabs are this browser tab's own, kept in session storage. A new
  * chat is created on the server by its first send, so `NEW_CHAT` stands for
  * the chat tab of a chat that has no record yet.
+ *
+ * A request this browser tab owns may wait on a browser ask: the store runs
+ * the browser tool's executor (lib/browser-tools.js) and answers
+ * with the screen after it, one executor at a time, whether the panel is
+ * open or not.
  */
 
 export const NEW_CHAT = 'new';
@@ -44,6 +50,9 @@ export const useAssistantStore = defineStore('assistant', () => {
   const chatSequences = new Map();
   const pending = new Set();
   let timer = null;
+  // The browser asks taken on this page, by call id: each runs once
+  const served = new Set();
+  let executing = Promise.resolve();
 
   function getAction() {
     return apos.modules['@apostrophecms/assistant'].action;
@@ -81,6 +90,20 @@ export const useAssistantStore = defineStore('assistant', () => {
       window.addEventListener('focus', catchUp);
     }
     await catchUp();
+  }
+
+  // At page load: a browser tab with chat tabs from an earlier page follows
+  // its chats again
+  function resume() {
+    let stored = null;
+    try {
+      stored = window.sessionStorage.getItem(STORAGE_KEY);
+    } catch (e) {
+      // A browser tab without storage starts with the panel
+    }
+    if (stored) {
+      start();
+    }
   }
 
   // Everything that may have changed while nobody was looking
@@ -181,6 +204,12 @@ export const useAssistantStore = defineStore('assistant', () => {
         forget(id);
       }
     }
+    // A request here waiting on an ask, in a chat tab open or not
+    for (const chat of chats.value) {
+      if ((getOwner(chat) === 'here') && (chat.openRequest.status === 'waiting')) {
+        schedule(chat._id);
+      }
+    }
   }
 
   async function loadChat(id) {
@@ -202,6 +231,71 @@ export const useAssistantStore = defineStore('assistant', () => {
     }
     setChat(result.chat);
     requests.value[id] = result.requests;
+    serveAsks(id);
+  }
+
+  // The browser asks of the chat's request, when this browser tab owns it
+  function serveAsks(id) {
+    const chat = getChat(id);
+    if ((getOwner(chat) !== 'here') || (chat.openRequest.status !== 'waiting')) {
+      return;
+    }
+    const request = requests.value[id]?.find(each => each._id === chat.openRequest._id);
+    for (const ask of request?.asks || []) {
+      if ((ask.kind !== 'browser') || served.has(ask.callId)) {
+        continue;
+      }
+      served.add(ask.callId);
+      executing = executing.then(() => serveAsk(id, request, ask));
+    }
+  }
+
+  // Runs the executor and answers. An answer the server didn't take is
+  // given up, the reason in the console: the editor can still stop the
+  // request. One that never arrived is served again when the records next
+  // show the ask
+  async function serveAsk(id, request, ask) {
+    const executor = browserTools.get(ask.name);
+    let answer;
+    try {
+      answer = executor
+        ? await executor(ask.payload.args, {
+          screen: getScreen(),
+          request,
+          ask
+        })
+        : {
+          executed: false,
+          reason: `this page has no "${ask.name}" browser tool`
+        };
+    } catch (e) {
+      report(e);
+      answer = {
+        executed: false,
+        reason: 'the action failed in the browser'
+      };
+    }
+    if (answer === null) {
+      return;
+    }
+    try {
+      await apos.http.post(`${getAction()}/chat/${id}/answer`, {
+        body: {
+          tabId: getTabId(),
+          callId: ask.callId,
+          answer,
+          screen: getScreen()
+        }
+      });
+    } catch (e) {
+      if (!e.status) {
+        served.delete(ask.callId);
+      } else if (e.status !== 409) {
+        report(e);
+      }
+    }
+    await loadChats();
+    await loadChat(id);
   }
 
   function setChat(chat) {
@@ -485,6 +579,7 @@ export const useAssistantStore = defineStore('assistant', () => {
     getChat,
     getOwner,
     start,
+    resume,
     catchUp,
     openChat,
     newChat,
