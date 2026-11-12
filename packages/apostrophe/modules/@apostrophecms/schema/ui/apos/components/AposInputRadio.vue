@@ -12,7 +12,7 @@
         :class="{'apos-radio-wrapper--buttons': field.buttons }"
       >
         <label
-          v-for="{label, value, tooltip, icon} in choices"
+          v-for="{label, value, tooltip, icon, help} in choices"
           :key="value"
           v-apos-tooltip="(field.buttons && !!tooltip) ? $t(tooltip) : null"
           :aria-label="label"
@@ -68,6 +68,13 @@
               :icon-size="14"
               icon="information-icon"
             />
+            <!-- A choice's own help, under its label -->
+            <span
+              v-if="help && !field.buttons"
+              class="apos-choice-label-text--help apos-field__help"
+            >
+              {{ $t(help) }}
+            </span>
           </span>
         </label>
       </div>
@@ -84,6 +91,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .apos-choice-label-text--help {
+    display: block;
+    margin-top: 4px;
+  }
+
   .apos-input-indicator {
     .apos-input--radio + & {
       border-radius: 50%;
