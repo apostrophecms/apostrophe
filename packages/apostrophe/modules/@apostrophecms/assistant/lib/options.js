@@ -7,7 +7,7 @@ module.exports = (self) => {
   return {
     validateOptions() {
       const {
-        enabled, maxSteps, usageDisplay, modelDisplay
+        enabled, maxSteps, screenWait, usageDisplay, modelDisplay
       } = self.options;
       for (const [ name, value ] of Object.entries({
         enabled,
@@ -17,8 +17,13 @@ module.exports = (self) => {
           fail(name, 'must be a boolean');
         }
       }
-      if (!Number.isInteger(maxSteps) || (maxSteps < 1)) {
-        fail('maxSteps', 'must be a positive integer');
+      for (const [ name, value ] of Object.entries({
+        maxSteps,
+        screenWait
+      })) {
+        if (!Number.isInteger(value) || (value < 1)) {
+          fail(name, 'must be a positive integer');
+        }
       }
       if (!USAGE_DISPLAYS.includes(usageDisplay)) {
         fail('usageDisplay', `must be one of: ${USAGE_DISPLAYS.join(', ')}`);

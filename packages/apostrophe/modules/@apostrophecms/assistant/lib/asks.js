@@ -2,8 +2,9 @@
 // "aiInput" with the ask as its data, `{ kind, ... }`, and the run ends
 // waiting. The request keeps its asks on the record until the owning
 // browser tab answers one, which continues the run on a new job, or skips
-// them, which ends the request. "Continue here" makes another browser tab
-// the owner of a waiting request, every ask included.
+// them, which ends the request; any browser tab may stop it instead.
+// "Continue here" makes another browser tab the owner of a waiting
+// request, every ask included.
 //
 // Each kind of ask is registered with `addAskKind`; its `accept` turns a
 // posted answer into the input the tool reads on `args._context.input`.
@@ -63,9 +64,6 @@ module.exports = (self) => {
       await self.claimWaiting(req, chat, request, tabId, {
         'openRequest.status': 'running'
       });
-      if (verified) {
-        request.screen = verified;
-      }
       await self.requests.updateOne({
         _id: request._id,
         ownerId: request.ownerId
@@ -76,22 +74,28 @@ module.exports = (self) => {
           updatedAt: new Date(),
           ...(verified && { screen: verified })
         },
-        // The earlier run's job is over; this run's is stored by `startRun`
+        // The earlier run's job is over; this run's is stored by `startRun`.
+        // The run reads the screen as stored now, a shared one included
         $unset: {
           jobId: 1,
-          prior: 1
+          prior: 1,
+          screenChanged: 1
         }
       });
-      await self.publishRequest(req, request);
+      const running = await self.getRequest(req, request._id);
+      if (verified) {
+        await self.shareScreen(running, verified);
+      }
+      await self.publishRequest(req, running);
       try {
-        const transcript = await self.getTranscript(chat, request);
-        await self.startRun(req, chat, request, {
-          messages: [ ...transcript, ...request.messages ],
+        const transcript = await self.getTranscript(chat, running);
+        await self.startRun(req, chat, running, {
+          messages: [ ...transcript, ...running.messages ],
           prior: transcript.length,
           toolInput: { [ask.callId]: input }
         });
       } catch (e) {
-        await self.endRun(req, chat, request, { error: e });
+        await self.endRun(req, chat, running, { error: e });
         throw e;
       }
       return self.getRequest(req, request._id);
@@ -110,8 +114,30 @@ module.exports = (self) => {
      */
     async skip(req, chatId, { tabId } = {}) {
       const { chat, request } = await self.getWaiting(req, chatId, tabId);
+      return self.endWaiting(req, chat, request, {
+        tabId,
+        status: 'skipped'
+      });
+    },
+
+    /**
+     * Ends a waiting request without an answer, `skipped` or `stopped`:
+     * each ask answered `{ answered: false }` and any tool call after it
+     * `{ executed: false, reason }`, so its transcript stands on its own.
+     * Refused with the reason when it no longer waits as read (or, with
+     * `tabId`, for that browser tab).
+     *
+     * @param {object} req
+     * @param {object} chat
+     * @param {object} request
+     * @param {object} options
+     * @param {string} [options.tabId] The browser tab that ends it.
+     * @param {'skipped'|'stopped'} options.status
+     * @returns {Promise<object>} The request record.
+     */
+    async endWaiting(req, chat, request, { tabId, status }) {
       await self.claimWaiting(req, chat, request, tabId, {
-        'openRequest.status': 'skipping'
+        'openRequest.status': (status === 'stopped') ? 'stopping' : 'skipping'
       });
       const asked = new Set(request.asks.map(ask => ask.callId));
       const now = new Date();
@@ -120,12 +146,12 @@ module.exports = (self) => {
         ownerId: request.ownerId
       }, {
         $set: {
-          status: 'skipped',
+          status,
           messages: self.completeCalls(request.messages, call => (asked.has(call.id)
             ? { answered: false }
             : {
               executed: false,
-              reason: 'skipped'
+              reason: status
             })),
           asks: null,
           updatedAt: now,
@@ -139,17 +165,25 @@ module.exports = (self) => {
 
     /**
      * Makes a browser tab the owner of a chat's waiting request: from then
-     * on only it answers, and the request's writes lock in its family.
+     * on only it answers, it serves the request's browser tools, the
+     * request's writes lock in its family, and its screen, visible, is the
+     * request's. The browser tab that owned it finds the ask no longer its
+     * own.
      *
      * @param {object} req
      * @param {string} chatId
      * @param {object} input
      * @param {string} input.tabId The browser tab taking the request over.
+     * @param {object} input.screen Its screen, in the locale of `req`.
      * @returns {Promise<object>} The request record.
      */
-    async continueHere(req, chatId, { tabId } = {}) {
+    async continueHere(req, chatId, { tabId, screen } = {}) {
       const { chat, request } = await self.getWaiting(req, chatId);
       const clean = self.launderTabId(tabId);
+      const verified = await self.verifyScreen(req, screen);
+      if (verified.tabId !== clean) {
+        throw self.apos.error('invalid', 'the screen is of another browser tab');
+      }
       await self.claimWaiting(req, chat, request, null, {
         'openRequest.tabId': clean
       });
@@ -159,8 +193,10 @@ module.exports = (self) => {
       }, {
         $set: {
           tabId: clean,
+          screen: verified,
           updatedAt: new Date()
-        }
+        },
+        $unset: { screenChanged: 1 }
       });
       await self.publishRequest(req, request);
       return self.getRequest(req, request._id);

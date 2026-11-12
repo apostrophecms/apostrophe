@@ -247,6 +247,7 @@ export default {
     window.apos.adminBar.editMode = false;
     window.apos.adminBar.seeChanges = false;
     window.apos.adminBar.setEditMode = this.setEditMode;
+    window.apos.adminBar.hasUnsavedChanges = this.hasUnsavedChanges;
     const lastBaseContext = JSON.parse(sessionStorage.getItem('aposLastBaseContext') || '{}');
     // Explicit query parameter beats our state on the previous page
     lastBaseContext.draftMode = this.queryDraftMode || lastBaseContext.draftMode;
@@ -408,8 +409,14 @@ export default {
         }
       }
     },
+    // `apos.adminBar.hasUnsavedChanges()`: the page has in-context changes
+    // not saved yet, being saved or still being typed, the state that asks
+    // before the page is left. Reactive when read inside a watcher
+    hasUnsavedChanges() {
+      return Boolean(this.patchesSinceSave.length || this.saving || this.editing);
+    },
     onBeforeUnload(e) {
-      if (this.patchesSinceSave.length || this.saving || this.editing) {
+      if (this.hasUnsavedChanges()) {
         e.preventDefault();
         // No actual control over the message is possible in modern browsers,
         // but Chrome requires we set a string here

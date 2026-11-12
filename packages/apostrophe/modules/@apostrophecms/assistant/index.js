@@ -30,7 +30,10 @@ module.exports = {
     // The token counts editors see: 'tokens' or 'none'
     usageDisplay: 'tokens',
     // Whether the reply footer names the vendor and model
-    modelDisplay: false
+    modelDisplay: false,
+    // Milliseconds a browser tool that changes the screen waits for a
+    // screen hold to clear, then it is refused naming the holder
+    screenWait: 15000
   },
   icons: {
     'creation-icon': 'Creation',
@@ -54,6 +57,25 @@ module.exports = {
   },
   handlers(self) {
     return {
+      '@apostrophecms/ai:afterToolCall': {
+        // A screen another request of the browser tab changed comes with
+        // this run's next tool result; a browser tool's carries its own
+        async addChangedScreen(req, payload) {
+          const { result } = payload;
+          if (!self.active || (self.apos.harness.getDoor(req)?.door !== 'assistant') ||
+            payload.tool.tags?.includes('browser') ||
+            !result || (typeof result !== 'object') || Array.isArray(result)) {
+            return;
+          }
+          const screen = await self.takeChangedScreen(req);
+          if (screen) {
+            payload.result = {
+              ...result,
+              screen
+            };
+          }
+        }
+      },
       'apostrophe:ready': {
         // After the AI engine's own activation, which comes first in the
         // module order
@@ -122,7 +144,8 @@ module.exports = {
         })),
         'chat/:_id/continue-here': route(async (req) => ({
           request: self.renderRequest(await self.continueHere(req, req.params._id, {
-            tabId: req.body.tabId
+            tabId: req.body.tabId,
+            screen: req.body.screen
           }))
         })),
         'chat/:_id/stop': route(async (req) => ({
@@ -190,7 +213,8 @@ module.exports = {
         return {
           action: self.action,
           usageDisplay: self.options.usageDisplay,
-          modelDisplay: self.options.modelDisplay
+          modelDisplay: self.options.modelDisplay,
+          screenWait: self.options.screenWait
         };
       }
     };

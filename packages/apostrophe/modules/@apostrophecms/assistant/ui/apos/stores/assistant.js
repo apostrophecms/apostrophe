@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { getTabId } from 'Modules/@apostrophecms/ui/utils';
-import { useScreen } from 'Modules/@apostrophecms/ui/composables/useScreen.js';
+import { useScreen, isWindow } from 'Modules/@apostrophecms/ui/composables/useScreen.js';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { browserTools } from '../lib/browser-tools.js';
 
 /**
@@ -15,9 +16,15 @@ import { browserTools } from '../lib/browser-tools.js';
  * the chat tab of a chat that has no record yet.
  *
  * A request this browser tab owns may wait on a browser ask: the store runs
- * the browser tool's executor (lib/browser-tools.js) and answers
- * with the screen after it, one executor at a time, whether the panel is
- * open or not.
+ * the browser tool's executor (lib/browser-tools.js) and answers with the
+ * screen after it, whether the panel is open or not. A hidden browser tab
+ * runs nothing: it answers what the server would. Executors act one at a
+ * time. A tool that changes the screen also waits for its chat tab to be the
+ * active one, for as long as it takes, and for every screen hold to clear,
+ * for `screenWait` at most, then it is refused naming the holder. Screen
+ * holds: another request while one of its executors runs or an editor it
+ * opened is open; the editor with a modal open or unsaved changes on the
+ * page.
  */
 
 export const NEW_CHAT = 'new';
@@ -45,6 +52,22 @@ export const useAssistantStore = defineStore('assistant', () => {
   // never stored, so a reload starts without it
   const progress = ref({});
 
+  // Whether this browser tab is visible, as the page last reported it
+  const visible = ref(document.visibilityState !== 'hidden');
+  // The browser step each open request of this browser tab is on, by
+  // request id: `{ callId, label, state, holder, status }`, `state` one of
+  // `attention` (its chat tab is not the active one), `hold` (`holder`
+  // holds the screen), `queued` (another executor acts), `acting`, or
+  // `released` (the executor waits on the editor, `status` saying for what)
+  const browserSteps = ref({});
+  // The executor acting now: `{ callId, requestId }`
+  const acting = ref(null);
+  // Asks run but not answered yet, released executors included: request
+  // id by call id
+  const executors = ref(new Map());
+  // The modals an executor opened: request id by modal id
+  const modalOwners = ref(new Map());
+
   let started = false;
   let chatsSequence = 0;
   const chatSequences = new Map();
@@ -52,7 +75,6 @@ export const useAssistantStore = defineStore('assistant', () => {
   let timer = null;
   // The browser asks taken on this page, by call id: each runs once
   const served = new Set();
-  let executing = Promise.resolve();
 
   function getAction() {
     return apos.modules['@apostrophecms/assistant'].action;
@@ -60,6 +82,21 @@ export const useAssistantStore = defineStore('assistant', () => {
 
   function getChat(id) {
     return chats.value.find(chat => chat._id === id) || null;
+  }
+
+  /**
+   * The browser step the chat's open request is on in this browser tab, or
+   * `null` (see `browserSteps`).
+   *
+   * @param {object|null} chat
+   * @returns {object|null}
+   */
+  function getBrowserStep(chat) {
+    const open = chat?.openRequest;
+    if ((getOwner(chat) !== 'here') || (open.status !== 'waiting')) {
+      return null;
+    }
+    return browserSteps.value[open._id] || null;
   }
 
   /**
@@ -88,6 +125,15 @@ export const useAssistantStore = defineStore('assistant', () => {
       // Back from another window (a terminal, say) is a focus with no
       // change of visibility
       window.addEventListener('focus', catchUp);
+      // A modal opened while an executor acts is its request's
+      apos.bus.$on('modal-launched', (item) => {
+        if (acting.value) {
+          modalOwners.value.set(item.id, acting.value.requestId);
+        }
+      });
+      apos.bus.$on('modal-resolved', (item) => {
+        modalOwners.value.delete(item.id);
+      });
     }
     await catchUp();
   }
@@ -118,20 +164,20 @@ export const useAssistantStore = defineStore('assistant', () => {
   }
 
   async function onVisibilityChange() {
-    const visible = document.visibilityState === 'visible';
+    visible.value = document.visibilityState !== 'hidden';
     if (chats.value.some(chat => getOwner(chat) === 'here')) {
       try {
         await apos.http.post(`${getAction()}/visibility`, {
           body: {
             tabId: getTabId(),
-            visible
+            visible: visible.value
           }
         });
       } catch (e) {
         // The next message reports the screen again
       }
     }
-    if (visible) {
+    if (visible.value) {
       await catchUp();
     }
   }
@@ -246,38 +292,39 @@ export const useAssistantStore = defineStore('assistant', () => {
         continue;
       }
       served.add(ask.callId);
-      executing = executing.then(() => serveAsk(id, request, ask));
+      serveAsk(id, request, ask);
     }
   }
 
-  // Runs the executor and answers. An answer the server didn't take is
-  // given up, the reason in the console: the editor can still stop the
-  // request. One that never arrived is served again when the records next
-  // show the ask
+  // Waits for the ask's turn, runs the executor and answers. An ask that
+  // is no longer this browser tab's is left; an answer the server didn't
+  // take is given up, the reason in the console: the editor can still stop
+  // the request. One that never arrived, or arrived after the request moved
+  // to another browser tab, is served again if the records show it here
   async function serveAsk(id, request, ask) {
-    const executor = browserTools.get(ask.name);
+    const turn = await waitForTurn(id, request, ask);
+    if (turn.state === 'gone') {
+      served.delete(ask.callId);
+      clearBrowserStep(request._id, ask.callId);
+      return;
+    }
     let answer;
-    try {
-      answer = executor
-        ? await executor(ask.payload.args, {
-          screen: getScreen(),
-          request,
-          ask
-        })
-        : {
-          executed: false,
-          reason: `this page has no "${ask.name}" browser tool`
-        };
-    } catch (e) {
-      report(e);
+    if (turn.state === 'hidden') {
+      answer = ask.payload.whenHidden;
+    } else if (turn.state === 'hold') {
       answer = {
         executed: false,
-        reason: 'the action failed in the browser'
+        reason: `the screen is held: ${describeHolder(turn.holder)}`
       };
+    } else {
+      answer = await execute(id, request, ask);
     }
     if (answer === null) {
       return;
     }
+    // Until the answer is in, the request's next ask waits: the server
+    // goes on from one answer at a time
+    executors.value.set(ask.callId, request._id);
     try {
       await apos.http.post(`${getAction()}/chat/${id}/answer`, {
         body: {
@@ -288,14 +335,236 @@ export const useAssistantStore = defineStore('assistant', () => {
         }
       });
     } catch (e) {
-      if (!e.status) {
+      if (!e.status || (e.status === 409)) {
         served.delete(ask.callId);
-      } else if (e.status !== 409) {
+      } else {
         report(e);
       }
     }
-    await loadChats();
-    await loadChat(id);
+    try {
+      await loadChats();
+      await loadChat(id);
+    } finally {
+      executors.value.delete(ask.callId);
+      clearBrowserStep(request._id, ask.callId);
+    }
+  }
+
+  // Resolves with the ask's turn once it has one: `run` (the executor may
+  // act, and does so now: it is marked acting at once), `hidden` (answer
+  // as the server would), `gone` (no longer this browser tab's), or `hold`
+  // after waiting `screenWait` on a screen hold, with its holder
+  function waitForTurn(id, request, ask) {
+    const changes = ask.payload.screenEffect === 'changes';
+    const { screenWait } = apos.modules['@apostrophecms/assistant'];
+    const label = request.steps?.find(step => step.id === ask.callId)?.label || null;
+    return new Promise((resolve) => {
+      let timer = null;
+      let stop = null;
+      if (settle(getTurn())) {
+        return;
+      }
+      stop = watch(getTurn, settle);
+
+      function getTurn() {
+        if (!isServed(id, request._id, ask.callId)) {
+          return { state: 'gone' };
+        }
+        if (!visible.value) {
+          return { state: 'hidden' };
+        }
+        if (changes && (activeId.value !== id)) {
+          return { state: 'attention' };
+        }
+        const holder = changes ? getHolder(request._id) : null;
+        if (holder) {
+          return {
+            state: 'hold',
+            holder
+          };
+        }
+        const busy = acting.value ||
+          [ ...executors.value.values() ].includes(request._id);
+        return { state: busy ? 'queued' : 'run' };
+      }
+
+      // Waiting for a screen hold is bounded; any other wait is not
+      function settle(turn) {
+        if (turn.state === 'hold') {
+          timer = timer || setTimeout(() => done(getTurn()), screenWait);
+        } else if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+        if ([ 'run', 'hidden', 'gone' ].includes(turn.state)) {
+          return done(turn);
+        }
+        setBrowserStep(request._id, {
+          callId: ask.callId,
+          label,
+          state: turn.state,
+          holder: turn.holder || null
+        });
+        return false;
+      }
+
+      // The timer's last look may find the hold gone: then it is not
+      // refused, and waits for its turn as before
+      function done(turn) {
+        if ((turn.state === 'queued') || (turn.state === 'attention')) {
+          timer = null;
+          return settle(turn);
+        }
+        if (turn.state === 'run') {
+          acting.value = {
+            callId: ask.callId,
+            requestId: request._id
+          };
+          executors.value.set(ask.callId, request._id);
+          setBrowserStep(request._id, {
+            callId: ask.callId,
+            label,
+            state: 'acting'
+          });
+        }
+        clearTimeout(timer);
+        stop?.();
+        resolve(turn);
+        return true;
+      }
+    });
+  }
+
+  // Runs the executor marked acting. Once it calls `release`, it only
+  // waits on the editor: the next executor may act, while its request
+  // still holds the screen until its answer is in
+  async function execute(id, request, ask) {
+    const { callId } = ask;
+    const free = () => {
+      if (acting.value?.callId === callId) {
+        acting.value = null;
+      }
+    };
+    const release = (status = null) => {
+      free();
+      const step = browserSteps.value[request._id];
+      if (step?.callId === callId) {
+        setBrowserStep(request._id, {
+          ...step,
+          state: 'released',
+          status
+        });
+      }
+    };
+    try {
+      const executor = browserTools.get(ask.name);
+      return executor
+        ? await executor(ask.payload.args, {
+          screen: getScreen(),
+          request,
+          ask,
+          release
+        })
+        : {
+          executed: false,
+          reason: `this page has no "${ask.name}" browser tool`
+        };
+    } catch (e) {
+      report(e);
+      return {
+        executed: false,
+        reason: 'the action failed in the browser'
+      };
+    } finally {
+      free();
+    }
+  }
+
+  // Whether the ask is still one this browser tab serves: its request open
+  // here, waiting, and the ask among its asks
+  function isServed(id, requestId, callId) {
+    const chat = getChat(id);
+    const open = chat?.openRequest;
+    if ((getOwner(chat) !== 'here') || (open._id !== requestId) ||
+      (open.status !== 'waiting')) {
+      return false;
+    }
+    const record = requests.value[id]?.find(each => each._id === requestId);
+    return Boolean(record?.asks?.some(each => each.callId === callId));
+  }
+
+  /**
+   * Who holds the screen against a screen-changing step of `requestId`:
+   * another open request while one of its executors runs or a modal it
+   * opened is open (`{ requestId, title }`), else the editor with a modal
+   * open (`{ modal }`, its kind) or unsaved changes on the page
+   * (`{ unsaved: true }`). `null` when nobody does.
+   *
+   * @param {string} requestId
+   * @returns {object|null}
+   */
+  function getHolder(requestId) {
+    const other = owner => (owner !== requestId) && getOpenChat(owner);
+    for (const owner of executors.value.values()) {
+      if (other(owner)) {
+        return byRequest(owner);
+      }
+    }
+    for (const entry of useModalStore().stack) {
+      if (isWindow(entry)) {
+        continue;
+      }
+      const owner = modalOwners.value.get(entry.id);
+      if (owner && getOpenChat(owner)) {
+        if (owner === requestId) {
+          continue;
+        }
+        return byRequest(owner);
+      }
+      return { modal: entry.screen?.kind || 'other' };
+    }
+    if (window.apos.adminBar?.hasUnsavedChanges?.()) {
+      return { unsaved: true };
+    }
+    return null;
+
+    function byRequest(owner) {
+      return {
+        requestId: owner,
+        title: getOpenChat(owner).title || null
+      };
+    }
+  }
+
+  // The chat whose open request is `requestId`
+  function getOpenChat(requestId) {
+    return chats.value.find(chat => chat.openRequest?._id === requestId) || null;
+  }
+
+  // The holder as the model reads it in a refusal
+  function describeHolder(holder) {
+    if (holder.requestId) {
+      return `another chat${holder.title ? ` ("${holder.title}")` : ''} is changing it`;
+    }
+    if (holder.modal) {
+      return `the user has a modal open over the page (${holder.modal})`;
+    }
+    return 'the user has unsaved changes on the page';
+  }
+
+  function setBrowserStep(requestId, step) {
+    browserSteps.value = {
+      ...browserSteps.value,
+      [requestId]: step
+    };
+  }
+
+  function clearBrowserStep(requestId, callId) {
+    if (browserSteps.value[requestId]?.callId !== callId) {
+      return;
+    }
+    const { [requestId]: ignored, ...rest } = browserSteps.value;
+    browserSteps.value = rest;
   }
 
   function setChat(chat) {
@@ -453,9 +722,9 @@ export const useAssistantStore = defineStore('assistant', () => {
   }
 
   /**
-   * Stops the chat's running request. Any browser tab may stop it; a stop
-   * the server refuses means the view was stale, and reading the records
-   * again shows what is true now.
+   * Stops the chat's open request, running or waiting. Any browser tab may
+   * stop it; a stop the server refuses means the view was stale, and
+   * reading the records again shows what is true now.
    *
    * @param {string} id
    */
@@ -464,6 +733,30 @@ export const useAssistantStore = defineStore('assistant', () => {
       await apos.http.post(`${getAction()}/chat/${id}/stop`, { body: {} });
     } catch (e) {
       // Not running any more, or deleted: the records say which
+      if (![ 404, 409 ].includes(e.status)) {
+        report(e);
+      }
+    }
+    await loadChats();
+    await loadChat(id);
+  }
+
+  /**
+   * Makes this browser tab the owner of the chat's waiting request, with
+   * its screen: from then on it answers the request's asks. A refusal
+   * means the view was stale: the records are read again.
+   *
+   * @param {string} id
+   */
+  async function continueHere(id) {
+    try {
+      await apos.http.post(`${getAction()}/chat/${id}/continue-here`, {
+        body: {
+          tabId: getTabId(),
+          screen: getScreen()
+        }
+      });
+    } catch (e) {
       if (![ 404, 409 ].includes(e.status)) {
         report(e);
       }
@@ -576,8 +869,10 @@ export const useAssistantStore = defineStore('assistant', () => {
     drafts,
     refusals,
     progress,
+    browserSteps,
     getChat,
     getOwner,
+    getBrowserStep,
     start,
     resume,
     catchUp,
@@ -589,6 +884,7 @@ export const useAssistantStore = defineStore('assistant', () => {
     remove,
     send,
     stop,
+    continueHere,
     retry,
     setDraft
   };

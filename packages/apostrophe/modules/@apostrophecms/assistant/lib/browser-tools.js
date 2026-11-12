@@ -6,18 +6,27 @@
 // (`apos.assistant.browserTools` in the admin UI) and answers with the
 // outcome and the screen after it, which continues the run.
 //
-// Every result has a shared half: `answered` (a browser reported; `false`
+// Every result has a shared half: `answered` (the outcome is known; `false`
 // only when the ask was set aside unanswered), `executed` (the browser
 // performed the action), `reason` (why it didn't) and `screen` (the screen
 // after the action, as the model reads it), the tool's own fields beside it.
+//
+// A hidden browser tab runs nothing. While the owning browser tab is
+// hidden, the call is answered on the server with the tool's `whenHidden`
+// and the stored screen, which nobody changes meanwhile; the ask carries
+// the same answer for a browser tab that went hidden after it was asked.
 
 const SCREEN_EFFECTS = [ 'keeps', 'changes' ];
 const REASON_MAX = 300;
+const HIDDEN = {
+  executed: false,
+  reason: 'the user is in another browser tab'
+};
 
 const SHARED = {
   answered: {
     type: 'boolean',
-    description: 'A browser reported the outcome; false: set aside unanswered, outcome unknown'
+    description: 'The outcome is known; false: set aside unanswered, outcome unknown'
   },
   executed: {
     type: 'boolean',
@@ -58,9 +67,13 @@ module.exports = (self) => {
      *   returns the arguments the executor receives (the model's, when
      *   there is no `prepare`). Throws `aiToolError` to refuse the call
      *   with a message the model reads.
+     * @param {object} [tool.whenHidden] The tool's answer while the owning
+     *   browser tab is hidden, beside the stored screen: by default
+     *   `executed: false` with the reason.
      */
     addBrowserTool({
-      name, description, label, screenEffect, input, schema = {}, prepare
+      name, description, label, screenEffect, input, schema = {}, prepare,
+      whenHidden = HIDDEN
     }) {
       if (!self.options.enabled) {
         return;
@@ -68,6 +81,11 @@ module.exports = (self) => {
       if (!SCREEN_EFFECTS.includes(screenEffect)) {
         throw new Error(
           `The browser tool "${name}" needs a screenEffect: ${SCREEN_EFFECTS.join(' or ')}.`
+        );
+      }
+      if (typeof whenHidden?.executed !== 'boolean') {
+        throw new Error(
+          `The browser tool "${name}" answers "executed" when its browser tab is hidden.`
         );
       }
       self.apos.ai.addTool({
@@ -90,10 +108,23 @@ module.exports = (self) => {
           if (_context.input !== undefined) {
             return _context.input;
           }
+          const prepared = prepare ? await prepare(req, args) : args;
+          const { screen } = await self.requests.findOne({
+            _id: self.apos.harness.getDoor(req).requestId,
+            ownerId: self.getOwnerId(req)
+          }, { projection: { screen: 1 } });
+          if (screen.visible === false) {
+            return {
+              ...whenHidden,
+              answered: true,
+              screen: self.renderScreen(screen)
+            };
+          }
           throw self.apos.error('aiInput', `waiting for the browser to run ${name}`, {
             kind: 'browser',
             screenEffect,
-            args: prepare ? await prepare(req, args) : args
+            args: prepared,
+            whenHidden
           });
         }
       });

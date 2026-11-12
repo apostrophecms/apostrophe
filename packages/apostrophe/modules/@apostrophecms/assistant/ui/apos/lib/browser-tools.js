@@ -2,12 +2,15 @@
 // assistant's own (see the server's lib/standard-browser-tools.js, which
 // checks each call and hands its arguments here).
 //
-// An executor is `async (args, { screen, request, ask }) => result`: `args`
-// as the server's tool prepared them, `screen` as the editor sees it now,
-// `request` and `ask` the records being answered. It acts on the live page
-// and returns `{ executed, reason?, ...its own fields }`; `null` leaves the
-// ask to the page that loads next. Executors wait on the page's own state,
-// bounded, never on time passing.
+// An executor is `async (args, { screen, request, ask, release }) => result`:
+// `args` as the server's tool prepared them, `screen` as the editor sees it
+// now, `request` and `ask` the records being answered. It acts on the live
+// page and returns `{ executed, reason?, ...its own fields }`; `null` leaves
+// the ask to the page that loads next. Executors act one at a time: one that
+// is done acting and only waits on the editor (to close an editor it
+// opened, say) calls `release(status)` first, so the next one may act, and
+// the chat reads `status`, an i18n key, meanwhile. Executors wait on the
+// page's own state, bounded, never on time passing.
 
 import { watch } from 'vue';
 import { pinia } from 'Modules/@apostrophecms/ui/lib/vue';
@@ -86,13 +89,13 @@ function navigate({ url }, { ask }) {
 
 async function openEditor({
   _id, type, widgetId, until
-}) {
+}, { release }) {
   if (widgetId) {
     return openWidgetEditor({
       _id,
       widgetId,
       until
-    });
+    }, release);
   }
   const opened = await open(
     item => item.props?.docId === _id,
@@ -101,7 +104,7 @@ async function openEditor({
       _id
     })
   );
-  return finish(opened, until);
+  return finish(opened, until, release);
 }
 
 // Edit mode, then the widgets the page holds selected by the multi-select
@@ -243,7 +246,7 @@ function isOfDocument(el, _id) {
 // The widget selected alone, then its editor opened by its area
 async function openWidgetEditor({
   _id, widgetId, until
-}) {
+}, release) {
   const shown = await showWidgets({
     _id,
     widgetIds: [ widgetId ]
@@ -268,7 +271,7 @@ async function openWidgetEditor({
     item => item.props?.modelValue?._id === widgetId,
     () => apos.bus.$emit('widget-edit', { widgetId })
   );
-  return finish(opened, until);
+  return finish(opened, until, release);
 }
 
 // Opens a modal with `launch` and resolves the stack item `match` picks
@@ -299,7 +302,7 @@ function report(e) {
 
 // Answers once the modal is open, or with `until: 'closed'` once it is
 // closed, saying whether it was saved
-async function finish(item, until) {
+async function finish(item, until, release) {
   if (!item) {
     return {
       executed: false,
@@ -309,6 +312,7 @@ async function finish(item, until) {
   if (until !== 'closed') {
     return { executed: true };
   }
+  release('apostrophe:assistantWaitingEditor');
   const result = await new Promise((resolve) => {
     const onResolved = (modal) => {
       if (modal.id === item.id) {

@@ -59,6 +59,7 @@ describe('Assistant: module and options', function () {
         action: '/api/v1/@apostrophecms/assistant',
         usageDisplay: 'tokens',
         modelDisplay: false,
+        screenWait: 15000,
         alias: 'assistant'
       });
       const anonymous = await apos.template.getBodyData(apos.task.getAnonReq());
@@ -122,6 +123,7 @@ describe('Assistant: module and options', function () {
       [ { enabled: 'yes' }, /enabled option must be a boolean/ ],
       [ { modelDisplay: 1 }, /modelDisplay option must be a boolean/ ],
       [ { maxSteps: 0 }, /maxSteps option must be a positive integer/ ],
+      [ { screenWait: 1.5 }, /screenWait option must be a positive integer/ ],
       [ { usageDisplay: 'cost' }, /usageDisplay option must be one of: tokens, none/ ],
       [ { titleEffort: '' }, /titleEffort option must be the name of an effort level/ ]
     ];
@@ -136,10 +138,19 @@ describe('Assistant: module and options', function () {
       /The browser tool "t_show" needs a screenEffect: keeps or changes/
     );
   });
+
+  it('refuses a browser tool whose hidden answer says nothing of "executed"', async function () {
+    await assert.rejects(
+      withApos({ enabled: true }, () => {}, {
+        modules: browserToolModule('keeps', { whenHidden: { reason: 'hidden' } })
+      }),
+      /The browser tool "t_show" answers "executed" when its browser tab is hidden/
+    );
+  });
 });
 
 // A module adding a browser tool with this screen effect
-function browserToolModule(screenEffect) {
+function browserToolModule(screenEffect, extra = {}) {
   return {
     'assistant-test-tools': {
       init(self) {
@@ -150,7 +161,8 @@ function browserToolModule(screenEffect) {
           input: {
             type: 'object',
             properties: {}
-          }
+          },
+          ...extra
         });
       }
     }

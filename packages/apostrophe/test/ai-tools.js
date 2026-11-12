@@ -624,6 +624,8 @@ describe('AI tools', function() {
     let readGate = null;
     // [ [ 'before' | 'after', toolName, resultOrError ] ]
     const toolEvents = [];
+    // Set by a test: what an afterToolCall handler makes of a result
+    let amendResult = null;
     const usageRecords = [];
     // [ toolName, req.aposAiToolCall ] per tracked handler run
     const stamps = [];
@@ -894,6 +896,11 @@ describe('AI tools', function() {
                 '@apostrophecms/ai:afterToolCall': {
                   record(req, payload) {
                     toolEvents.push([ 'after', payload.tool.name, payload.result ?? payload.error ]);
+                  },
+                  amend(req, payload) {
+                    if (amendResult && (payload.result !== undefined)) {
+                      payload.result = amendResult(payload.result);
+                    }
                   }
                 },
                 '@apostrophecms/ai:usage': {
@@ -926,6 +933,7 @@ describe('AI tools', function() {
       toolEvents.length = 0;
       usageRecords.length = 0;
       readGate = null;
+      amendResult = null;
     });
 
     it('runs the loop to completion with transcript, steps and aggregated usage', async function() {
@@ -971,6 +979,26 @@ describe('AI tools', function() {
         [ 'before', 'echo' ],
         [ 'after', 'echo', { value: 'pricing' } ]
       ]);
+    });
+
+    it('lets an afterToolCall handler amend the result the model reads', async function() {
+      const req = apos.task.getReq();
+      amendResult = result => ({
+        ...result,
+        note: 'added'
+      });
+      chatScript = [
+        toolTurn(toolCall('c1', 'echo', { value: 'pricing' })),
+        textTurn('all done')
+      ];
+      const result = await apos.ai.generate(req, 'find it', { tools: [ 'echo' ] });
+      const amended = {
+        value: 'pricing',
+        note: 'added'
+      };
+      assert.deepEqual(result.steps[0].result, amended);
+      assert.deepEqual(result.messages[2].content[0].output, amended);
+      assert.deepEqual(chatCalls[1].messages[2].content[0].output, amended);
     });
 
     it('sums a share over the turns that reported it', async function() {

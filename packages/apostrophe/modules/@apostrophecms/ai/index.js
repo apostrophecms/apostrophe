@@ -583,7 +583,10 @@ module.exports = {
        * `usage` once per provider response — retried and rejected ones
        * included, every one is billed — with that response's own token
        * counts (see reportUsage in lib/adapter-call.js). `afterGenerate`
-       * fires only when the call returns; `usage` is the billing record.
+       * fires only when the call returns; `usage` is the billing record. An
+       * `afterToolCall` handler may replace the `result` of a call that
+       * succeeded: the model reads the replacement, which is not validated
+       * again.
        *
        * @param {object} req The caller's request object, carried into events,
        *   the adapter and every tool handler — the core never invents auth.

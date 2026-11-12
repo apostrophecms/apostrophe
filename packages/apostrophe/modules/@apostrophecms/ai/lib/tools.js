@@ -202,10 +202,6 @@ module.exports = (self) => {
           payload.result = await self.executeToolCall(
             callReq, tool, call, handlerContext
           );
-          outcomes[index] = {
-            toolCall: call,
-            result: payload.result
-          };
         } catch (e) {
           if (e?.name === 'aiInput' && depth === 1) {
             payload.suspended = e.data ?? null;
@@ -246,6 +242,13 @@ module.exports = (self) => {
           }
         }
         await self.emit('afterToolCall', req, payload);
+        // After the event: its handlers may amend the result the model reads
+        if (!outcomes[index]) {
+          outcomes[index] = {
+            toolCall: call,
+            result: payload.result
+          };
+        }
         const end = { phase: 'end' };
         if (payload.error !== undefined) {
           end.error = payload.error;

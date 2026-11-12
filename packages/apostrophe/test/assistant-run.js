@@ -520,9 +520,23 @@ describe('Assistant: chats and the run', function () {
         script = askScript(tool);
         await runToEnd(req, chat, 'tab-1', 'Ask');
 
-        const moved = await apos.assistant.continueHere(req, chat._id, { tabId: 'tab-2' });
+        await assert.rejects(apos.assistant.continueHere(req, chat._id, {
+          tabId: 'tab-2',
+          screen: { tabId: 'tab-1' }
+        }), { name: 'invalid' });
+        const moved = await apos.assistant.continueHere(req, chat._id, {
+          tabId: 'tab-2',
+          screen: {
+            tabId: 'tab-2',
+            url: '/elsewhere'
+          }
+        });
         assert.equal(moved.tabId, 'tab-2');
         assert.equal(moved.status, 'waiting');
+        // The new browser tab's screen is the request's
+        assert.equal(moved.screen.tabId, 'tab-2');
+        assert.equal(moved.screen.url, '/elsewhere');
+        assert.equal(moved.screen.visible, true);
         assert.deepEqual((await apos.assistant.getChat(req, chat._id)).openRequest, {
           _id: moved._id,
           tabId: 'tab-2',

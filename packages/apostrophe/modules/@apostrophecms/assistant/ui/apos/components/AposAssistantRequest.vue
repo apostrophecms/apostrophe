@@ -151,14 +151,23 @@ const store = useAssistantStore();
 const { usageDisplay, modelDisplay } = apos.modules['@apostrophecms/assistant'];
 const retrying = ref(false);
 
-const running = computed(() => [ 'running', 'stopping' ].includes(props.request.status));
-const stopping = computed(() => props.request.status === 'stopping');
 const chat = computed(() => store.getChat(props.request.chatId));
+// A browser step this browser tab serves for it: the request works on, on
+// the editor's screen
+const browserStep = computed(() => ((chat.value?.openRequest?._id === props.request._id)
+  ? store.getBrowserStep(chat.value)
+  : null));
+const running = computed(() => [ 'running', 'stopping' ].includes(props.request.status) ||
+  Boolean(browserStep.value));
+const stopping = computed(() => props.request.status === 'stopping');
 
 // The latest step's label replaces the one before it
 const status = computed(() => {
   if (stopping.value) {
     return $t('apostrophe:assistantStopping');
+  }
+  if (browserStep.value) {
+    return getBrowserStatus(browserStep.value);
   }
   const progress = store.progress[props.request._id];
   if (progress?.retrying) {
@@ -268,6 +277,25 @@ function stop() {
   if (!stopping.value) {
     store.stop(props.request.chatId);
   }
+}
+
+// What a browser step waits on, or the step itself
+function getBrowserStatus(step) {
+  const { holder } = step;
+  if ((step.state === 'hold') && holder.requestId) {
+    return $t('apostrophe:assistantWaitingChat', {
+      title: holder.title || $t('apostrophe:assistantNewChat')
+    });
+  }
+  if (step.state === 'hold') {
+    return $t(holder.modal ? 'apostrophe:assistantWaitingModal' : 'apostrophe:assistantWaitingUnsaved');
+  }
+  if ((step.state === 'released') && step.status) {
+    return $t(step.status);
+  }
+  return step.label
+    ? `${$t(step.label)}...`
+    : $t('apostrophe:assistantThinking');
 }
 
 async function onAction(name) {

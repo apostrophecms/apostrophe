@@ -156,10 +156,10 @@ module.exports = (self) => {
     },
 
     /**
-     * Stops a chat's running request: the request reads `stopping` until
-     * its run winds down and ends `stopped`. Any browser tab of the owner
-     * may stop it. Refused with `notRunning` when no request runs (a
-     * request waiting for an answer is skipped instead).
+     * Stops a chat's open request: a running one reads `stopping` until its
+     * run winds down and ends `stopped`; one waiting for an answer ends
+     * `stopped` at once, its asks unanswered. Any browser tab of the owner
+     * may stop it. Refused with `notRunning` when no request is open.
      *
      * @param {object} req
      * @param {string} chatId
@@ -168,6 +168,19 @@ module.exports = (self) => {
     async stop(req, chatId) {
       const chat = await self.reconcileChat(req, await self.getChat(req, chatId));
       const open = chat.openRequest;
+      if (open?.status === 'waiting') {
+        try {
+          return await self.endWaiting(req, chat, await self.getRequest(req, open._id), {
+            status: 'stopped'
+          });
+        } catch (e) {
+          // Answered meanwhile: it runs now
+          if (e.data?.reason !== 'notWaiting') {
+            throw e;
+          }
+          return self.stop(req, chatId);
+        }
+      }
       const { matchedCount } = open
         ? await self.chats.updateOne({
           _id: chat._id,

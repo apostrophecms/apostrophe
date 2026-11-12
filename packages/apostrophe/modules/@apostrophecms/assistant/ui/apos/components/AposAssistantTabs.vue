@@ -17,13 +17,30 @@
         :data-apos-chat-id="tab.id"
       >
         <button
+          v-apos-tooltip="tab.waiting"
           type="button"
           class="apos-assistant-tabs__select"
           :aria-current="tab.active ? 'true' : undefined"
           @click="store.activate(tab.id)"
         >
+          <!-- Paused until the editor comes to it or the screen is free -->
+          <svg
+            v-if="tab.waiting"
+            class="apos-assistant-tabs__icon apos-assistant-tabs__icon--waiting"
+            viewBox="0 0 24 24"
+            width="12"
+            height="12"
+            role="img"
+            :aria-label="tab.waiting"
+            data-apos-test="assistant-tab-waiting"
+          >
+            <path
+              d="M8 5h3v14H8zM13 5h3v14h-3z"
+              fill="currentColor"
+            />
+          </svg>
           <AposAssistantThinking
-            v-if="tab.thinking"
+            v-else-if="tab.thinking"
             :label="$t('apostrophe:assistantRunning')"
           />
           <AposIndicator
@@ -98,13 +115,29 @@ const menuButton = ref(null);
 
 const tabs = computed(() => store.tabs.map(id => {
   const chat = store.getChat(id);
+  const step = store.getBrowserStep(chat);
   return {
     id,
     title: getTitle(id, chat),
     active: id === store.activeId,
-    thinking: [ 'running', 'stopping' ].includes(chat?.openRequest?.status)
+    thinking: [ 'running', 'stopping' ].includes(chat?.openRequest?.status) || Boolean(step),
+    waiting: getWaiting(step)
   };
 }));
+
+// What a chat tab's browser step waits on: the editor's attention, with what
+// it will do once they come, or the screen
+function getWaiting(step) {
+  if (step?.state === 'attention') {
+    return step.label
+      ? $t('apostrophe:assistantWaitingForYouTo', { action: $t(step.label) })
+      : $t('apostrophe:assistantWaitingForYou');
+  }
+  if (step?.state === 'hold') {
+    return $t('apostrophe:assistantWaiting');
+  }
+  return null;
+}
 
 function closeMenu({ focus }) {
   menuOpen.value = false;
@@ -198,6 +231,10 @@ function getTitle(id, chat) {
       outline: 1px solid var(--a-primary);
       outline-offset: -2px;
     }
+  }
+
+  .apos-assistant-tabs__icon--waiting {
+    color: var(--a-warning-dark);
   }
 
   .apos-assistant-tabs__icon {

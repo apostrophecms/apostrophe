@@ -127,6 +127,13 @@ export function useScreen() {
   }
 }
 
-function isWindow(entry) {
+/**
+ * Whether a modal stack entry is a window, beside what the editor is looking
+ * at rather than over it.
+ *
+ * @param {object} entry
+ * @returns {boolean}
+ */
+export function isWindow(entry) {
   return (entry.stacking === 'top') || (entry.overlay === 'none');
 }

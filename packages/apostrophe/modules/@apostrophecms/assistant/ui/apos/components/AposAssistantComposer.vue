@@ -7,6 +7,7 @@
     <AposAssistantDock
       v-if="dock"
       v-bind="dock"
+      @action="onDockAction"
     />
     <div class="apos-assistant-composer__shell">
       <textarea
@@ -69,13 +70,15 @@ const owner = computed(() => store.getOwner(chat.value));
 const canSend = computed(() => !sending.value &&
   !!draft.value.trim() &&
   (owner.value === 'none'));
-// While the chat runs, an empty composer stops it, in any browser tab
-const running = computed(() => [ 'running', 'stopping' ].includes(chat.value?.openRequest?.status));
+// While the chat runs, an empty composer stops it, in any browser tab, and
+// so it does while a browser step works on this browser tab's screen
+const running = computed(() => [ 'running', 'stopping' ].includes(chat.value?.openRequest?.status) ||
+  Boolean(store.getBrowserStep(chat.value)));
 const stopping = computed(() => chat.value?.openRequest?.status === 'stopping');
 const stopShown = computed(() => running.value && !draft.value.trim());
 
 // A refused send says why; a chat running in another browser tab says it
-// can only be followed here
+// can only be followed here, and one waiting there offers to continue here
 const dock = computed(() => {
   const refusal = store.refusals[props.chatId];
   if (refusal) {
@@ -90,6 +93,14 @@ const dock = computed(() => {
       tone: 'general',
       title: 'apostrophe:assistantOtherTab',
       text: 'apostrophe:assistantOtherTabText'
+    };
+  }
+  if ((owner.value === 'elsewhere') && (open.status === 'waiting')) {
+    return {
+      tone: 'warning',
+      title: 'apostrophe:assistantWaitingOtherTab',
+      text: 'apostrophe:assistantWaitingOtherTabText',
+      action: 'apostrophe:assistantContinueHere'
     };
   }
   return null;
@@ -128,6 +139,11 @@ function stop() {
   if (!stopping.value) {
     store.stop(props.chatId);
   }
+}
+
+// The dock's one action: Continue here
+function onDockAction() {
+  store.continueHere(props.chatId);
 }
 
 async function resize() {

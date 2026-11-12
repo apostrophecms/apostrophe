@@ -18,7 +18,10 @@ module.exports = (self) => {
         type: 'object',
         properties: {},
         additionalProperties: false
-      }
+      },
+      // Nobody changes the screen of a hidden browser tab: the stored one
+      // is the screen as it is now
+      whenHidden: { executed: true }
     },
     {
       name: 'navigate',
