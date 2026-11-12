@@ -246,7 +246,7 @@ module.exports = (self) => {
     },
 
     newRequest(chat, {
-      _id, sequence, tabId, message, screen, retryOf
+      _id, sequence, tabId, message, mentions, screen, retryOf
     }) {
       const now = new Date();
       return {
@@ -257,6 +257,7 @@ module.exports = (self) => {
         sequence,
         tabId,
         message,
+        ...(mentions?.length && { mentions }),
         screen,
         ...(retryOf && { retryOf }),
         status: 'running',

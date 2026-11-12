@@ -822,6 +822,19 @@ export const useAssistantStore = defineStore('assistant', () => {
     };
   }
 
+  /**
+   * Pages, pieces and images matching the letters typed after `@`.
+   *
+   * @param {string} letters
+   * @returns {Promise<object[]>} Each `{ _id, title, type, kind, label }`.
+   */
+  async function findMentions(letters) {
+    const { results } = await apos.http.get(`${getAction()}/mention`, {
+      qs: { q: letters }
+    });
+    return results;
+  }
+
   function setDraft(id, text) {
     drafts.value[id] = text;
     delete refusals.value[id];
@@ -886,6 +899,7 @@ export const useAssistantStore = defineStore('assistant', () => {
     stop,
     continueHere,
     retry,
+    findMentions,
     setDraft
   };
 });

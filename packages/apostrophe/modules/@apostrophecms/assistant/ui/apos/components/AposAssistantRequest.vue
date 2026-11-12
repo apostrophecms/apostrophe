@@ -18,7 +18,14 @@
         class="apos-assistant-request__message"
         data-apos-test="assistant-request-message"
       >
-        {{ request.message }}
+        <!-- eslint-disable vue/no-v-html -- sanitized on the server -->
+        <div
+          ref="text"
+          class="apos-assistant-request__text"
+          @click="onTextClick"
+          v-html="request.messageHtml"
+        />
+        <!-- eslint-enable vue/no-v-html -->
         <button
           v-if="running"
           type="button"
@@ -96,9 +103,10 @@
 
 <script setup>
 import {
-  computed, inject, ref
+  computed, inject, nextTick, onMounted, ref, watch
 } from 'vue';
 import { useAssistantStore } from '../stores/assistant.js';
+import { createChipIcon } from '../lib/chip.js';
 
 // One message and what came of it: the request that runs it, or the
 // latest retry when it failed before. The message stays pinned at the top
@@ -150,6 +158,7 @@ const $t = inject('i18n');
 const store = useAssistantStore();
 const { usageDisplay, modelDisplay } = apos.modules['@apostrophecms/assistant'];
 const retrying = ref(false);
+const text = ref(null);
 
 const chat = computed(() => store.getChat(props.request.chatId));
 // A browser step this browser tab serves for it: the request works on, on
@@ -309,6 +318,33 @@ async function onAction(name) {
     retrying.value = false;
   }
 }
+
+// The server's chips get their icons once the message is in the page
+onMounted(addChipIcons);
+watch(() => props.request.messageHtml, async () => {
+  await nextTick();
+  addChipIcons();
+});
+
+function addChipIcons() {
+  for (const chip of text.value?.querySelectorAll('.apos-assistant-chip') || []) {
+    if (!chip.querySelector('.apos-assistant-chip__icon')) {
+      chip.prepend(createChipIcon(chip.dataset.kind));
+    }
+  }
+}
+
+// A mention chip of a document without a page opens its editor; one with a
+// page is a link to it
+function onTextClick(event) {
+  const chip = event.target.closest('button.apos-assistant-chip');
+  if (chip) {
+    apos.doc.edit({
+      type: chip.dataset.type,
+      _id: chip.dataset.id
+    });
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -376,7 +412,6 @@ async function onAction(name) {
       border-radius: var(--a-border-radius-large);
       background-color: var(--a-background-primary);
       line-height: 1.45;
-      white-space: pre-wrap;
       overflow-wrap: anywhere;
     }
   }
@@ -467,6 +502,8 @@ async function onAction(name) {
     opacity: 0;
   }
 
+  // Markdown, the message's and the reply's
+  .apos-assistant-request__text,
   .apos-assistant-request__reply {
     @include type-label;
 

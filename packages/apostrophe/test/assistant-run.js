@@ -475,6 +475,108 @@ describe('Assistant: chats and the run', function () {
     });
   });
 
+  describe('mentions', function () {
+    let pricing;
+    let chart;
+    let guest;
+
+    before(async function () {
+      const req = apos.task.getReq({ mode: 'draft' });
+      pricing = await apos.modules['assistant-note'].insert(req, {
+        title: 'Pricing notes'
+      });
+      chart = await apos.image.insert(req, {
+        title: 'Pricing chart'
+      });
+      guest = await t.createUser(apos, 'guest', { username: 'mention-guest' });
+    });
+
+    it('finds pages, pieces and images by the start of their words, only those the user may read', async function () {
+      const req = userReq(editor);
+      const found = await apos.assistant.findMentions(req, 'pric');
+      assert.deepEqual(
+        found.map(doc => [ doc._id, doc.kind ]).sort(),
+        [ [ chart._id, 'image' ], [ pricing._id, 'piece' ] ].sort()
+      );
+      assert.equal(
+        found.find(doc => doc._id === chart._id).label,
+        apos.image.options.label
+      );
+      const home = await apos.assistant.findMentions(req, 'hom');
+      assert.deepEqual(home.map(doc => [ doc.kind, doc.label ]), [ [ 'page', 'apostrophe:page' ] ]);
+      // Nothing typed yet: the latest updated
+      const latest = await apos.assistant.findMentions(req, '');
+      assert(latest.some(doc => doc._id === chart._id));
+      // Never a one-of-a-kind document
+      assert.deepEqual(await apos.assistant.findMentions(req, 'glob'), []);
+      assert.deepEqual(await apos.assistant.findMentions(req, 'zzqx'), []);
+      assert.deepEqual(await apos.assistant.findMentions(userReq(guest), 'pric'), []);
+
+      const jar = await t.loginAs(apos, 'editor');
+      const { results } = await apos.http.get('/api/v1/@apostrophecms/assistant/mention', {
+        jar,
+        qs: { q: 'char' }
+      });
+      assert.deepEqual(results.map(doc => doc._id), [ chart._id ]);
+    });
+
+    it('keeps the mentions the user may read, with their own titles, and the model reads them', async function () {
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      const message = `Compare @[Old \\] name](image:${pricing._id}) with ` +
+        `@[Ghost](page:nope:en:draft), then @[Pricing notes](piece:${pricing._id})`;
+      const request = await runToEnd(req, chat, 'tab-1', message);
+      const token = `@[Pricing notes](piece:${pricing._id})`;
+      assert.equal(request.message, `Compare ${token} with Ghost, then ${token}`);
+      assert.deepEqual(request.mentions, [ {
+        _id: pricing._id,
+        type: 'assistant-note',
+        title: 'Pricing notes',
+        locale: 'en'
+      } ]);
+      const [ user ] = calls[0].messages.filter(each => each.role === 'user');
+      const texts = user.content.map(part => part.text);
+      assert.equal(texts.at(-2), request.message);
+      assert.match(texts.at(-1), /^The message mentions these documents/);
+      assert(texts.at(-1).endsWith(JSON.stringify(request.mentions)));
+      // The chat's title reads the mention, not its token
+      assert.equal((await apos.assistant.getChat(req, chat._id)).title,
+        'Compare @Pricing notes with Ghost, then @Pricing notes');
+
+      const { message: guestMessage, mentions } = await apos.assistant
+        .verifyMentions(userReq(guest), token);
+      assert.equal(guestMessage, 'Pricing notes');
+      assert.deepEqual(mentions, []);
+    });
+
+    it('renders a message as Markdown, its mentions as chips that no text can make', async function () {
+      const req = userReq(editor);
+      const home = await apos.page.find(req, { slug: '/' }).toObject();
+      const typed = `**Bold** @[x](page:${home._id}), @[y](piece:${pricing._id}) and ` +
+        '@[Ghost](page:nope)\n<a class="apos-assistant-chip" href="https://x.test">fake</a> ' +
+        '\uE0000\uE001';
+      const { message, mentions } = await apos.assistant.verifyMentions(req, typed);
+      assert.equal(mentions.find(each => each._id === home._id).url, home._url);
+      const html = apos.assistant.renderMarkdown(message, { mentions });
+      assert(html.includes('<strong>Bold</strong>'));
+      // A page is a link to it, a piece without a page a button for its editor
+      assert(html.includes('<a class="apos-assistant-chip apos-assistant-chip--link" ' +
+        `data-kind="page" title="Home" href="${home._url}">`));
+      assert(html.includes(`data-id="${pricing._id}" data-type="assistant-note">`));
+      assert(html.includes('and Ghost'));
+      assert.equal(html.match(/apos-assistant-chip--link/g).length, 2);
+      assert(!/[\uE000\uE001]/.test(html));
+      assert.equal(
+        apos.assistant.renderRequest({
+          message,
+          mentions,
+          messages: []
+        }).messageHtml,
+        html
+      );
+    });
+  });
+
   describe('asks', function () {
     it('waits on a browser ask that only the owning browser tab answers', async function () {
       const req = userReq(editor);

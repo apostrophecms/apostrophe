@@ -117,7 +117,10 @@ module.exports = {
             chat,
             requests: requests.map(self.renderRequest)
           };
-        })
+        }),
+        mention: route(async (req) => ({
+          results: await self.findMentions(req, req.query.q)
+        }))
       },
       post: {
         chat: route(async (req) => ({
@@ -204,6 +207,7 @@ module.exports = {
       ...require('./lib/reconcile')(self),
       ...require('./lib/events')(self),
       ...require('./lib/markdown')(self),
+      ...require('./lib/mentions')(self),
       ...require('./lib/render')(self),
       // Only once active: a site without the assistant sends nothing of it
       getBrowserData(req) {
