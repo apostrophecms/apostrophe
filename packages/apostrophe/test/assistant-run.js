@@ -560,11 +560,11 @@ describe('Assistant: chats and the run', function () {
       const html = apos.assistant.renderMarkdown(message, { mentions });
       assert(html.includes('<strong>Bold</strong>'));
       // A page is a link to it, a piece without a page a button for its editor
-      assert(html.includes('<a class="apos-assistant-chip apos-assistant-chip--link" ' +
+      assert(html.includes('<a class="apos-assistant-chip apos-assistant-chip--action" ' +
         `data-kind="page" title="Home" href="${home._url}">`));
       assert(html.includes(`data-id="${pricing._id}" data-type="assistant-note">`));
       assert(html.includes('and Ghost'));
-      assert.equal(html.match(/apos-assistant-chip--link/g).length, 2);
+      assert.equal(html.match(/apos-assistant-chip--action/g).length, 2);
       assert(!/[\uE000\uE001]/.test(html));
       assert.equal(
         apos.assistant.renderRequest({

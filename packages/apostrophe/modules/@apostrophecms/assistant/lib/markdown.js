@@ -93,7 +93,7 @@ module.exports = (self) => {
       return escape(title);
     }
     const label = `<span class="apos-assistant-chip__title">${escape(mention.title)}</span>`;
-    const attributes = 'class="apos-assistant-chip apos-assistant-chip--link" ' +
+    const attributes = 'class="apos-assistant-chip apos-assistant-chip--action" ' +
       `data-kind="${escape(kind)}" ` +
       `title="${escape(mention.title)}"`;
     return mention.url

@@ -98,7 +98,7 @@ const icon = computed(() => getChipIcon(props.kind));
 
   // In a sent message: a link to the document's page, or a button that
   // opens its editor
-  .apos-assistant-chip--link {
+  .apos-assistant-chip--action {
     font-family: inherit;
     text-decoration: none;
     cursor: pointer;
