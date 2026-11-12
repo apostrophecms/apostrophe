@@ -1,6 +1,7 @@
 <template>
   <span
     class="apos-assistant-chip"
+    :class="{ 'apos-assistant-chip--action': actionLabel }"
     :title="title"
     data-apos-test="assistant-chip"
     :data-kind="kind"
@@ -36,7 +37,18 @@
         />
       </svg>
     </button>
-    <span class="apos-assistant-chip__title">{{ title }}</span>
+    <button
+      v-if="actionLabel"
+      type="button"
+      class="apos-assistant-chip__title apos-assistant-chip__action"
+      :aria-label="actionLabel"
+      data-apos-test="assistant-chip-action"
+      @click="emit('action', $event)"
+    >{{ title }}</button>
+    <span
+      v-else
+      class="apos-assistant-chip__title"
+    >{{ title }}</span>
   </span>
 </template>
 
@@ -61,9 +73,14 @@ const props = defineProps({
   removeLabel: {
     type: String,
     default: null
+  },
+  // A chip that acts on a click names what it does; its title is the button
+  actionLabel: {
+    type: String,
+    default: null
   }
 });
-const emit = defineEmits([ 'remove' ]);
+const emit = defineEmits([ 'remove', 'action' ]);
 
 const icon = computed(() => getChipIcon(props.kind));
 </script>
@@ -96,8 +113,9 @@ const icon = computed(() => getChipIcon(props.kind));
     height: 12px;
   }
 
-  // In a sent message: a link to the document's page, or a button that
-  // opens its editor
+  // A chip that acts: in a sent message or a reply, a link to the
+  // document's page or a button that opens its editor; in the composer, a
+  // chip whose title is a button
   .apos-assistant-chip--action {
     font-family: inherit;
     text-decoration: none;
@@ -149,6 +167,23 @@ const icon = computed(() => getChipIcon(props.kind));
     overflow: hidden;
     min-width: 0;
     text-overflow: ellipsis;
+  }
+
+  .apos-assistant-chip__action {
+    @include apos-button-reset();
+
+    & {
+      color: inherit;
+      font: inherit;
+      line-height: inherit;
+      cursor: pointer;
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--a-primary);
+      outline-offset: 2px;
+      border-radius: 2px;
+    }
   }
 
   .apos-assistant-chip:hover .apos-assistant-chip__remove,

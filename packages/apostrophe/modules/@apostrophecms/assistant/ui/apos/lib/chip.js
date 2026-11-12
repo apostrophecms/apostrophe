@@ -52,6 +52,7 @@ export function createChip({
   chip.className = 'apos-assistant-chip';
   chip.contentEditable = 'false';
   chip.dataset.aposMention = '';
+  chip.dataset.aposTest = 'assistant-chip';
   chip.dataset.id = id;
   chip.dataset.kind = kind;
   chip.dataset.title = title;

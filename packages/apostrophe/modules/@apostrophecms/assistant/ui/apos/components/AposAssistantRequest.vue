@@ -22,7 +22,7 @@
         <div
           ref="text"
           class="apos-assistant-request__text"
-          @click="onTextClick"
+          @click="onChipClick"
           v-html="request.messageHtml"
         />
         <!-- eslint-enable vue/no-v-html -->
@@ -73,8 +73,10 @@
     <!-- eslint-disable vue/no-v-html -- sanitized on the server -->
     <div
       v-if="reply"
+      ref="replyText"
       class="apos-assistant-request__reply"
       data-apos-test="assistant-request-reply"
+      @click="onChipClick"
       v-html="reply"
     />
     <!-- eslint-enable vue/no-v-html -->
@@ -159,6 +161,7 @@ const store = useAssistantStore();
 const { usageDisplay, modelDisplay } = apos.modules['@apostrophecms/assistant'];
 const retrying = ref(false);
 const text = ref(null);
+const replyText = ref(null);
 
 const chat = computed(() => store.getChat(props.request.chatId));
 // A browser step this browser tab serves for it: the request works on, on
@@ -319,24 +322,27 @@ async function onAction(name) {
   }
 }
 
-// The server's chips get their icons once the message is in the page
+// The server's chips get their icons once the message or the reply is in
+// the page
 onMounted(addChipIcons);
-watch(() => props.request.messageHtml, async () => {
+watch([ () => props.request.messageHtml, reply ], async () => {
   await nextTick();
   addChipIcons();
 });
 
 function addChipIcons() {
-  for (const chip of text.value?.querySelectorAll('.apos-assistant-chip') || []) {
-    if (!chip.querySelector('.apos-assistant-chip__icon')) {
-      chip.prepend(createChipIcon(chip.dataset.kind));
+  for (const container of [ text.value, replyText.value ]) {
+    for (const chip of container?.querySelectorAll('.apos-assistant-chip') || []) {
+      if (!chip.querySelector('.apos-assistant-chip__icon')) {
+        chip.prepend(createChipIcon(chip.dataset.kind));
+      }
     }
   }
 }
 
-// A mention chip of a document without a page opens its editor; one with a
-// page is a link to it
-function onTextClick(event) {
+// A chip of a document without a page opens its editor; one with a page is
+// a link to it
+function onChipClick(event) {
   const chip = event.target.closest('button.apos-assistant-chip');
   if (chip) {
     apos.doc.edit({

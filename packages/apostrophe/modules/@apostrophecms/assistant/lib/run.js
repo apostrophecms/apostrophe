@@ -249,9 +249,10 @@ module.exports = (self) => {
     },
 
     // A request's message as the model reads it, after a line naming the
-    // request, the id `get_changes` reads a request's changes by, and what
-    // changed on the screen since the model's last reply, and before the
-    // documents it mentions
+    // request, the id `get_changes` reads a request's changes by, what
+    // changed on the screen since the model's last reply and the screen as
+    // it is, and before the documents it mentions. Stored as sent, so the
+    // next request's prompt starts with this one's
     getUserMessage(request) {
       return {
         role: 'user',
@@ -266,6 +267,10 @@ module.exports = (self) => {
               text: request.screenChanges
             } ]
             : []),
+          {
+            type: 'text',
+            text: self.getScreenLine(request.screen)
+          },
           {
             type: 'text',
             text: request.message
@@ -339,7 +344,8 @@ module.exports = (self) => {
       // change only once it is stored (see events.js)
       const { jobId } = await self.apos.ai.generateJob(doorReq, {
         system: self.apos.harness.getInstructions(doorReq, [
-          self.getScreenSection(request.screen)
+          self.getReplySection(),
+          self.getScreenSection()
         ]),
         messages,
         tools: tools.map(tool => tool.name),
@@ -385,11 +391,11 @@ module.exports = (self) => {
 
     /**
      * Stores the end of a run on its request: what the run added to the
-     * transcript, the usage, the outcome. A run that suspended leaves the
-     * request waiting for an answer, its asks on the record, unless it was
-     * stopped meanwhile; any other end frees the chat for the next request
-     * and ends the request in the harness. A request already ended (by
-     * `reconcileChat`) is left as it is.
+     * transcript, the documents its reply names, the usage, the outcome. A
+     * run that suspended leaves the request waiting for an answer, its asks
+     * on the record, unless it was stopped meanwhile; any other end frees
+     * the chat for the next request and ends the request in the harness. A
+     * request already ended (by `reconcileChat`) is left as it is.
      *
      * @param {object} req The run's `req`.
      * @param {object} chat
@@ -425,8 +431,17 @@ module.exports = (self) => {
           message: error.message
         };
       } else {
+        const messages = result.messages.slice(prior);
+        // The documents the reply names, checked as a message's mentions
+        const { mentions: replyMentions } = await self.verifyMentions(req, messages
+          .filter(message => message.role === 'assistant')
+          .flatMap(message => message.content || [])
+          .filter(part => part.type === 'text')
+          .map(part => part.text)
+          .join('\n'));
         Object.assign(set, {
-          messages: result.messages.slice(prior),
+          messages,
+          replyMentions,
           usage: addUsage(request.usage, result.usage),
           finishReason: result.finishReason,
           provider: result.provider,

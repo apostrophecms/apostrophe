@@ -21,6 +21,7 @@
           class="apos-assistant-mention__list"
           role="listbox"
           :aria-label="$t('apostrophe:assistantMentionList')"
+          data-apos-test="assistant-mention-list"
         >
           <div
             v-for="(item, i) in results"
@@ -30,6 +31,7 @@
             :class="{ 'apos-assistant-mention__option--active': i === active }"
             role="option"
             :aria-selected="i === active ? 'true' : 'false'"
+            data-apos-test="assistant-mention-option"
             @mousedown.prevent
             @mousemove="active = i"
             @click="pick(item)"
@@ -42,6 +44,7 @@
           v-else
           class="apos-assistant-mention__empty"
           role="status"
+          data-apos-test="assistant-mention-empty"
         >
           {{ $t('apostrophe:assistantNoResults') }}
         </p>

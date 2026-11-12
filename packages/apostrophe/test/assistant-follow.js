@@ -300,7 +300,7 @@ describe('Assistant: following a request', function () {
       await assert.rejects(apos.assistant.verifyScreen(req, {}), { name: 'invalid' });
     });
 
-    it('stores the screen on the request and renders it to the model, newest first', async function () {
+    it('stores the screen on the request and gives it with each message, the prompt cacheable', async function () {
       const req = userReq(editor);
       const chat = await apos.assistant.createChat(req);
       const draft = await findDraft(note);
@@ -315,9 +315,10 @@ describe('Assistant: following a request', function () {
       const first = await waitForEnd(req, chat);
       assert.equal(first.screen.document._id, draft._id);
       assert.equal(first.screen.tabId, 'tab-1');
-      const [ section ] = calls[0].system.split('Current screen, true as of this message').slice(1);
-      assert(section, 'the screen section is in the instructions');
-      const shown = JSON.parse(section.split('\n').at(-1));
+      assert(calls[0].system.includes(apos.assistant.getScreenSection()));
+      const sent = calls[0].messages.findLast(message => message.role === 'user');
+      const line = sent.content.find(part => part.text.startsWith('Current screen: '));
+      const shown = JSON.parse(line.text.slice('Current screen: '.length));
       assert.deepEqual(shown, {
         url: '/notes/a-note',
         locale: 'en',
@@ -329,8 +330,8 @@ describe('Assistant: following a request', function () {
           locale: 'en'
         }
       });
-      // The transcript carries no screen: a later request reads only its own
-      assert(!JSON.stringify(first.messages).includes('Current screen'));
+      // Kept with the message as sent
+      assert.deepEqual(first.messages[0], sent);
 
       await apos.assistant.send(req, chat._id, {
         message: 'And now?',
@@ -340,9 +341,17 @@ describe('Assistant: following a request', function () {
         }
       });
       await waitForEnd(req, chat);
-      const system = calls.at(-1).system;
-      assert.equal(system.split('Current screen').length, 2);
-      assert(system.includes('{"url":"/","locale":"en","editing":false}'));
+      const next = calls.at(-1);
+      assert(next.messages.findLast(message => message.role === 'user').content
+        .some(part => part.text === 'Current screen: {"url":"/","locale":"en","editing":false}'));
+      // The same instructions, and the first request's prompt and reply
+      // first: what the provider cached for it is read back
+      assert.equal(next.system, calls[0].system);
+      assert(!next.system.includes('{"url"'));
+      assert.deepEqual(
+        next.messages.slice(0, first.messages.length),
+        first.messages
+      );
     });
 
     it('keeps a field of a widget or array item by its patch key, and a chooser\'s field', async function () {
@@ -439,9 +448,9 @@ describe('Assistant: following a request', function () {
       const third = userMessage();
 
       // Nothing came before the first, nothing changed before the third
-      assert.equal(first.length, 2);
-      assert.equal(third.length, 2);
-      assert.equal(second.length, 3);
+      assert.equal(first.length, 3);
+      assert.equal(third.length, 3);
+      assert.equal(second.length, 4);
       const [ intro, json ] = second[1].split(': ');
       assert.equal(intro, 'Since your last reply the screen changed, [before, now]');
       assert.deepEqual(JSON.parse(json), {
@@ -973,7 +982,7 @@ describe('Assistant: following a request', function () {
       const request = await latest(req, chat);
       assert.equal(request.status, 'completed');
       assert.equal(request.messages.at(-1).content[0].text, 'Done.');
-      assert.equal(request.messages[0].content[1].text, 'Hello');
+      assert.equal(request.messages[0].content.at(-1).text, 'Hello');
     });
 
     it('fails a request whose skip or answer was cut short', async function () {

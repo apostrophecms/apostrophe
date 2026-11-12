@@ -12,7 +12,8 @@ module.exports = (self) => {
     /**
      * A request as the panel reads it. Its message gets its rendered
      * `messageHtml`, its mentions chips, and each assistant message with text
-     * its rendered `html` beside the raw content; `steps` lists the
+     * its rendered `html` beside the raw content, the reply's checked
+     * documents chips; `steps` lists the
      * tool calls in order, `{ id, name, label, input, output?, error? }`,
      * the arguments and result as capped JSON text; `locked` lists the
      * documents a write was refused for a lock and no later write of the
@@ -48,7 +49,9 @@ module.exports = (self) => {
           return text
             ? {
               ...message,
-              html: self.renderMarkdown(text)
+              html: self.renderMarkdown(text, {
+                mentions: request.replyMentions
+              })
             }
             : message;
         }),

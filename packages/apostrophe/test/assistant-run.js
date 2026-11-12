@@ -45,6 +45,13 @@ describe('Assistant: chats and the run', function () {
         'assistant-note': {
           extend: '@apostrophecms/piece-type'
         },
+        // Hidden from every role below admin
+        'assistant-secret': {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            viewRole: 'admin'
+          }
+        },
         'assistant-test-tools': {
           init(self) {
             self.apos.ai.addTool({
@@ -307,6 +314,10 @@ describe('Assistant: chats and the run', function () {
           },
           {
             type: 'text',
+            text: 'Current screen: {"locale":"en","editing":false}'
+          },
+          {
+            type: 'text',
             text: 'Look around'
           }
         ]
@@ -420,7 +431,7 @@ describe('Assistant: chats and the run', function () {
       await answer(req, chat, 'tab-1', 'shown');
       const failedLater = await waitForEnd(req, chat);
       assert.equal(failedLater.status, 'failed');
-      assert.equal(failedLater.messages[0].content[1].text, 'Ask, then fail');
+      assert.equal(failedLater.messages[0].content.at(-1).text, 'Ask, then fail');
 
       script = null;
       calls.length = 0;
@@ -479,6 +490,8 @@ describe('Assistant: chats and the run', function () {
     let pricing;
     let chart;
     let guest;
+    let editorRole;
+    let secret;
 
     before(async function () {
       const req = apos.task.getReq({ mode: 'draft' });
@@ -489,6 +502,10 @@ describe('Assistant: chats and the run', function () {
         title: 'Pricing chart'
       });
       guest = await t.createUser(apos, 'guest', { username: 'mention-guest' });
+      editorRole = await t.createUser(apos, 'editor', { username: 'mention-editor' });
+      secret = await apos.modules['assistant-secret'].insert(req, {
+        title: 'Pricing secrets'
+      });
     });
 
     it('finds pages, pieces and images by the start of their words, only those the user may read', async function () {
@@ -496,7 +513,7 @@ describe('Assistant: chats and the run', function () {
       const found = await apos.assistant.findMentions(req, 'pric');
       assert.deepEqual(
         found.map(doc => [ doc._id, doc.kind ]).sort(),
-        [ [ chart._id, 'image' ], [ pricing._id, 'piece' ] ].sort()
+        [ [ chart._id, 'image' ], [ pricing._id, 'piece' ], [ secret._id, 'piece' ] ].sort()
       );
       assert.equal(
         found.find(doc => doc._id === chart._id).label,
@@ -511,6 +528,12 @@ describe('Assistant: chats and the run', function () {
       assert.deepEqual(await apos.assistant.findMentions(req, 'glob'), []);
       assert.deepEqual(await apos.assistant.findMentions(req, 'zzqx'), []);
       assert.deepEqual(await apos.assistant.findMentions(userReq(guest), 'pric'), []);
+      // An editor never sees a type its role may not view
+      assert.deepEqual(
+        (await apos.assistant.findMentions(userReq(editorRole), 'pric'))
+          .map(doc => doc._id).sort(),
+        [ chart._id, pricing._id ].sort()
+      );
 
       const jar = await t.loginAs(apos, 'editor');
       const { results } = await apos.http.get('/api/v1/@apostrophecms/assistant/mention', {
@@ -531,6 +554,7 @@ describe('Assistant: chats and the run', function () {
       assert.deepEqual(request.mentions, [ {
         _id: pricing._id,
         type: 'assistant-note',
+        kind: 'piece',
         title: 'Pricing notes',
         locale: 'en'
       } ]);
@@ -561,7 +585,8 @@ describe('Assistant: chats and the run', function () {
       assert(html.includes('<strong>Bold</strong>'));
       // A page is a link to it, a piece without a page a button for its editor
       assert(html.includes('<a class="apos-assistant-chip apos-assistant-chip--action" ' +
-        `data-kind="page" title="Home" href="${home._url}">`));
+        'data-apos-test="assistant-chip" data-kind="page" ' +
+        `title="Home" href="${home._url}">`));
       assert(html.includes(`data-id="${pricing._id}" data-type="assistant-note">`));
       assert(html.includes('and Ghost'));
       assert.equal(html.match(/apos-assistant-chip--action/g).length, 2);
@@ -574,6 +599,32 @@ describe('Assistant: chats and the run', function () {
         }).messageHtml,
         html
       );
+    });
+
+    it('renders a reply\'s documents as chips, any other token as its title, and tells the model how', async function () {
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      const home = await apos.page.find(req, { slug: '/' }).toObject();
+      // A wrong title and kind are the document's own, any form of an id
+      // names its document, and an id nobody may read is its title
+      script = () => ({
+        text: `I updated @[Notes](page:${pricing._id}) for @[Start](piece:${home.aposDocId}). ` +
+          '@[Ghost](page:nope:en:draft) was not found.'
+      });
+      const request = await runToEnd(req, chat, 'tab-1', 'Update the pricing notes');
+      assert.deepEqual(
+        request.replyMentions.map(each => [ each._id, each.kind, each.title ]),
+        [ [ pricing._id, 'piece', 'Pricing notes' ], [ home._id, 'page', 'Home' ] ]
+      );
+      const { html } = apos.assistant.renderRequest(request).messages.at(-1);
+      assert(html.includes(`data-kind="piece" title="Pricing notes" data-id="${pricing._id}"`));
+      assert(html.includes(`data-kind="page" title="Home" href="${home._url}"`));
+      assert.equal(html.match(/apos-assistant-chip--action/g).length, 2);
+      assert(html.includes('. Ghost was not found.'));
+      assert(calls[0].system.includes(apos.assistant.getReplySection()));
+      assert(apos.assistant.getReplySection().includes('@[title](kind:_id)'));
+      // The transcript keeps the model's words
+      assert(request.messages.at(-1).content[0].text.includes(`@[Notes](page:${pricing._id})`));
     });
   });
 
@@ -610,7 +661,7 @@ describe('Assistant: chats and the run', function () {
         answered: true,
         answer: 'shown'
       });
-      assert.equal(done.messages[0].content[1].text, 'Show me');
+      assert.equal(done.messages[0].content.at(-1).text, 'Show me');
       assert.equal(done.usage.inputTokens > waiting.usage.inputTokens, true);
       assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest, null);
     });

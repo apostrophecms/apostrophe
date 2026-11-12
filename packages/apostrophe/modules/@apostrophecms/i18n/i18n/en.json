@@ -117,6 +117,7 @@
   "assistantSelectOnPage": "Select widgets on the page",
   "assistantSelection": "Selected widgets",
   "assistantSend": "Send",
+  "assistantShowWidget": "Show {{ label }} on the page",
   "assistantStepArguments": "Arguments",
   "assistantStepCount": "{{ count }} step",
   "assistantStepCount_plural": "{{ count }} steps",

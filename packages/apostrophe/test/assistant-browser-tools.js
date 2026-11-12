@@ -15,6 +15,8 @@ describe('Assistant: browser tools', function () {
   let note;
   let home;
   let script = null;
+  // The instructions of each model call
+  const systems = [];
   // The locale each `t_where` call ran in
   const locales = [];
   // Holds `t_wait` until the test lets it go
@@ -36,7 +38,8 @@ describe('Assistant: browser tools', function () {
         '@apostrophecms/ai': {
           options: {
             providers: { fake: {} },
-            mock(req) {
+            mock(req, request) {
+              systems.push(request.system);
               return script ? script(req) : { text: 'Done.' };
             }
           },
@@ -214,9 +217,15 @@ describe('Assistant: browser tools', function () {
       toolTurn('t_where'),
       { text: 'Shown.' }
     ]);
+    systems.length = 0;
     await runToEnd(req, chat, 'Show me the hero');
-    // The browser tab answers from a French page
-    await apos.assistant.answer(userReq(editor, 'fr'), chat._id, {
+    // The browser tab answers from a French page, the admin UI in English
+    const frenchReq = userReq(editor, 'fr');
+    frenchReq.user = {
+      ...frenchReq.user,
+      adminLocale: 'en'
+    };
+    await apos.assistant.answer(frenchReq, chat._id, {
       tabId: 'tab-1',
       callId: 'call-t_show',
       answer: {
@@ -244,6 +253,11 @@ describe('Assistant: browser tools', function () {
     assert.equal(done.screen.url, '/fr/');
     assert.equal(done.screen.locale, 'fr');
     assert.deepEqual(locales, [ 'fr' ]);
+    // The run after the answer keeps the instructions, so the prompt cached
+    // before the browser step is read back. Only the admin UI's language
+    // changes them, which follows the page's locale without admin locales
+    assert.equal(systems.length, 3);
+    assert.equal(new Set(systems).size, 1);
   });
 
   it('refuses a malformed answer and keeps the ask waiting', async function () {

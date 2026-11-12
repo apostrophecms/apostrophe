@@ -13,15 +13,18 @@
       :title="chip.label"
       kind="widget"
       :remove-label="$t('apostrophe:assistantDeselect', { label: chip.label })"
+      :action-label="$t('apostrophe:assistantShowWidget', { label: chip.label })"
       data-apos-test="assistant-selection-chip"
       @remove="deselect(chip.id, $event)"
+      @action="show(chip.id)"
     />
   </div>
 </template>
 
 <script setup>
 // One chip per widget selected on the page, however it was selected: the
-// chips are the widget store's selection, so removing one deselects it
+// chips are the widget store's selection, so removing one deselects it, and
+// a click on one shows its widget
 import {
   computed, inject, nextTick, ref
 } from 'vue';
@@ -46,6 +49,19 @@ const chips = computed(() => {
     };
   });
 });
+
+// Scrolled to when out of view, as `show_widgets` does, then flashed: focus
+// stays in the composer
+function show(id) {
+  const element = widgetElement(id, widgetStore.selectionScope || document);
+  if (!element) {
+    return;
+  }
+  if (!widgetStore.isElementInView(element)) {
+    widgetStore.scrollToElement(element);
+  }
+  widgetStore.flashElement(element);
+}
 
 // Focus on the removed chip's button moves to the next chip, else the one
 // before, else to the text

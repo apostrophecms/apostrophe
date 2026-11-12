@@ -1,8 +1,8 @@
-// Mentions: documents the editor names in a message with `@`. A message
-// carries each as a `@[title](kind:_id)` token, the grammar of the panel's
-// `ui/apos/lib/draft.js`. The server keeps a token only for a document the
-// editor and the AI may read, with its own title and kind; any other token
-// is left as its title.
+// Mentions: documents the editor names in a message with `@`, and the model
+// in a reply. Both carry each as a `@[title](kind:_id)` token, the grammar of
+// the panel's `ui/apos/lib/draft.js`. The server keeps a token only for a
+// document the editor and the AI may read, with its own title and kind; any
+// other token is left as its title.
 
 const TOKEN = /@\[((?:\\.|[^\]\\])*)\]\(([a-z-]+):([^)\s]+)\)/g;
 const MAX_MENTIONS = 20;
@@ -75,6 +75,7 @@ module.exports = (self) => {
         mentions: mentions.map(doc => ({
           _id: doc._id,
           type: doc.type,
+          kind: getKind(doc),
           title: doc.title,
           ...getLocale(doc),
           ...(doc._url && { url: doc._url })
