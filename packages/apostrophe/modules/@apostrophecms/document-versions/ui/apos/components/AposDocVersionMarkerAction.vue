@@ -3,7 +3,6 @@
     v-apos-tooltip="'apostrophe:versionSeeChanges'"
     type="button"
     class="apos-doc-version-marker-action"
-    :aria-label="$t('apostrophe:versionSeeChanges')"
   >
     <AposDocVersionAiBadge
       v-if="ai"
@@ -14,6 +13,9 @@
       :key="type"
       :type="type"
     />
+    <!-- Named by its badges, then its action: an aria-label would hide the
+    badges' words from the accessible name (WCAG 2.5.3, Label in Name) -->
+    <span class="apos-sr-only">{{ $t('apostrophe:versionSeeChanges') }}</span>
   </button>
 </template>
 
