@@ -2,18 +2,19 @@
 // over it from bottom to top, the widgets selected and the field being
 // edited inline. Ids, types and names only, never a document's content.
 //
-// Each modal reports its own part through `AposModal`'s `screen` prop, since
-// only the modal knows where it holds its ids; its kind comes from
-// `apos.modal.kinds`. A widget or array editor that names no document works
-// on the document of the editor below it. Windows are not modals of the
-// screen: they sit beside what the editor is looking at.
+// Each modal reports its own part, its kind included, through `AposModal`'s
+// `screen` prop, since only the modal knows what it is and where it holds
+// its ids; a modal that reports nothing is `other`. A widget or array editor
+// that names no document works on the document of the editor below it.
+// Windows are not modals of the screen: they sit beside what the editor is
+// looking at.
 //
 // `getScreen()` reads it when it is needed, as part of it lives outside any
 // reactive store (the admin bar's context).
 
 import { useModalStore } from '../stores/modal';
 import { useWidgetStore } from '../stores/widget';
-import { getTabId, modalKinds } from '../utils';
+import { getTabId } from '../utils';
 
 const KEYS = [ 'docId', 'docType', 'widgetId', 'field', 'itemId', 'selection', 'filters' ];
 // Kinds that edit part of a document they are never told about
@@ -55,7 +56,7 @@ export function useScreen() {
   function getModals(entries) {
     let owner = null;
     return entries.map(entry => {
-      const kind = modalKinds.get(entry);
+      const kind = entry.screen?.kind || 'other';
       const modal = { kind };
       for (const key of KEYS) {
         const value = entry.screen?.[key];

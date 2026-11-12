@@ -1,5 +1,4 @@
 import { getTabId } from './tab-id.js';
-import { modalKinds } from './modal-kinds.js';
 
 export {
   debounceAsync,
@@ -7,8 +6,7 @@ export {
   debounceAsync as debounce,
   throttle,
   asyncTaskQueue,
-  getTabId,
-  modalKinds
+  getTabId
 };
 
 // Debounce the async function "fn". For synchronous functions, use

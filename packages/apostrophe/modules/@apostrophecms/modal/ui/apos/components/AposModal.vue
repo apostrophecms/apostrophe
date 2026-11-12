@@ -201,10 +201,11 @@ const props = defineProps({
     type: String,
     default: null
   },
-  // What the modal shows, for the screen (see `useScreen`): `docId` and
-  // `docType` of the document it works on, and as they apply `widgetId`,
-  // `field`, `itemId`, `selection` (checked rows) and `filters`. Only the
-  // modal knows where it really holds them, so it reports them here
+  // What the modal is and shows, for the screen (see `useScreen`): its
+  // `kind` (`editor`, `manager` and so on; a project modal names its own),
+  // `docId` and `docType` of the document it works on, and as they apply
+  // `widgetId`, `field`, `itemId`, `selection` (checked rows) and `filters`.
+  // Only the modal knows them, so it reports them here
   screen: {
     type: Object,
     default: null

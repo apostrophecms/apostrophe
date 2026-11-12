@@ -194,6 +194,7 @@ const {
 } = useRecentlyEditedData(props.moduleName, props.initialFilters);
 
 const screen = computed(() => ({
+  kind: 'recentlyEdited',
   selection: [ ...checked.value ],
   filters: {
     ...filterState.value,

@@ -335,6 +335,7 @@ export default {
     // A new document has no id until the editor saves and closes
     screen() {
       return {
+        kind: 'editor',
         docId: this.currentId || null,
         docType: this.docType
       };

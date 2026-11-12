@@ -80,6 +80,7 @@ export default {
     // is the editor's below this one
     screen() {
       return {
+        kind: 'arrayEditor',
         docId: this.docId || null,
         field: this.field.name,
         itemId: this.currentId || null

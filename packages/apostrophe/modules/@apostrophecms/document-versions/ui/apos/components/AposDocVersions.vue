@@ -167,6 +167,7 @@ const props = defineProps({
 defineEmits([ 'modal-result', 'safe-close' ]);
 
 const screen = computed(() => ({
+  kind: 'versions',
   docId: props.doc._id,
   docType: props.doc.type
 }));

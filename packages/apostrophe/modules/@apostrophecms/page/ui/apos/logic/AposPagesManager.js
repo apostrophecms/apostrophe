@@ -78,6 +78,7 @@ export default {
     screen() {
       const { autocomplete } = this.queryExtras;
       return {
+        kind: this.relationshipField ? 'chooser' : 'pageTree',
         docType: this.relationshipField?.withType || null,
         field: this.relationshipField?.name || null,
         selection: [ ...this.checked ],

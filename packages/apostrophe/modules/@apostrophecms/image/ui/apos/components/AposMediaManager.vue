@@ -199,6 +199,7 @@ export default {
     screen() {
       const { autocomplete, ...filters } = this.filterValues;
       return {
+        kind: this.relationshipField ? 'chooser' : 'mediaManager',
         docId: this.editing?._id || null,
         docType: this.moduleName,
         field: this.relationshipField?.name || null,

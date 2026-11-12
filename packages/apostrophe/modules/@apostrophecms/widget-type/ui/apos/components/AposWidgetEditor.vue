@@ -197,6 +197,7 @@ export default {
     // until the area inserts it
     screen() {
       return {
+        kind: 'widgetEditor',
         docId: this.$attrs.docId || null,
         widgetId: this.id || null,
         field: this.areaFieldId?.split('.').pop() || null

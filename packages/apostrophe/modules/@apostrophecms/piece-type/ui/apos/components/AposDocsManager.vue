@@ -201,6 +201,7 @@ export default {
   computed: {
     screen() {
       return {
+        kind: this.relationshipField ? 'chooser' : 'manager',
         docType: this.moduleName,
         field: this.relationshipField?.name || null,
         selection: [ ...this.checked ],
