@@ -226,14 +226,15 @@ module.exports = (self) => {
     },
 
     // The transcript a request continues: the stored slices of the chat's
-    // earlier requests, in order. A failed request is never replayed
+    // earlier requests, in order. A failed request is replayed as far as
+    // its run got, so a retry sees the calls already made; one the model
+    // never answered is left out, its message coming back with Retry
     async getTranscript(chat, request) {
       const earlier = await self.requests
         .find({
           chatId: chat._id,
           ownerId: chat.ownerId,
-          sequence: { $lt: request.sequence },
-          status: { $ne: 'failed' }
+          sequence: { $lt: request.sequence }
         })
         .project({
           status: 1,
@@ -242,10 +243,13 @@ module.exports = (self) => {
         })
         .sort({ sequence: 1 })
         .toArray();
-      return earlier.flatMap(stored => self.completeCalls(stored.messages, () => ({
-        executed: false,
-        reason: (stored.finishReason === 'maxSteps') ? 'maxSteps' : stored.status
-      })));
+      return earlier
+        .filter(stored => (stored.status !== 'failed') ||
+          (stored.messages || []).some(message => message.role === 'assistant'))
+        .flatMap(stored => self.completeCalls(stored.messages, () => ({
+          executed: false,
+          reason: (stored.finishReason === 'maxSteps') ? 'maxSteps' : stored.status
+        })));
     },
 
     // A request's message as the model reads it, after a line naming the
@@ -430,6 +434,18 @@ module.exports = (self) => {
           name: error.name,
           message: error.message
         };
+        // The work the run did before it failed stays on the record, its
+        // calls without a result closed when replayed (`getTranscript`),
+        // so a retry knows what was already done
+        const partial = error.aposAiPartial;
+        if (partial && (prior !== undefined)) {
+          Object.assign(set, {
+            messages: partial.messages.slice(prior),
+            usage: addUsage(request.usage, partial.usage),
+            provider: partial.provider,
+            model: partial.model
+          });
+        }
       } else {
         const messages = result.messages.slice(prior);
         // The documents the reply names, checked as a message's mentions
@@ -466,6 +482,16 @@ module.exports = (self) => {
       if (!matchedCount) {
         // Stopped or ended meanwhile: read it again
         return self.endRun(req, chat, request, end);
+      }
+      if (error) {
+        self.logError(req, 'run-failed', error.message, {
+          chatId: chat._id,
+          requestId: request._id,
+          ...(error.aposAiPartial?.failedToolCall && {
+            tool: error.aposAiPartial.failedToolCall.name
+          }),
+          stack: error.stack
+        });
       }
       if (status === 'waiting') {
         await self.chats.updateOne({

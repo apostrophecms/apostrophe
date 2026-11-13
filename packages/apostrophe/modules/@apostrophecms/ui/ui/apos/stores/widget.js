@@ -6,6 +6,9 @@ import {
 export const useWidgetStore = defineStore('widget', () => {
   const refs = ref({});
   const emphasizedWidgets = ref(new Set());
+  // Widgets something outside the page is writing, such as the assistant:
+  // shown busy until the write settles
+  const busyWidgets = ref(new Set());
   const focusedWidget = ref(null);
   const focusedArea = ref(null);
   // More than one widget. `focusedWidget` stays the primary (last clicked)
@@ -75,6 +78,16 @@ export const useWidgetStore = defineStore('widget', () => {
 
   function removeEmphasizedWidget(id) {
     emphasizedWidgets.value.delete(id);
+  }
+
+  function setBusyWidgets(ids, busy) {
+    for (const id of ids) {
+      if (busy) {
+        busyWidgets.value.add(id);
+      } else {
+        busyWidgets.value.delete(id);
+      }
+    }
   }
 
   function setHoveredWidget(id, nonForeignId) {
@@ -296,6 +309,7 @@ export const useWidgetStore = defineStore('widget', () => {
   return {
     refs,
     emphasizedWidgets,
+    busyWidgets,
     focusedWidget,
     focusedArea,
     selectedWidgetIds,
@@ -313,6 +327,7 @@ export const useWidgetStore = defineStore('widget', () => {
     labeled,
     addEmphasizedWidget,
     removeEmphasizedWidget,
+    setBusyWidgets,
     setHoveredWidget,
     setHoveredField,
     clearHoveredField,

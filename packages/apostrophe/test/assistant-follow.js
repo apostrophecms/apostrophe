@@ -1221,7 +1221,8 @@ describe('Assistant: following a request', function () {
       const failed = await runToEnd(req, chat, 'tab-1', 'Hello');
       const job = await apos.modules['@apostrophecms/job'].db.findOne({ _id: failed.jobId });
       assert.equal(job.status, 'failed');
-      assert.equal(failed.messages.length, 0);
+      // As far as the run got: the model never answered
+      assert.deepEqual(failed.messages.map(message => message.role), [ 'user' ]);
     });
   });
 

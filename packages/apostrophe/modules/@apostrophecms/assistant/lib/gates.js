@@ -9,6 +9,8 @@
 // when one call would change more documents than `maxDocsWithoutConfirm`;
 // `0` turns it off. Widgets and fields inside one document count as one.
 
+const getCallDocumentIds = require('./call-documents');
+
 const DOOR = 'assistant';
 // The documents a gate's confirmation names, then "and N more"
 const TITLES_MAX = 5;
@@ -75,7 +77,7 @@ module.exports = (self) => {
       if (input !== undefined) {
         return;
       }
-      const ids = getDocumentIds();
+      const ids = getCallDocumentIds(req, validated);
       const documentCount = Math.max(ids.length, 1);
       for (const gate of gates) {
         if (await gate(validated, {
@@ -101,23 +103,6 @@ module.exports = (self) => {
       function exceedsDocuments(args, { documentCount }) {
         const max = self.options.maxDocsWithoutConfirm;
         return (max > 0) && (documentCount > max);
-      }
-
-      // The documents the call names, once each: by `targets[]._id`, else
-      // `_id`. An id names a document with or without its locale and mode
-      function getDocumentIds() {
-        const given = Array.isArray(validated.targets)
-          ? validated.targets.map(target => target?._id)
-          : [ validated._id ];
-        const ids = new Map();
-        for (const id of given) {
-          if ((typeof id !== 'string') || !id) {
-            continue;
-          }
-          const [ aposDocId, locale ] = id.split(':');
-          ids.set(`${aposDocId}:${locale || req.locale}`, id);
-        }
-        return [ ...ids.values() ];
       }
 
       // What the confirmation states: the step, the count, the type when

@@ -44,6 +44,7 @@ module.exports = (self) => {
      *
      * @param {object} req The `req` of the save.
      * @param {object} settled The `afterSaveSettled` payload.
+     * @returns {Promise<string>} The `_id` of the entry the save landed in.
      */
     async recordChange(req, {
       marker, before, after, toolCall, drops
@@ -78,10 +79,11 @@ module.exports = (self) => {
             drops: { $each: drops }
           }
         });
-        return;
+        return open._id;
       }
+      const _id = self.apos.util.generateId();
       await self.changes.insertOne({
-        _id: self.apos.util.generateId(),
+        _id,
         schemaVersion: SCHEMA_VERSION,
         requestId: marker.requestId,
         sequence: (open?.sequence || 0) + 1,
@@ -102,6 +104,7 @@ module.exports = (self) => {
         base: before ? await self.apos.docVersions.pack(before) : null,
         ...latest
       });
+      return _id;
 
       // What the save did to the document: `create`, `archive`, `move` (a
       // page placed elsewhere in the tree), `submit` or `update`

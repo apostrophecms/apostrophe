@@ -16,7 +16,9 @@ module.exports = (self) => {
      * for Document Versions, unless the door's request reverts. A door's
      * writes lock with its lock id in its family's slot, a plain call's with
      * the engine's call id. With a door context the save carries the marker
-     * the change log records (`aposSaveMarker`).
+     * the change log records (`aposSaveMarker`), and the browser tab of the
+     * door's family hears of the save as it starts and once it settles (see
+     * lib/change-events.js).
      *
      * Targets naming one document are written together: one permission
      * check, one lock and one save. A refused document is reported and the
@@ -97,9 +99,17 @@ module.exports = (self) => {
           const body = (inputs.length === 1)
             ? inputs[0]
             : { _patches: inputs };
-          const saved = self.apos.instanceOf(manager, '@apostrophecms/page-type')
-            ? await self.apos.page.patch(saveReq.clone({ body }), doc._id)
-            : await manager.convertPatchAndRefresh(saveReq, body, doc._id);
+          await self.publishChangeStarting(draftReq, doc, inputs);
+          let saved;
+          try {
+            saved = self.apos.instanceOf(manager, '@apostrophecms/page-type')
+              ? await self.apos.page.patch(saveReq.clone({ body }), doc._id)
+              : await manager.convertPatchAndRefresh(saveReq, body, doc._id);
+          } catch (e) {
+            await self.publishChangeSettled(draftReq, doc);
+            throw e;
+          }
+          await self.publishChangeSettled(draftReq, doc, saveReq.aposSaveMarker);
           return {
             _id: saved._id,
             title: saved.title,

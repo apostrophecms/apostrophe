@@ -2,7 +2,11 @@
   <div
     ref="widget"
     class="apos-area-widget-wrapper"
-    :class="{'apos-area-widget-wrapper--foreign': foreign}"
+    :class="{
+      'apos-area-widget-wrapper--foreign': foreign,
+      'apos-area-widget-wrapper--busy': isBusy
+    }"
+    :aria-busy="isBusy ? 'true' : undefined"
     :data-area-widget="widget._id"
     :data-area-label="widgetLabel"
     :data-apos-test="`widget:${widget.type}`"
@@ -417,6 +421,7 @@ export default {
       'hoveredWidget',
       'hoveredNonForeignWidget',
       'emphasizedWidgets',
+      'busyWidgets',
       'labeled',
       'selectedWidgetIds',
       'selectionAnchorId',
@@ -570,6 +575,10 @@ export default {
     // even when not hovered or focused.
     isEmphasized() {
       return this.emphasizedWidgets.has(this.widget._id);
+    },
+    // Written from outside the page right now, by the assistant
+    isBusy() {
+      return this.busyWidgets.has(this.widget._id);
     },
     nonForeignHovered() {
       return this.nonForeignWidgetHovered === this.widget._id;
@@ -1204,6 +1213,26 @@ export default {
 
 .apos-area-widget-wrapper {
   position: relative;
+}
+
+// A widget the assistant is writing: dimmed under a tint of the primary
+// color, and out of reach, until the write settles
+.apos-area-widget-wrapper--busy {
+  > .apos-area-widget-inner {
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    box-sizing: border-box;
+    border: 1px solid color-mix(in srgb, var(--a-primary) 40%, transparent);
+    border-radius: var(--a-border-radius);
+    background-color: color-mix(in srgb, var(--a-primary) 14%, transparent);
+    pointer-events: none;
+  }
 }
 
 // A widget a document version added, modified or deleted. The frame holds

@@ -469,7 +469,9 @@ export default {
       ) {
         return;
       }
-      const result = applyPatch(this.id, this.next, event.patch);
+      const result = applyPatch(this.id, this.next, event.patch, {
+        base: event.base
+      });
       if (!result) {
         return;
       }

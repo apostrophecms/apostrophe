@@ -2,7 +2,8 @@
 // what it must follow and what gets recorded, shared by every door (the
 // assistant, the MCP server). Its tools are registered on the AI engine
 // with the `content` tag; each door selects them with its own tags (see
-// `getDoorTools`).
+// `getDoorTools`). A door's write tells the browser tab that owns the
+// request as it starts and once it settles (see lib/change-events.js).
 //
 // A door hands its context to the tools on the request it passes to
 // `apos.ai.generate`, set by `withDoor`. Every write goes through
@@ -58,7 +59,12 @@ module.exports = {
           if (doc.aposMode === 'published') {
             return;
           }
-          await self.recordChange(req, settled);
+          const entryId = await self.recordChange(req, settled);
+          self.rememberSettled(marker, {
+            entryId,
+            before: settled.before,
+            after: settled.after
+          });
         }
       }
     };
@@ -72,6 +78,7 @@ module.exports = {
       ...require('./lib/write')(self),
       ...require('./lib/guards')(self),
       ...require('./lib/change-log')(self),
+      ...require('./lib/change-events')(self),
       ...require('./lib/read')(self),
       ...require('./lib/edit')(self),
       ...require('./lib/changes')(self),

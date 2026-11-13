@@ -2200,6 +2200,138 @@ describe('Document Versions draft changes', function () {
         assert.deepEqual(idsOf(main.items[1].columns), [ 'one', 'two' ]);
         assert.deepEqual(idsOf(main.items[1].columns.items[0].content), [ 'one-text' ]);
       });
+
+      describe('parts', function () {
+        // A published story changed by `edit`: its draft as stored before and
+        // after
+        async function changed(doc, edit) {
+          const { _id } = await recorded(doc, () => {});
+          const before = await stored(_id);
+          await later(_id, edit);
+          return {
+            _id,
+            before,
+            after: await stored(_id)
+          };
+        }
+
+        async function partsOf({ before, after }) {
+          return JSON.parse(JSON.stringify(
+            await apos.docVersions.getChangeParts(ann(), before, after)
+          ));
+        }
+
+        // Writes one value of each part, as a page's PATCH does
+        async function write(_id, parts, side) {
+          for (const part of parts) {
+            await apply(_id, { [part.key]: part[side] });
+          }
+        }
+
+        async function sameAs(_id, doc) {
+          const rows = await apos.docVersions
+            .getChangeRowsBetween(ann(), doc, await stored(_id));
+          return rows.length === 0;
+        }
+
+        it('should name each part a change made, to be written whole, the outer of two', async function () {
+          const change = await changed({
+            main: area('main1', [
+              richText('a', '<p>A</p>'),
+              link('one', [ richText('b', '<p>B</p>') ]),
+              link('two', [])
+            ])
+          }, draft => {
+            const [ a, one, two ] = draft.main.items;
+            draft.title = 'Edited';
+            a.content = '<p>A, edited</p>';
+            one.inner.items[0].content = '<p>B, edited</p>';
+            two.inner.items.push(richText('n', '<p>New</p>'));
+          });
+          const parts = await partsOf(change);
+          assert.deepEqual(parts.map(part => part.key), [ 'title', '@a', '@b', '@two-inner' ]);
+          assert.deepEqual(parts[0], {
+            key: 'title',
+            before: 'Story',
+            after: 'Edited'
+          });
+          assert.equal(parts[1].before.content, '<p>A</p>');
+          assert.equal(parts[1].after.content, '<p>A, edited</p>');
+          assert.deepEqual(idsOf(parts[3].before), []);
+          assert.deepEqual(idsOf(parts[3].after), [ 'n' ]);
+
+          const {
+            _id, before, after
+          } = change;
+          assert.equal(apos.docVersions.isAsPatched(ann(), after, parts.map(part => ({
+            [part.key]: part.after
+          }))), true);
+          assert.equal(apos.docVersions.isAsPatched(ann(), after, [ {
+            [parts[1].key]: parts[1].before
+          } ]), false);
+          await write(_id, parts, 'before');
+          assert(await sameAs(_id, before));
+          await write(_id, parts, 'after');
+          assert(await sameAs(_id, after));
+        });
+
+        it('should write a reorder, a move and a layout through the area or widget holding them', async function () {
+          const moved = await changed({
+            main: area('main1', [
+              richText('a', '<p>A</p>'),
+              link('one', [ richText('b', '<p>B</p>') ]),
+              layout('lay', [ column('c1', 1, 'One'), column('c2', 7, 'Two') ])
+            ])
+          }, draft => {
+            const [ a, one, lay ] = draft.main.items;
+            one.inner.items.push(a);
+            lay.columns.items = [ lay.columns.items[0] ];
+            draft.main.items = [ lay, one ];
+          });
+          const parts = await partsOf(moved);
+          assert.deepEqual(parts.map(part => part.key), [ '@main1' ]);
+          await write(moved._id, parts, 'before');
+          assert(await sameAs(moved._id, moved.before));
+
+          const laidOut = await changed({
+            main: area('main2', [
+              richText('d', '<p>D</p>'),
+              layout('lay2', [ column('c3', 1, 'One'), column('c4', 7, 'Two') ])
+            ])
+          }, draft => {
+            const [ , lay ] = draft.main.items;
+            // As a save converts it
+            lay.columns.items = [ lay.columns.items[0], {
+              ...column('c5', 7, 'Five'),
+              showTablet: false,
+              showMobile: false
+            } ];
+          });
+          const layoutParts = await partsOf(laidOut);
+          assert.deepEqual(layoutParts.map(part => part.key), [ '@lay2' ]);
+          await write(laidOut._id, layoutParts, 'before');
+          assert(await sameAs(laidOut._id, laidOut.before));
+          await write(laidOut._id, layoutParts, 'after');
+          assert(await sameAs(laidOut._id, laidOut.after));
+        });
+
+        it('should tell a document as patches leave it only for values it can read', async function () {
+          const { _id, after } = await changed({
+            main: area('main3', [ richText('e', '<p>E</p>') ])
+          }, draft => {
+            draft.title = 'Edited';
+          });
+          const isAs = patches => apos.docVersions.isAsPatched(ann(), after, patches);
+          assert.equal(isAs([ { title: 'Edited' } ]), true);
+          assert.equal(isAs([ { title: 'Story' } ]), false);
+          // In order, as a PATCH applies them
+          assert.equal(isAs([ { title: 'Story' }, { title: 'Edited' } ]), true);
+          assert.equal(isAs([ { '@e.content': '<p>E</p>' } ]), true);
+          assert.equal(isAs([ { '@gone': richText('gone', '<p>Gone</p>') } ]), false);
+          assert.equal(isAs([ { $push: { '@main3.items': { $each: [] } } } ]), null);
+          assert.equal((await stored(_id)).title, 'Edited');
+        });
+      });
     });
 
     describe('over HTTP', function () {

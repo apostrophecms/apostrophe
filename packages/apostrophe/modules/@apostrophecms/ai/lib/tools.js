@@ -99,7 +99,9 @@ module.exports = (self) => {
     // unaffected. Any other throw is a hard stop: it propagates
     // immediately, before any action runs when thrown by a query,
     // aborting the remaining actions when thrown by one — and no trace
-    // of it is ever model-bound.
+    // of it is ever model-bound. The error carries `aposAiToolFailure`:
+    // `{ toolCall, executed }`, the call that threw (`{ id, name }`) and
+    // the batch's outcomes executed before the stop.
     //
     // A handler that cannot answer without outside input throws
     // 'aiInput', the ask riding the throw's `data`; the call stays
@@ -160,7 +162,7 @@ module.exports = (self) => {
       );
       for (const query of settled) {
         if (query.status === 'rejected') {
-          throw query.reason;
+          throw withExecuted(query.reason);
         }
       }
       // The earliest suspended query bounds the action lane in model
@@ -175,12 +177,30 @@ module.exports = (self) => {
         if (index > bound) {
           break;
         }
-        await run(call, index);
+        try {
+          await run(call, index);
+        } catch (e) {
+          throw withExecuted(e);
+        }
         if (outcomes[index]?.suspended !== undefined) {
           break;
         }
       }
       return outcomes;
+
+      // A hard stop carries the batch's executed outcomes, so the run can
+      // keep the work done before it
+      function withExecuted(e) {
+        if (e && (typeof e === 'object')) {
+          e.aposAiToolFailure = {
+            ...e.aposAiToolFailure,
+            executed: outcomes.filter((outcome) => {
+              return outcome && (outcome.suspended === undefined);
+            })
+          };
+        }
+        return e;
+      }
 
       // One requested call: hand it to its tool and record the outcome
       // at its model-order index, whichever schedule ran it
@@ -228,6 +248,16 @@ module.exports = (self) => {
               error: payload.error
             };
           } else if (e?.name !== 'aiToolError') {
+            // Which call stopped the run, for its error; each level of a
+            // nested run names its own
+            if (e && (typeof e === 'object')) {
+              e.aposAiToolFailure = {
+                toolCall: {
+                  id: call.id,
+                  name: call.name
+                }
+              };
+            }
             // A call that started is always reported finished, so a
             // consumer never waits on a step that ended the run
             try {

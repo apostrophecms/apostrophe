@@ -1534,6 +1534,45 @@ describe('AI tools', function() {
       assert.equal(chatCalls.length, 1);
     });
 
+    it('carries the work done before a hard stop on the error', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(toolCall('c1', 'echo', { value: 'first' })),
+        toolTurn(
+          toolCall('c2', 'echo', { value: 'second' }),
+          toolCall('c3', 'boom_forbidden'),
+          toolCall('c4', 'echo', { value: 'never' })
+        )
+      ];
+      await assert.rejects(
+        apos.ai.generate(req, 'go', { tools: [ 'boom_forbidden', 'echo' ] }),
+        (e) => {
+          assert.equal(e.name, 'forbidden');
+          assert.equal(e.aposAiToolFailure, undefined);
+          const partial = e.aposAiPartial;
+          assert.equal(partial.finishReason, 'error');
+          assert.deepEqual(partial.failedToolCall, {
+            id: 'c3',
+            name: 'boom_forbidden'
+          });
+          assert.deepEqual(partial.messages.map(message => message.role),
+            [ 'user', 'assistant', 'tool', 'assistant', 'tool' ]);
+          // The stopped batch: what ran before the stop, nothing after
+          assert.deepEqual(partial.messages[4].content, [ {
+            type: 'toolResult',
+            toolCallId: 'c2',
+            output: { value: 'second' }
+          } ]);
+          assert.deepEqual(partial.steps.map(step => step.toolCall.id), [ 'c1', 'c2' ]);
+          assert.deepEqual(partial.usage, {
+            inputTokens: 20,
+            outputTokens: 10
+          });
+          return true;
+        }
+      );
+    });
+
     it('hard-stops on a handler bug', async function() {
       const req = apos.task.getReq();
       chatScript = [

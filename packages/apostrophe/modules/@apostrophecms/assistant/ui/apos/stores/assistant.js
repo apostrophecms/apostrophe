@@ -24,12 +24,15 @@ import { browserTools } from '../lib/browser-tools.js';
  * for `screenWait` at most, then it is refused naming the holder. Screen
  * holds: another request while one of its executors runs or an editor it
  * opened is open; the editor with a modal open or unsaved changes on the
- * page.
+ * page. An `editMode` ask is such a step too, before a write to the page:
+ * the page enters edit mode.
  */
 
 export const NEW_CHAT = 'new';
 
 const STORAGE_KEY = 'aposAssistantTabs';
+// The asks this browser tab answers on its own
+const SERVED_KINDS = [ 'browser', 'editMode' ];
 // Events arrive in bursts: one read per chat for each burst
 const LOAD_DELAY = 50;
 
@@ -288,7 +291,7 @@ export const useAssistantStore = defineStore('assistant', () => {
     }
     const request = requests.value[id]?.find(each => each._id === chat.openRequest._id);
     for (const ask of request?.asks || []) {
-      if ((ask.kind !== 'browser') || served.has(ask.callId)) {
+      if (!SERVED_KINDS.includes(ask.kind) || served.has(ask.callId)) {
         continue;
       }
       served.add(ask.callId);
@@ -457,7 +460,9 @@ export const useAssistantStore = defineStore('assistant', () => {
       }
     };
     try {
-      const executor = browserTools.get(ask.name);
+      const executor = (ask.kind === 'editMode')
+        ? enterEditMode
+        : browserTools.get(ask.name);
       return executor
         ? await executor(ask.payload.args, {
           screen: getScreen(),
@@ -478,6 +483,18 @@ export const useAssistantStore = defineStore('assistant', () => {
     } finally {
       free();
     }
+  }
+
+  // The page in edit mode before the request writes it, so the write lands
+  // in the page's undo history
+  async function enterEditMode() {
+    const editing = await window.apos.adminBar?.setEditMode?.(true);
+    return editing
+      ? { executed: true }
+      : {
+        executed: false,
+        reason: 'the page could not enter edit mode'
+      };
   }
 
   // Whether the ask is still one this browser tab serves: its request open

@@ -1749,6 +1749,213 @@ function getRowRelatedIds(schema, rows, ctx, relatedId) {
   return ids;
 }
 
+/**
+ * The parts of a document the rows of `record` change, each to be written
+ * whole: the widget holding a change of its own content; the area a widget
+ * was added to, deleted from, moved out of or into, or reordered in; the
+ * holder of an array whose items were added, deleted or reordered, the
+ * nearest widget above it or else its top-level field; the top-level field
+ * of any other change. A part inside another is left out, and so is one that
+ * is not held exactly once by each document, for the part holding it.
+ *
+ * Each is `{ key, older, newer }`: where a PATCH sets it, `@<_id>` for a
+ * widget or area, else the top-level field's name; and its value in each
+ * document in the form a save takes (see `toInput`), `null` for a top-level
+ * field a document doesn't store. Writing every `newer` value turns `older`
+ * into `newer`, and every `older` value turns it back, in any order.
+ *
+ * @param {object[]} schema The schema of both documents.
+ * @param {object} older The older document as stored.
+ * @param {object} newer The newer document as stored.
+ * @param {ChangeRow[]} rows Rows of `record` from `older` to `newer`.
+ * @param {DiffContext} ctx
+ * @param {(field: object, id: string) => string} relatedId See `addRestore`.
+ * @returns {Array<{ key: string, older: any, newer: any }>}
+ */
+function parts(schema, older, newer, rows, ctx, relatedId) {
+  const side = { toId: relatedId };
+  const counts = [ countIds(older), countIds(newer) ];
+  const found = [];
+  for (const entry of rows) {
+    for (const path of partPaths(entry)) {
+      add(settle(path));
+    }
+  }
+  return found.map(path => {
+    const id = (path.length > 1) ? nodeAt(path)._id : keyedArea(path);
+    return {
+      key: id ? `@${id}` : path[0].name,
+      older: valueOf(older, path, id),
+      newer: valueOf(newer, path, id)
+    };
+  });
+
+  function partPaths(entry) {
+    const { path } = entry;
+    const last = path.length - 1;
+    const target = locate(schema, path, ctx);
+    if (!target) {
+      return [ path.slice(0, 1) ];
+    }
+    if (isOrder(entry)) {
+      return [ (entry.kind === 'area') ? path : widgetAt(path, last - 1) ];
+    }
+    const listed = (target.itemAt === last) && (entry.kind !== 'layout') &&
+      [ 'added', 'deleted', 'moved' ].includes(entry.type);
+    if (!listed) {
+      return [ widgetAt(path, last) ];
+    }
+    return [ path, ...(entry.from ? [ entry.from ] : []) ].map(list => {
+      return path[last].widgetType
+        ? list.slice(0, -1)
+        : widgetAt(list, list.length - 3);
+    });
+  }
+
+  // The path to the nearest widget at `end` or above, else the top-level
+  // field
+  function widgetAt(path, end) {
+    for (let i = Math.min(end, path.length - 1); i > 0; i--) {
+      if (path[i].widgetType) {
+        return path.slice(0, i + 1);
+      }
+    }
+    return path.slice(0, 1);
+  }
+
+  // A widget or area each document holds once, else the part holding it
+  function settle(path) {
+    if (path.length === 1) {
+      return path;
+    }
+    const id = nodeAt(path)?._id;
+    if (id && counts.every(count => count.get(id) === 1)) {
+      return path;
+    }
+    return settle(widgetAt(path, path.length - 2));
+  }
+
+  function add(path) {
+    if (found.some(other => isWithin(path, other))) {
+      return;
+    }
+    _.remove(found, other => isWithin(other, path));
+    found.push(path);
+  }
+
+  function nodeAt(path) {
+    return resolve(newer, path) || resolve(older, path);
+  }
+
+  // The `_id` of a top-level area both documents hold
+  function keyedArea([ segment ]) {
+    const field = schema.find(field => field.name === segment.name);
+    const id = (field && (getKind(field, ctx) === 'area')) && older[field.name]?._id;
+    return (id && (newer[field.name]?._id === id)) ? id : null;
+  }
+
+  function valueOf(doc, path, id) {
+    if (path.length === 1) {
+      const field = schema.find(field => field.name === path[0].name);
+      const value = field && fieldInput(field, doc, ctx, side);
+      return (value === undefined) ? null : value;
+    }
+    return inputOf(findById(doc, id), ctx, side);
+  }
+}
+
+/**
+ * Whether `doc` holds every value `patches` set, in the form a save takes
+ * them (see `toInput`), so that writing them would change nothing. Patches
+ * apply in order, as a PATCH applies them. Understands what `parts` makes: a
+ * top-level field's name, `@<_id>` for a widget or area and `@<_id>.<path>`
+ * below one; `null` for a patch with an operator such as `$push`, which this
+ * can't tell. `false` when a patch names an `_id` the document no longer
+ * holds.
+ *
+ * @param {object[]} schema The schema of `doc`.
+ * @param {object} doc A document as stored.
+ * @param {object[]} patches
+ * @param {DiffContext} ctx
+ * @param {(field: object, id: string) => string} relatedId See `addRestore`.
+ * @returns {boolean|null}
+ */
+function isAsPatched(schema, doc, patches, ctx, relatedId) {
+  const current = plain(toInput(schema, doc, ctx, { toId: relatedId }));
+  const patched = _.cloneDeep(current);
+  for (const patch of patches) {
+    for (const [ key, value ] of Object.entries(patch || {})) {
+      if (key.startsWith('$')) {
+        return null;
+      }
+      if (!key.startsWith('@')) {
+        patched[key] = plain(value);
+        continue;
+      }
+      const dot = key.indexOf('.');
+      const id = key.substring(1, (dot === -1) ? undefined : dot);
+      const at = findHolder(patched, id);
+      if (!at) {
+        return false;
+      }
+      if (dot === -1) {
+        at.holder[at.key] = plain(value);
+      } else {
+        _.set(at.holder[at.key], key.substring(dot + 1), plain(value));
+      }
+    }
+  }
+  return _.isEqual(patched, current);
+
+  // As it travels to the browser and back
+  function plain(value) {
+    return (value === undefined) ? null : JSON.parse(JSON.stringify(value));
+  }
+}
+
+// The value of a widget or area in the form a save takes (see `toInput`)
+function inputOf(node, ctx, side) {
+  if (!node || (typeof node !== 'object')) {
+    return null;
+  }
+  if (node.metaType === 'area') {
+    return {
+      ...node,
+      items: (node.items || []).map(widget => inputOf(widget, ctx, side))
+    };
+  }
+  return toInput(ctx.getWidgetManager(node.type)?.schema || [], node, ctx, side);
+}
+
+// The object with this `_id` below the top level of `doc`, at any depth
+function findById(doc, id) {
+  const at = findHolder(doc, id);
+  return at && at.holder[at.key];
+}
+
+// `{ holder, key }` of the object with this `_id` below the top level of
+// `value`, at any depth
+function findHolder(value, id) {
+  if (!value || (typeof value !== 'object')) {
+    return null;
+  }
+  for (const [ key, child ] of Object.entries(value)) {
+    if (child && (typeof child === 'object')) {
+      if (child._id === id) {
+        return {
+          holder: value,
+          key
+        };
+      }
+      const found = findHolder(child, id);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
+}
+
 module.exports = {
   walk,
   annotate,
@@ -1760,7 +1967,9 @@ module.exports = {
   getRelatedIds,
   record,
   check,
-  getRowRelatedIds
+  getRowRelatedIds,
+  parts,
+  isAsPatched
 };
 
 // Walks the fields of `schema`, a widget type's own when `widget` is true.

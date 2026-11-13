@@ -12,6 +12,10 @@
 // Pass `deep: true` for an area with no editor yet, whose nested areas have
 // none either.
 //
+// `base`, for a change made elsewhere and only shown here, holds the values
+// the patch's keys had before it: a whole area written then keeps the page's
+// own widget wherever the change left a widget as it was.
+//
 // Returns `null` if the patch has nothing to do with this area, otherwise
 // `{ items, changed, removed }`: a new array, leaving `items` alone, the ids
 // of the widgets in it that are new or were replaced, and the widgets the
@@ -19,7 +23,10 @@
 
 import { klona } from 'klona';
 
-export default function applyPatch(areaId, items, patch, { deep = false } = {}) {
+export default function applyPatch(areaId, items, patch, {
+  deep = false,
+  base = null
+} = {}) {
   const itemsKey = `@${areaId}.items`;
   if (patch.$push?.[itemsKey]) {
     return push(items, patch.$push[itemsKey]);
@@ -51,10 +58,7 @@ export default function applyPatch(areaId, items, patch, { deep = false } = {}) 
     const path = (dot === -1) ? null : key.substring(dot + 1);
     if (id === areaId) {
       if (!path && value?.items) {
-        return {
-          items: klona(value.items),
-          changed: value.items.map(item => item._id)
-        };
+        return replaceItems(items, value.items, base?.[key]?.items);
       }
       continue;
     }
@@ -114,6 +118,47 @@ function move(items, {
     items: result,
     changed: []
   };
+}
+
+// The items of an area written whole. With `before`, the items the area had
+// before a change made elsewhere: a widget it left as it was stays as the
+// page has it, whatever the page did to it since
+function replaceItems(items, next, before) {
+  if (!Array.isArray(before)) {
+    return {
+      items: klona(next),
+      changed: next.map(item => item._id)
+    };
+  }
+  const own = new Map(items.map(item => [ item._id, item ]));
+  const was = new Map(before.map(item => [ item._id, item ]));
+  const changed = [];
+  return {
+    items: next.map(item => {
+      const kept = own.get(item._id);
+      if (kept && was.has(item._id) && isSame(was.get(item._id), item)) {
+        return kept;
+      }
+      changed.push(item._id);
+      return klona(item);
+    }),
+    changed
+  };
+}
+
+// Plain data alike, whatever the order of its keys
+function isSame(one, two) {
+  return stable(one) === stable(two);
+
+  function stable(value) {
+    return JSON.stringify(value, (key, nested) => {
+      if (!nested || (typeof nested !== 'object') || Array.isArray(nested)) {
+        return nested;
+      }
+      return Object.fromEntries(Object.entries(nested)
+        .sort(([ a ], [ b ]) => ((a < b) ? -1 : ((a > b) ? 1 : 0))));
+    });
+  }
 }
 
 function replace(items, id, path, value, deep) {

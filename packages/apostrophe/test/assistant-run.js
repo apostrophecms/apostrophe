@@ -69,6 +69,18 @@ describe('Assistant: chats and the run', function () {
               }
             });
             self.apos.ai.addTool({
+              name: 't_throw',
+              description: 'Breaks.',
+              tags: [ 'assistant' ],
+              input: {
+                type: 'object',
+                properties: {}
+              },
+              handler: async () => {
+                throw new Error('the tool broke');
+              }
+            });
+            self.apos.ai.addTool({
               name: 't_write',
               description: 'Renames a note.',
               tags: [ 'assistant' ],
@@ -405,7 +417,7 @@ describe('Assistant: chats and the run', function () {
       assert.equal((await waitForEnd(req, two)).status, 'completed');
     });
 
-    it('replays the chat\'s earlier requests, never a failed one', async function () {
+    it('replays the chat\'s earlier requests, a failed one only as far as the model got', async function () {
       const req = userReq(editor);
       const chat = await apos.assistant.createChat(req);
       await runToEnd(req, chat, 'tab-1', 'Remember the word apple');
@@ -439,7 +451,100 @@ describe('Assistant: chats and the run', function () {
       const texts = calls[0].messages
         .filter(message => message.role === 'user')
         .map(message => message.content.at(-1).text);
-      assert.deepEqual(texts, [ 'Remember the word apple', 'What was the word?' ]);
+      // The refused one never reached the model; the other kept its ask
+      assert.deepEqual(texts, [
+        'Remember the word apple',
+        'Ask, then fail',
+        'What was the word?'
+      ]);
+      assert.deepEqual(calls[0].messages.find(message => message.role === 'tool').content, [ {
+        type: 'toolResult',
+        toolCallId: 'call-t_browser',
+        output: {
+          answered: true,
+          answer: 'shown'
+        }
+      } ]);
+    });
+
+    it('keeps the calls of a run a tool stopped, and a retry reads them', async function () {
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      const logged = [];
+      const logError = apos.assistant.logError;
+      apos.assistant.logError = (req, name, message, data) => {
+        logged.push({
+          name,
+          message,
+          data
+        });
+      };
+      try {
+        script = sequence([ {
+          content: [
+            toolCall('t_write', {
+              _id: note._id.replace(':published', ':draft'),
+              title: 'Written before the stop'
+            }),
+            toolCall('t_throw')
+          ],
+          finishReason: 'toolCalls',
+          usage: usage()
+        } ]);
+        const failed = await runToEnd(req, chat, 'tab-1', 'Rename, then break');
+        assert.equal(failed.status, 'failed');
+        assert.equal(failed.error.message, 'the tool broke');
+        assert.deepEqual(failed.messages.map(message => message.role), [
+          'user',
+          'assistant',
+          'tool'
+        ]);
+        assert.deepEqual(failed.messages[2].content, [ {
+          type: 'toolResult',
+          toolCallId: 'call-t_write',
+          output: { ok: true }
+        } ]);
+        assert.deepEqual(failed.usage, {
+          inputTokens: 10,
+          outputTokens: 2
+        });
+        const failures = logged.filter(entry => entry.name === 'run-failed');
+        assert.equal(failures.length, 1);
+        assert.equal(failures[0].message, 'the tool broke');
+        assert.equal(failures[0].data.chatId, chat._id);
+        assert.equal(failures[0].data.requestId, failed._id);
+        assert.equal(failures[0].data.tool, 't_throw');
+
+        script = null;
+        calls.length = 0;
+        await apos.assistant.retry(req, chat._id, {
+          requestId: failed._id,
+          screen: { tabId: 'tab-1' }
+        });
+        assert.equal((await waitForEnd(req, chat)).status, 'completed');
+        const tool = calls[0].messages.find(message => message.role === 'tool');
+        assert.deepEqual(tool.content, [
+          {
+            type: 'toolResult',
+            toolCallId: 'call-t_write',
+            output: { ok: true }
+          },
+          {
+            type: 'toolResult',
+            toolCallId: 'call-t_throw',
+            output: {
+              executed: false,
+              reason: 'failed'
+            }
+          }
+        ]);
+        const texts = calls[0].messages
+          .filter(message => message.role === 'user')
+          .map(message => message.content.at(-1).text);
+        assert.deepEqual(texts, [ 'Rename, then break', 'Rename, then break' ]);
+      } finally {
+        apos.assistant.logError = logError;
+      }
     });
 
     it('replays a request that ran out of steps with its last calls answered as not run', async function () {

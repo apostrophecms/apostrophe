@@ -337,4 +337,91 @@ describe('Harness: the change log', function () {
 
     assert.equal(await apos.harness.changes.countDocuments({ docId: article._id }), 0);
   });
+
+  describe('change events', function () {
+    function eventsOf(req) {
+      return apos.notification.db
+        .find({ 'event.data.requestId': apos.harness.getDoor(req).requestId })
+        .sort({ createdAt: 1 })
+        .toArray();
+    }
+
+    it('should tell the browser tab of the family of each write as it starts and once it settles', async function () {
+      const [ article ] = await insertArticles(1);
+      const req = door();
+      await write(req, article._id, { body: 'First' });
+      await write(req, article._id, {
+        body: 'Second',
+        title: 'Renamed'
+      });
+      const [ entry ] = await entriesOf(req);
+      const events = await eventsOf(req);
+      // Only the browser tab that owns the request
+      assert(events.every(event => (event.tab === 'tab-1') && event.bus));
+      assert.deepEqual(events.map(event => event.event.name), [
+        'content-change-starting',
+        'content-change-settled',
+        'content-change-starting',
+        'content-change-settled'
+      ]);
+      const [ starting, settled, , settledAgain ] = events.map(event => event.event.data);
+      assert.deepEqual(starting, {
+        docId: article._id,
+        ids: [],
+        fields: [ 'body' ],
+        requestId: apos.harness.getDoor(req).requestId
+      });
+      assert.equal(settled.written, true);
+      assert.equal(settled.entryId, entry._id);
+      assert.deepEqual(settled.parts, [ {
+        key: 'body',
+        before: '',
+        after: 'First'
+      } ]);
+      // Each save's own change, in the entry they fold into
+      assert.equal(settledAgain.entryId, entry._id);
+      assert.deepEqual(settledAgain.parts, [
+        {
+          key: 'title',
+          before: 'Article 1',
+          after: 'Renamed'
+        },
+        {
+          key: 'body',
+          before: 'First',
+          after: 'Second'
+        }
+      ]);
+      await apos.harness.endRequest(req);
+    });
+
+    it('should say a write was refused after it started, and send nothing without a family', async function () {
+      const [ article ] = await insertArticles(1);
+      const req = door();
+      const { refused } = await apos.harness.writeDocuments(req, [ {
+        _id: article._id,
+        patch: { title: '' }
+      } ]);
+      assert.equal(refused.length, 1);
+      const events = (await eventsOf(req)).map(event => event.event);
+      assert.deepEqual(events.map(event => event.name), [
+        'content-change-starting',
+        'content-change-settled'
+      ]);
+      assert.deepEqual(events[1].data, {
+        docId: article._id,
+        written: false,
+        requestId: apos.harness.getDoor(req).requestId
+      });
+
+      const mcp = door({
+        door: 'mcp',
+        family: undefined,
+        chat: undefined
+      });
+      await write(mcp, article._id, { body: 'From MCP' });
+      assert.equal((await entriesOf(mcp)).length, 1);
+      assert.equal((await eventsOf(mcp)).length, 0);
+    });
+  });
 });

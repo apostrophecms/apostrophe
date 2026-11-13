@@ -605,7 +605,12 @@ module.exports = {
        *   when the model refuses, "aiContextOverflow" when the provider
        *   refuses the request as too long for the model. A tool handler's
        *   standard-coded throw (and any handler bug) stops the call as-is,
-       *   with no trace of it in any model-bound message.
+       *   with no trace of it in any model-bound message. Whatever stops the
+       *   run, the error carries the work done before it as
+       *   `aposAiPartial`: a result as a canceled run returns it (the
+       *   transcript ending in the calls that executed, `steps`, `usage`),
+       *   with finishReason 'error' and, when a tool call threw,
+       *   `failedToolCall` (`{ id, name }`).
        */
       async generate(req, stringOrOptions, options) {
         const canonical = self.normalizeGenerateOptions(stringOrOptions, options);
@@ -678,7 +683,7 @@ module.exports = {
           // only while this call's signal has fired — a genuine failure
           // racing a cancel still throws
           if (!isAbort(e) || !canonical.signal?.aborted) {
-            throw e;
+            throw withPartial(e);
           }
           canceled = true;
         }
@@ -890,32 +895,56 @@ module.exports = {
           if (canonical.signal?.aborted) {
             canceled = true;
           }
+        }
 
-          // The new results into the trailing tool message, rebuilt in
-          // the assistant turn's call order; appended as a new message
-          // when nothing was answered before
-          function mergeTrailing(executed) {
-            if (!executed.length) {
-              return;
-            }
-            const messages = context.request.messages;
-            const last = messages.at(-1);
-            if (last?.role !== 'tool') {
-              messages.push({
-                role: 'tool',
-                content: toolResultParts(executed)
-              });
-              return;
-            }
-            const byId = new Map(
-              [ ...last.content, ...toolResultParts(executed) ]
-                .map((part) => [ part.toolCallId, part ])
-            );
-            last.content = messages.at(-2).content
-              .filter((part) => part.type === 'toolCall')
-              .map((call) => byId.get(call.id))
-              .filter(Boolean);
+        // The new results into the trailing tool message, rebuilt in the
+        // assistant turn's call order; appended as a new message when
+        // nothing was answered before
+        function mergeTrailing(executed) {
+          if (!executed.length) {
+            return;
           }
+          const messages = context.request.messages;
+          const last = messages.at(-1);
+          if (last?.role !== 'tool') {
+            messages.push({
+              role: 'tool',
+              content: toolResultParts(executed)
+            });
+            return;
+          }
+          const byId = new Map(
+            [ ...last.content, ...toolResultParts(executed) ]
+              .map((part) => [ part.toolCallId, part ])
+          );
+          last.content = messages.at(-2).content
+            .filter((part) => part.type === 'toolCall')
+            .map((call) => byId.get(call.id))
+            .filter(Boolean);
+        }
+
+        // A failed run keeps the work done before it, as a canceled run
+        // does: the calls the stopped batch executed join the steps and the
+        // transcript, and the error carries the result so far
+        function withPartial(e) {
+          if (!e || (typeof e !== 'object')) {
+            return e;
+          }
+          const failure = e.aposAiToolFailure;
+          delete e.aposAiToolFailure;
+          const executed = failure?.executed || [];
+          steps.push(...executed);
+          mergeTrailing(executed);
+          e.aposAiPartial = {
+            ...self.assembleResult(context, turn, {
+              steps,
+              usage,
+              hadTools: tools.size > 0 || Boolean(canonical.pendingCalls),
+              finishReason: 'error'
+            }),
+            ...(failure?.toolCall && { failedToolCall: failure.toolCall })
+          };
+          return e;
         }
       },
 

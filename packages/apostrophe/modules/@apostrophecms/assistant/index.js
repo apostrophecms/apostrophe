@@ -56,6 +56,7 @@ module.exports = {
     self.gates = {};
     self.ungated = new Set();
     self.addAskKind('browser', { accept: self.acceptBrowserAnswer });
+    self.addAskKind('editMode', { accept: self.acceptEditModeAnswer });
     for (const tool of require('./lib/standard-browser-tools')(self)) {
       self.addBrowserTool(tool);
     }
@@ -67,6 +68,11 @@ module.exports = {
       '@apostrophecms/ai:beforeToolCall': {
         async checkGates(req, payload) {
           await self.checkGates(req, payload);
+        },
+        // After the gates: the page goes to edit mode only for a write that
+        // will run
+        async checkEditMode(req, payload) {
+          await self.checkEditMode(req, payload);
         }
       },
       '@apostrophecms/ai:afterToolCall': {
@@ -217,6 +223,7 @@ module.exports = {
       ...require('./lib/browser-tools')(self),
       ...require('./lib/editor-tools')(self),
       ...require('./lib/gates')(self),
+      ...require('./lib/edit-mode')(self),
       ...require('./lib/screen')(self),
       ...require('./lib/reconcile')(self),
       ...require('./lib/events')(self),

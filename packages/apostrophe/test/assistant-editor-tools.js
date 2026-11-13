@@ -3,8 +3,9 @@ const t = require('../test-lib/test.js');
 
 // The tools that turn to the editor, on the scripted mock: questions and
 // confirmations suspend the run with an ask the owning browser tab answers,
-// the plan is kept on the request, and approval gates ask before a tool
-// runs, writing nothing when declined.
+// the plan is kept on the request, approval gates ask before a tool runs,
+// writing nothing when declined, and a write to the document the page shows
+// waits for the page to enter edit mode.
 
 describe('Assistant: questions, confirmations, the plan and gates', function () {
   this.timeout(t.timeout);
@@ -499,6 +500,116 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
       await apos.harness.endRequest(mcpReq);
       assert.equal(result[0].suspended, undefined);
       assert.equal(await countTitled('Through MCP'), 20);
+    });
+  });
+
+  describe('edit mode before a write to the page', function () {
+    afterEach(function () {
+      apos.assistant.options.maxDocsWithoutConfirm = 5;
+    });
+
+    // The screen of a browser tab showing `doc`
+    function showing(doc, extra = {}) {
+      return {
+        tabId: 'tab-1',
+        document: { _id: doc._id },
+        ...extra
+      };
+    }
+
+    it('switches the page to edit mode before writing the document it shows, then writes', async function () {
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      const note = notes[0];
+      script = sequence([ updateTurn([ note ], 'In edit mode'), { text: 'Renamed.' } ]);
+      await apos.assistant.send(req, chat._id, {
+        message: 'Rename this note',
+        screen: showing(note)
+      });
+      const waiting = await waitForEnd(req, chat);
+      assert.equal(waiting.status, 'waiting');
+      assert.deepEqual(waiting.asks, [ {
+        callId: 'call-update',
+        name: 'update_document',
+        kind: 'editMode',
+        payload: {
+          kind: 'editMode',
+          screenEffect: 'changes',
+          whenHidden: {
+            executed: false,
+            reason: 'the user is in another browser tab'
+          }
+        }
+      } ]);
+      assert.equal(await countTitled('In edit mode'), 0);
+      // The answer carries the screen it left
+      await assert.rejects(apos.assistant.answer(req, chat._id, {
+        tabId: 'tab-1',
+        callId: 'call-update',
+        answer: { executed: true }
+      }), { name: 'invalid' });
+      await apos.assistant.answer(req, chat._id, {
+        tabId: 'tab-1',
+        callId: 'call-update',
+        answer: { executed: true },
+        screen: showing(note, { editing: true })
+      });
+      const done = await waitForEnd(req, chat);
+      assert.equal(done.status, 'completed');
+      assert.equal(resultOf(done, 'call-update').output.written.length, 1);
+      assert.equal(done.screen.editing, true);
+      assert.equal(await countTitled('In edit mode'), 1);
+    });
+
+    it('writes at once when the page is in edit mode, hidden or showing another document', async function () {
+      const req = userReq(editor);
+      const [ note, other ] = notes;
+      for (const [ title, screen ] of [
+        [ 'Already editing', showing(note, { editing: true }) ],
+        [ 'While hidden', showing(note, { visible: false }) ],
+        [ 'Shown elsewhere', showing(other) ]
+      ]) {
+        const chat = await apos.assistant.createChat(req);
+        script = sequence([ updateTurn([ note ], title), { text: 'Renamed.' } ]);
+        await apos.assistant.send(req, chat._id, {
+          message: 'Rename the note',
+          screen
+        });
+        assert.equal((await waitForEnd(req, chat)).status, 'completed', title);
+        assert.equal(await countTitled(title), 1, title);
+      }
+    });
+
+    it('asks for edit mode only once an approved gate lets the write run', async function () {
+      apos.assistant.options.maxDocsWithoutConfirm = 1;
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      const [ note, other ] = notes;
+      script = sequence([ updateTurn([ note, other ], 'Gated'), { text: 'Renamed.' } ]);
+      await apos.assistant.send(req, chat._id, {
+        message: 'Rename both',
+        screen: showing(note)
+      });
+      assert.equal((await waitForEnd(req, chat)).asks[0].kind, 'confirm');
+      await apos.assistant.answer(req, chat._id, {
+        tabId: 'tab-1',
+        callId: 'call-update',
+        answer: { approved: true }
+      });
+      assert.equal((await waitForEnd(req, chat)).asks[0].kind, 'editMode');
+      assert.equal(await countTitled('Gated'), 0);
+      await apos.assistant.answer(req, chat._id, {
+        tabId: 'tab-1',
+        callId: 'call-update',
+        // A page that could not switch still gets the write
+        answer: {
+          executed: false,
+          reason: 'the page could not enter edit mode'
+        },
+        screen: showing(note)
+      });
+      assert.equal((await waitForEnd(req, chat)).status, 'completed');
+      assert.equal(await countTitled('Gated'), 2);
     });
   });
 
