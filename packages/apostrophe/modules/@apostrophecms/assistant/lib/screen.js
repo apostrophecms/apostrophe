@@ -23,6 +23,18 @@ const NAME = /^[A-Za-z_][\w.:@/-]{0,99}$/;
 const COMPARED = [ 'url', 'locale', 'mode', 'editing', 'view', 'document', 'modals',
   'selection', 'field' ];
 const CHANGES_INTRO = 'Since your last reply the screen changed, [before, now]:';
+// What the model hears of its changes to the page the user is on
+const PAGE_INTRO = 'Since your last reply the user changed some of your changes on the page';
+const PAGE_NOW = 'now: undone = put back as before your change, edited = changed by the ' +
+  'user, removed = gone, back = an undone change returned:';
+const PAGE_ROWS_MAX = 20;
+// The row guard's outcomes the model hears of, by the word it reads
+const PAGE_NOW_NAMES = {
+  reverted: 'undone',
+  edited: 'edited',
+  gone: 'removed',
+  putBack: 'back'
+};
 
 // The instructions never change between requests, so the provider's prompt
 // cache holds: the screen itself goes with each message (`getScreenLine`)
@@ -273,7 +285,8 @@ module.exports = (self) => {
           chatId: chat._id,
           ownerId: chat.ownerId,
           sequence: { $lt: sequence },
-          status: { $ne: 'failed' }
+          status: { $ne: 'failed' },
+          revertId: { $exists: false }
         })
         .project({ screen: 1 })
         .sort({ sequence: -1 })
@@ -286,6 +299,123 @@ module.exports = (self) => {
       return changed
         ? `${CHANGES_INTRO} ${JSON.stringify(changed)}`
         : '';
+    },
+
+    /**
+     * What became of the model's changes to the screen's document since its
+     * last reply: each change row of the chat's earlier requests, reverted
+     * ones and the one that created the document left out, checked by the
+     * row guard as a revert would check it, against the outcome the latest
+     * earlier request saw (`pageRows`; a row it didn't see is as written).
+     * `text` names the rows that moved, as `get_changes` names them; empty
+     * when none did. `pageRows` is what this request sees, `null` when the
+     * screen shows no document the chat changed.
+     *
+     * @param {object} req
+     * @param {object} chat
+     * @param {number} sequence The new request's.
+     * @param {object} screen The new request's, verified.
+     * @returns {Promise<{ text: string, pageRows: object|null }>}
+     */
+    async getPageChanges(req, chat, sequence, screen) {
+      const none = {
+        text: '',
+        pageRows: null
+      };
+      const docId = screen.document?._id.replace(/:published$/, ':draft');
+      if (!docId) {
+        return none;
+      }
+      const requests = await self.requests
+        .find({
+          chatId: chat._id,
+          ownerId: chat.ownerId,
+          sequence: { $lt: sequence },
+          revertId: { $exists: false }
+        })
+        .project({
+          status: 1,
+          pageRows: 1
+        })
+        .sort({ sequence: 1 })
+        .toArray();
+      const entries = requests.length
+        ? await self.apos.harness.changes
+          .find({
+            docId,
+            requestId: { $in: requests.map(request => request._id) }
+          })
+          .project({
+            requestId: 1,
+            effect: 1,
+            rows: 1
+          })
+          .toArray()
+        : [];
+      const creating = new Set(entries
+        .filter(entry => entry.effect === 'create')
+        .map(entry => entry.requestId));
+      const requestIds = [ ...new Set(entries.map(entry => entry.requestId)) ]
+        .filter(requestId => !creating.has(requestId));
+      if (!requestIds.length) {
+        return none;
+      }
+      const doorReq = self.apos.harness.withDoor(req, {
+        door: 'assistant',
+        lockId: chat._id,
+        family: screen.tabId,
+        chat: chat._id,
+        requestId: self.apos.util.generateId(),
+        revert: true
+      });
+      const [ document ] = await self.apos.harness.revertRequests(doorReq, requestIds, {
+        dryRun: true,
+        ignoreLocks: true,
+        docIds: [ docId ]
+      });
+      const checked = (document?.rows || []).filter(row => row.outcome);
+      if (!checked.length) {
+        return none;
+      }
+      const rows = Object.fromEntries(checked
+        .map(row => [ `${row.entryId}:${row.index}`, row.outcome ]));
+      const seen = requests.findLast(request => (request.status !== 'failed') &&
+        (request.pageRows?.docId === docId))?.pageRows.rows || {};
+      const byId = new Map(entries.map(entry => [ entry._id, entry ]));
+      const manager = self.apos.doc.getManager(document.type);
+      const moved = [];
+      for (const row of checked) {
+        const was = seen[`${row.entryId}:${row.index}`] || 'putBack';
+        const now = PAGE_NOW_NAMES[row.outcome];
+        const entry = byId.get(row.entryId);
+        const described = (was !== row.outcome) && now &&
+          self.apos.harness.describeChangeRow(req, manager, entry.rows[row.index]);
+        if (described) {
+          moved.push({
+            requestId: entry.requestId,
+            ...described,
+            now
+          });
+        }
+      }
+      const pageRows = {
+        docId,
+        rows
+      };
+      if (!moved.length) {
+        return {
+          text: '',
+          pageRows
+        };
+      }
+      const shown = {
+        rows: moved.slice(0, PAGE_ROWS_MAX),
+        ...((moved.length > PAGE_ROWS_MAX) && { more: moved.length - PAGE_ROWS_MAX })
+      };
+      return {
+        text: `${PAGE_INTRO} "${document.title}" (${docId}); ${PAGE_NOW} ${JSON.stringify(shown)}`,
+        pageRows
+      };
     },
 
     /**

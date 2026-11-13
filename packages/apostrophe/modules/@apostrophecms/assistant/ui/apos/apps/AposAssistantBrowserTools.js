@@ -7,10 +7,11 @@
 // A browser tab that has used the assistant follows its chats from page
 // load, panel open or not, so it answers the asks of the requests it owns.
 // After a navigation the assistant asked for, the panel opens again if it
-// was open.
+// was open; after a revert's "See changes" link, the page shows them.
 
 import { pinia } from 'Modules/@apostrophecms/ui/lib/vue';
 import { browserTools, readNavigation } from '../lib/browser-tools.js';
+import { resumeSeeChanges } from '../lib/revert.js';
 import { useAssistantStore } from '../stores/assistant.js';
 
 export default () => {
@@ -18,6 +19,7 @@ export default () => {
     return;
   }
   window.apos.assistant.browserTools = browserTools;
+  resumeSeeChanges();
   const store = useAssistantStore(pinia);
   const navigation = readNavigation();
   if (!navigation) {

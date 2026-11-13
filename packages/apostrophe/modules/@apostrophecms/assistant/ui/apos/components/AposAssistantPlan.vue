@@ -7,7 +7,43 @@
     data-apos-test="assistant-plan"
     :data-apos-failed="failed ? 'true' : null"
   >
-    <template #toolbar>
+    <template
+      v-if="confirming"
+      #toolbar
+    >
+      <div
+        class="apos-assistant-plan__confirm"
+        role="group"
+        :aria-label="$t('apostrophe:assistantPlanCancelConfirm')"
+        data-apos-test="assistant-plan-confirm"
+        @keydown.esc.stop.prevent="closeConfirm"
+      >
+        <p class="apos-assistant-plan__confirm-copy">
+          {{ $t('apostrophe:assistantPlanCancelConfirm') }}
+        </p>
+        <button
+          type="button"
+          class="apos-assistant-plan__text-button apos-assistant-plan__text-button--yes"
+          data-apos-test="assistant-plan-cancel-yes"
+          @click="confirmCancel"
+        >
+          {{ $t('apostrophe:yes') }}
+        </button>
+        <button
+          ref="noButton"
+          type="button"
+          class="apos-assistant-plan__text-button"
+          data-apos-test="assistant-plan-cancel-no"
+          @click="closeConfirm"
+        >
+          {{ $t('apostrophe:no') }}
+        </button>
+      </div>
+    </template>
+    <template
+      v-else
+      #toolbar
+    >
       <button
         type="button"
         class="apos-assistant-plan__toggle"
@@ -50,6 +86,16 @@
           class="apos-sr-only"
         >{{ ` ${$t('apostrophe:assistantPlanStepFailed')}` }}</span></span>
       </button>
+      <button
+        v-if="cancellable"
+        ref="cancelButton"
+        type="button"
+        class="apos-assistant-plan__cancel"
+        data-apos-test="assistant-plan-cancel"
+        @click="openConfirm"
+      >
+        {{ $t('apostrophe:cancel') }}
+      </button>
     </template>
     <ol
       v-show="!collapsed"
@@ -85,7 +131,7 @@
 
 <script setup>
 import {
-  computed, ref, watch
+  computed, nextTick, ref, watch
 } from 'vue';
 import { createId } from 'apostrophe/lib/beneath.js';
 
@@ -93,7 +139,9 @@ import { createId } from 'apostrophe/lib/beneath.js';
 // step N of M": the steps done, the one in progress, those to come. When
 // the request failed, the step it was on failed with it, and the plan
 // folds to its toolbar, marked failed there only while folded (the open
-// list marks the step). The steps are the model's words, never translated
+// list marks the step). The steps are the model's words, never translated.
+// Cancel, on the toolbar's hover or focus, asks before it emits `cancel`:
+// the request stops and its work is reverted
 const props = defineProps({
   request: {
     type: Object,
@@ -102,8 +150,13 @@ const props = defineProps({
   failed: {
     type: Boolean,
     default: false
+  },
+  cancellable: {
+    type: Boolean,
+    default: false
   }
 });
+const emit = defineEmits([ 'cancel' ]);
 
 const ICONS = {
   done: 'M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.91,10.59L6.5,12L11,16.5Z',
@@ -122,6 +175,9 @@ const STATES = {
 
 const listId = `apos-assistant-plan-${createId()}`;
 const collapsed = ref(props.failed);
+const confirming = ref(false);
+const noButton = ref(null);
+const cancelButton = ref(null);
 const steps = computed(() => props.request.plan || []);
 // The step in progress: the active one, else the first not done
 const current = computed(() => {
@@ -136,6 +192,23 @@ const current = computed(() => {
 watch(() => props.failed, (failed) => {
   collapsed.value = failed;
 });
+
+async function openConfirm() {
+  confirming.value = true;
+  await nextTick();
+  noButton.value?.focus();
+}
+
+async function closeConfirm() {
+  confirming.value = false;
+  await nextTick();
+  cancelButton.value?.focus();
+}
+
+function confirmCancel() {
+  confirming.value = false;
+  emit('cancel');
+}
 
 function stateOf(step, index) {
   if (props.failed && (index === current.value) && (step.status !== 'done')) {
@@ -165,6 +238,97 @@ function stateOf(step, index) {
     &:focus-visible {
       outline: 1px solid var(--a-primary);
       outline-offset: 2px;
+    }
+  }
+
+  // The prototype's: shown on the toolbar's hover or focus
+  .apos-assistant-plan__cancel {
+    @include apos-button-reset();
+    @include type-base;
+
+    & {
+      flex-shrink: 0;
+      margin-right: 6px;
+      padding: 2px 4px;
+      border-radius: var(--a-border-radius);
+      color: var(--a-base-1);
+      line-height: var(--a-line-tall);
+      opacity: 0;
+      transition: color 200ms, opacity 200ms;
+      pointer-events: none;
+    }
+
+    &:hover {
+      color: var(--a-text-primary);
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--a-primary);
+      outline-offset: 2px;
+    }
+  }
+
+  :deep(.apos-assistant-dock__toolbar:hover) .apos-assistant-plan__cancel,
+  :deep(.apos-assistant-dock__toolbar:focus-within) .apos-assistant-plan__cancel {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .apos-assistant-plan__confirm {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 6px 0;
+  }
+
+  .apos-assistant-plan__confirm-copy {
+    @include type-base;
+
+    & {
+      overflow: hidden;
+      flex: 1 1 auto;
+      min-width: 0;
+      margin: 0;
+      color: var(--a-text-primary);
+      line-height: var(--a-line-tall);
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .apos-assistant-plan__text-button {
+    @include apos-button-reset();
+    @include type-base;
+
+    & {
+      flex-shrink: 0;
+      padding: 2px 6px;
+      border-radius: var(--a-border-radius);
+      color: var(--a-base-1);
+      line-height: var(--a-line-tall);
+      transition: background-color 200ms, color 200ms;
+    }
+
+    &:hover {
+      color: var(--a-text-primary);
+      background-color: var(--a-base-9);
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--a-primary);
+      outline-offset: 2px;
+    }
+  }
+
+  // The theme's red, darkened to read at 4.5:1
+  .apos-assistant-plan__text-button--yes {
+    color: color-mix(in srgb, var(--a-danger) 80%, var(--a-black));
+
+    &:hover {
+      color: color-mix(in srgb, var(--a-danger) 80%, var(--a-black));
+      background-color: var(--a-danger-button-background);
     }
   }
 

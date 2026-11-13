@@ -31,6 +31,8 @@ module.exports = (self) => {
      * @param {string[]} requestIds The requests whose changes are reverted.
      * @param {object} [options]
      * @param {boolean} [options.dryRun] Write nothing.
+     * @param {boolean} [options.ignoreLocks] With `dryRun`, check every
+     *   document's rows whoever holds its lock: no `locked` outcome.
      * @param {string[]} [options.docIds] Only these documents, by the
      *   `docId` of their change log entries.
      * @param {Function} [options.onProgress] `async ({ done, total })`,
@@ -49,7 +51,7 @@ module.exports = (self) => {
      *   one its newest entry stored.
      */
     async revertRequests(req, requestIds, {
-      dryRun = false, docIds = null, onProgress = null
+      dryRun = false, ignoreLocks = false, docIds = null, onProgress = null
     } = {}) {
       const door = self.getDoor(req);
       if (!door?.revert) {
@@ -139,7 +141,7 @@ module.exports = (self) => {
           if (!self.apos.ai.can(found.draftReq, 'edit', found.doc)) {
             return end('unrestorable', { reason: 'permission' });
           }
-          const refusal = await self.apos.doc.checkLock(
+          const refusal = !ignoreLocks && await self.apos.doc.checkLock(
             found.draftReq,
             found.doc,
             door.lockId,

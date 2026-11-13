@@ -6,15 +6,36 @@
     data-apos-test="assistant-activity"
     :data-apos-tone="tone"
   >
-    <p class="apos-assistant-activity__title">
+    <p
+      class="apos-assistant-activity__title"
+      :class="{ 'apos-assistant-activity__title--dismissible': dismissLabel }"
+    >
       {{ title }}
     </p>
+    <button
+      v-if="dismissLabel"
+      type="button"
+      class="apos-assistant-activity__dismiss"
+      :aria-label="dismissLabel"
+      :title="dismissLabel"
+      data-apos-test="assistant-activity-dismiss"
+      @click="emit('dismiss')"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
+      </svg>
+    </button>
     <p
       v-if="text"
       class="apos-assistant-activity__text"
     >
       {{ text }}
     </p>
+    <slot />
     <div
       v-if="actions.length"
       class="apos-assistant-activity__actions"
@@ -22,6 +43,7 @@
       <button
         v-for="action in actions"
         :key="action.name"
+        :ref="el => action.focus && (focused = el)"
         type="button"
         class="apos-assistant-activity__action"
         :class="`apos-assistant-activity__action--${action.kind || 'text'}`"
@@ -36,9 +58,12 @@
 </template>
 
 <script setup>
+import { onMounted, ref } from 'vue';
+
 // The activity slot under a request: what went wrong, what needs a look
 // or a decision, and what happened besides the reply. Error and lock
-// errors use the error tone
+// errors use the error tone. The default slot takes more than a line of
+// text
 defineProps({
   // 'error', 'warning' or 'general'
   tone: {
@@ -53,15 +78,24 @@ defineProps({
     type: String,
     default: null
   },
-  // `{ name, label, kind?, disabled? }`, kind 'text' (the default), or
-  // 'primary' and 'quiet' for a decision
+  // `{ name, label, kind?, disabled?, focus? }`, kind 'text' (the
+  // default), or 'primary' and 'quiet' for a decision; `focus` takes the
+  // focus when the slot appears
   actions: {
     type: Array,
     default: () => []
+  },
+  // A × at the end of the title that emits `dismiss`, labelled so
+  dismissLabel: {
+    type: String,
+    default: null
   }
 });
 
-const emit = defineEmits([ 'action' ]);
+const emit = defineEmits([ 'action', 'dismiss' ]);
+const focused = ref(null);
+
+onMounted(() => focused.value?.focus());
 </script>
 
 <style lang="scss" scoped>
@@ -70,6 +104,7 @@ const emit = defineEmits([ 'action' ]);
     --apos-assistant-activity-action: color-mix(in srgb, var(--a-danger) 80%, var(--a-black));
 
     & {
+      position: relative;
       display: flex;
       flex-direction: column;
       gap: 4px;
@@ -77,6 +112,38 @@ const emit = defineEmits([ 'action' ]);
       border-radius: var(--a-border-radius-large);
       color: var(--a-text-primary);
       background-color: var(--a-danger-button-background);
+    }
+  }
+
+  .apos-assistant-activity__dismiss {
+    @include apos-button-reset();
+
+    & {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: grid;
+      place-items: center;
+      width: 23px;
+      height: 23px;
+      border-radius: 50%;
+      color: var(--a-base-1);
+      transition: background-color 200ms, color 200ms;
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    &:hover {
+      color: var(--a-text-primary);
+      background-color: color-mix(in srgb, var(--a-black) 6%, transparent);
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--apos-assistant-activity-action);
+      outline-offset: 1px;
     }
   }
 
@@ -104,6 +171,10 @@ const emit = defineEmits([ 'action' ]);
       font-weight: var(--a-weight-bold);
       line-height: var(--a-line-tall);
     }
+  }
+
+  .apos-assistant-activity__title--dismissible {
+    padding-right: 24px;
   }
 
   .apos-assistant-activity__text {

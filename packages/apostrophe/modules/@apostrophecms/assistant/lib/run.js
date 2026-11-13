@@ -77,6 +77,18 @@ module.exports = (self) => {
         if (screenChanges) {
           request.screenChanges = screenChanges;
         }
+        const { text: pageChanges, pageRows } = await self.getPageChanges(
+          req,
+          claimed,
+          request.sequence,
+          verified
+        );
+        if (pageChanges) {
+          request.pageChanges = pageChanges;
+        }
+        if (pageRows) {
+          request.pageRows = pageRows;
+        }
         await self.requests.insertOne(request);
         await self.publishRequest(req, request);
         const title = await self.setFirstTitle(claimed, self.getPlainMessage(text));
@@ -173,11 +185,23 @@ module.exports = (self) => {
      *
      * @param {object} req
      * @param {string} chatId
+     * @param {object} [options]
+     * @param {boolean} [options.planCancel] The editor cancelled the
+     *   request's plan: the request is marked `planCancelled`.
      * @returns {Promise<object>} The request record.
      */
-    async stop(req, chatId) {
+    async stop(req, chatId, { planCancel = false } = {}) {
       const chat = await self.reconcileChat(req, await self.getChat(req, chatId));
       const open = chat.openRequest;
+      if (open && planCancel) {
+        await self.requests.updateOne({
+          _id: open._id,
+          ownerId: chat.ownerId,
+          status: { $in: [ 'running', 'stopping', 'waiting' ] }
+        }, {
+          $set: { planCancelled: true }
+        });
+      }
       if (open?.status === 'waiting') {
         try {
           return await self.endWaiting(req, chat, await self.getRequest(req, open._id), {
@@ -188,7 +212,7 @@ module.exports = (self) => {
           if (e.data?.reason !== 'notWaiting') {
             throw e;
           }
-          return self.stop(req, chatId);
+          return self.stop(req, chatId, { planCancel });
         }
       }
       const { matchedCount } = open
@@ -230,15 +254,17 @@ module.exports = (self) => {
     },
 
     // The transcript a request continues: the stored slices of the chat's
-    // earlier requests, in order. A failed request is replayed as far as
-    // its run got, so a retry sees the calls already made; one the model
-    // never answered is left out, its message coming back with Retry
+    // earlier requests, in order, reverted ones left out. A failed request
+    // is replayed as far as its run got, so a retry sees the calls already
+    // made; one the model never answered is left out, its message coming
+    // back with Retry
     async getTranscript(chat, request) {
       const earlier = await self.requests
         .find({
           chatId: chat._id,
           ownerId: chat.ownerId,
-          sequence: { $lt: request.sequence }
+          sequence: { $lt: request.sequence },
+          revertId: { $exists: false }
         })
         .project({
           status: 1,
@@ -258,9 +284,10 @@ module.exports = (self) => {
 
     // A request's message as the model reads it, after a line naming the
     // request, the id `get_changes` reads a request's changes by, what
-    // changed on the screen since the model's last reply and the screen as
-    // it is, and before the documents it mentions. Stored as sent, so the
-    // next request's prompt starts with this one's
+    // changed on the screen and what became of the model's changes to the
+    // page since its last reply, and the screen as it is, and before the
+    // documents it mentions. Stored as sent, so the next request's prompt
+    // starts with this one's
     getUserMessage(request) {
       return {
         role: 'user',
@@ -273,6 +300,12 @@ module.exports = (self) => {
             ? [ {
               type: 'text',
               text: request.screenChanges
+            } ]
+            : []),
+          ...(request.pageChanges
+            ? [ {
+              type: 'text',
+              text: request.pageChanges
             } ]
             : []),
           {

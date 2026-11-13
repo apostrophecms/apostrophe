@@ -473,11 +473,12 @@ async function confirmDelete(row) {
     }
   }
 
+  // The theme's red, darkened to read at 4.5:1
   .apos-assistant-menu__text-button--yes {
-    color: var(--a-danger);
+    color: color-mix(in srgb, var(--a-danger) 80%, var(--a-black));
 
     &:hover {
-      color: var(--a-danger);
+      color: color-mix(in srgb, var(--a-danger) 80%, var(--a-black));
       background-color: var(--a-danger-button-background);
     }
   }

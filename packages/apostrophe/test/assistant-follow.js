@@ -111,6 +111,26 @@ describe('Assistant: following a request', function () {
               handler: async () => ({ ok: true })
             });
             self.apos.ai.addTool({
+              name: 't_write',
+              description: 'Writes a document.',
+              tags: [ 'assistant' ],
+              input: {
+                type: 'object',
+                properties: {
+                  _id: { type: 'string' },
+                  patch: { type: 'object' }
+                },
+                required: [ '_id', 'patch' ]
+              },
+              handler: async (req, { _id, patch }) => {
+                const { written } = await self.apos.harness.writeDocuments(req, [ {
+                  _id,
+                  patch
+                } ]);
+                return { written: written.length };
+              }
+            });
+            self.apos.ai.addTool({
               name: 't_question',
               description: 'Asks the user a question.',
               tags: [ 'assistant' ],
@@ -495,6 +515,179 @@ describe('Assistant: following a request', function () {
     });
   });
 
+  describe('the model\'s changes to the page', function () {
+    const INTRO = 'Since your last reply the user changed some of your changes on the page';
+    let page;
+    let chat;
+
+    beforeEach(async function () {
+      page = await findDraft(await apos.modules['assistant-note'].insert(apos.task.getReq(), {
+        title: 'Page note',
+        links: [ { label: 'First' } ]
+      }));
+      chat = await apos.assistant.createChat(userReq(editor));
+    });
+
+    it('tells the model once of a change the user undid, and what the line reads', async function () {
+      const written = await write({ title: 'AI title' });
+      await save({ title: 'Page note' });
+
+      const { text, request } = await sendOnPage();
+
+      const [ entry ] = await apos.harness.changes
+        .find({ requestId: written._id })
+        .toArray();
+      assert.equal(text, `${INTRO} "Page note" (${page._id}); now: undone = put back as ` +
+        'before your change, edited = changed by the user, removed = gone, back = an undone ' +
+        `change returned: {"rows":[{"requestId":"${written._id}","path":"title",` +
+        '"change":"modified","now":"undone"}]}');
+      assert.deepEqual(request.pageRows, {
+        docId: page._id,
+        rows: { [`${entry._id}:0`]: 'reverted' }
+      });
+      // Told once: the next send has nothing new to say
+      assert.equal((await sendOnPage()).text, undefined);
+    });
+
+    it('tells the model of an edit by the user, and of an undone change back', async function () {
+      const written = await write({ title: 'AI title' });
+      await save({ title: 'Page note' });
+      assert.equal(nowOf(await sendOnPage()), 'undone');
+
+      await save({ title: 'AI title' });
+      const back = await sendOnPage();
+      assert.deepEqual(back.rows, [ {
+        requestId: written._id,
+        path: 'title',
+        change: 'modified',
+        now: 'back'
+      } ]);
+
+      await save({ title: 'Mine' });
+      assert.equal(nowOf(await sendOnPage()), 'edited');
+    });
+
+    it('checks the rows whoever holds the page\'s lock', async function () {
+      await write({ title: 'AI title' });
+      await save({ title: 'Page note' });
+      await apos.doc.lock(userReq(editor), await findDraft(page), 'other-tab');
+
+      try {
+        assert.equal(nowOf(await sendOnPage()), 'undone');
+      } finally {
+        await apos.doc.unlock(userReq(editor), await findDraft(page), 'other-tab');
+      }
+    });
+
+    it('says nothing of a change still as written, of another page or without one', async function () {
+      await write({ title: 'AI title' });
+
+      const kept = await sendOnPage();
+      assert.equal(kept.text, undefined);
+      assert.equal(Object.values(kept.request.pageRows.rows).join(), 'putBack');
+
+      await save({ title: 'Page note' });
+      const elsewhere = await sendOnPage({
+        tabId: 'tab-1',
+        document: { _id: note._id }
+      });
+      assert.equal(elsewhere.text, undefined);
+      assert.equal(elsewhere.request.pageRows, undefined);
+      const nowhere = await sendOnPage({ tabId: 'tab-1' });
+      assert.equal(nowhere.text, undefined);
+      assert.equal(nowhere.request.pageRows, undefined);
+      // Back on the page, the undo is still news
+      assert.equal(nowOf(await sendOnPage()), 'undone');
+    });
+
+    it('never tells of a reverted request\'s changes', async function () {
+      const written = await write({ title: 'AI title' });
+      const started = await apos.assistant.revert(userReq(editor), chat._id, {
+        requestId: written._id,
+        tabId: 'tab-1'
+      });
+      await waitFor(async () => {
+        const stored = await apos.assistant.getRevert(userReq(editor), started._id);
+        const job = stored.jobId &&
+          await apos.modules['@apostrophecms/job'].db.findOne({ _id: stored.jobId });
+        return (stored.status === 'done') && job?.ended;
+      });
+      assert.equal((await findDraft(page)).title, 'Page note');
+
+      const after = await sendOnPage();
+
+      assert.equal(after.text, undefined);
+      assert.equal(after.request.pageRows, undefined);
+    });
+
+    it('names twenty rows at most, and how many more', async function () {
+      const labels = Array.from({ length: 22 }, (value, i) => ({ label: `Link ${i}` }));
+      await write({ links: [ ...page.links, ...labels ] });
+      await save({ links: page.links });
+
+      const { text } = await sendOnPage();
+
+      const shown = JSON.parse(text.slice(text.indexOf('{"rows"')));
+      assert.equal(shown.rows.length, 20);
+      assert.equal(shown.more, 2);
+      assert(shown.rows.every(row => (row.change === 'added') && (row.now === 'undone') &&
+        row.path.startsWith('@')));
+    });
+
+    // A request writing `patch` to the page, run to its end
+    async function write(patch) {
+      script = sequence([ toolTurn('t_write', {
+        _id: page._id,
+        patch
+      }), { text: 'Done.' } ]);
+      await apos.assistant.send(userReq(editor), chat._id, {
+        message: 'Write it',
+        screen: onPage()
+      });
+      return waitForEnd(userReq(editor), chat);
+    }
+
+    // The user's own save of the page, outside any request
+    async function save(values) {
+      await apos.modules['assistant-note'].update(userReq(editor), {
+        ...await findDraft(page),
+        ...values
+      });
+    }
+
+    // A send on `screen` run to its end: the line it told the model of its
+    // changes to the page, if any, its rows, and the request
+    async function sendOnPage(screen = onPage()) {
+      await apos.assistant.send(userReq(editor), chat._id, {
+        message: 'Next',
+        screen
+      });
+      const request = await waitForEnd(userReq(editor), chat);
+      const text = calls
+        .findLast(call => call.system?.includes('Current screen'))
+        .messages.findLast(message => message.role === 'user')
+        .content.map(part => part.text)
+        .find(part => part.startsWith(INTRO));
+      return {
+        text,
+        rows: text && JSON.parse(text.slice(text.indexOf('{"rows"'))).rows,
+        request
+      };
+    }
+
+    function nowOf({ rows }) {
+      assert.equal(rows?.length, 1);
+      return rows[0].now;
+    }
+
+    function onPage() {
+      return {
+        tabId: 'tab-1',
+        document: { _id: page._id }
+      };
+    }
+  });
+
   describe('locales', function () {
     let french;
     let englishOnly;
@@ -645,6 +838,28 @@ describe('Assistant: following a request', function () {
       assert.equal(request.finishReason, 'cancel');
       assert((await apos.assistant.getChat(req, chat._id)).openRequest === null);
       assert.deepEqual(statuses(request), [ 'running', 'stopping', 'stopped' ]);
+    });
+
+    it('marks a request stopped to cancel its plan', async function () {
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      const gate = holdUntilStopped();
+      await send(req, chat, 'tab-1', 'Hello');
+      await waitFor(() => gate.waiting === 1);
+
+      await apos.assistant.stop(req, chat._id, { planCancel: true });
+
+      const request = await waitForEnd(req, chat);
+      assert.equal(request.status, 'stopped');
+      assert.equal(request.planCancelled, true);
+      const rendered = apos.assistant.renderRequest({
+        ...request,
+        pageChanges: 'Since your last reply',
+        pageRows: {}
+      });
+      assert.equal(rendered.planCancelled, true);
+      assert.equal(rendered.pageChanges, undefined);
+      assert.equal(rendered.pageRows, undefined);
     });
 
     it('keeps the reply of a run that ends before the stop reaches it', async function () {

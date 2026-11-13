@@ -26,6 +26,11 @@ import { browserTools } from '../lib/browser-tools.js';
  * opened is open; the editor with a modal open or unsaved changes on the
  * page. An `editMode` ask is such a step too, before a write to the page:
  * the page enters edit mode.
+ *
+ * Revert takes back a request and every later one. A dry run decides: a
+ * clean revert runs at once, any other waits on the editor's confirmation,
+ * which is this page's alone and never stored. Once a revert this page
+ * started is done, the reverted message returns to the composer.
  */
 
 export const NEW_CHAT = 'new';
@@ -54,6 +59,16 @@ export const useAssistantStore = defineStore('assistant', () => {
   // `{ retrying: true }` while the provider call is retried. Progress is
   // never stored, so a reload starts without it
   const progress = ref({});
+  // Each loaded chat's reverts in the order they were made, by chat id
+  const reverts = ref({});
+  // How far a running revert got, by revert id: `{ done, total }`, newer
+  // than its record's `progress`
+  const revertProgress = ref({});
+  // The revert waiting on the editor's confirmation, by chat id:
+  // `{ requestId, requestIds, documents, cause }`
+  const confirmations = ref({});
+  // The request whose revert's dry run is under way, by chat id
+  const checking = ref({});
 
   // Whether this browser tab is visible, as the page last reported it
   const visible = ref(document.visibilityState !== 'hidden');
@@ -78,6 +93,8 @@ export const useAssistantStore = defineStore('assistant', () => {
   let timer = null;
   // The browser asks taken on this page, by call id: each runs once
   const served = new Set();
+  // The reverts this page started, whose message returns once done
+  const returning = new Set();
 
   function getAction() {
     return apos.modules['@apostrophecms/assistant'].action;
@@ -196,14 +213,24 @@ export const useAssistantStore = defineStore('assistant', () => {
       forget(chatId);
       return;
     }
-    if ((stage === 'chat') || (stage === 'request')) {
+    if ([ 'chat', 'request', 'revert' ].includes(stage)) {
       if (stage === 'request') {
         delete progress.value[requestId];
+      }
+      if (stage === 'revert') {
+        delete revertProgress.value[event.revertId];
       }
       schedule('chats');
       if (requests.value[chatId] || tabs.value.includes(chatId)) {
         schedule(chatId);
       }
+      return;
+    }
+    if (stage === 'revertProgress') {
+      revertProgress.value[event.revertId] = {
+        done: event.done,
+        total: event.total
+      };
       return;
     }
     if ((stage === 'tool') && (event.phase === 'start')) {
@@ -280,7 +307,27 @@ export const useAssistantStore = defineStore('assistant', () => {
     }
     setChat(result.chat);
     requests.value[id] = result.requests;
+    reverts.value[id] = result.reverts;
+    returnMessages(id);
     serveAsks(id);
+  }
+
+  // The message of each revert this page started returns to the composer
+  // once the revert is done, in front of any draft
+  function returnMessages(id) {
+    for (const revert of reverts.value[id] || []) {
+      if (!returning.has(revert._id) || (revert.status === 'running')) {
+        continue;
+      }
+      returning.delete(revert._id);
+      const [ first ] = revert.requestIds;
+      const message = (revert.status === 'done') &&
+        requests.value[id]?.find(request => request._id === first)?.message;
+      if (message) {
+        const draft = drafts.value[id] || '';
+        setDraft(id, draft.trim() ? `${message}\n\n${draft}` : message);
+      }
+    }
   }
 
   // The browser asks of the chat's request, when this browser tab owns it
@@ -597,6 +644,8 @@ export const useAssistantStore = defineStore('assistant', () => {
   function forget(id) {
     chats.value = chats.value.filter(chat => chat._id !== id);
     delete requests.value[id];
+    delete reverts.value[id];
+    delete confirmations.value[id];
     delete refusals.value[id];
     if (tabs.value.includes(id)) {
       closeTab(id);
@@ -859,6 +908,170 @@ export const useAssistantStore = defineStore('assistant', () => {
     }
   }
 
+  /**
+   * Starts reverting a request and every later one: a dry run first, then
+   * a clean revert runs at once and any other waits on the editor's
+   * confirmation (`confirmations`). A refusal means the view was stale:
+   * the records are read again.
+   *
+   * @param {string} id
+   * @param {string} requestId The earliest request to revert.
+   * @param {object} [options]
+   * @param {string} [options.cause] `planCancel` when the editor cancelled
+   *   the request's plan.
+   */
+  async function startRevert(id, requestId, { cause = null } = {}) {
+    if (checking.value[id]) {
+      return;
+    }
+    checking.value[id] = requestId;
+    delete confirmations.value[id];
+    try {
+      const { requestIds, documents } = await apos.http.post(
+        `${getAction()}/chat/${id}/revert-check`,
+        {
+          body: {
+            requestId,
+            tabId: getTabId()
+          }
+        }
+      );
+      const clean = documents.every(document => [ 'putBack', 'reverted' ].includes(document.outcome));
+      if (clean) {
+        await runRevert(id, requestId, cause);
+      } else {
+        confirmations.value[id] = {
+          requestId,
+          requestIds,
+          documents,
+          cause
+        };
+      }
+    } catch (e) {
+      if (![ 400, 404, 409 ].includes(e.status)) {
+        report(e);
+      }
+    } finally {
+      delete checking.value[id];
+    }
+    await loadChats();
+    await loadChat(id);
+  }
+
+  // The revert the editor confirmed
+  async function confirmRevert(id) {
+    const confirmation = confirmations.value[id];
+    if (!confirmation) {
+      return;
+    }
+    delete confirmations.value[id];
+    try {
+      await runRevert(id, confirmation.requestId, confirmation.cause);
+    } catch (e) {
+      if (![ 400, 404, 409 ].includes(e.status)) {
+        report(e);
+      }
+    }
+    await loadChats();
+    await loadChat(id);
+  }
+
+  function cancelRevert(id) {
+    delete confirmations.value[id];
+  }
+
+  async function runRevert(id, requestId, cause) {
+    const { revert } = await apos.http.post(`${getAction()}/chat/${id}/revert`, {
+      body: {
+        requestId,
+        tabId: getTabId(),
+        ...(cause && { cause })
+      }
+    });
+    returning.add(revert._id);
+  }
+
+  /**
+   * Runs a revert again: a failed one whole, a done one for the documents
+   * that were locked. A refusal means the view was stale: the records are
+   * read again.
+   *
+   * @param {string} id
+   * @param {string} revertId
+   */
+  async function retryRevert(id, revertId) {
+    // Its message returns only if its requests haven't left the thread yet
+    const rewinds = (reverts.value[id]?.find(revert => revert._id === revertId)?.status === 'failed') &&
+      !requests.value[id]?.some(request => request.revertId === revertId);
+    try {
+      await apos.http.post(`${getAction()}/chat/${id}/revert-retry`, {
+        body: {
+          revertId,
+          tabId: getTabId()
+        }
+      });
+      if (rewinds) {
+        returning.add(revertId);
+      }
+    } catch (e) {
+      if (![ 400, 404, 409 ].includes(e.status)) {
+        report(e);
+      }
+    }
+    await loadChats();
+    await loadChat(id);
+  }
+
+  async function dismissRevert(id, revertId) {
+    try {
+      await apos.http.post(`${getAction()}/chat/${id}/revert-dismiss`, {
+        body: { revertId }
+      });
+    } catch (e) {
+      if (e.status !== 404) {
+        report(e);
+      }
+    }
+    await loadChat(id);
+  }
+
+  /**
+   * Cancels the plan of the chat's open request: stops it, waits for it to
+   * end, then reverts it as any revert, asking first when it isn't clean.
+   *
+   * @param {string} id
+   * @param {string} requestId
+   */
+  async function cancelPlan(id, requestId) {
+    try {
+      await apos.http.post(`${getAction()}/chat/${id}/stop`, {
+        body: { planCancel: true }
+      });
+    } catch (e) {
+      if (![ 404, 409 ].includes(e.status)) {
+        report(e);
+      }
+    }
+    await loadChats();
+    await loadChat(id);
+    await new Promise((resolve) => {
+      const open = () => getChat(id)?.openRequest?._id === requestId;
+      if (!open()) {
+        resolve();
+        return;
+      }
+      const stop = watch(open, (still) => {
+        if (!still) {
+          stop();
+          resolve();
+        }
+      });
+    });
+    if (getChat(id)) {
+      await startRevert(id, requestId, { cause: 'planCancel' });
+    }
+  }
+
   function refuse(id, e) {
     const reason = e.body?.data?.reason;
     if (reason === 'otherBrowserTab') {
@@ -869,6 +1082,13 @@ export const useAssistantStore = defineStore('assistant', () => {
       refusals.value[id] = {
         title: 'apostrophe:assistantStillRunning',
         text: 'apostrophe:assistantStillRunningText'
+      };
+      return;
+    }
+    if (reason === 'revertRunning') {
+      refusals.value[id] = {
+        title: 'apostrophe:assistantStillReverting',
+        text: 'apostrophe:assistantStillRevertingText'
       };
       return;
     }
@@ -951,6 +1171,10 @@ export const useAssistantStore = defineStore('assistant', () => {
     drafts,
     refusals,
     progress,
+    reverts,
+    revertProgress,
+    confirmations,
+    checking,
     browserSteps,
     getChat,
     getOwner,
@@ -970,6 +1194,12 @@ export const useAssistantStore = defineStore('assistant', () => {
     answer,
     skip,
     retry,
+    startRevert,
+    confirmRevert,
+    cancelRevert,
+    retryRevert,
+    dismissRevert,
+    cancelPlan,
     findMentions,
     setDraft
   };

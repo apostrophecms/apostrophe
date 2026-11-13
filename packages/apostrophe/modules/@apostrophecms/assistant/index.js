@@ -131,10 +131,11 @@ module.exports = {
           const found = await self.getChat(req, req.params._id);
           const chat = await self.reconcileChat(req, found);
           const requests = await self.getChatRequests(req, chat._id);
+          const reverts = await self.getChatReverts(req, chat._id);
           return {
             chat,
             requests: requests.map(self.renderRequest),
-            reverts: await self.getChatReverts(req, chat._id)
+            reverts: reverts.map(self.renderRevert)
           };
         }),
         mention: route(async (req) => ({
@@ -171,7 +172,9 @@ module.exports = {
           }))
         })),
         'chat/:_id/stop': route(async (req) => ({
-          request: self.renderRequest(await self.stop(req, req.params._id))
+          request: self.renderRequest(await self.stop(req, req.params._id, {
+            planCancel: req.body.planCancel === true
+          }))
         })),
         'chat/:_id/retry': route(async (req) => ({
           request: self.renderRequest(await self.retry(req, req.params._id, {
@@ -179,22 +182,35 @@ module.exports = {
             screen: req.body.screen
           }))
         })),
-        'chat/:_id/revert-check': route(async (req) => self.checkRevert(req, req.params._id, {
-          requestId: req.body.requestId,
-          tabId: req.body.tabId
-        })),
-        'chat/:_id/revert': route(async (req) => ({
-          revert: await self.revert(req, req.params._id, {
+        'chat/:_id/revert-check': route(async (req) => {
+          const { requestIds, documents } = await self.checkRevert(req, req.params._id, {
             requestId: req.body.requestId,
             tabId: req.body.tabId
-          })
+          });
+          return {
+            requestIds,
+            documents: self.renderRevert({ documents }).documents
+          };
+        }),
+        'chat/:_id/revert': route(async (req) => ({
+          revert: self.renderRevert(await self.revert(req, req.params._id, {
+            requestId: req.body.requestId,
+            tabId: req.body.tabId,
+            cause: req.body.cause
+          }))
         })),
         'chat/:_id/revert-retry': route(async (req) => ({
-          revert: await self.retryRevert(req, req.params._id, {
+          revert: self.renderRevert(await self.retryRevert(req, req.params._id, {
             revertId: req.body.revertId,
             tabId: req.body.tabId
-          })
+          }))
         })),
+        'chat/:_id/revert-dismiss': route(async (req) => {
+          await self.dismissRevert(req, req.params._id, {
+            revertId: req.body.revertId
+          });
+          return {};
+        }),
         visibility: route(async (req) => {
           await self.setVisible(req, {
             tabId: req.body.tabId,

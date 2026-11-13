@@ -1,6 +1,7 @@
-// A request as the panel reads it, built on every read and never stored:
-// the reply rendered, the steps the run took, and the documents it had to
-// leave because someone was editing them.
+// Requests and reverts as the panel reads them, built on every read and
+// never stored: a request's reply rendered, the steps the run took, and the
+// documents it had to leave because someone was editing them; a revert's
+// documents without their rows.
 
 const DOOR = 'assistant';
 // A step's arguments and result are a trail, not a reader: a document read
@@ -18,14 +19,15 @@ module.exports = (self) => {
      * the arguments and result as capped JSON text; `locked` lists the
      * documents a write was refused for a lock and no later write of the
      * request reached, `{ _id, title }`. The vendor and model are left out
-     * unless `modelDisplay` is set.
+     * unless `modelDisplay` is set, and what the model was told of its
+     * changes to the page always.
      *
      * @param {object} request
      * @returns {object}
      */
     renderRequest(request) {
       const {
-        provider, model, ...rest
+        provider, model, pageChanges, pageRows, ...rest
       } = request;
       const messages = request.messages || [];
       return {
@@ -118,6 +120,35 @@ module.exports = (self) => {
         }
         return `${text.slice(0, STEP_TEXT_MAX)}\n…`;
       }
+    },
+
+    /**
+     * A revert, or a revert's dry run, as the panel reads it: each document
+     * without its rows, `partly` when it is kept or not restorable though
+     * some of its rows were put back, with its type's `label` and
+     * `pluralLabel` as written.
+     *
+     * @param {object} revert
+     * @returns {object}
+     */
+    renderRevert(revert) {
+      const {
+        ownerId, schemaVersion, jobId, documents, ...rest
+      } = revert;
+      return {
+        ...rest,
+        documents: (documents || []).map(({ rows, ...document }) => {
+          const manager = self.apos.doc.getManager(document.type);
+          const page = manager && self.apos.instanceOf(manager, '@apostrophecms/page-type');
+          return {
+            ...document,
+            label: page ? 'apostrophe:page' : (manager?.options.label || null),
+            pluralLabel: page ? 'apostrophe:pages' : (manager?.options.pluralLabel || null),
+            partly: [ 'kept', 'unrestorable' ].includes(document.outcome) &&
+              (rows || []).some(row => row.outcome === 'putBack')
+          };
+        })
+      };
     }
   };
 };

@@ -20,6 +20,8 @@
       v-else-if="plan"
       :request="plan.request"
       :failed="plan.failed"
+      :cancellable="plan.cancellable"
+      @cancel="cancelPlan"
     />
     <div class="apos-assistant-composer__shell">
       <div
@@ -163,9 +165,13 @@ const canSelect = computed(() => !editMode.value &&
 const draft = computed(() => store.drafts[props.chatId] || '');
 const chat = computed(() => store.getChat(props.chatId));
 const owner = computed(() => store.getOwner(chat.value));
+// A revert running or waiting on its confirmation is about to rewind the
+// thread: the composer takes a draft, Send waits
 const canSend = computed(() => !sending.value &&
   !!draft.value.trim() &&
-  (owner.value === 'none'));
+  (owner.value === 'none') &&
+  !chat.value?.openRevert &&
+  !store.confirmations[props.chatId]);
 // While the chat runs, an empty composer stops it, in any browser tab, and
 // so it does while a browser step works on this browser tab's screen
 const running = computed(() => [ 'running', 'stopping' ].includes(chat.value?.openRequest?.status) ||
@@ -214,22 +220,26 @@ const question = computed(() => {
   return request.asks?.find(ask => ask.kind === 'question') || null;
 });
 // The plan of the chat's latest request while it is open, folded once it
-// failed
+// failed. Cancel reverts what it did, so not once a cancel is under way
 const plan = computed(() => {
   const request = latest.value;
-  if (!request?.plan?.length) {
+  if (!request?.plan?.length || request.revertId) {
     return null;
   }
+  const cancellable = !request.planCancelled && !store.checking[props.chatId] &&
+    !chat.value?.openRevert;
   if ([ 'running', 'stopping', 'waiting' ].includes(request.status)) {
     return {
       request,
-      failed: false
+      failed: false,
+      cancellable: cancellable && (request.status !== 'stopping')
     };
   }
   return (request.status === 'failed')
     ? {
       request,
-      failed: true
+      failed: true,
+      cancellable
     }
     : null;
 });
@@ -349,6 +359,10 @@ function stop() {
 // The dock's one action: Continue here
 function onDockAction() {
   store.continueHere(props.chatId);
+}
+
+function cancelPlan() {
+  store.cancelPlan(props.chatId, latest.value._id);
 }
 </script>
 

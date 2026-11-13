@@ -41,6 +41,26 @@
             :icon-size="12"
           />
         </button>
+        <button
+          v-else-if="finished"
+          ref="revertButton"
+          type="button"
+          class="apos-assistant-request__revert"
+          :aria-label="revertLabel"
+          :title="revertLabel"
+          :aria-disabled="revertBlocked ? 'true' : null"
+          :aria-busy="checking ? 'true' : null"
+          data-apos-test="assistant-request-revert"
+          @click="startRevert"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M20 13.5C20 17.09 17.09 20 13.5 20H6V18H13.5C16 18 18 16 18 13.5S16 9 13.5 9H7.83L10.91 12.09L9.5 13.5L4 8L9.5 2.5L10.92 3.91L7.83 7H13.5C17.09 7 20 9.91 20 13.5Z" />
+          </svg>
+        </button>
       </div>
     </div>
     <p
@@ -91,7 +111,7 @@
       class="apos-assistant-request__notice"
       data-apos-test="assistant-request-stopped"
     >
-      {{ $t('apostrophe:assistantStopped') }}
+      {{ $t(request.planCancelled ? 'apostrophe:assistantPlanCancelledNotice' : 'apostrophe:assistantStopped') }}
     </p>
     <p
       v-if="footer"
@@ -100,6 +120,63 @@
     >
       {{ footer }}
     </p>
+    <AposAssistantActivity
+      v-if="confirmation"
+      tone="warning"
+      :title="$t('apostrophe:assistantRevertConfirm', { count: confirmation.requestIds.length })"
+      :actions="[
+        {
+          name: 'cancelRevert',
+          label: $t('apostrophe:cancel'),
+          kind: 'quiet',
+          focus: true
+        },
+        {
+          name: 'confirmRevert',
+          label: $t('apostrophe:assistantRevert'),
+          kind: 'primary'
+        }
+      ]"
+      data-apos-test="assistant-revert-confirm"
+      @action="onAction"
+    >
+      <p
+        v-for="line in confirmLines"
+        :key="line.key"
+        class="apos-assistant-request__line"
+        data-apos-test="assistant-revert-confirm-line"
+      >
+        <template
+          v-for="(segment, index) in line.segments"
+          :key="index"
+        >
+          <strong v-if="segment.kind === 'count'">{{ segment.text }}</strong>
+          <em v-else-if="segment.kind === 'name'">{{ segment.text }}</em>
+          <span v-else>{{ segment.text }}</span>
+        </template>
+      </p>
+    </AposAssistantActivity>
+    <p
+      v-if="revert?.status === 'running'"
+      class="apos-assistant-request__status"
+      aria-live="polite"
+      data-apos-test="assistant-revert-status"
+    >
+      <AposAssistantThinking />
+      <span class="apos-assistant-request__status-text">{{ revertStatus }}</span>
+    </p>
+    <AposAssistantActivity
+      v-else-if="revert?.status === 'failed'"
+      tone="error"
+      v-bind="revertFailure"
+      :actions="[ {
+        name: 'retryRevert',
+        label: $t('apostrophe:assistantRetry'),
+        disabled: retrying
+      } ]"
+      data-apos-test="assistant-revert-failed"
+      @action="onAction"
+    />
   </div>
 </template>
 
@@ -109,6 +186,9 @@ import {
 } from 'vue';
 import { useAssistantStore } from '../stores/assistant.js';
 import { createChipIcon } from '../lib/chip.js';
+import {
+  formatNames, getConfirmLines, getRevertFailure, getRevertStatus, splitCount
+} from '../lib/revert.js';
 
 // One message and what came of it: the request that runs it, or the
 // latest retry when it failed before. The message stays pinned at the top
@@ -129,6 +209,28 @@ const props = defineProps({
   latest: {
     type: Boolean,
     default: false
+  },
+  // The request Revert takes back from: the message's first, which a
+  // retry repeats
+  revertFrom: {
+    type: String,
+    default: null
+  },
+  // How many messages follow it, which Revert takes back too
+  after: {
+    type: Number,
+    default: 0
+  },
+  // The revert of this message waiting on the editor's confirmation (see
+  // the store's `confirmations`)
+  confirmation: {
+    type: Object,
+    default: null
+  },
+  // Its revert running for the first time, or failed
+  revert: {
+    type: Object,
+    default: null
   }
 });
 
@@ -163,6 +265,7 @@ const retrying = ref(false);
 const answering = ref(false);
 const text = ref(null);
 const replyText = ref(null);
+const revertButton = ref(null);
 
 const chat = computed(() => store.getChat(props.request.chatId));
 // A browser step this browser tab serves for it: the request works on, on
@@ -173,6 +276,68 @@ const browserStep = computed(() => ((chat.value?.openRequest?._id === props.requ
 const running = computed(() => [ 'running', 'stopping' ].includes(props.request.status) ||
   Boolean(browserStep.value));
 const stopping = computed(() => props.request.status === 'stopping');
+// Ended, so Revert may take it back: stopped and failed ones too, since
+// they may have written
+const finished = computed(() => !running.value && props.revertFrom &&
+  ![ 'running', 'stopping', 'waiting' ].includes(props.request.status));
+const checking = computed(() => Boolean(store.checking[props.request.chatId]));
+// Revert waits for the chat's open request or revert to end
+const revertBlocked = computed(() => Boolean(chat.value?.openRequest ||
+  chat.value?.openRevert));
+const revertLabel = computed(() => {
+  if (chat.value?.openRevert) {
+    return $t('apostrophe:assistantRevertBusy');
+  }
+  if (chat.value?.openRequest) {
+    return $t('apostrophe:assistantRevertUnavailable');
+  }
+  return props.after
+    ? $t('apostrophe:assistantRevertThisAndAfter', { count: props.after })
+    : $t('apostrophe:assistantRevertThis');
+});
+// The confirmation's lines, each split into the number, the text and the
+// names it keeps
+const confirmLines = computed(() => {
+  if (!props.confirmation) {
+    return [];
+  }
+  return getConfirmLines(props.confirmation.documents, $t).map((line) => {
+    const sentence = $t(line.key, {
+      count: line.count,
+      ...line.params
+    });
+    const segments = splitCount(sentence, line.count).map(part => ({
+      text: part.text,
+      kind: part.count ? 'count' : 'text'
+    }));
+    if (line.names) {
+      segments.push({
+        text: ' ',
+        kind: 'text'
+      });
+      for (const part of formatNames(line.names, $t)) {
+        segments.push({
+          text: part.text,
+          kind: part.name ? 'name' : 'text'
+        });
+      }
+      segments.push({
+        text: '.',
+        kind: 'text'
+      });
+    }
+    return {
+      key: line.key,
+      segments
+    };
+  });
+});
+const revertStatus = computed(() => (props.revert
+  ? getRevertStatus(props.revert, store.revertProgress, $t)
+  : null));
+const revertFailure = computed(() => ((props.revert?.status === 'failed')
+  ? getRevertFailure(props.revert, $t)
+  : null));
 
 // The latest step's label replaces the one before it
 const status = computed(() => {
@@ -388,7 +553,34 @@ function getConfirmText(payload) {
   };
 }
 
+function startRevert() {
+  if (!revertBlocked.value && !checking.value) {
+    store.startRevert(props.request.chatId, props.revertFrom);
+  }
+}
+
 async function onAction(name) {
+  if (name === 'confirmRevert') {
+    store.confirmRevert(props.request.chatId);
+    return;
+  }
+  if (name === 'cancelRevert') {
+    store.cancelRevert(props.request.chatId);
+    await nextTick();
+    revertButton.value?.focus();
+    return;
+  }
+  if (name === 'retryRevert') {
+    if (!retrying.value) {
+      retrying.value = true;
+      try {
+        await store.retryRevert(props.request.chatId, props.revert._id);
+      } finally {
+        retrying.value = false;
+      }
+    }
+    return;
+  }
   if ([ 'continue', 'notNow' ].includes(name)) {
     if (answering.value) {
       return;
@@ -550,10 +742,75 @@ function onChipClick(event) {
     }
   }
 
+  // The prototype's quiet Revert, where Stop sits on a running message
+  .apos-assistant-request__revert {
+    @include apos-button-reset();
+
+    & {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      display: grid;
+      place-items: center;
+      width: 27px;
+      height: 27px;
+      border-radius: 50%;
+      color: var(--a-base-3);
+      opacity: 0;
+      transition: opacity 200ms, background-color 200ms, color 200ms;
+      pointer-events: none;
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    &:hover:not([aria-disabled]) {
+      color: var(--a-text-primary);
+      background-color: var(--a-base-10);
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--a-base-7);
+      outline-offset: 1px;
+    }
+
+    &[aria-disabled] {
+      color: var(--a-base-6);
+      cursor: default;
+    }
+
+    &[aria-busy] {
+      cursor: progress;
+    }
+  }
+
   .apos-assistant-request__message:hover .apos-assistant-request__stop,
-  .apos-assistant-request__message:focus-within .apos-assistant-request__stop {
+  .apos-assistant-request__message:focus-within .apos-assistant-request__stop,
+  .apos-assistant-request__message:hover .apos-assistant-request__revert,
+  .apos-assistant-request__message:focus-within .apos-assistant-request__revert {
     opacity: 1;
     pointer-events: auto;
+  }
+
+  .apos-assistant-request__line {
+    @include type-base;
+
+    & {
+      margin: 0;
+      color: var(--a-base-1);
+      line-height: var(--a-line-tall);
+    }
+
+    strong {
+      color: var(--a-text-primary);
+      font-weight: var(--a-weight-bold);
+    }
+
+    em {
+      color: var(--a-text-primary);
+    }
   }
 
   .apos-assistant-request__status {

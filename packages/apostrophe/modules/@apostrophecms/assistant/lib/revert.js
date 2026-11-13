@@ -5,9 +5,12 @@
 // revert and no delete, and a revert waits for an open request to end.
 //
 // Each revert has a record in `aposChatReverts`: the requests it reverts,
-// its status (`running`, `done`, `failed`) and what became of every
-// document. Once it is done its requests carry its id (`revertId`) and
-// leave the thread; a failed one leaves them, and what it put back stays.
+// its status (`running`, `done`, `failed`), how far it got (`progress`)
+// and what became of every document. Once it is done its requests carry
+// its id (`revertId`) and leave the thread; a failed one leaves them, and
+// what it put back stays.
+
+const _ = require('lodash');
 
 // Raised when a record's shape changes; a migration upgrades older records
 const SCHEMA_VERSION = 1;
@@ -56,9 +59,13 @@ module.exports = (self) => {
      * @param {string} input.requestId The earliest request to revert.
      * @param {string} input.tabId The browser tab reverting, whose open
      *   page hears of each save.
+     * @param {string} [input.cause] `planCancel` when the editor cancelled
+     *   the request's plan.
      * @returns {Promise<object>} The revert record.
      */
-    async revert(req, chatId, { requestId, tabId } = {}) {
+    async revert(req, chatId, {
+      requestId, tabId, cause
+    } = {}) {
       const clean = self.launderTabId(tabId);
       const revertId = self.apos.util.generateId();
       const chat = await claim(req, self.apos.launder.id(chatId), {
@@ -75,7 +82,9 @@ module.exports = (self) => {
           ownerId: chat.ownerId,
           tabId: clean,
           requestIds,
+          ...((cause === 'planCancel') && { cause }),
           status: 'running',
+          progress: null,
           documents: [],
           createdAt: now,
           updatedAt: now
@@ -92,7 +101,8 @@ module.exports = (self) => {
     /**
      * Runs a revert again: a failed one whole, a done one for the documents
      * it held back because someone had them locked. Refused as `revert`
-     * is, and `invalid` when there is nothing to retry.
+     * is, and `invalid` when there is nothing to retry, or when a request
+     * was sent after a failed revert: reverting again takes it too.
      *
      * @param {object} req
      * @param {string} chatId
@@ -116,6 +126,11 @@ module.exports = (self) => {
         tabId: clean
       });
       try {
+        const first = await self.getRequest(req, found.requestIds[0]);
+        if ((found.status === 'failed') && !first.revertId &&
+          !_.isEqual(await getRequestIds(req, chat, first._id), found.requestIds)) {
+          throw self.apos.error('invalid', 'a request was sent after the revert failed');
+        }
         const { matchedCount } = await self.reverts.updateOne({
           _id: found._id,
           ownerId: found.ownerId,
@@ -124,6 +139,8 @@ module.exports = (self) => {
           $set: {
             status: 'running',
             tabId: clean,
+            progress: null,
+            dismissed: false,
             updatedAt: new Date()
           },
           $unset: {
@@ -166,6 +183,32 @@ module.exports = (self) => {
         })
         .sort({ createdAt: 1 })
         .toArray();
+    },
+
+    /**
+     * Sets aside what a revert reports it did not revert: the panel stops
+     * showing it, on reload too.
+     *
+     * @param {object} req
+     * @param {string} chatId
+     * @param {object} input
+     * @param {string} input.revertId
+     */
+    async dismissRevert(req, chatId, { revertId } = {}) {
+      const found = await self.getRevert(req, self.apos.launder.id(revertId));
+      if (found.chatId !== self.apos.launder.id(chatId)) {
+        throw self.apos.error('notfound');
+      }
+      await self.reverts.updateOne({
+        _id: found._id,
+        ownerId: found.ownerId
+      }, {
+        $set: {
+          dismissed: true,
+          updatedAt: new Date()
+        }
+      });
+      await self.publish(req, found.chatId, 'revert', { revertId: found._id });
     },
 
     /**
@@ -295,6 +338,17 @@ module.exports = (self) => {
                 await reporting.setTotal(total);
               }
               await reporting.success();
+              await self.reverts.updateOne({
+                _id: record._id,
+                ownerId: record.ownerId
+              }, {
+                $set: {
+                  progress: {
+                    done,
+                    total
+                  }
+                }
+              });
               await self.publish(req, chat._id, 'revertProgress', {
                 revertId: record._id,
                 done,
@@ -352,10 +406,16 @@ module.exports = (self) => {
           stack: error.stack
         });
       } else {
-        const fresh = new Map(documents.map(document => [ document.docId, document ]));
+        const fresh = new Map();
+        for (const document of documents) {
+          fresh.set(document.docId, {
+            ...document,
+            view: await getView(document)
+          });
+        }
         set.documents = retried
           ? stored.documents.map(document => fresh.get(document.docId) || document)
-          : documents;
+          : [ ...fresh.values() ];
       }
       await self.reverts.updateOne({
         _id: stored._id,
@@ -376,6 +436,42 @@ module.exports = (self) => {
       }
     }
     await freeChat(req, chat, record._id);
+
+    // Where the editor looks at a document the revert did not put back:
+    // `seeChanges` for one changed since, when its page shows them;
+    // `versions`, its Document Versions, for one locked, archived or not
+    // restorable, where See Changes can't be entered; `null` for one gone
+    // or without versions
+    async function getView({
+      docId, type, locale, outcome, reason
+    }) {
+      if (![ 'kept', 'unrestorable', 'locked' ].includes(outcome)) {
+        return null;
+      }
+      const manager = self.apos.doc.getManager(type);
+      const { docVersions } = self.apos;
+      if (!manager || !docVersions?.hasVersions(manager.options)) {
+        return null;
+      }
+      const doc = await manager
+        .find(req.clone({
+          mode: 'draft',
+          ...(locale && { locale })
+        }), { _id: docId })
+        .project({
+          _url: 1,
+          archived: 1
+        })
+        .archived(null)
+        .toObject();
+      if (!doc) {
+        return null;
+      }
+      const changed = (outcome === 'kept') && (reason !== 'archived') && !doc.archived;
+      return (changed && doc._url && docVersions.hasDraftVersions(manager.options))
+        ? 'seeChanges'
+        : 'versions';
+    }
   }
 
   async function freeChat(req, chat, revertId) {

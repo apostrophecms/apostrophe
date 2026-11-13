@@ -142,12 +142,12 @@ module.exports = (self) => {
           ...(at && { at }),
           ...(ai && { ai })
         };
-        const change = CHANGES[row.type];
+        const change = getChange(row);
         const { key, widget } = found;
         if ([ 'area', 'array' ].includes(row.kind)) {
           return [ {
             path: key,
-            change: 'reordered',
+            change,
             before: row.old,
             after: row.new,
             ...meta
@@ -242,13 +242,6 @@ module.exports = (self) => {
         }));
       }
 
-      // The shadow fields of a widget its AI-facing schema keeps
-      function getShadowFields(widget) {
-        return (widget?.schema || []).filter(field => {
-          return widget.manager.shadowSchema?.some(own => own.name === field.name);
-        });
-      }
-
       // A value of a row as AI reads it
       function project(value, {
         field, widget, item
@@ -271,60 +264,113 @@ module.exports = (self) => {
         return value;
       }
 
-      // Where `path` (Document Versions' segments) is in the AI-facing
-      // schema: `key`, the `update_document` key reaching it, and the
-      // `field` it ends at, or the `widget` (`{ manager, schema }`) or array
-      // `item` (its schema) it ends at. `null` outside the AI-facing schema
       function locate(path) {
-        let schema = self.getAiSchemaOf(draftReq, manager);
-        let list = null;
-        let key = '';
-        let found = {};
-        for (const segment of path) {
-          if (list?.type === 'area') {
-            const allowed = Object.keys(self.apos.area.getWidgets(list.options || {}));
-            const widgetManager = allowed.includes(segment.widgetType) &&
-              self.apos.area.getWidgetManager(segment.widgetType);
-            if (!widgetManager || !segment.name) {
-              return null;
-            }
-            schema = self.getAiSchemaOf(draftReq, widgetManager);
-            found = {
-              widget: {
-                manager: widgetManager,
-                schema
-              }
-            };
-          } else if (list?.type === 'array') {
-            if (!segment.name) {
-              return null;
-            }
-            schema = list.schema;
-            found = { item: schema };
-          } else {
-            const field = schema.find(field => field.name === segment.name);
-            if (!field) {
-              return null;
-            }
-            key = key ? `${key}.${field.name}` : field.name;
-            found = { field };
-            list = [ 'area', 'array' ].includes(field.type) ? field : null;
-            if (field.type === 'object') {
-              schema = field.schema;
-            }
-            continue;
+        return self.locateChangePath(draftReq, manager, path);
+      }
+    },
+
+    /**
+     * Where a change row's `path` (Document Versions' segments) is in the
+     * AI-facing schema of `manager`'s documents: `key`, the
+     * `update_document` key reaching it, and the `field` it ends at, or the
+     * `widget` (`{ manager, schema }`) or array `item` (its schema) it ends
+     * at. `null` outside the AI-facing schema.
+     *
+     * @param {object} req
+     * @param {object} manager The document's type manager.
+     * @param {object[]} path
+     * @returns {object|null}
+     */
+    locateChangePath(req, manager, path) {
+      let schema = self.getAiSchemaOf(req, manager);
+      let list = null;
+      let key = '';
+      let found = {};
+      for (const segment of path) {
+        if (list?.type === 'area') {
+          const allowed = Object.keys(self.apos.area.getWidgets(list.options || {}));
+          const widgetManager = allowed.includes(segment.widgetType) &&
+            self.apos.area.getWidgetManager(segment.widgetType);
+          if (!widgetManager || !segment.name) {
+            return null;
           }
-          key = `@${segment.name}`;
-          list = null;
+          schema = self.getAiSchemaOf(req, widgetManager);
+          found = {
+            widget: {
+              manager: widgetManager,
+              schema
+            }
+          };
+        } else if (list?.type === 'array') {
+          if (!segment.name) {
+            return null;
+          }
+          schema = list.schema;
+          found = { item: schema };
+        } else {
+          const field = schema.find(field => field.name === segment.name);
+          if (!field) {
+            return null;
+          }
+          key = key ? `${key}.${field.name}` : field.name;
+          found = { field };
+          list = [ 'area', 'array' ].includes(field.type) ? field : null;
+          if (field.type === 'object') {
+            schema = field.schema;
+          }
+          continue;
         }
+        key = `@${segment.name}`;
+        list = null;
+      }
+      return {
+        key,
+        ...found
+      };
+    },
+
+    /**
+     * A change row as `get_changes` names it, without its values: `{ path,
+     * change }`, `path` the `update_document` key. A widget changed outside
+     * its fields is named by the widget. `null` for a row AI doesn't read:
+     * a system row, or one outside the AI-facing schema.
+     *
+     * @param {object} req
+     * @param {object} manager The document's type manager.
+     * @param {object} row
+     * @returns {{ path: string, change: string }|null}
+     */
+    describeChangeRow(req, manager, row) {
+      const found = !row.system && self.locateChangePath(req, manager, row.path);
+      if (!found) {
+        return null;
+      }
+      if (row.kind !== 'richText') {
         return {
-          key,
-          ...found
+          path: found.key,
+          change: getChange(row)
         };
       }
+      const field = getShadowFields(found.widget).find(field => field.type === 'richText');
+      return field
+        ? {
+          path: `${found.key}.${field.name}`,
+          change: getChange(row)
+        }
+        : null;
     }
   };
 };
+
+// The kind of change a row is, as AI reads it
+function getChange(row) {
+  return [ 'area', 'array' ].includes(row.kind) ? 'reordered' : CHANGES[row.type];
+}
+
+// The shadow fields of a widget its AI-facing schema keeps
+function getShadowFields(widget) {
+  return (widget?.schema || []).filter(field => field._shadow);
+}
 
 // `before` and `after` of a row, each only when that side has the value
 function values(before, after) {
