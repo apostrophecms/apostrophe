@@ -243,6 +243,14 @@ module.exports = (self) => {
           input.slug ??= self.apos.util.addSlashIfNeeded(parent.slug) +
             self.apos.util.slugify(title);
         }
+        // Conversion empties every field its input lacks: the type's defaults
+        // for the fields the model left out, as the editor's own create sends
+        const defaults = manager.newInstance();
+        for (const field of manager.schema) {
+          if (!Object.hasOwn(input, field.name) && Object.hasOwn(defaults, field.name)) {
+            input[field.name] = defaults[field.name];
+          }
+        }
         const saveReq = getSaveRequest(self, draftReq);
         const drops = [];
         await manager.convert(saveReq, input, doc, { drops });

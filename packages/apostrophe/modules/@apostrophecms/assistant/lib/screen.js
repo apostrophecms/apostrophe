@@ -304,8 +304,8 @@ module.exports = (self) => {
     /**
      * What became of the model's changes to the screen's document since its
      * last reply: each change row of the chat's earlier requests, reverted
-     * ones and the one that created the document left out, checked by the
-     * row guard as a revert would check it, against the outcome the latest
+     * ones left out, the document's creation included, checked by the row
+     * guard as a revert would check it, against the outcome the latest
      * earlier request saw (`pageRows`; a row it didn't see is as written).
      * `text` names the rows that moved, as `get_changes` names them; empty
      * when none did. `pageRows` is what this request sees, `null` when the
@@ -347,16 +347,11 @@ module.exports = (self) => {
           })
           .project({
             requestId: 1,
-            effect: 1,
             rows: 1
           })
           .toArray()
         : [];
-      const creating = new Set(entries
-        .filter(entry => entry.effect === 'create')
-        .map(entry => entry.requestId));
-      const requestIds = [ ...new Set(entries.map(entry => entry.requestId)) ]
-        .filter(requestId => !creating.has(requestId));
+      const requestIds = [ ...new Set(entries.map(entry => entry.requestId)) ];
       if (!requestIds.length) {
         return none;
       }
@@ -373,7 +368,8 @@ module.exports = (self) => {
         ignoreLocks: true,
         docIds: [ docId ]
       });
-      const checked = (document?.rows || []).filter(row => row.outcome);
+      const checked = [ ...(document?.rows || []), ...(document?.createdRows || []) ]
+        .filter(row => row.outcome);
       if (!checked.length) {
         return none;
       }

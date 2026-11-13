@@ -620,6 +620,32 @@ describe('Assistant: following a request', function () {
       assert.equal(after.request.pageRows, undefined);
     });
 
+    it('tells the model of an edit to what it created', async function () {
+      script = sequence([ toolTurn('create_piece', {
+        type: 'assistant-note',
+        title: 'Made by AI'
+      }), { text: 'Created.' } ]);
+      await apos.assistant.send(userReq(editor), chat._id, {
+        message: 'Make a note',
+        screen: { tabId: 'tab-1' }
+      });
+      const created = await waitForEnd(userReq(editor), chat);
+      page = await findDraft(await apos.doc.db.findOne({
+        title: 'Made by AI',
+        aposMode: 'draft'
+      }));
+      // As created: nothing to tell
+      assert.equal((await sendOnPage()).text, undefined);
+
+      await save({ title: 'Made by hand' });
+
+      const { rows } = await sendOnPage();
+      assert.deepEqual(
+        rows.map(row => [ row.requestId, row.path, row.now ]),
+        [ [ created._id, 'title', 'edited' ] ]
+      );
+    });
+
     it('names twenty rows at most, and how many more', async function () {
       const labels = Array.from({ length: 22 }, (value, i) => ({ label: `Link ${i}` }));
       await write({ links: [ ...page.links, ...labels ] });

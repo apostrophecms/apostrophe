@@ -137,7 +137,9 @@ module.exports = (self) => {
       } = revert;
       return {
         ...rest,
-        documents: (documents || []).map(({ rows, ...document }) => {
+        documents: (documents || []).map(({
+          rows, createdRows, ...document
+        }) => {
           const manager = self.apos.doc.getManager(document.type);
           const page = manager && self.apos.instanceOf(manager, '@apostrophecms/page-type');
           return {

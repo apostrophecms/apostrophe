@@ -48,7 +48,9 @@ module.exports = (self) => {
      *   document removed. `rows`: `{ entryId, index, outcome, reason? }`
      *   per change row checked, `outcome` `putBack`, `reverted`, `edited`,
      *   `gone` or `unrestorable`. `title` is the document's own, else the
-     *   one its newest entry stored.
+     *   one its newest entry stored. With `dryRun`, a created document has
+     *   `rows` whatever its outcome, and `createdRows`, its creation's rows
+     *   checked the same way, `putBack` meaning still as created.
      */
     async revertRequests(req, requestIds, {
       dryRun = false, ignoreLocks = false, docIds = null, onProgress = null
@@ -189,7 +191,21 @@ module.exports = (self) => {
             manager
           });
           if (create) {
-            const reason = await getKeepReason(doc, working, draftReq);
+            const created = await self.apos.docVersions.checkChangeRows(
+              draftReq,
+              working,
+              create.rows
+            );
+            const told = !save && {
+              rows,
+              createdRows: created.map((row, index) => ({
+                entryId: create._id,
+                index,
+                outcome: (row.outcome === 'clean') ? 'putBack' : row.outcome,
+                ...(row.reason && { reason: row.reason })
+              }))
+            };
+            const reason = await getKeepReason(doc, created);
             if (!reason) {
               const outcome = (self.getPublishing(doc.type) === 'drafts') ? 'deleted' : 'archived';
               removed.add(doc._id);
@@ -198,14 +214,15 @@ module.exports = (self) => {
               } else if (save) {
                 await save([ { archived: true } ]);
               }
-              return end(outcome);
+              return end(outcome, told || {});
             }
             if (save && patches.length) {
               await save(patches);
             }
             return end('kept', {
               reason,
-              rows
+              rows,
+              ...told
             });
           }
           if (save && patches.length) {
@@ -280,19 +297,15 @@ module.exports = (self) => {
           };
         }
 
-        // Why a created document stays, `null` when it goes
-        async function getKeepReason(doc, working, draftReq) {
+        // Why a created document stays, `null` when it goes. `created`: its
+        // creation's rows checked against the document as the revert leaves it
+        async function getKeepReason(doc, created) {
           // The requests never publish: a published draft was published by
           // someone. A type that publishes on save published with them
           if ((self.getPublishing(doc.type) === 'drafts') && doc.lastPublishedAt) {
             return 'published';
           }
-          const checked = await self.apos.docVersions.checkChangeRows(
-            draftReq,
-            working,
-            create.rows
-          );
-          if (checked.some(row => ![ 'clean', 'unrestorable' ].includes(row.outcome))) {
+          if (created.some(row => ![ 'clean', 'unrestorable' ].includes(row.outcome))) {
             return 'edited';
           }
           if (doc.path && self.apos.page.isPage(doc) && await hasChildren(doc)) {

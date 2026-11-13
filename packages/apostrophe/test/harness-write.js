@@ -648,7 +648,8 @@ describe('Harness: doors, the write path and guards', function () {
           _id: 'model-link',
           label: 'Link'
         } ],
-        _related: [ 'related-id:fr:published' ]
+        _related: [ 'related-id:fr:published' ],
+        secret: 'From the model'
       });
 
       const sent = [ 'model-widget', 'model-area', 'model-rich-text', 'model-link' ];
@@ -668,7 +669,8 @@ describe('Harness: doors, the write path and guards', function () {
       assert.equal(widget.body.metaType, 'area');
       // Read in any locale or mode, written as the draft in the request's
       assert.deepEqual(widget._related, [ { _id: 'related-id:en:draft' } ]);
-      assert.equal('secret' in widget, false);
+      // A field kept away from AI at its default, never the model's
+      assert.equal(widget.secret, '');
     });
 
     it('should keep the own id of a widget replaced in place', function () {

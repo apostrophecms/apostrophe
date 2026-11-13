@@ -189,21 +189,26 @@ function newContent(self, req) {
       _id: own,
       type: given.type
     });
+    // Fields kept away from AI at their defaults too
     return {
+      ...self.apos.schema.newInstance(manager.schema),
       ...item(self.getAiSchemaOf(req, manager), given, own),
       type: given.type,
       metaType: 'widget'
     };
   }
 
-  // Every field it omits at its default, every field it holds made new
+  // Every field it omits at its default, every field it holds made new.
+  // Only the fields of `schema`: one kept away from AI is never the model's
   function item(schema, given, _id) {
     const made = {
       ...self.apos.schema.newInstance(schema),
-      ...given,
       _id: _id || self.apos.util.generateId()
     };
     for (const field of schema) {
+      if (given && Object.hasOwn(given, field.name)) {
+        made[field.name] = given[field.name];
+      }
       if (made[field.name] != null) {
         made[field.name] = value(field, made[field.name]);
       }
