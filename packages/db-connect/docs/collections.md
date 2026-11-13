@@ -65,13 +65,17 @@ const doc = await collection.findOne(
   { slug: 'hello' },
   { projection: { title: 1, slug: 1 } }
 );
+
+// The newest matching document
+const latest = await collection.findOne(
+  { type: 'article' },
+  { sort: { createdAt: -1 } }
+);
 ```
 
-**Options:**
+**Options:** the same as for [`find()`](#findquery-options): `projection`, `sort` and `skip`. Without `sort`, which matching document comes back is unspecified.
 
-- `projection` — field inclusion or exclusion specification. `{ title: 1, slug: 1 }` returns only those fields plus `_id`. `{ body: 0 }` returns everything except `body`. `_id` is always included unless explicitly excluded with `{ _id: 0 }`.
-
-## find(query)
+## find(query, options)
 
 Returns a cursor for iterating over matching documents. Cursor methods are chainable and must be called before `toArray()`.
 
@@ -82,7 +86,22 @@ const docs = await collection.find({ type: 'article' })
   .skip(20)
   .project({ title: 1, slug: 1 })
   .toArray();
+
+// The same, with options
+const docs = await collection.find({ type: 'article' }, {
+  sort: { createdAt: -1 },
+  limit: 10,
+  skip: 20,
+  projection: { title: 1, slug: 1 }
+}).toArray();
 ```
+
+**Options:** each sets what the cursor method of the same name does, and a cursor method called afterwards overrides it.
+
+- `projection` — field inclusion or exclusion specification. `{ title: 1, slug: 1 }` returns only those fields plus `_id`. `{ body: 0 }` returns everything except `body`. `_id` is always included unless explicitly excluded with `{ _id: 0 }`. Same as `.project()`.
+- `sort` — same as `.sort()`.
+- `limit` — same as `.limit()`.
+- `skip` — same as `.skip()`.
 
 ### Cursor Methods
 

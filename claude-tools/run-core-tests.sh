@@ -22,7 +22,7 @@ mkdir -p "$logdir"
 log="$logdir/core-$adapter.log"
 : > "$log"
 
-echo "=== $adapter core tests ($(date -Is)) ===" | tee -a "$log"
+echo "=== $adapter core tests ($(date +%Y-%m-%dT%H:%M:%S%z)) ===" | tee -a "$log"
 
 cd "$root/packages/apostrophe"
 
@@ -31,7 +31,7 @@ if [[ "$adapter" == "postgres" ]]; then
   extra=(env PGPASSWORD=testpassword)
 fi
 
-APOS_TEST_DB_PROTOCOL="$adapter" "${extra[@]}" npm run test:base >> "$log" 2>&1
+APOS_TEST_DB_PROTOCOL="$adapter" ${extra[@]+"${extra[@]}"} npm run test:base >> "$log" 2>&1
 code=$?
 echo "=== exit=$code ===" | tee -a "$log"
 exit "$code"

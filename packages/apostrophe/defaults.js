@@ -72,6 +72,8 @@ module.exports = {
     '@apostrophecms/command-menu': {},
     '@apostrophecms/translation': {},
     '@apostrophecms/document-versions': {},
+    // Builds on @apostrophecms/ai and document-versions
+    '@apostrophecms/ai-localize': {},
     '@apostrophecms/harness': {},
     '@apostrophecms/assistant': {}
   }
