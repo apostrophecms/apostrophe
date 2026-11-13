@@ -39,6 +39,10 @@ defineProps({
 
 <style lang="scss" scoped>
 .apos-doc-version-marker-action {
+  // Contains its visually hidden label: absolutely positioned against a
+  // farther ancestor, it would add to that ancestor's overflow, and could
+  // make the modal itself scroll when the change navigator steps
+  position: relative;
   display: flex;
   gap: $spacing-half;
   margin: 0;
