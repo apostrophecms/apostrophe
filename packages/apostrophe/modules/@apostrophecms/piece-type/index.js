@@ -258,7 +258,14 @@ module.exports = {
         async (req) => {
           await self.publicApiCheckAsync(req);
           const query = self.getRestQuery(req);
-          const dynamicChoices = self.apos.launder.strings(req.query.dynamicChoices);
+          // Like the `choices` builder, dynamic filter choices respect
+          // `publicApiProjection` and `viewPermission`
+          const publicApiProjection = query.get('publicApiProjection');
+          const dynamicChoices = self.apos.launder.strings(req.query.dynamicChoices)
+            .filter(name => (
+              self.choicesFieldAllowedByProjection(name, publicApiProjection) &&
+              self.choicesFieldAllowedByViewPermission(req, name)
+            ));
 
           if (!query.get('perPage')) {
             query.perPage(
@@ -374,6 +381,9 @@ module.exports = {
         const piece = await self.findOneForEditing(req, {
           _id
         });
+        if (!piece) {
+          throw self.apos.error('notfound');
+        }
         return self.delete(req, piece);
       },
       // fetchRelationships can be set to false when utilizing this code

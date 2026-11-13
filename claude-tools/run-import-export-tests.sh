@@ -26,7 +26,7 @@ mkdir -p "$logdir"
 log="$logdir/import-export-$adapter.log"
 : > "$log"
 
-echo "=== $adapter import-export tests ($(date -Is)) spec='${spec}' grep='${grep_filter}' ===" | tee -a "$log"
+echo "=== $adapter import-export tests ($(date +%Y-%m-%dT%H:%M:%S%z)) spec='${spec}' grep='${grep_filter}' ===" | tee -a "$log"
 
 cd "$root/packages/import-export"
 
@@ -42,13 +42,13 @@ fi
 
 code=0
 if [[ -n "$spec" ]]; then
-  APOS_TEST_DB_PROTOCOL="$adapter" "${extra[@]}" ../../node_modules/.bin/mocha \
+  APOS_TEST_DB_PROTOCOL="$adapter" ${extra[@]+"${extra[@]}"} ../../node_modules/.bin/mocha \
     "${mocha_args[@]}" "$spec" >> "$log" 2>&1 || code=$?
 else
   # Whole suite: same split the package's npm test script uses.
-  APOS_TEST_DB_PROTOCOL="$adapter" "${extra[@]}" ../../node_modules/.bin/mocha \
+  APOS_TEST_DB_PROTOCOL="$adapter" ${extra[@]+"${extra[@]}"} ../../node_modules/.bin/mocha \
     "${mocha_args[@]}" --ignore=test/import-page.js >> "$log" 2>&1 || code=$?
-  APOS_TEST_DB_PROTOCOL="$adapter" "${extra[@]}" ../../node_modules/.bin/mocha \
+  APOS_TEST_DB_PROTOCOL="$adapter" ${extra[@]+"${extra[@]}"} ../../node_modules/.bin/mocha \
     "${mocha_args[@]}" test/import-page.js >> "$log" 2>&1 || code=$?
 fi
 

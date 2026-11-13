@@ -85,6 +85,21 @@ describe('createAposFetch', () => {
     assert.equal(request.body, null);
   });
 
+  it('does not forward the Fetch Metadata headers of the page request', async () => {
+    const { createAposFetch, calls } = await load();
+    await createAposFetch(pageRequest({
+      'sec-fetch-site': 'cross-site',
+      'sec-fetch-mode': 'navigate',
+      'sec-fetch-dest': 'document',
+      'sec-fetch-user': '?1'
+    }))('/api/v1/article', { method: 'POST' });
+    const [ request ] = calls;
+    assert.equal(request.headers.get('sec-fetch-site'), null);
+    assert.equal(request.headers.get('sec-fetch-mode'), null);
+    assert.equal(request.headers.get('sec-fetch-dest'), null);
+    assert.equal(request.headers.get('sec-fetch-user'), null);
+  });
+
   it('adds the prefix to a path', async () => {
     const { createAposFetch, calls } = await load({ aposPrefix: '/my-repo' });
     await createAposFetch(pageRequest())('/api/v1/article');

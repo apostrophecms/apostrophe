@@ -510,31 +510,51 @@ In Apostrophe 3.x areas must be part of the schema for each page or piece type.`
             item._docId = area._docId;
           }
         }
-        const canEdit = area._edit && (options.edit !== false) && req.query.aposEdit;
+        const canEdit = area._edit &&
+          (options.edit !== false) &&
+          !req.aposAreaEditSuppressed &&
+          req.query.aposEdit;
         if (canEdit) {
           // Ease of access to image URLs. When not editing we
           // just use the helpers
           self.apos.attachment.all(area, { annotate: true });
         }
 
-        let externalError = null;
-        if (!self.apos.externalFrontKey) {
-          return renderNatively();
+        // `edit: false` also applies to every area nested inside this one.
+        // Areas render one at a time within a request, so a counter on `req`
+        // covers exactly the nested renders
+        const suppressNested = options.edit === false;
+        if (suppressNested) {
+          req.aposAreaEditSuppressed = (req.aposAreaEditSuppressed || 0) + 1;
+        }
+        try {
+          return await render();
+        } finally {
+          if (suppressNested) {
+            req.aposAreaEditSuppressed--;
+          }
         }
 
-        try {
-          return await renderViaExternalFront();
-        } catch (e) {
-          externalError = e;
-        }
-        try {
-          return await renderNatively();
-        } catch (e) {
-          throw new Error('Could not render area for API, neither via the external frontend nor natively.\n\n' +
-            'Check your Astro server logs as well.\n\n' +
-            niceError(externalError) + '\n\n' +
-            niceError(e)
-          );
+        async function render() {
+          let externalError = null;
+          if (!self.apos.externalFrontKey) {
+            return renderNatively();
+          }
+
+          try {
+            return await renderViaExternalFront();
+          } catch (e) {
+            externalError = e;
+          }
+          try {
+            return await renderNatively();
+          } catch (e) {
+            throw new Error('Could not render area for API, neither via the external frontend nor natively.\n\n' +
+              'Check your Astro server logs as well.\n\n' +
+              niceError(externalError) + '\n\n' +
+              niceError(e)
+            );
+          }
         }
 
         async function renderViaExternalFront() {

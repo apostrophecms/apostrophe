@@ -1,7 +1,12 @@
 <template>
   <AposModal
     class="apos-wizard apos-i18n-localize"
-    :class="{ 'apos-wizard-busy': wizard.busy }"
+    :class="{
+      // Busy until mounted() has loaded the document, too: nothing on the
+      // first step can be acted on before then
+      'apos-wizard-busy': wizard.busy || !loaded,
+      'apos-i18n-localize--progress': run.started
+    }"
     :modal="modal"
     :modal-data="modalData"
     :screen="screen"
@@ -18,18 +23,29 @@
               :key="section.title"
               class="apos-wizard__navigation__item"
               :class="{ 'apos-is-active': isStep(section.name) }"
+              :aria-current="isStep(section.name) ? 'step' : null"
             >
               {{ section.title }}
             </li>
           </ul>
         </template>
         <template #footer>
-          <div class="apos-modal__footer">
+          <!-- While localizing, Cancel stops the run at once: nothing done
+               is undone, and localizing again picks up what is left -->
+          <div
+            v-if="!run.started || run.running"
+            class="apos-modal__footer"
+          >
             <AposButton
               type="default"
               label="apostrophe:cancel"
               :modifiers="[ 'block' ]"
-              @click="cancel"
+              :disabled="run.cancelling"
+              :attrs="run.running
+                ? { 'aria-label': $t('apostrophe:localizingCancelLabel') }
+                : {}"
+              data-apos-test="localizeCancel"
+              @click="run.running ? cancelRun() : cancel()"
             />
           </div>
         </template>
@@ -44,7 +60,14 @@
             </h2>
           </header>
 
+          <AposI18nLocalizeProgress
+            v-if="run.started"
+            :view="localizingView"
+          />
+          <!-- Not before the document and its related documents are known,
+               so no question appears and then moves or goes away -->
           <form
+            v-else-if="loaded"
             class="apos-wizard__form"
             @submit.prevent
           >
@@ -52,22 +75,58 @@
               v-if="isStep('selectContent')"
               class="apos-wizard__step apos-wizard__step-select-content"
             >
-              <AposInputRadio
-                v-model="wizard.values.toLocalize"
-                :field="{
-                  name: 'to-localize',
-                  label: 'apostrophe:selectContentToLocalize',
-                  choices: toLocalizeChoices
-                }"
-              />
-              <p class="apos-wizard__help-text">
-                <AposIndicator
-                  class="apos-wizard__help-text__icon"
-                  icon="information-icon"
-                  :icon-size="16"
+              <template v-if="hasRelatedChoice">
+                <AposInputRadio
+                  v-model="wizard.values.toLocalize"
+                  :field="{
+                    name: 'to-localize',
+                    label: 'apostrophe:selectContentToLocalize',
+                    help: 'apostrophe:selectContentToLocalizeHelp',
+                    choices: toLocalizeChoices
+                  }"
                 />
-                {{ $t('apostrophe:relatedDocsDefinition') }}
-              </p>
+                <p class="apos-wizard__help-text">
+                  <AposIndicator
+                    class="apos-wizard__help-text__icon"
+                    icon="information-icon"
+                    :icon-size="16"
+                  />
+                  {{ $t('apostrophe:relatedDocsDefinition') }}
+                </p>
+              </template>
+              <template v-if="aiScopeAvailable">
+                <AposInputRadio
+                  v-model="wizard.values.scope"
+                  :class="{ 'apos-wizard__scope--below': hasRelatedChoice }"
+                  :field="{
+                    name: 'localize-scope',
+                    label: 'apostrophe:aiLocalizeScopeLabel',
+                    help: 'apostrophe:aiLocalizeScopeFieldHelp',
+                    choices: [
+                      {
+                        value: 'onlyNew',
+                        label: 'apostrophe:aiLocalizeScopeNew',
+                        // The AI agent decides what changed and where it
+                        // goes, translating or not
+                        help: 'apostrophe:automaticTranslationAiHint'
+                      },
+                      {
+                        value: 'all',
+                        label: 'apostrophe:aiLocalizeScopeAll'
+                      }
+                    ]
+                  }"
+                  data-apos-test="localizeScope"
+                />
+                <p class="apos-wizard__help-text">
+                  <AposIndicator
+                    class="apos-wizard__help-text__icon"
+                    icon="information-icon"
+                    :icon-size="16"
+                  />
+                  {{ $t('apostrophe:aiLocalizeScopeHelp') }}
+                </p>
+              </template>
             </fieldset>
 
             <fieldset
@@ -195,7 +254,12 @@
                     choices: [
                       {
                         value: 'localizeNewRelated',
-                        label: 'apostrophe:localizeNewRelated',
+                        label: aiMode
+                          ? 'apostrophe:aiLocalizeNewAndModifiedRelated'
+                          : 'apostrophe:localizeNewRelated',
+                        help: aiMode
+                          ? 'apostrophe:automaticTranslationAiHint'
+                          : null
                       },
                       {
                         value: 'localizeAllRelatedAndOverwriteExisting',
@@ -224,11 +288,15 @@
                 </p>
               </div>
               <div
-                v-if="translationEnabled"
+                v-if="translationAvailable"
                 class="apos-wizard__translation"
               >
                 <p class="apos-wizard__translation-title">
-                  <AposTranslationIndicator :size="18" />
+                  <AposAiIndicator v-if="translationUsesAi" />
+                  <AposTranslationIndicator
+                    v-else
+                    :size="18"
+                  />
                   <span class="apos-wizard__translation-title-text">
                     {{ $t('apostrophe:automaticTranslationSettings') }}
                   </span>
@@ -245,6 +313,9 @@
                   :choice="{
                     value: wizard.values.translateContent.data,
                     label: $t('apostrophe:automaticTranslationCheckbox'),
+                    help: translationUsesAi
+                      ? 'apostrophe:automaticTranslationAiHint'
+                      : null,
                     htmlHelp: $t('apostrophe:automaticTranslationCheckboxHelp')
                   }"
                   data-apos-test="localizationTranslationCheck"
@@ -276,13 +347,32 @@
             </fieldset>
           </form>
         </template>
-        <template #footer>
+        <!-- Localizing: Done, disabled until the run ends, or Close when it
+             stopped early -->
+        <template
+          v-if="run.started"
+          #footer
+        >
+          <AposButton
+            :type="localizingView.card ? 'default' : 'primary'"
+            :label="localizingView.card
+              ? 'apostrophe:close'
+              : 'apostrophe:localizingDone'"
+            :disabled="run.running"
+            data-apos-test="localizingDone"
+            @click="finishRun"
+          />
+        </template>
+        <template
+          v-else
+          #footer
+        >
           <AposButton
             v-if="isLastStep()"
             :attrs="{'data-apos-focus-priority': true}"
             type="primary"
             label="apostrophe:localizeContent"
-            :disabled="!complete() || wizard.busy"
+            :disabled="!complete() || wizard.busy || !loaded"
             @click="submit"
           />
           <AposButton
@@ -291,7 +381,7 @@
             type="primary"
             icon="arrow-right-icon"
             :modifiers="['icon-right']"
-            :disabled="!complete() || wizard.busy"
+            :disabled="!complete() || wizard.busy || !loaded"
             :icon-size="12"
             label="apostrophe:next"
             @click="goToNext()"
@@ -374,12 +464,13 @@ export default {
               // Must show step one as long as some related docs
               // exist, as the user might opt in step three
               // to express an interest in previously
-              // replicated related docs
+              // replicated related docs. It also asks how much to
+              // localize whenever AI localization is available
               const hasRelated = this.allRelatedDocs.length > 0;
               if (!hasRelated) {
                 this.wizard.values.toLocalize.data = 'thisDoc';
               }
-              return hasRelated;
+              return hasRelated || this.aiScopeAvailable;
             }
           },
           selectLocales: {
@@ -406,10 +497,26 @@ export default {
                 this.relatedDocTypes
                   .find(({ value }) => relatedDocTypesToLocalize.data.includes(value));
             }
+          },
+          // The run, once Localize Content starts it. The steps before it
+          // stay listed but can't be gone back to
+          localizing: {
+            title: this.$t('apostrophe:localizingStep'),
+            if() {
+              return this.run.started;
+            }
           }
         },
         values: {
           toLocalize: { data: 'thisDocAndRelated' },
+          // "onlyNew" runs the AI localization flow (see
+          // @apostrophecms/ai-localize), the default when it is available
+          scope: {
+            data: apos.modules['@apostrophecms/ai-localize']?.enabled &&
+              (this.$attrs.action !== 'localize')
+              ? 'onlyNew'
+              : 'all'
+          },
           toLocales: { data: this.targetLocale ? [ this.targetLocale ] : [] },
           relatedDocSettings: { data: 'localizeNewRelated' },
           relatedDocTypesToLocalize: { data: [] },
@@ -419,11 +526,36 @@ export default {
         }
       },
       fullDoc: this.doc,
+      // The run shown in the Localizing step, whichever way it localizes:
+      // "ai", a job on the server (see @apostrophecms/ai-localize), or
+      // "classic", core's whole-document copy, one request per document and
+      // locale. `pairs` are each document in each locale, with their status
+      // and what they did; `phrase` is what it is doing now; `blocked` says
+      // why it never started
+      run: {
+        started: false,
+        kind: null,
+        jobId: null,
+        translate: false,
+        pairs: [],
+        phrase: '',
+        running: false,
+        cancelling: false,
+        cancelled: false,
+        blocked: null,
+        startedAt: 0,
+        endedAt: 0
+      },
       relatedDocs: [],
       // Includes those that aren't new, even if we are only expressing
       // interest in new docs
       allRelatedDocs: [],
       allRelatedDocsKnown: false,
+      // Set once mounted() has loaded the document
+      loaded: false,
+      // Set once fullDoc is the full document, relationships included,
+      // rather than the `doc` prop it starts as
+      fullDocLoaded: false,
       docTypesSeen: [],
       relatedDocTypes: [],
       searchField: {
@@ -503,6 +635,46 @@ export default {
     isBatchMode() {
       return this.batchOptions.enabled;
     },
+    // AI localization handles one document and its related documents; the
+    // batch flow keeps the classic copy
+    aiScopeAvailable() {
+      return Boolean(apos.modules['@apostrophecms/ai-localize']?.enabled) &&
+        !this.isBatchMode;
+    },
+    aiMode() {
+      return this.aiScopeAvailable && this.wizard.values.scope.data === 'onlyNew';
+    },
+    // Whether translating means AI: the AI agent does the work, or the
+    // automatic translation service is the one built on AI ("llm"), rather
+    // than a translation service like DeepL or Google
+    translationUsesAi() {
+      return this.aiMode || this.aiFullCopy ||
+        this.wizard.values.translateProvider.data === 'llm';
+    },
+    // Translation is offered whenever something can do it: the automatic
+    // translation module, or AI, which also translates a whole document when
+    // the module is not there (see `aiFullCopy`)
+    translationAvailable() {
+      return this.translationEnabled || this.aiScopeAvailable;
+    },
+    // "All content" with translation but no automatic translation module: AI
+    // copies each document whole and translates it
+    aiFullCopy() {
+      return this.aiScopeAvailable && !this.aiMode &&
+        !this.translationEnabled &&
+        this.wizard.values.translateContent.data;
+    },
+    localizingView() {
+      return this.describeRun();
+    },
+    // Ask about related documents only once there are some to ask about.
+    // Asking while they are still being looked for showed the question and
+    // then took it away, visibly so on a slower server, for a document with
+    // none. Batch mode always asks: it doesn't look them up per document
+    hasRelatedChoice() {
+      return this.isBatchMode ||
+        (this.allRelatedDocsKnown && this.allRelatedDocs.length > 0);
+    },
     action() {
       return this.doc.slug.startsWith('/')
         ? apos.page.action
@@ -575,6 +747,13 @@ export default {
         this.updateRelatedDocs();
       }
     },
+    'wizard.values.scope.data'() {
+      if (!this.isBatchMode) {
+        this.updateRelatedDocs();
+      }
+    },
+    // Follow the log as it grows, in the modal body's own scrolling (the
+    // only scrolling there is), unless the editor scrolled up to read
     async 'wizard.values.translateContent.data'(value) {
       // TODO - fix this as it depends on doc data.
       await this.checkAvailableTranslations(value);
@@ -595,6 +774,9 @@ export default {
       }
     }
   },
+  beforeUnmount() {
+    this.stopFollowingAi();
+  },
   async mounted() {
     this.modal.active = true;
     this.wizard.busy = true;
@@ -602,15 +784,21 @@ export default {
     if (this.isBatchMode) {
       this.wizard.step = this.visibleStepNames[0];
       this.wizard.busy = false;
+      this.loaded = true;
       this.setRelatedDocTypes();
     } else {
       try {
+        // Always the draft, whichever mode the editor is viewing: that is
+        // what gets localized, and its related documents come with draft
+        // ids, which the checks below look up in draft mode
         this.fullDoc = await apos.http.get(
-          `${this.action}/${this.doc._id}`,
+          `${this.action}/${this.doc._id.replace(/:published$/, ':draft')}`,
           {
-            busy: true
+            busy: true,
+            qs: { aposMode: 'draft' }
           }
         );
+        this.fullDocLoaded = true;
 
         const docs = await apos.http.get(
           `${this.action}/${this.fullDoc._id}/locales`,
@@ -627,6 +815,7 @@ export default {
       } finally {
         this.wizard.step = this.visibleStepNames[0];
         this.wizard.busy = false;
+        this.loaded = true;
       }
     }
   },
@@ -681,14 +870,19 @@ export default {
     cancel() {
       if (!this.modal.busy) {
         this.modal.showModal = false;
-        this.$emit('modal-result', false);
-      }
-    },
-    close() {
-      if (!this.modal.busy) {
-        this.modal.showModal = false;
         this.$emit('modal-result', null);
       }
+    },
+    // Escape. Localizing is modal: while it runs the window stays open, and
+    // only Cancel stops it. Once it has ended, closing is the same as Done
+    close() {
+      if (this.run.running) {
+        return;
+      }
+      if (this.run.started) {
+        return this.finishRun();
+      }
+      this.cancel();
     },
     goTo(name) {
       this.wizard.step = name;
@@ -815,199 +1009,797 @@ export default {
         this.wizard.sections.selectLocales.filter = event.data;
       }
     },
+    // Localize Content: on to the Localizing step, which follows the run
+    // whichever way it localizes. Batches from a manager keep their
+    // background job
     async submit() {
       if (this.isBatchMode) {
         return this.submitBatch();
       }
-      let docs = [];
-      const notifications = [];
+      const docs = this.docsToLocalize();
+      const locales = this.selectedLocales.map(({ name }) => name);
       this.wizard.busy = true;
-
+      let blocked = null;
+      try {
+        blocked = await this.checkParent(docs);
+      } catch (e) {
+        // The localize request reports it, if it was a real problem
+      } finally {
+        this.wizard.busy = false;
+      }
+      const kind = (this.aiMode || this.aiFullCopy) ? 'ai' : 'classic';
+      this.startRun({
+        kind,
+        docs,
+        locales,
+        blocked
+      });
+      if (blocked) {
+        return this.endRun();
+      }
+      return kind === 'ai'
+        ? this.runAi(docs, locales)
+        : this.runClassic();
+    },
+    // The dialog's document, unless only related documents were chosen, and
+    // the related documents of the chosen types
+    docsToLocalize() {
+      const docs = [];
       if (this.wizard.values.toLocalize.data !== 'relatedDocsOnly') {
         docs.push(this.fullDoc);
       }
       if (this.wizard.values.toLocalize.data !== 'thisDoc') {
-        for (const type of this.relatedDocTypes) {
-          const ofType = this.relatedDocs.filter(doc => doc.type === type.value);
-          docs = [
-            ...docs,
-            ...ofType
-          ];
-        }
-      }
-      for (const doc of docs) {
-        if (
-          (doc._id !== this.fullDoc._id) &&
-          !this.wizard.values.relatedDocTypesToLocalize.data.includes(doc.type)
-        ) {
-          continue;
-        }
-        this.modal.busy = true;
-        for (const locale of this.selectedLocales) {
-          try {
-            const result = await apos.http.post(`${apos.modules[doc.type].action}/${doc._id}/localize`, {
-              body: {
-                toLocale: locale.name,
-                update: (doc._id === this.fullDoc._id) || !(this.wizard.values.relatedDocSettings.data === 'localizeNewRelated')
-              },
-              qs: {
-                aposTranslateTargets: this.wizard.values.translateTargets.data,
-                aposTranslateProvider: this.wizard.values.translateProvider.data
-              },
-              busy: true
-            });
-
-            notifications.push({
-              type: 'success',
-              locale,
-              docTypeLabel: this.singular(doc.type),
-              doc,
-              result,
-              relationship: doc._id === this.fullDoc._id
-            });
-
-            if (this.targetLocale && this.shouldRedirect) {
-              // Ask for the redirect URL, this way it still works if we
-              // need to carry a session across hostnames
-              const result = await apos.http.post(`${this.moduleOptions.action}/locale`, {
-                body: {
-                  contextDocId: apos.adminBar.context && apos.adminBar.context._id,
-                  locale: locale.name
-                }
-              });
-              if (result.redirectTo) {
-                window.location.assign(result.redirectTo);
-              }
-            }
-
-          } catch (e) {
-            // Status code 409 (conflict) means an existing document
-            // we opted not to overwrite
-            if (e.status !== 409) {
-              const detail = e?.body?.data?.parentNotLocalized
-                ? this.$t('apostrophe:parentNotLocalized')
-                : e?.body?.data?.detail ? this.$t(e.body.data.detail) : null;
-              notifications.push({
-                type: 'error',
-                locale,
-                docTypeLabel: this.singular(doc.type),
-                doc,
-                relationship: doc._id === this.fullDoc._id,
-                detail
-              });
-            }
+        for (const doc of this.relatedDocs) {
+          if (
+            this.wizard.values.relatedDocTypesToLocalize.data.includes(doc.type) &&
+            !docs.some(({ _id }) => _id === doc._id)
+          ) {
+            docs.push(doc);
           }
         }
       }
-
-      if (notifications.some(({ type }) => type === 'error')) {
-        this.modal.busy = false;
-        this.close();
-
-        await apos.report(
+      return docs;
+    },
+    // A page can't be localized into a locale its parent page isn't in yet.
+    // Checked before anything changes, for every chosen locale the page is
+    // new to: `{ parent, locales }` when the parent is missing from some
+    async checkParent(docs) {
+      const page = docs.find(({ _id }) => _id === this.fullDoc._id);
+      const ids = page?.slug?.startsWith('/') && page.path
+        ? page.path.split('/')
+        : [];
+      if (ids.length < 2) {
+        return null;
+      }
+      const parentId = `${ids.at(-2)}:${this.modalData.locale}:draft`;
+      const missing = [];
+      for (const { name } of this.selectedLocales) {
+        if (this.localized[name]) {
+          continue;
+        }
+        const { aposDocIds } = await apos.http.post(
+          `${this.moduleOptions.action}/exist-in-locale`,
           {
-            heading: 'apostrophe:localizingReportHeading',
-            description: 'apostrophe:localizingReportDesc',
-            footerMessageDanger: 'apostrophe:localizingReportHeading',
-            items: notifications,
-            headers: [
-              {
-                name: 'doc.aposDocId',
-                label: '_id',
-                format: 'last:5'
+            body: {
+              ids: [ parentId ],
+              locale: name,
+              mode: 'draft'
+            }
+          }
+        );
+        if (!aposDocIds.includes(ids.at(-2))) {
+          missing.push(name);
+        }
+      }
+      if (!missing.length) {
+        return null;
+      }
+      let parent = '';
+      try {
+        parent = (await apos.http.get(`${apos.page.action}/${parentId}`, {})).title;
+      } catch (e) {
+        // Named without its title
+      }
+      return {
+        parent,
+        locales: missing
+      };
+    },
+    startRun({
+      kind, docs, locales, blocked
+    }) {
+      this.run = {
+        started: true,
+        kind,
+        jobId: null,
+        translate: Boolean(this.wizard.values.translateContent.data),
+        pairs: docs.flatMap((doc) => locales.map((locale) => ({
+          docId: doc._id,
+          title: doc.title || '',
+          type: doc.type,
+          slug: doc.slug,
+          related: doc._id !== this.fullDoc._id,
+          locale,
+          status: 'waiting'
+        }))),
+        phrase: '',
+        running: !blocked,
+        cancelling: false,
+        cancelled: false,
+        blocked,
+        startedAt: Date.now(),
+        endedAt: 0
+      };
+      this.wizard.step = 'localizing';
+    },
+    endRun() {
+      for (const pair of this.run.pairs) {
+        if ([ 'waiting', 'working' ].includes(pair.status)) {
+          pair.status = 'stopped';
+        }
+      }
+      this.run.running = false;
+      this.run.cancelling = false;
+      this.run.phrase = '';
+      this.run.endedAt = Date.now();
+    },
+    // Cancel while it runs: stops at once, without asking, since nothing
+    // done is undone
+    async cancelRun() {
+      if (!this.run.running || this.run.cancelling) {
+        return;
+      }
+      this.run.cancelling = true;
+      this.run.cancelled = true;
+      this.run.phrase = this.$t('apostrophe:localizingPhraseStopping');
+      if (this.run.jobId) {
+        await this.cancelJob();
+      }
+    },
+    async cancelJob() {
+      try {
+        await apos.http.post(
+          `${apos.modules['@apostrophecms/job'].action}/${this.run.jobId}/cancel`,
+          { body: {} }
+        );
+      } catch (e) {
+        // The job may have just ended; its end event says how
+      }
+    },
+    // Done, or Close once it stopped early: the usual notification for what
+    // was localized, then out. Opened for one locale, it goes there
+    async finishRun() {
+      if (this.run.running) {
+        return;
+      }
+      // Related documents that were already up to date go unmentioned
+      const localized = this.run.pairs.filter(({ status, related }) =>
+        status === 'done' || (status === 'upToDate' && !related));
+      // Opened for one locale and it arrived: go there. Arriving on the
+      // localized document says it worked, so there is no notification, whose
+      // button would only lead where the editor already is (the classic flow
+      // never managed to show one either: the navigation cut it off)
+      const arrived = this.targetLocale && this.shouldRedirect &&
+        localized.some((pair) => !pair.related &&
+          pair.locale === this.targetLocale.name);
+      if (arrived) {
+        this.modal.showModal = false;
+        this.$emit('modal-result', true);
+        return this.openLocale(this.targetLocale.name);
+      }
+      await this.notifyLocalized(localized.map((pair) => ({
+        locale: { name: pair.locale },
+        doc: {
+          type: pair.type,
+          slug: pair.slug
+        },
+        result: {
+          _id: pair.targetId,
+          _url: pair.url,
+          slug: pair.slug
+        }
+      })));
+      this.modal.showModal = false;
+      this.$emit('modal-result', true);
+    },
+    // The classic way: core copies each document whole into each locale,
+    // translated by the automatic translation module when that was asked for
+    async runClassic() {
+      const {
+        translateTargets, translateProvider, relatedDocSettings
+      } =
+        this.wizard.values;
+      for (const pair of this.run.pairs) {
+        if (this.run.cancelled) {
+          break;
+        }
+        const translated = this.run.translate &&
+          translateTargets.data.includes(pair.locale);
+        pair.status = 'working';
+        this.run.phrase = this.$t(translated
+          ? 'apostrophe:localizingPhraseTranslating'
+          : 'apostrophe:localizingPhraseCopying', {
+          title: pair.title,
+          locale: this.localeLabel(pair.locale)
+        });
+        try {
+          const result = await apos.http.post(
+            `${apos.modules[pair.type].action}/${pair.docId}/localize`,
+            {
+              body: {
+                toLocale: pair.locale,
+                update: !pair.related ||
+                  relatedDocSettings.data !== 'localizeNewRelated'
               },
+              qs: {
+                aposTranslateTargets: translateTargets.data,
+                aposTranslateProvider: translateProvider.data
+              }
+            }
+          );
+          Object.assign(pair, {
+            status: 'done',
+            mode: !pair.related && this.localized[pair.locale] ? 'replace' : 'new',
+            translated,
+            targetId: result._id,
+            url: result._url,
+            slug: result.slug || pair.slug
+          });
+        } catch (e) {
+          // Status code 409 (conflict) means an existing document we opted
+          // not to overwrite
+          if (e.status === 409) {
+            pair.status = 'upToDate';
+          } else {
+            pair.status = 'failed';
+            pair.message = e?.body?.data?.parentNotLocalized
+              ? this.$t('apostrophe:parentNotLocalized')
+              : e?.body?.data?.detail
+                ? this.$t(e.body.data.detail)
+                // A bare error name such as "notfound" tells the editor
+                // nothing: the generic reason reads better
+                : (e?.body?.message !== e?.body?.name && e?.body?.message) || '';
+          }
+        }
+      }
+      this.endRun();
+    },
+    // The notification that ends a localization: `successes` have the
+    // target `locale`, the source `doc` and the localized copy as `result`
+    async notifyLocalized(successes) {
+      const count = successes.length;
+      const targetLocales = [ ...new Set(successes.map(item => item.locale.name)) ];
+      const managerOpen = apos.modal.get()
+        .some(modal => modal.componentName === 'AposRecentlyEditedManager');
+
+      if (count === 1) {
+        const item = successes[0];
+        const hasUrl = !!item.result?._url;
+        await apos.notify('apostrophe:localizingNotificationSuccess', {
+          type: 'success',
+          icon: 'translate-icon',
+          interpolate: { count },
+          dismiss: managerOpen,
+          ...!managerOpen && {
+            buttons: [
               {
-                name: 'docTypeLabel',
-                label: 'apostrophe:type',
-                sortable: true
-              },
-              {
-                name: 'locale.label',
-                label: 'apostrophe:locale',
-                sortable: true
-              },
-              {
-                name: 'relationship',
-                label: 'apostrophe:relationship',
-                format: 'yesno',
-                visibility: 'export',
-                sortable: true
-              },
-              {
-                name: 'doc.title',
-                label: 'apostrophe:title',
-                width: '20%',
-                sortable: true
-              },
-              {
-                name: 'detail',
-                label: 'apostrophe:details',
-                width: '20%'
+                type: 'event',
+                label: hasUrl
+                  ? 'apostrophe:localizeOpenDocument'
+                  : 'apostrophe:localizeEditDocument',
+                name: 'localize-open-document',
+                data: {
+                  _url: item.result?._url || null,
+                  type: item.doc.type,
+                  _id: item.result?._id || null,
+                  locale: item.locale.name,
+                  slug: item.result?.slug || item.doc.slug
+                }
               }
             ]
           }
-        );
-      } else {
-        const successes = notifications.filter(({ type }) => type === 'success');
-        const count = successes.length;
-        const targetLocales = [ ...new Set(successes.map(item => item.locale.name)) ];
-        const managerOpen = apos.modal.get()
-          .some(modal => modal.componentName === 'AposRecentlyEditedManager');
-
-        if (count === 1) {
-          const item = successes[0];
-          const hasUrl = !!item.result?._url;
-          await apos.notify('apostrophe:localizingNotificationSuccess', {
-            type: 'success',
-            icon: 'translate-icon',
-            interpolate: { count },
-            dismiss: managerOpen,
-            ...!managerOpen && {
-              buttons: [
-                {
-                  type: 'event',
-                  label: hasUrl
-                    ? 'apostrophe:localizeOpenDocument'
-                    : 'apostrophe:localizeEditDocument',
-                  name: 'localize-open-document',
-                  data: {
-                    _url: item.result?._url || null,
-                    type: item.doc.type,
-                    _id: item.result?._id || null,
-                    locale: item.locale.name,
-                    slug: item.result?.slug || item.doc.slug
-                  }
+        });
+      } else if (count > 1) {
+        await apos.notify('apostrophe:localizingNotificationSuccess', {
+          type: 'success',
+          icon: 'translate-icon',
+          interpolate: { count },
+          dismiss: managerOpen,
+          ...!managerOpen && {
+            buttons: [
+              {
+                type: 'event',
+                label: 'apostrophe:localizeManageDocuments',
+                name: 'localize-manage-documents',
+                data: {
+                  locales: targetLocales
                 }
-              ]
-            }
-          });
-        } else if (count > 1) {
-          await apos.notify('apostrophe:localizingNotificationSuccess', {
-            type: 'success',
-            icon: 'translate-icon',
-            interpolate: { count },
-            dismiss: managerOpen,
-            ...!managerOpen && {
-              buttons: [
-                {
-                  type: 'event',
-                  label: 'apostrophe:localizeManageDocuments',
-                  name: 'localize-manage-documents',
-                  data: {
-                    locales: targetLocales
-                  }
-                }
-              ]
-            }
-          });
-        }
+              }
+            ]
+          }
+        });
       }
-
-      // Prevent flashing of the UI if the request returns quickly
-      setTimeout(() => {
-        this.modal.busy = false;
-        this.confirm();
-      }, 250);
+    },
+    // The locales the AI flow translates into: none unless asked, and with
+    // the automatic translation module only those its provider supports, as
+    // the dialog has told the editor
+    aiTranslateLocales() {
+      if (!this.wizard.values.translateContent.data) {
+        return [];
+      }
+      return this.translationEnabled
+        ? this.wizard.values.translateTargets.data
+        : this.selectedLocales.map(({ name }) => name);
+    },
+    // The AI way: a job on the server works through each document in each
+    // locale (see @apostrophecms/ai-localize). Progress arrives as
+    // "ai-localize" bus events, and the job record is polled too, so a
+    // missed event never leaves the dialog waiting
+    async runAi(docs, locales) {
+      try {
+        const { jobId, pairs } = await apos.http.post(
+          `${apos.modules['@apostrophecms/ai-localize'].action}/run`,
+          {
+            body: {
+              mainId: this.fullDoc._id,
+              docIds: docs.map(({ _id }) => _id),
+              toLocales: locales,
+              // "All content": each copy is replaced whole
+              overwriteMain: !this.aiMode,
+              overwriteRelated: this.wizard.values.relatedDocSettings.data !==
+                'localizeNewRelated',
+              translateLocales: this.aiTranslateLocales()
+            }
+          }
+        );
+        // The server's order: related documents first
+        this.run.jobId = jobId;
+        this.run.pairs = pairs.map((pair) => ({
+          ...pair,
+          slug: docs.find(({ _id }) => _id === pair.docId)?.slug,
+          status: 'waiting'
+        }));
+        apos.bus.$on('ai-localize', this.onAiEvent);
+        this.aiPoll = setInterval(this.pollAi, 4000);
+        if (this.run.cancelled) {
+          await this.cancelJob();
+        }
+      } catch (e) {
+        for (const pair of this.run.pairs) {
+          pair.status = 'failed';
+          pair.message = this.$t('apostrophe:aiLocalizeStartError');
+        }
+        this.endRun();
+      }
+    },
+    onAiEvent(data) {
+      if (data.jobId !== this.run.jobId || !this.run.running) {
+        return;
+      }
+      const pair = this.run.pairs[data.index];
+      const names = pair && {
+        title: pair.title,
+        locale: this.localeLabel(pair.locale)
+      };
+      if (data.event === 'pair') {
+        if (data.status === 'working') {
+          // Up-to-date related documents are named while they are checked,
+          // so the run never looks stuck, though not once it is done
+          this.setPhrase(this.$t('apostrophe:localizingPhraseChecking', names));
+        }
+        Object.assign(pair, data);
+      } else if (data.event === 'stage') {
+        Object.assign(pair, data);
+        this.setPhrase(data.mode === 'update'
+          ? this.$t('apostrophe:localizingPhraseUpdating', {
+            ...names,
+            count: data.changes?.count || 0
+          })
+          : this.$t(data.translated
+            ? 'apostrophe:localizingPhraseTranslating'
+            : 'apostrophe:localizingPhraseCopying', names));
+      } else if (data.event === 'message') {
+        this.setPhrase(data.text);
+      } else if (data.event === 'ended') {
+        this.endAi(data.outcomes);
+      }
+    },
+    // What it is doing now, unless it is stopping
+    setPhrase(text) {
+      if (!this.run.cancelling) {
+        this.run.phrase = text;
+      }
+    },
+    async pollAi() {
+      try {
+        const job = await apos.http.get(
+          `${apos.modules['@apostrophecms/job'].action}/${this.run.jobId}`,
+          {}
+        );
+        if (job.ended) {
+          this.endAi(job.results?.outcomes || []);
+        }
+      } catch (e) {
+        // The next poll or the ended event will tell
+      }
+    },
+    endAi(outcomes) {
+      if (!this.run.running) {
+        return;
+      }
+      for (const outcome of outcomes) {
+        Object.assign(this.run.pairs[outcome.index], outcome);
+      }
+      this.stopFollowingAi();
+      this.endRun();
+    },
+    stopFollowingAi() {
+      apos.bus.$off('ai-localize', this.onAiEvent);
+      clearInterval(this.aiPoll);
+    },
+    localeLabel(name) {
+      return this.locales.find((locale) => locale.name === name)?.label || name;
+    },
+    // "French", "French and German", "French, German and Spanish"
+    listLabels(labels) {
+      try {
+        return new Intl.ListFormat(undefined, { type: 'conjunction' }).format(labels);
+      } catch (e) {
+        return labels.join(', ');
+      }
+    },
+    // What the Localizing step shows (see AposI18nLocalizeProgress)
+    describeRun() {
+      const run = this.run;
+      const t = (key, data) => this.$t(key, data);
+      const localeLabels = [ ...new Set(run.pairs.map(({ locale }) => locale)) ]
+        .map(this.localeLabel);
+      // Named when one or two, counted when more: the chips name them
+      const locales = localeLabels.length > 2
+        ? t('apostrophe:localizingLocaleCount', { count: localeLabels.length })
+        : this.listLabels(localeLabels);
+      const main = run.pairs.find(({ related }) => !related);
+      const docCount = new Set(run.pairs.map(({ docId }) => docId)).size;
+      const subject = main
+        ? main.title
+        : t('apostrophe:localizingDocuments', { count: docCount });
+      // Related documents already up to date are left out once it is done
+      const shown = run.pairs
+        .filter((pair) => !(pair.related && pair.status === 'upToDate'));
+      const failed = run.pairs
+        .filter(({ status }) => [ 'failed', 'incomplete' ].includes(status));
+      const succeeded = run.pairs.filter(({ status }) => status === 'done');
+      const view = {
+        locales: localeLabels,
+        phrase: {},
+        trace: [],
+        card: null,
+        steps: null,
+        help: ''
+      };
+      if (run.running) {
+        const index = run.pairs.findIndex(({ status }) => status === 'working');
+        return {
+          ...view,
+          phase: 'running',
+          heading: t('apostrophe:localizingHeadingRunning', {
+            title: subject,
+            locales
+          }),
+          phrase: {
+            text: run.phrase || t('apostrophe:localizingPhraseStarting'),
+            count: run.pairs.length > 1 && index !== -1
+              ? t('apostrophe:aiLocalizeProgressCount', {
+                current: index + 1,
+                total: run.pairs.length
+              })
+              : ''
+          },
+          help: t('apostrophe:localizingKeepOpen')
+        };
+      }
+      if (run.blocked) {
+        // Related documents chosen with it wait for it too: say so, or the
+        // editor may take them for done
+        const relatedCount = new Set(run.pairs
+          .filter(({ related }) => related)
+          .map(({ docId }) => docId)).size;
+        const message = [
+          t(run.blocked.parent
+            ? 'apostrophe:localizingParentMessage'
+            : 'apostrophe:localizingParentMessageUntitled', {
+            parent: run.blocked.parent,
+            locales: this.listLabels(run.blocked.locales.map(this.localeLabel))
+          }),
+          ...(relatedCount
+            ? [ t('apostrophe:localizingParentRelated', { count: relatedCount }) ]
+            : [])
+        ];
+        return {
+          ...view,
+          phase: 'stopped',
+          heading: t('apostrophe:localizingHeadingNot', { title: subject }),
+          card: {
+            tone: 'warning',
+            title: t('apostrophe:localizingParentTitle'),
+            message: message.join(' ')
+          }
+        };
+      }
+      const partly = succeeded.length > 0;
+      if (run.cancelled) {
+        return {
+          ...view,
+          phase: 'stopped',
+          heading: t(partly ? 'apostrophe:localizingHeadingPartly' : 'apostrophe:localizingHeadingNot', {
+            title: subject
+          }),
+          card: {
+            tone: 'info',
+            title: t('apostrophe:localizingCancelledTitle'),
+            message: t('apostrophe:localizingCancelledMessage')
+          },
+          steps: shown.map((pair, index) => this.planItem(pair, index))
+        };
+      }
+      if (failed.length) {
+        const message = [];
+        if (failed.length === 1) {
+          message.push(this.reason(failed[0]));
+        }
+        if (failed.some(({ writes }) => writes > 0)) {
+          message.push(t('apostrophe:localizingFailedPartial'));
+        }
+        message.push(t(partly ? 'apostrophe:localizingFailedRestSaved' : 'apostrophe:localizingFailedNothingElse'));
+        return {
+          ...view,
+          phase: 'stopped',
+          heading: t(partly ? 'apostrophe:localizingHeadingPartly' : 'apostrophe:localizingHeadingNot', {
+            title: subject
+          }),
+          card: {
+            tone: partly ? 'warning' : 'error',
+            title: failed.length === 1
+              ? t('apostrophe:localizingFailedOne', {
+                title: failed[0].title,
+                locale: this.localeLabel(failed[0].locale)
+              })
+              : t('apostrophe:localizingFailedMany', { count: failed.length }),
+            message: message.join(' ')
+          },
+          steps: shown.length > 1
+            ? shown.map((pair, index) => this.planItem(pair, index))
+            : null
+        };
+      }
+      return {
+        ...view,
+        phase: 'done',
+        heading: t('apostrophe:localizingHeadingDone', {
+          title: subject,
+          locales
+        }),
+        summary: this.runSummary(shown, locales),
+        elapsed: t('apostrophe:localizingElapsed', {
+          time: this.formatElapsed(run.endedAt - run.startedAt)
+        }),
+        trace: this.runTrace(shown)
+      };
+    },
+    // One line of the plan list, for a run that stopped early
+    planItem(pair, index) {
+      const names = {
+        title: pair.title,
+        locale: this.localeLabel(pair.locale)
+      };
+      const status = {
+        done: 'done',
+        upToDate: 'done',
+        failed: 'error',
+        incomplete: 'error'
+      }[pair.status] || 'pending';
+      return {
+        id: `${index}`,
+        status,
+        ai: pair.translated,
+        label: status === 'done'
+          ? this.pairLabel(pair)
+          : status === 'error'
+            ? this.$t('apostrophe:localizingProblem', {
+              ...names,
+              reason: this.reason(pair)
+            })
+            : this.$t('apostrophe:localizingPending', names)
+      };
+    },
+    // Why a pair failed, briefly. A pass that stopped short ends on its last
+    // progress phrase, which would read as if it were still at work
+    reason(pair) {
+      const text = pair.status === 'incomplete'
+        ? this.$t('apostrophe:localizingIncomplete')
+        : pair.message || this.$t('apostrophe:localizingFailedGeneric');
+      return text.length > 300 ? `${text.slice(0, 300)}…` : text;
+    },
+    // What a pair did, in one line
+    pairLabel(pair) {
+      const names = {
+        title: pair.title,
+        locale: this.localeLabel(pair.locale)
+      };
+      if (pair.status === 'upToDate') {
+        return this.$t('apostrophe:localizingTraceUpToDate', names);
+      }
+      if (pair.mode === 'update') {
+        return this.$t(pair.translated
+          ? 'apostrophe:localizingTraceUpdatedTranslated'
+          : 'apostrophe:localizingTraceUpdatedCopied', {
+          ...names,
+          count: pair.changes?.count || 0
+        });
+      }
+      return this.$t(pair.translated
+        ? 'apostrophe:localizingTraceDocTranslated'
+        : 'apostrophe:localizingTraceDocCopied', names);
+    },
+    // The one-line summary once it is done
+    runSummary(shown, locales) {
+      const t = (key, data) => this.$t(key, data);
+      const source = this.localeLabel(this.modalData.locale);
+      const main = shown.filter(({ related }) => !related);
+      const related = shown.filter((pair) => pair.related && pair.status === 'done');
+      const parts = [];
+      if (!main.length) {
+        parts.push(t('apostrophe:localizingSummaryDocs', {
+          count: new Set(related.map(({ docId }) => docId)).size,
+          locales
+        }));
+      } else if (main.every(({ status }) => status === 'upToDate')) {
+        parts.push(t('apostrophe:localizingSummaryUpToDate', {
+          source,
+          title: main[0].title
+        }));
+      } else if (main.length === 1 && main[0].mode === 'update') {
+        parts.push(t(main[0].translated
+          ? 'apostrophe:localizingSummaryChangesTranslated'
+          : 'apostrophe:localizingSummaryChangesCopied', {
+          count: main[0].changes?.count || 0,
+          locale: this.localeLabel(main[0].locale),
+          source
+        }));
+      } else if (main.every(({ mode }) => mode !== 'update')) {
+        parts.push(t(main.every(({ translated }) => translated)
+          ? 'apostrophe:localizingSummaryFullTranslated'
+          : 'apostrophe:localizingSummaryFullCopied', {
+          title: main[0].title,
+          locales
+        }));
+      } else {
+        parts.push(t('apostrophe:localizingSummaryMixed', {
+          title: main[0].title,
+          locales
+        }));
+      }
+      if (main.length && related.length) {
+        parts.push(t('apostrophe:localizingSummaryRelated', {
+          count: new Set(related.map(({ docId }) => docId)).size
+        }));
+      }
+      return parts.join(' ');
+    },
+    // The trace under "Localized in …": for one document in one locale, each
+    // stage; for more, a line each
+    runTrace(shown) {
+      const t = (key, data) => this.$t(key, data);
+      if (shown.length !== 1) {
+        return shown.map((pair, index) => ({
+          id: `${index}`,
+          label: this.pairLabel(pair),
+          ai: pair.translated && pair.status === 'done',
+          detail: pair.summary || this.changesDetail(pair)
+        }));
+      }
+      const [ pair ] = shown;
+      const names = {
+        title: pair.title,
+        locale: this.localeLabel(pair.locale),
+        source: this.localeLabel(this.modalData.locale)
+      };
+      if (pair.status === 'upToDate') {
+        return [ {
+          id: 'compare',
+          label: t('apostrophe:localizingTraceNoChanges', names)
+        } ];
+      }
+      const stages = [];
+      if (pair.mode === 'update') {
+        stages.push({
+          id: 'compare',
+          label: pair.changes?.basis === 'none'
+            ? t('apostrophe:localizingTraceCompared', names)
+            : t('apostrophe:localizingTraceFound', {
+              ...names,
+              count: pair.changes?.count || 0
+            }),
+          detail: this.changesDetail(pair)
+        });
+        stages.push({
+          id: 'write',
+          label: t(pair.translated
+            ? 'apostrophe:localizingTraceWroteTranslated'
+            : 'apostrophe:localizingTraceWroteCopied', {
+            ...names,
+            count: pair.texts || pair.changes?.count || 0
+          }),
+          ai: pair.translated,
+          detail: pair.summary || null
+        });
+      } else {
+        stages.push({
+          id: 'copy',
+          label: t(pair.mode === 'replace'
+            ? 'apostrophe:localizingTraceReplaced'
+            : 'apostrophe:localizingTraceNew', names),
+          detail: pair.mode === 'replace'
+            ? t('apostrophe:localizingTraceReplacedDetail', names)
+            : null
+        });
+        stages.push({
+          id: 'write',
+          label: t(pair.translated
+            ? 'apostrophe:localizingTraceDocTranslated'
+            : 'apostrophe:localizingTraceDocCopied', names),
+          ai: pair.translated,
+          detail: pair.summary || null
+        });
+      }
+      stages.push({
+        id: 'save',
+        label: t('apostrophe:localizingTraceSaved', names),
+        detail: t('apostrophe:localizingTraceSavedDetail')
+      });
+      return stages;
+    },
+    // The source changes a pair carried over, as the editor would name them
+    changesDetail(pair) {
+      const changes = pair.changes;
+      if (!changes?.items?.length) {
+        return null;
+      }
+      const labels = {
+        added: 'apostrophe:versionChangeAdded',
+        modified: 'apostrophe:versionChangeModified',
+        deleted: 'apostrophe:versionChangeDeleted'
+      };
+      const lines = changes.items.map(({ change, where }) =>
+        `${this.$t(labels[change] || labels.modified)}: ${where}`);
+      if (changes.count > changes.items.length) {
+        lines.push(this.$t('apostrophe:localizingMoreChanges', {
+          count: changes.count - changes.items.length
+        }));
+      }
+      return `${lines.join('. ')}. ${this.$t('apostrophe:localizingKeptDetail', {
+        locale: this.localeLabel(pair.locale)
+      })}`;
+    },
+    formatElapsed(ms) {
+      const seconds = Math.max(1, Math.round(ms / 1000));
+      return seconds < 60
+        ? this.$t('apostrophe:localizingSeconds', { seconds })
+        : this.$t('apostrophe:localizingMinutes', {
+          minutes: Math.floor(seconds / 60),
+          seconds: seconds % 60
+        });
+    },
+    async openLocale(locale) {
+      const result = await apos.http.post(`${this.moduleOptions.action}/locale`, {
+        body: {
+          contextDocId: this.fullDoc._id,
+          locale
+        }
+      });
+      if (result.redirectTo) {
+        window.location.assign(result.redirectTo);
+      }
     },
     async submitBatch() {
       const relatedTypes = this.wizard.values.toLocalize.data === 'thisDoc'
@@ -1176,15 +1968,28 @@ export default {
       }
     },
     async updateRelatedDocs() {
-      if (this.wizard.values.toLocalize.data === 'thisDoc') {
+      // Not before the full document is loaded (mounted() calls this once it
+      // is): the `doc` prop fullDoc starts as may lack its relationships,
+      // and finding none would rule out related documents for good
+      if (!this.fullDocLoaded || this.wizard.values.toLocalize.data === 'thisDoc') {
         return;
       }
+      // Calls overlap as the editor changes settings; only the latest one's
+      // findings count, whatever order they finish in
+      const call = (this.relatedDocsCall = (this.relatedDocsCall || 0) + 1);
       const status = this.wizard.busy;
       this.wizard.busy = true;
       let relatedDocs = await this.getRelatedDocs(this.fullDoc);
+      if (call !== this.relatedDocsCall) {
+        this.wizard.busy = status;
+        return;
+      }
       this.allRelatedDocs = relatedDocs;
       this.allRelatedDocsKnown = true;
-      if (this.wizard.values.relatedDocSettings.data === 'localizeNewRelated') {
+      if (
+        this.wizard.values.relatedDocSettings.data === 'localizeNewRelated' &&
+        !this.aiMode
+      ) {
         // Find the ids that are unlocalized in at least one of the target
         // locales
         const unlocalizedIds = new Set();
@@ -1204,6 +2009,10 @@ export default {
         }
         // New documents only
         relatedDocs = relatedDocs.filter(doc => unlocalizedIds.has(doc._id));
+      }
+      if (call !== this.relatedDocsCall) {
+        this.wizard.busy = status;
+        return;
       }
       this.relatedDocs = relatedDocs;
       this.wizard.busy = status;
@@ -1234,7 +2043,9 @@ export default {
       this.translationShowLoader = false;
     },
     async checkAvailableTranslations(value) {
-      if (!value) {
+      // Without the automatic translation module there is no provider to ask:
+      // the AI flow translates into any language
+      if (!value || !this.translationEnabled) {
         this.translationErrMsg = null;
         this.translationShowRetry = false;
         this.wizard.values.translateTargets.data = [];
@@ -1368,7 +2179,7 @@ export default {
 }
 
 :deep(.apos-field--to-localize) {
-  margin-bottom: $spacing-triple;
+  margin-bottom: 0;
 }
 
 .apos-wizard__help-text {
@@ -1376,7 +2187,8 @@ export default {
   padding-left: 20px;
   line-height: 1.25;
   font-weight: 400;
-  color: var(--a-base-3);
+  // Readable gray: --a-base-3 fails WCAG contrast at this size
+  color: var(--a-base-1);
 
   :deep(.material-design-icon) {
     position: relative;
@@ -1502,20 +2314,19 @@ export default {
   }
 }
 
+// Section heading, in the style of the field labels on Select Content
+// ("Documents to include", "Content to update")
 .apos-wizard__field-group-heading {
-  @include type-base;
+  @include type-label;
 
   & {
-    margin-bottom: $spacing-base;
-    padding-bottom: $spacing-base;
-    border-bottom: 1px solid var(--a-base-8);
-    color: var(--a-base-3);
+    margin: 0 0 $spacing-base;
   }
 }
 
 .apos-wizard__field-group-heading__info {
   position: relative;
-  top: 3px;
+  top: 2px;
 }
 
 .apos-wizard__step-2 {
@@ -1550,12 +2361,21 @@ export default {
   margin-top: 30px;
 }
 
+// "Uses AI…" under an option, in a gray that meets WCAG contrast
+.apos-i18n-localize :deep(.apos-choice-label-text--help) {
+  margin: 4px 0 0;
+  color: var(--a-base-1);
+}
+
 .apos-wizard__translation-title {
   @include type-label;
 
   & {
     display: flex;
     align-items: center;
+    // Its own space below, since the disclaimer that would add some is
+    // usually empty
+    margin: 0 0 $spacing-base;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--a-base-8);
   }
@@ -1577,5 +2397,35 @@ export default {
   display: flex;
   justify-content: center;
   margin-top: 20px;
+}
+
+// The second question on Select Content, set off from the first by a
+// divider in the color of the field group dividers
+.apos-wizard__scope--below {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--a-base-8);
+}
+
+// Each question's description, and the note after its options, in a gray
+// that meets WCAG contrast
+.apos-wizard__step-select-content {
+  :deep(.apos-field__help:not(.apos-choice-label-text--help)) {
+    margin: 4px 0 10px;
+    color: var(--a-base-1);
+    line-height: var(--a-line-tall);
+  }
+
+  .apos-wizard__help-text {
+    margin-top: 12px;
+  }
+}
+
+// Bound the modal's row so each column's body scrolls on its own and the
+// footer (Cancel, Back, Next, Localize Content, Done) stays in view on every
+// step, when the content is taller than the window, as the progress view
+// becomes while it runs
+.apos-i18n-localize :deep(.apos-modal__main) {
+  grid-template-rows: minmax(0, 1fr);
 }
 </style>

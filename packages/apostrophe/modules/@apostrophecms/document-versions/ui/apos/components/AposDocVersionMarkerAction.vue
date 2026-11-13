@@ -3,7 +3,6 @@
     v-apos-tooltip="'apostrophe:versionSeeChanges'"
     type="button"
     class="apos-doc-version-marker-action"
-    :aria-label="$t('apostrophe:versionSeeChanges')"
   >
     <AposDocVersionAiBadge
       v-if="ai"
@@ -14,6 +13,9 @@
       :key="type"
       :type="type"
     />
+    <!-- Named by its badges, then its action: an aria-label would hide the
+    badges' words from the accessible name (WCAG 2.5.3, Label in Name) -->
+    <span class="apos-sr-only">{{ $t('apostrophe:versionSeeChanges') }}</span>
   </button>
 </template>
 
@@ -37,6 +39,10 @@ defineProps({
 
 <style lang="scss" scoped>
 .apos-doc-version-marker-action {
+  // Contains its visually hidden label: absolutely positioned against a
+  // farther ancestor, it would add to that ancestor's overflow, and could
+  // make the modal itself scroll when the change navigator steps
+  position: relative;
   display: flex;
   gap: $spacing-half;
   margin: 0;

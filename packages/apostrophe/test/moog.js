@@ -685,6 +685,57 @@ describe('moog', function() {
     });
   });
 
+  describe('options isolation', function() {
+    it('a subclass that mutates a nested option does not affect its siblings or the base class', async function() {
+      const moog = require('../lib/moog.js')({});
+      await moog.define('base', {
+        options: {
+          nested: { a: 1 },
+          list: [ 'x' ]
+        }
+      });
+      await moog.define('subOne', {
+        extend: 'base',
+        init(self) {
+          self.options.nested.b = 2;
+          self.options.list.push('y');
+        }
+      });
+      await moog.define('subTwo', {
+        extend: 'base'
+      });
+      const one = await moog.create('subOne', {});
+      const two = await moog.create('subTwo', {});
+      const base = await moog.create('base', {});
+      assert.deepStrictEqual(one.options.nested, { a: 1, b: 2 });
+      assert.deepStrictEqual(one.options.list, [ 'x', 'y' ]);
+      assert.deepStrictEqual(two.options.nested, { a: 1 });
+      assert.deepStrictEqual(two.options.list, [ 'x' ]);
+      assert.deepStrictEqual(base.options.nested, { a: 1 });
+      assert.deepStrictEqual(base.options.list, [ 'x' ]);
+    });
+
+    it('keeps references to functions, class instances and instantiation options', async function() {
+      const moog = require('../lib/moog.js')({});
+      class Helper {}
+      const helper = new Helper();
+      const fn = () => 'called';
+      await moog.define('withRefs', {
+        options: {
+          helper,
+          fn,
+          nested: { helper }
+        }
+      });
+      const shared = { counter: 0 };
+      const instance = await moog.create('withRefs', { shared });
+      assert.strictEqual(instance.options.helper, helper);
+      assert.strictEqual(instance.options.fn, fn);
+      assert.strictEqual(instance.options.nested.helper, helper);
+      assert.strictEqual(instance.options.shared, shared);
+    });
+  });
+
 });
 
 function delay(ms) {
