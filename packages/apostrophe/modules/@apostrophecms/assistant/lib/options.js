@@ -25,6 +25,10 @@ module.exports = (self) => {
           fail(name, 'must be a positive integer');
         }
       }
+      if (!Number.isInteger(self.options.maxDocsWithoutConfirm) ||
+        (self.options.maxDocsWithoutConfirm < 0)) {
+        fail('maxDocsWithoutConfirm', 'must be a whole number, 0 or more');
+      }
       if (!USAGE_DISPLAYS.includes(usageDisplay)) {
         fail('usageDisplay', `must be one of: ${USAGE_DISPLAYS.join(', ')}`);
       }

@@ -766,6 +766,58 @@ export const useAssistantStore = defineStore('assistant', () => {
   }
 
   /**
+   * Answers the editor's ask of the chat's waiting request from this
+   * browser tab, with its screen as it is now. A refusal means the view was
+   * stale: the records are read again.
+   *
+   * @param {string} id
+   * @param {string} callId The tool call that asked.
+   * @param {object} value What the ask's kind takes.
+   * @returns {Promise<boolean>} Whether the server took it.
+   */
+  async function answer(id, callId, value) {
+    let taken = true;
+    try {
+      await apos.http.post(`${getAction()}/chat/${id}/answer`, {
+        body: {
+          tabId: getTabId(),
+          callId,
+          answer: value,
+          screen: getScreen()
+        }
+      });
+    } catch (e) {
+      taken = false;
+      if (![ 404, 409 ].includes(e.status)) {
+        report(e);
+      }
+    }
+    await loadChats();
+    await loadChat(id);
+    return taken;
+  }
+
+  /**
+   * Skips the questions of the chat's waiting request, which ends it. A
+   * refusal means the view was stale: the records are read again.
+   *
+   * @param {string} id
+   */
+  async function skip(id) {
+    try {
+      await apos.http.post(`${getAction()}/chat/${id}/skip`, {
+        body: { tabId: getTabId() }
+      });
+    } catch (e) {
+      if (![ 404, 409 ].includes(e.status)) {
+        report(e);
+      }
+    }
+    await loadChats();
+    await loadChat(id);
+  }
+
+  /**
    * Sends the chat's failed latest request again, as a new request. A
    * refusal says why on the chat tab, as a refused send does.
    *
@@ -898,6 +950,8 @@ export const useAssistantStore = defineStore('assistant', () => {
     send,
     stop,
     continueHere,
+    answer,
+    skip,
     retry,
     findMentions,
     setDraft

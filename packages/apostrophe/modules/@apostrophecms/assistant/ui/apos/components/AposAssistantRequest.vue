@@ -160,6 +160,7 @@ const $t = inject('i18n');
 const store = useAssistantStore();
 const { usageDisplay, modelDisplay } = apos.modules['@apostrophecms/assistant'];
 const retrying = ref(false);
+const answering = ref(false);
 const text = ref(null);
 const replyText = ref(null);
 
@@ -199,9 +200,47 @@ const reply = computed(() => {
     .findLast(message => (message.role === 'assistant') && message.html)?.html || null;
 });
 
+// The confirmation the request waits on, when this browser tab answers it
+const confirmAsk = computed(() => {
+  const { request } = props;
+  if ((request.status !== 'waiting') || (store.getOwner(chat.value) !== 'here')) {
+    return null;
+  }
+  return request.asks?.find(ask => ask.kind === 'confirm') || null;
+});
+
 const activities = computed(() => {
   const { request } = props;
   const list = [];
+  if (confirmAsk.value) {
+    list.push({
+      name: 'confirm',
+      tone: 'warning',
+      ...getConfirmText(confirmAsk.value.payload),
+      actions: [
+        {
+          name: 'notNow',
+          label: $t('apostrophe:assistantNotNow'),
+          kind: 'quiet',
+          disabled: answering.value
+        },
+        {
+          name: 'continue',
+          label: $t('apostrophe:assistantContinue'),
+          kind: 'primary',
+          disabled: answering.value
+        }
+      ]
+    });
+  }
+  if (request.status === 'skipped') {
+    list.push({
+      name: 'skipped',
+      tone: 'general',
+      title: $t('apostrophe:assistantQuestionSkipped'),
+      text: $t('apostrophe:assistantQuestionSkippedText')
+    });
+  }
   if (request.status === 'failed') {
     const error = ERRORS[request.error?.name] || ERROR;
     // Retry is a send: only on the latest request of an idle chat
@@ -260,8 +299,9 @@ const activities = computed(() => {
   return list;
 });
 
+// Once the request has ended: one waiting for an answer goes on after it
 const footer = computed(() => {
-  if (running.value || !reply.value) {
+  if (running.value || !reply.value || (props.request.status === 'waiting')) {
     return null;
   }
   const parts = [];
@@ -310,7 +350,58 @@ function getBrowserStatus(step) {
     : $t('apostrophe:assistantThinking');
 }
 
+// The model's own confirmation is its words; a gate's states the step and
+// the documents it changes
+function getConfirmText(payload) {
+  const { gate } = payload;
+  if (!gate) {
+    return {
+      title: payload.action,
+      text: payload.details || null
+    };
+  }
+  const title = (gate.count > 1)
+    ? $t('apostrophe:assistantGateDocuments', {
+      count: gate.count,
+      type: gate.typeLabel
+        ? $t(gate.typeLabel)
+        : $t('apostrophe:assistantDocuments')
+    })
+    : $t('apostrophe:assistantGateStep', {
+      label: gate.label ? $t(gate.label) : gate.tool
+    });
+  const names = gate.titles.map(each => each || $t('apostrophe:assistantUntitled'));
+  let text = null;
+  if (names.length && gate.more) {
+    text = $t('apostrophe:assistantGateNamesMore', {
+      titles: names.join(', '),
+      count: gate.more
+    });
+  } else if (names.length) {
+    text = new Intl.ListFormat(apos.i18n.adminLocale, {
+      type: 'conjunction'
+    }).format(names);
+  }
+  return {
+    title,
+    text
+  };
+}
+
 async function onAction(name) {
+  if ([ 'continue', 'notNow' ].includes(name)) {
+    if (answering.value) {
+      return;
+    }
+    answering.value = true;
+    const taken = await store.answer(props.request.chatId, confirmAsk.value.callId, {
+      approved: name === 'continue'
+    });
+    if (!taken) {
+      answering.value = false;
+    }
+    return;
+  }
   if ((name !== 'retry') || retrying.value) {
     return;
   }

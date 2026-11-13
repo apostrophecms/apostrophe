@@ -583,7 +583,11 @@ module.exports = {
        * `usage` once per provider response — retried and rejected ones
        * included, every one is billed — with that response's own token
        * counts (see reportUsage in lib/adapter-call.js). `afterGenerate`
-       * fires only when the call returns; `usage` is the billing record. An
+       * fires only when the call returns; `usage` is the billing record.
+       * `beforeToolCall` fires once a call's arguments are valid, with them
+       * on `payload.args` as the handler will receive them, `_context`
+       * included: a handler of it may throw `aiToolError` or `aiInput` to
+       * refuse or suspend the call, as the tool's own handler would. An
        * `afterToolCall` handler may replace the `result` of a call that
        * succeeded: the model reads the replacement, which is not validated
        * again.

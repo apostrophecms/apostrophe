@@ -164,9 +164,10 @@ function markPinned() {
 </script>
 
 <style lang="scss" scoped>
+  // Only the room the composer leaves: a tall question dock takes it first
   .apos-assistant-thread {
     display: flex;
-    flex: 1 1 auto;
+    flex: 1 1 0;
     flex-direction: column;
     gap: 20px;
     min-height: 0;

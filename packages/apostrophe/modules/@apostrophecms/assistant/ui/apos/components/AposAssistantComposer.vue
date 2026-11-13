@@ -10,6 +10,17 @@
       v-bind="dock"
       @action="onDockAction"
     />
+    <AposAssistantAsk
+      v-else-if="question"
+      :key="question.callId"
+      :chat-id="chatId"
+      :ask="question"
+    />
+    <AposAssistantPlan
+      v-else-if="plan"
+      :request="plan.request"
+      :failed="plan.failed"
+    />
     <div class="apos-assistant-composer__shell">
       <div
         v-if="listOpen"
@@ -191,6 +202,38 @@ const dock = computed(() => {
   return null;
 });
 
+const latest = computed(() => store.requests[props.chatId]?.at(-1) || null);
+// The questions the chat's request waits on, when this browser tab answers
+// them
+const question = computed(() => {
+  const request = latest.value;
+  if ((owner.value !== 'here') || (request?.status !== 'waiting') ||
+    (chat.value.openRequest._id !== request._id)) {
+    return null;
+  }
+  return request.asks?.find(ask => ask.kind === 'question') || null;
+});
+// The plan of the chat's latest request while it is open, folded once it
+// failed
+const plan = computed(() => {
+  const request = latest.value;
+  if (!request?.plan?.length) {
+    return null;
+  }
+  if ([ 'running', 'stopping', 'waiting' ].includes(request.status)) {
+    return {
+      request,
+      failed: false
+    };
+  }
+  return (request.status === 'failed')
+    ? {
+      request,
+      failed: true
+    }
+    : null;
+});
+
 onMounted(() => apos.bus.$on('refreshed', readEditMode));
 onBeforeUnmount(() => {
   apos.bus.$off('refreshed', readEditMode);
@@ -310,10 +353,12 @@ function onDockAction() {
 </script>
 
 <style lang="scss" scoped>
+  // Shrinks only when its dock outgrows the panel; the dock scrolls then
   .apos-assistant-composer {
     display: flex;
+    flex: 0 1 auto;
     flex-direction: column;
-    flex-shrink: 0;
+    min-height: 0;
     padding: 10px 20px 20px;
   }
 
@@ -322,6 +367,7 @@ function onDockAction() {
     position: relative;
     display: flex;
     flex-direction: column;
+    flex-shrink: 0;
     padding: 6px;
     border: 1px solid color-mix(in srgb, var(--a-primary) 25%, transparent);
     transition: border-color 200ms, box-shadow 200ms;

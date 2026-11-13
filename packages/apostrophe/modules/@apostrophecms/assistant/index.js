@@ -33,7 +33,10 @@ module.exports = {
     modelDisplay: false,
     // Milliseconds a browser tool that changes the screen waits for a
     // screen hold to clear, then it is refused naming the holder
-    screenWait: 15000
+    screenWait: 15000,
+    // A write changing more documents than this in one call asks the editor
+    // first; 0 never asks
+    maxDocsWithoutConfirm: 5
   },
   icons: {
     'creation-icon': 'Creation',
@@ -49,14 +52,23 @@ module.exports = {
     // Set once the AI engine is active too
     self.active = false;
     self.askKinds = {};
+    // Gates added by name, and the tools whose gates were all taken off
+    self.gates = {};
+    self.ungated = new Set();
     self.addAskKind('browser', { accept: self.acceptBrowserAnswer });
     for (const tool of require('./lib/standard-browser-tools')(self)) {
       self.addBrowserTool(tool);
     }
+    self.addEditorTools();
     self.enableBrowserData();
   },
   handlers(self) {
     return {
+      '@apostrophecms/ai:beforeToolCall': {
+        async checkGates(req, payload) {
+          await self.checkGates(req, payload);
+        }
+      },
       '@apostrophecms/ai:afterToolCall': {
         // A screen another request of the browser tab changed comes with
         // this run's next tool result; a browser tool's carries its own
@@ -203,6 +215,8 @@ module.exports = {
       ...require('./lib/run')(self),
       ...require('./lib/asks')(self),
       ...require('./lib/browser-tools')(self),
+      ...require('./lib/editor-tools')(self),
+      ...require('./lib/gates')(self),
       ...require('./lib/screen')(self),
       ...require('./lib/reconcile')(self),
       ...require('./lib/events')(self),

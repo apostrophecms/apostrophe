@@ -36,7 +36,11 @@ module.exports = (self) => {
     // model can correct it: the oversized result is withheld and an
     // 'aiToolError' report (actual size, budget, largest properties)
     // is fed back instead.
-    async executeToolCall(req, tool, call, context = {}) {
+    //
+    // `beforeHandler`, when given, is awaited with the validated arguments,
+    // `_context` included, right before the handler gets them; it may change
+    // them, and its throw stops the call as a handler's would.
+    async executeToolCall(req, tool, call, context = {}, beforeHandler = null) {
       const args = structuredClone(call.input);
       if (!tool.validateArgs(args)) {
         throw self.apos.error('aiToolError', `invalid arguments for tool "${tool.name}": ${self.ajv.errorsText(tool.validateArgs.errors, { dataVar: 'arguments' })}`);
@@ -50,6 +54,9 @@ module.exports = (self) => {
           name: call.name
         }
       };
+      if (beforeHandler) {
+        await beforeHandler(args);
+      }
       const result = await tool.handler(req, args);
       if (!isObject(result)) {
         throw self.apos.error('invalid', `tool "${tool.name}" must return an object`);
@@ -190,7 +197,6 @@ module.exports = (self) => {
           call,
           tool
         };
-        await self.emit('beforeToolCall', req, payload);
         await report({ phase: 'start' });
         try {
           const callReq = handlerReq.clone({
@@ -200,7 +206,10 @@ module.exports = (self) => {
             }
           });
           payload.result = await self.executeToolCall(
-            callReq, tool, call, handlerContext
+            callReq, tool, call, handlerContext, async (args) => {
+              payload.args = args;
+              await self.emit('beforeToolCall', req, payload);
+            }
           );
         } catch (e) {
           if (e?.name === 'aiInput' && depth === 1) {
