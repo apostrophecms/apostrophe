@@ -958,10 +958,24 @@ class PostgresCursor {
   constructor(collection, query, options = {}) {
     this._collection = collection;
     this._query = query;
-    this._projection = options.projection || null;
+    this._projection = null;
     this._sort = null;
     this._limit = null;
     this._skip = null;
+    // As in MongoDB, the options may set what the chainable methods do,
+    // and are validated the same way
+    if (options.projection) {
+      this.project(options.projection);
+    }
+    if (options.sort) {
+      this.sort(options.sort);
+    }
+    if (options.limit != null) {
+      this.limit(options.limit);
+    }
+    if (options.skip != null) {
+      this.skip(options.skip);
+    }
     this._cursorClient = null;
     this._cursorName = null;
     this._exhausted = false;
@@ -1329,27 +1343,13 @@ class PostgresCollection {
     };
   }
 
+  // The first match, as `find()` would return it with the same options
   async findOne(query, options = {}) {
-    const _pStart = profileStart();
-    await this._ensureTable();
-
-    const params = [];
-    const qualifiedName = this._qualifiedName();
-    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
-    const sql = `SELECT _id, data FROM ${qualifiedName} WHERE ${whereClause} LIMIT 1`;
-
-    const _qStart = profileStart();
-    const result = await this._pool.query(sql, params);
-    profileQuery(sql, _qStart);
-    if (result.rows.length === 0) {
-      profileEnd('findOne', _pStart);
-      return null;
-    }
-
-    const doc = deserializeDocument(result.rows[0].data, result.rows[0]._id);
-    const final = options.projection ? applyProjection(doc, options.projection) : doc;
-    profileEnd('findOne', _pStart);
-    return final;
+    const [ doc ] = await this.find(query, {
+      ...options,
+      limit: 1
+    }).toArray();
+    return doc || null;
   }
 
   find(query, options) {

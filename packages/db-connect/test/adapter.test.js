@@ -217,6 +217,43 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       expect(doc.type).to.equal('article');
       expect(doc.views).to.be.undefined;
     });
+
+    it('should support sort', async function() {
+      const most = await db.collection('test').findOne(
+        { type: 'article' },
+        { sort: { views: -1 } }
+      );
+      expect(most._id).to.equal('find2');
+      const least = await db.collection('test').findOne(
+        {},
+        { sort: { views: 1 } }
+      );
+      expect(least._id).to.equal('find1');
+    });
+
+    it('should support sort with projection', async function() {
+      const doc = await db.collection('test').findOne(
+        {},
+        {
+          sort: { views: -1 },
+          projection: { title: 1 }
+        }
+      );
+      expect(doc._id).to.equal('find3');
+      expect(doc.title).to.equal('Home Page');
+      expect(doc.views).to.be.undefined;
+    });
+
+    it('should support skip', async function() {
+      const doc = await db.collection('test').findOne(
+        {},
+        {
+          sort: { views: -1 },
+          skip: 1
+        }
+      );
+      expect(doc._id).to.equal('find2');
+    });
   });
 
   describe('find', function() {
@@ -269,6 +306,40 @@ describe(`Database Adapter (${ADAPTER})`, function() {
       const docs = await db.collection('test').find({ type: 'article' }).toArray();
       expect(docs).to.have.lengthOf(3);
       docs.forEach(doc => expect(doc.type).to.equal('article'));
+    });
+
+    it('should support sort, limit, skip and projection as options', async function() {
+      const docs = await db.collection('test').find({ type: 'article' }, {
+        sort: { order: -1 },
+        skip: 1,
+        limit: 1,
+        projection: { title: 1 }
+      }).toArray();
+      expect(docs).to.have.lengthOf(1);
+      expect(docs[0]._id).to.equal('a2');
+      expect(docs[0].title).to.equal('Beta');
+      expect(docs[0].order).to.be.undefined;
+    });
+
+    it('should let cursor methods override options', async function() {
+      const docs = await db.collection('test')
+        .find({ type: 'article' }, {
+          sort: { order: -1 },
+          limit: 1
+        })
+        .sort({ order: 1 })
+        .limit(2)
+        .toArray();
+      expect(docs.map(doc => doc._id)).to.deep.equal([ 'a1', 'a2' ]);
+    });
+
+    it('should keep options in clone()', async function() {
+      const cursor = db.collection('test').find({ type: 'article' }, {
+        sort: { order: -1 },
+        limit: 2
+      });
+      const docs = await cursor.clone().toArray();
+      expect(docs.map(doc => doc._id)).to.deep.equal([ 'a3', 'a2' ]);
     });
 
     it('should support sort()', async function() {
