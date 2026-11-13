@@ -1171,11 +1171,10 @@ export default {
     isReversible(entry) {
       return !!(entry.richText || entry.inverse);
     },
-    // A step of a write made outside the page's history, such as the
-    // assistant's, writes its parts whole. Before it is undone or redone,
-    // the document is checked to hold what the step, or its undo, left
-    // there; when something changed since, the user says whether to replace
-    // it. Resolves whether to go on
+    // For a step the page did not make itself, such as the assistant's
+    // write: asks the server whether those parts changed since the step (or
+    // since its undo, for a redo). If they did, the user decides whether
+    // undoing may replace that change. Resolves whether to go on
     async confirmHistoryChange(entry, direction) {
       const { action } = apos.modules['@apostrophecms/document-versions'] || {};
       if (!action) {
