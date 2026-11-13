@@ -9,8 +9,8 @@
 // `apos.ai.generate`, set by `withDoor`. Every write goes through
 // `writeDocuments`: draft mode, the AI permission check, the lock, the
 // type's own patch with nothing silently lost, marked as AI's. A door's
-// saves land in the change log, `aposAiChanges`. A door sends the
-// instructions `getInstructions` assembles.
+// saves land in the change log, `aposAiChanges`, which `revertRequests`
+// takes back. A door sends the instructions `getInstructions` assembles.
 
 module.exports = {
   options: {
@@ -79,6 +79,7 @@ module.exports = {
       ...require('./lib/guards')(self),
       ...require('./lib/change-log')(self),
       ...require('./lib/change-events')(self),
+      ...require('./lib/revert')(self),
       ...require('./lib/read')(self),
       ...require('./lib/edit')(self),
       ...require('./lib/changes')(self),

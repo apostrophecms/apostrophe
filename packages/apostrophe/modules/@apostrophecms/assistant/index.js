@@ -133,7 +133,8 @@ module.exports = {
           const requests = await self.getChatRequests(req, chat._id);
           return {
             chat,
-            requests: requests.map(self.renderRequest)
+            requests: requests.map(self.renderRequest),
+            reverts: await self.getChatReverts(req, chat._id)
           };
         }),
         mention: route(async (req) => ({
@@ -177,6 +178,22 @@ module.exports = {
             requestId: req.body.requestId,
             screen: req.body.screen
           }))
+        })),
+        'chat/:_id/revert-check': route(async (req) => self.checkRevert(req, req.params._id, {
+          requestId: req.body.requestId,
+          tabId: req.body.tabId
+        })),
+        'chat/:_id/revert': route(async (req) => ({
+          revert: await self.revert(req, req.params._id, {
+            requestId: req.body.requestId,
+            tabId: req.body.tabId
+          })
+        })),
+        'chat/:_id/revert-retry': route(async (req) => ({
+          revert: await self.retryRevert(req, req.params._id, {
+            revertId: req.body.revertId,
+            tabId: req.body.tabId
+          })
         })),
         visibility: route(async (req) => {
           await self.setVisible(req, {
@@ -226,6 +243,7 @@ module.exports = {
       ...require('./lib/edit-mode')(self),
       ...require('./lib/screen')(self),
       ...require('./lib/reconcile')(self),
+      ...require('./lib/revert')(self),
       ...require('./lib/events')(self),
       ...require('./lib/markdown')(self),
       ...require('./lib/mentions')(self),

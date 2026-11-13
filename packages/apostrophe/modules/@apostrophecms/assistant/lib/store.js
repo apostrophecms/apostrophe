@@ -1,6 +1,7 @@
 // The assistant's records, each in its own collection: `aposChats`, one
-// record per chat, and `aposChatRequests`, one per request. The owner is part
-// of every query, so knowing an id never reaches someone else's chat.
+// record per chat, `aposChatRequests`, one per request, and
+// `aposChatReverts`, one per revert (see revert.js). The owner is part of
+// every query, so knowing an id never reaches someone else's chat.
 //
 // A chat's `openRequest` is its one request at a time: `{ _id, tabId,
 // status }` while a request runs or waits for an answer, `null` when the
@@ -19,6 +20,7 @@ module.exports = (self) => {
     async ensureCollections() {
       self.chats = await self.apos.db.collection('aposChats');
       self.requests = await self.apos.db.collection('aposChatRequests');
+      self.reverts = await self.apos.db.collection('aposChatReverts');
       await self.chats.createIndex({
         ownerId: 1,
         createdAt: -1
@@ -30,6 +32,10 @@ module.exports = (self) => {
       await self.requests.createIndex({
         ownerId: 1,
         createdAt: -1
+      });
+      await self.reverts.createIndex({
+        chatId: 1,
+        createdAt: 1
       });
     },
 
@@ -50,6 +56,7 @@ module.exports = (self) => {
         ownerId: self.getOwnerId(req),
         title: null,
         openRequest: null,
+        openRevert: null,
         requestCount: 0,
         createdAt: now,
         updatedAt: now
@@ -121,10 +128,10 @@ module.exports = (self) => {
     },
 
     /**
-     * Deletes a chat with everything it owns: its requests, then its change
-     * log entries, then the chat. A chat whose request is running is
-     * refused (Stop first); one waiting for an answer is not, since nothing
-     * runs. A chat being deleted takes no send or answer, and an
+     * Deletes a chat with everything it owns: its requests and reverts, then
+     * its change log entries, then the chat. A chat whose request or revert
+     * is running is refused (Stop first); one waiting for an answer is not,
+     * since nothing runs. A chat being deleted takes no send or answer, and an
      * interrupted delete is finished by the next.
      *
      * @param {object} req
@@ -135,6 +142,7 @@ module.exports = (self) => {
       const { matchedCount } = await self.chats.updateOne({
         _id: chat._id,
         ownerId: chat.ownerId,
+        openRevert: null,
         $or: [
           { deleting: true },
           { openRequest: null },
@@ -147,6 +155,10 @@ module.exports = (self) => {
         throw self.getRefusal(await self.getChat(req, chat._id), {});
       }
       await self.requests.deleteMany({
+        chatId: chat._id,
+        ownerId: chat.ownerId
+      });
+      await self.reverts.deleteMany({
         chatId: chat._id,
         ownerId: chat.ownerId
       });

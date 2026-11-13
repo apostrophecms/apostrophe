@@ -1164,6 +1164,47 @@ describe('Pages REST', function() {
       await assertRefusedToAnotherUser();
     });
 
+    it('tells, without locking, whether a lock would succeed', async function() {
+      const check = (req, lockId, options) => apos.doc.checkLock(
+        req,
+        { _id: pageId },
+        lockId,
+        options
+      );
+      assert.strictEqual(await check(adminReq, 'tab1'), null);
+      await pageLock('tab1');
+      assert.strictEqual(await check(adminReq, 'tab1'), null);
+      assert.strictEqual(await check(adminReq, 'chat1', { family: 'tab1' }), null);
+      await familyLock('chat1');
+      const slot = await getSlot();
+
+      assert.strictEqual(await check(adminReq, 'chat1', { family: 'tab1' }), null);
+      assert.strictEqual(await check(adminReq, 'tab1'), null);
+      for (const [ lockId, options ] of [
+        [ 'chat2', { family: 'tab1' } ],
+        [ 'chat3', { family: 'tab3' } ],
+        [ 'tab3' ]
+      ]) {
+        const refusal = await check(adminReq, lockId, options);
+        assert.strictEqual(refusal.name, 'locked');
+        assert.strictEqual(refusal.data.me, true);
+        assert.strictEqual(refusal.data.lockId, 'chat1');
+      }
+      const other = await check(admin2Req, 'chatB', { family: 'tab1' });
+      assert.strictEqual(other.name, 'locked');
+      assert.strictEqual(other.data.username, 'admin');
+      assert.strictEqual((await check(admin2Req, 'chatB', { force: true })), null);
+      assert.deepStrictEqual(await getSlot(), slot);
+
+      await apos.doc.db.updateOne({ _id: pageId }, {
+        $set: {
+          'advisoryLock.updatedAt': new Date(0)
+        }
+      });
+      await expireMember();
+      assert.strictEqual(await check(admin2Req, 'chatB', { family: 'tab2' }), null);
+    });
+
     it('lets another user lock once the member and the page expired', async function() {
       await familyLock('chat1');
       await expireMember();

@@ -69,47 +69,18 @@ module.exports = (self) => {
         refused
       };
 
-      async function writeOne({
-        doc, manager, draftReq
-      }, patches) {
-        if (!self.apos.ai.can(draftReq, 'edit', doc)) {
-          throw self.apos.error('forbidden');
-        }
-        const door = self.getDoor(draftReq);
-        const lockId = door?.lockId ||
-          draftReq.aposAiCallId ||
-          self.apos.util.generateId();
-        await self.apos.doc.lock(draftReq, doc, lockId, door?.family && {
-          family: door.family
-        });
-        try {
+      function writeOne(found, patches) {
+        return self.writeDraft(found, async ({
+          doc, manager, draftReq, save
+        }) => {
           const inputs = [];
           for (const patch of patches) {
             const built = (typeof patch === 'function')
               ? await patch(doc, manager, draftReq)
               : patch;
-            for (const input of [ built ].flat()) {
-              inputs.push({
-                _lossless: true,
-                ...input
-              });
-            }
+            inputs.push(...[ built ].flat());
           }
-          const saveReq = getSaveRequest(self, draftReq);
-          const body = (inputs.length === 1)
-            ? inputs[0]
-            : { _patches: inputs };
-          await self.publishChangeStarting(draftReq, doc, inputs);
-          let saved;
-          try {
-            saved = self.apos.instanceOf(manager, '@apostrophecms/page-type')
-              ? await self.apos.page.patch(saveReq.clone({ body }), doc._id)
-              : await manager.convertPatchAndRefresh(saveReq, body, doc._id);
-          } catch (e) {
-            await self.publishChangeSettled(draftReq, doc);
-            throw e;
-          }
-          await self.publishChangeSettled(draftReq, doc, saveReq.aposSaveMarker);
+          const saved = await save(inputs);
           return {
             _id: saved._id,
             title: saved.title,
@@ -118,17 +89,76 @@ module.exports = (self) => {
             ...self.getPublishState(saved.type),
             doc: saved
           };
-        } finally {
-          try {
-            await self.apos.doc.unlock(draftReq, doc, lockId);
-          } catch (e) {
-            // The lock expires on its own, and a saved write stands
-            self.logError(draftReq, 'lock-release-failed', e.message, {
-              lockId,
-              docId: doc._id
-            });
-          }
+        });
+      }
+    },
+
+    /**
+     * Runs `work` on a draft `findDraft` found, as `writeDocuments` writes
+     * one: after the AI permission check, with a lock held until `work`
+     * ends. `work` gets `{ doc, manager, draftReq, save }`; `save(inputs)`
+     * saves patches as the PATCH route takes them in one save of the
+     * type's own patch, each lossless unless it sets `_lossless: false`,
+     * marked and announced as `writeDocuments` describes, and returns the
+     * saved draft. Throws `forbidden` or `locked` before `work` runs.
+     *
+     * @param {{ doc: object, manager: object, draftReq: object }} found
+     * @param {Function} work
+     * @returns {Promise<*>} What `work` returns.
+     */
+    async writeDraft({
+      doc, manager, draftReq
+    }, work) {
+      if (!self.apos.ai.can(draftReq, 'edit', doc)) {
+        throw self.apos.error('forbidden');
+      }
+      const door = self.getDoor(draftReq);
+      const lockId = door?.lockId ||
+        draftReq.aposAiCallId ||
+        self.apos.util.generateId();
+      await self.apos.doc.lock(draftReq, doc, lockId, door?.family && {
+        family: door.family
+      });
+      try {
+        return await work({
+          doc,
+          manager,
+          draftReq,
+          save
+        });
+      } finally {
+        try {
+          await self.apos.doc.unlock(draftReq, doc, lockId);
+        } catch (e) {
+          // The lock expires on its own, and a saved write stands
+          self.logError(draftReq, 'lock-release-failed', e.message, {
+            lockId,
+            docId: doc._id
+          });
         }
+      }
+
+      async function save(patches) {
+        const inputs = patches.map(input => ({
+          _lossless: true,
+          ...input
+        }));
+        const saveReq = getSaveRequest(self, draftReq);
+        const body = (inputs.length === 1)
+          ? inputs[0]
+          : { _patches: inputs };
+        await self.publishChangeStarting(draftReq, doc, inputs);
+        let saved;
+        try {
+          saved = self.apos.instanceOf(manager, '@apostrophecms/page-type')
+            ? await self.apos.page.patch(saveReq.clone({ body }), doc._id)
+            : await manager.convertPatchAndRefresh(saveReq, body, doc._id);
+        } catch (e) {
+          await self.publishChangeSettled(draftReq, doc);
+          throw e;
+        }
+        await self.publishChangeSettled(draftReq, doc, saveReq.aposSaveMarker);
+        return saved;
       }
     },
 

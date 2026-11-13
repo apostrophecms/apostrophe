@@ -102,6 +102,7 @@ module.exports = (self) => {
           _id,
           ownerId: self.getOwnerId(req),
           openRequest: null,
+          openRevert: null,
           deleting: { $ne: true }
         }, {
           $set: {
@@ -118,8 +119,11 @@ module.exports = (self) => {
         if (matchedCount) {
           return chat;
         }
-        if (!reconciled && !(await self.reconcileChat(req, chat)).openRequest) {
-          return claim(true);
+        if (!reconciled) {
+          const now = await self.reconcileChat(req, chat);
+          if (!now.openRequest && !now.openRevert) {
+            return claim(true);
+          }
         }
         throw self.getRefusal(chat, { tabId });
       }
@@ -151,7 +155,7 @@ module.exports = (self) => {
         .limit(1)
         .toArray();
       if ((failed.chatId !== chat._id) || (failed.status !== 'failed') ||
-        (latest?._id !== failed._id)) {
+        failed.revertId || (latest?._id !== failed._id)) {
         throw self.apos.error('invalid', 'only the latest request of this chat can be retried, once it failed');
       }
       return self.send(req, chat._id, {
@@ -625,7 +629,8 @@ module.exports = (self) => {
      * is now: the browser tab may show a state that has moved on. The
      * reason is the error's `reason`: `requestOpen` (a request is open),
      * `otherBrowserTab` (another browser tab owns it), `notWaiting` (no ask
-     * waits for an answer), `notRunning` (no request runs).
+     * waits for an answer), `notRunning` (no request runs), `revertRunning`
+     * (a revert runs).
      *
      * @param {object} chat
      * @param {object} [options]
@@ -646,6 +651,9 @@ module.exports = (self) => {
       }
       if (running && ![ 'running', 'stopping' ].includes(open?.status)) {
         return refuse('notRunning', 'no request is running in this chat');
+      }
+      if (chat.openRevert) {
+        return refuse('revertRunning', 'a revert is running in this chat');
       }
       if (open && tabId && (open.tabId !== tabId)) {
         return refuse('otherBrowserTab', 'the request is running in another browser tab');

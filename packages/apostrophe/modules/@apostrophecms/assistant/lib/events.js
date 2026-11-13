@@ -16,6 +16,10 @@
 //     (`requestId`, `step`, `text`, raw)
 //   'retry': the provider call is retried (`requestId`, `attempt`, `wait`,
 //     `step`)
+//   'revert': a revert record changed and the chat's revert slot was freed
+//     (`revertId`)
+//   'revertProgress': a revert finished one more document (`revertId`,
+//     `done`, `total`)
 
 const EVENT = 'assistant-chat';
 

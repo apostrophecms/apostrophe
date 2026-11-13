@@ -1,8 +1,8 @@
 // A run dies with its process, and a process can also die between the
 // writes of a move (send, answer, skip), so a chat can be left open with no
-// run that will ever free it. The records and the request's job are the
-// witnesses: a chat is reconciled when it is read, and before a send or a
-// stop is refused because of it.
+// run that will ever free it; a revert too (see `reconcileRevert`). The
+// records and the request's job are the witnesses: a chat is reconciled
+// when it is read, and before a send or a stop is refused because of it.
 //
 // Every move takes milliseconds, so a state is only taken as left behind
 // once it is older than the job module's `abandonAfter`, the time after
@@ -28,6 +28,10 @@ module.exports = (self) => {
      * @returns {Promise<object>} The chat as it is now.
      */
     async reconcileChat(req, chat) {
+      if (chat.openRevert && !chat.deleting) {
+        await self.reconcileRevert(req, chat);
+        return self.getChat(req, chat._id);
+      }
       const open = chat.openRequest;
       if (!open || chat.deleting) {
         return chat;
