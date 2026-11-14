@@ -666,8 +666,10 @@ describe('Assistant: chats and the run', function () {
       const [ user ] = calls[0].messages.filter(each => each.role === 'user');
       const texts = user.content.map(part => part.text);
       assert.equal(texts.at(-2), request.message);
-      assert.match(texts.at(-1), /^The message mentions these documents/);
-      assert(texts.at(-1).endsWith(JSON.stringify(request.mentions)));
+      // Postgres reorders the stored keys
+      const [ intro, listed ] = texts.at(-1).split('read it with the tools: ');
+      assert.match(intro, /^The message mentions these documents/);
+      assert.deepEqual(JSON.parse(listed), request.mentions);
       // The chat's title reads the mention, not its token
       assert.equal((await apos.assistant.getChat(req, chat._id)).title,
         'Compare @Pricing notes with Ghost, then @Pricing notes');
