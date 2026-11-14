@@ -4,6 +4,8 @@
     :modal="modal"
     :modal-title="editLabel"
     :screen="screen"
+    :outside="outside"
+    :announcement="outsideAnnouncement"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
@@ -69,6 +71,7 @@
               :following-values="followingValues()"
               :conditional-fields="conditionalFields"
               :server-errors="serverErrors"
+              :outside-states="outsideStates"
               @update:model-value="updateDocFields"
               @validate="triggerValidate"
             />
@@ -681,6 +684,7 @@ export default {
         this.areaDebounceUpdate.cancel?.();
         const widget = this.getWidgetObject();
         this.saving = true;
+        this.handOverOutside();
         this.$emit('modal-result', widget);
         this.modal.showModal = false;
       });
@@ -744,7 +748,11 @@ export default {
       return newInstance(this.schema);
     },
     getAposSchema(field) {
-      return this.$refs[field.group.name][0];
+      return this.$refs[field.group.name]?.[0];
+    },
+    // The widget's fields, by their path in the document
+    getOutsideKey(name) {
+      return `@${this.id || this.newId}.${name}`;
     }
   }
 };

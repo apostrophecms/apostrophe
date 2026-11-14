@@ -53,7 +53,7 @@
 import { mapState } from 'pinia';
 import { markRaw, toRaw } from 'vue';
 import { klona } from 'klona';
-import { getTabId } from 'Modules/@apostrophecms/ui/utils';
+import { getTabId, getOutsideSave } from 'Modules/@apostrophecms/ui/utils';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
@@ -121,6 +121,9 @@ export default {
       historyBusy: false,
       savePromise: null,
       patchesSinceSave: [],
+      // Fields an editor on the page wrote from outside, handed over for the
+      // next save, by path (see `AposEditorMixin`)
+      outsidePending: {},
       editMode: false,
       // See Changes, a mode within edit mode: the page shows the changes of
       // the draft since its last publication. Never remembered across
@@ -240,6 +243,7 @@ export default {
     apos.bus.$on('pop-context', this.onPopContext);
     apos.bus.$on('context-editing', this.onContextEditing);
     apos.bus.$on('context-edited', this.onContextEdited);
+    apos.bus.$on('outside-handed-over', this.onOutsideHandedOver);
     apos.bus.$on('context-history-record', this.onContextHistoryRecord);
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('content-change-starting', this.onContentChangeStarting);
@@ -446,11 +450,21 @@ export default {
           const body = {
             _patches: patchesSinceSave
           };
+          const outside = this.outsidePending;
+          if (Object.keys(outside).length) {
+            body._outside = getOutsideSave(outside);
+          }
           this.addLockToRequest(body);
           const doc = await apos.http.patch(`${this.action}/${this.context._id}`, {
             body
           });
           this.context = doc;
+          if (body._outside) {
+            this.outsidePending = Object.fromEntries(
+              Object.entries(this.outsidePending)
+                .filter(([ path ]) => !Object.hasOwn(outside, path))
+            );
+          }
           this.retrying = false;
           saved = true;
           this.settlePatches(patchesSinceSave, null);
@@ -498,6 +512,12 @@ export default {
           scrollcheck: true
         });
       }
+    },
+    onOutsideHandedOver({ fields }) {
+      this.outsidePending = {
+        ...this.outsidePending,
+        ...fields
+      };
     },
     // Calls the `onSaved` of each patch that has one
     settlePatches(patches, error) {

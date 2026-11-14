@@ -1,9 +1,16 @@
 // HAS to be module import, because it's universal CJS code.
+import { computed } from 'vue';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 import { getConditionTypesObject } from '../lib/conditionalFields';
 
 export default {
   name: 'AposSchema',
+  provide() {
+    return {
+      // For this schema's own fields: a nested schema provides its own
+      aposOutsideStates: computed(() => this.outsideStates)
+    };
+  },
   inject: {
     // A read only view, such as See Changes or a document version: every
     // field is shown as read only
@@ -104,6 +111,12 @@ export default {
       default() {
         return [];
       }
+    },
+    // What came from outside the editor, by field name: `{ busy, edited }`
+    // (see `AposEditorMixin`)
+    outsideStates: {
+      type: Object,
+      default: null
     }
   },
   emits: [
@@ -122,7 +135,9 @@ export default {
       },
       fieldState: {},
       fieldComponentMap: window.apos.schema.components.fields || {},
-      changedFields: new Set()
+      changedFields: new Set(),
+      // Per field, how many values came from outside (see `applyOutsideValue`)
+      outsideGenerations: {}
     };
   },
   computed: {
@@ -305,6 +320,24 @@ export default {
     handleFieldUpdate(name, val) {
       this.fieldState[name] = val;
       this.changedFields.add(name);
+    },
+    // A value from outside the editor, such as the assistant's. The field's
+    // input takes it as a new value from its parent and validates and emits
+    // it as typed. Inputs that reload only on `generation` (area, array,
+    // object) get a generation of their own, so the others keep their state
+    applyOutsideValue(name, value) {
+      this.fieldState[name] = {
+        ...this.fieldState[name],
+        data: value,
+        error: false
+      };
+      this.outsideGenerations[name] = (this.outsideGenerations[name] || 0) + 1;
+    },
+    getFieldGeneration(name) {
+      const outside = this.outsideGenerations[name];
+      return outside
+        ? (this.generation || 0) + outside
+        : this.generation;
     },
     displayComponent({ name, hidden = false }) {
       if (hidden === true) {

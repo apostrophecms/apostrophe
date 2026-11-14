@@ -4,13 +4,26 @@
     :class="{
       [`apos-field__wrapper--${field.type}`]: true,
       'apos-field__wrapper--full-width': modifiers.includes('full-width'),
+      'apos-field__wrapper--outside': outsideState,
+      'apos-field__wrapper--busy': outsideState?.busy
     }"
+    :aria-busy="outsideState?.busy ? 'true' : null"
   >
+    <!-- Out of reach while busy: its value is about to be replaced -->
     <component
       :is="wrapEl"
       :class="classList"
+      :inert="outsideState?.busy || null"
     >
       <div class="apos-field__info">
+        <!-- Beside the label, never in it: not part of the field's name -->
+        <transition name="apos-field__ai-mark">
+          <AposAiMark
+            v-if="outsideState && field.label && !field.hideLabel"
+            class="apos-field__ai-mark"
+            :busy="outsideState.busy"
+          />
+        </transition>
         <component
           :is="labelEl"
           v-if="field.label"
@@ -146,6 +159,43 @@ export default {
 
 .apos-field__wrapper.apos-field__wrapper--full-width {
   max-width: 100%;
+}
+
+// Room for the mark at the start of the label line
+.apos-field__wrapper--outside > .apos-field > .apos-field__info {
+  position: relative;
+
+  > .apos-field__label {
+    padding-left: 20px;
+  }
+}
+
+.apos-field__ai-mark {
+  position: absolute;
+  top: 1px;
+  left: 0;
+}
+
+.apos-field__ai-mark-enter-active,
+.apos-field__ai-mark-leave-active {
+  transition: opacity 220ms ease-out, transform 220ms ease-out;
+}
+
+.apos-field__ai-mark-enter-from,
+.apos-field__ai-mark-leave-to {
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+// A field AI is about to change: dimmed and out of reach until its value
+// lands, then back in a fade
+.apos-field__wrapper--outside > .apos-field > :deep(:not(.apos-field__info, .apos-field__error)) {
+  transition: opacity 360ms ease-out;
+}
+
+.apos-field__wrapper--busy > .apos-field > :deep(:not(.apos-field__info, .apos-field__error)) {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .apos-field {
@@ -291,6 +341,15 @@ export default {
     .apos-input-wrapper {
       width: 100%;
     }
+  }
+}
+
+/* stylelint-disable-next-line media-feature-name-allowed-list */
+@media (prefers-reduced-motion: reduce) {
+  .apos-field__ai-mark-enter-active,
+  .apos-field__ai-mark-leave-active,
+  .apos-field__wrapper--outside > .apos-field > :deep(:not(.apos-field__info, .apos-field__error)) {
+    transition: none;
   }
 }
 </style>

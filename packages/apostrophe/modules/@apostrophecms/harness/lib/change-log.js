@@ -42,12 +42,19 @@ module.exports = (self) => {
      * because someone else saved in between, starts a new entry, so no
      * other save is ever recorded as the request's.
      *
+     * An editor's save of fields the request wrote into it from outside
+     * (see the assistant's `markOutsideSave`) records only the rows at or
+     * below those `fields`: the editor's own stay the editor's. Such a save
+     * after the request ended leaves a closed entry.
+     *
      * @param {object} req The `req` of the save.
-     * @param {object} settled The `afterSaveSettled` payload.
-     * @returns {Promise<string>} The `_id` of the entry the save landed in.
+     * @param {object} settled The `afterSaveSettled` payload, and for an
+     *   editor's save `fields` and `ended`.
+     * @returns {Promise<string|null>} The `_id` of the entry the save landed
+     *   in, `null` when none of `fields` changed.
      */
     async recordChange(req, {
-      marker, before, after, toolCall, drops
+      marker, before, after, toolCall, drops, fields = null, ended = false
     }) {
       const open = await self.changes.findOne({
         requestId: marker.requestId,
@@ -61,11 +68,19 @@ module.exports = (self) => {
       const base = continues
         ? (open.base && await self.apos.docVersions.unpack(open.base))
         : before;
-      const rows = await self.apos.docVersions.getChangeRowsBetween(req, base, after);
+      const allFields = fields && [ ...new Set([ ...(open?.fields || []), ...fields ]) ];
+      const between = await self.apos.docVersions.getChangeRowsBetween(req, base, after);
+      const rows = allFields
+        ? between.filter(row => isWithinFields(row, allFields))
+        : between;
+      if (allFields && !rows.length) {
+        return null;
+      }
       const now = new Date();
       const latest = {
         updatedAt: now,
-        head: after.updatedAt,
+        ...(!ended && { head: after.updatedAt }),
+        ...(allFields && { fields: allFields }),
         title: after.title,
         effect: getEffect(base, after),
         rows,
@@ -101,7 +116,9 @@ module.exports = (self) => {
         type: after.type,
         toolCalls: toolCall ? [ toolCall ] : [],
         drops,
-        base: before ? await self.apos.docVersions.pack(before) : null,
+        ...(!ended && {
+          base: before ? await self.apos.docVersions.pack(before) : null
+        }),
         ...latest
       });
       return _id;
@@ -182,3 +199,23 @@ module.exports = (self) => {
     }
   };
 };
+
+// Whether a change row is at or below one of `fields`: a top-level field's
+// name, or `@<_id>.<path>` below the widget or array item `_id` wherever it
+// is. Row paths name fields and the `_id`s of widgets and items
+function isWithinFields(row, fields) {
+  const names = row.path.map(segment => segment.name);
+  return fields.some(field => {
+    const segments = field.split('.');
+    const start = segments[0].startsWith('@')
+      ? names.indexOf(segments[0].slice(1))
+      : 0;
+    if (start === -1) {
+      return false;
+    }
+    const wanted = segments[0].startsWith('@')
+      ? [ segments[0].slice(1), ...segments.slice(1) ]
+      : segments;
+    return wanted.every((name, i) => names[start + i] === name);
+  });
+}

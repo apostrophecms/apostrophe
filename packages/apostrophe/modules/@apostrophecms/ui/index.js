@@ -5,7 +5,8 @@ module.exports = {
   },
   icons: {
     'earth-icon': 'Earth',
-    'database-check-icon': 'DatabaseCheck'
+    'database-check-icon': 'DatabaseCheck',
+    'creation-icon': 'Creation'
   },
   init(self) {
     self.enableBrowserData();

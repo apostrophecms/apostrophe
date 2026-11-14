@@ -9,12 +9,18 @@
  *   the `followingValues` method
  * 4. A scaffold for handling conditional fields, via the
  *   `conditionalFields` method
+ * 5. Values from outside the editor, such as the assistant's, through the
+ *   `outside` handle: `busy(names)`, `apply(values)` and `release(names)`,
+ *   and `adopt(fields)` for what a nested editor's save hands over
  *
  * This mixin is designed to accommodate extension by components like
  *   AposDocEditor that split the UI into several AposSchemas.
  */
 
+import { markRaw } from 'vue';
 import { klona } from 'klona';
+import { getOutsideSave } from 'Modules/@apostrophecms/ui/utils';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import {
   evaluateExternalConditions, getConditionalFields, getConditionTypesObject
 } from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
@@ -36,7 +42,20 @@ export default {
       readOnly: false,
       changed: [],
       externalConditionsResults: getConditionTypesObject(),
-      conditionalFields: getConditionTypesObject()
+      conditionalFields: getConditionTypesObject(),
+      // Fields written from outside, by `getOutsideKey`:
+      // `{ busy, edited, marker }`. In memory only
+      outsideFields: {},
+      outsideAnnouncement: '',
+      // Passed to `AposModal`, which keeps it on the modal's stack entry.
+      // Each call takes field names of this editor's schema; `apply` takes a
+      // `marker` the save carries for the fields it wrote
+      outside: markRaw({
+        busy: names => this.markOutsideBusy(names),
+        apply: (values, options) => this.applyOutside(values, options),
+        release: names => this.releaseOutside(names),
+        adopt: fields => this.adoptOutside(fields)
+      })
     };
   },
 
@@ -56,6 +75,17 @@ export default {
     },
     docMeta() {
       return this.docFields.data?.aposMeta || {};
+    },
+    // What came from outside for the fields shown, by field name
+    outsideStates() {
+      const states = {};
+      for (const field of this.schema) {
+        const state = this.getOutsideState(field.name);
+        if (state) {
+          states[field.name] = state;
+        }
+      }
+      return states;
     }
   },
 
@@ -212,6 +242,148 @@ export default {
           dismiss: true
         });
       }
+    },
+    // A field's key in `outsideFields`: its name, or its path in the
+    // document where the editor holds part of one
+    getOutsideKey(name) {
+      return name;
+    },
+    getOutsideState(name) {
+      return this.outsideFields[this.getOutsideKey(name)] || null;
+    },
+    // A field of the schema code outside may write: shown, and not read only
+    getOutsideField(name) {
+      const field = this.schema.find(field => field.name === name);
+      return (field && !field.readOnly && !field.hidden) ? field : null;
+    },
+    // Whether the editor shows what values from outside would go into
+    isOutsideReady() {
+      return true;
+    },
+    // Marks fields busy while a write from outside is on its way. Returns the
+    // names it marked
+    markOutsideBusy(names) {
+      const fields = this.isOutsideReady()
+        ? names
+          .map(name => this.getOutsideField(name))
+          .filter(field => field && this.getAposSchema(field))
+        : [];
+      for (const field of fields) {
+        const key = this.getOutsideKey(field.name);
+        this.outsideFields[key] = {
+          ...this.outsideFields[key],
+          busy: true
+        };
+      }
+      this.announceOutside('apostrophe:outsideBusy', fields);
+      return fields.map(field => field.name);
+    },
+    // Frees busy fields no value came for
+    releaseOutside(names) {
+      for (const name of names) {
+        const key = this.getOutsideKey(name);
+        if (this.outsideFields[key]?.edited) {
+          this.outsideFields[key] = {
+            ...this.outsideFields[key],
+            busy: false
+          };
+        } else {
+          delete this.outsideFields[key];
+        }
+      }
+    },
+    // Writes `values`, by field name, into the fields as if typed: conditions,
+    // validation and the modified state follow, and each field is marked
+    // edited. Resolves once the values reached `docFields`, with the names
+    // `written` and those `refused` with a `reason`: `unknown`, `readOnly`
+    // or `notReady` while the editor loads
+    async applyOutside(values, { marker = null } = {}) {
+      const written = [];
+      const refused = [];
+      for (const [ name, value ] of Object.entries(values)) {
+        const field = this.getOutsideField(name);
+        const schema = field && this.isOutsideReady() && this.getAposSchema(field);
+        if (!schema) {
+          refused.push({
+            name,
+            reason: field
+              ? 'notReady'
+              : this.schema.some(field => field.name === name) ? 'readOnly' : 'unknown'
+          });
+          continue;
+        }
+        schema.applyOutsideValue(name, klona(value));
+        this.outsideFields[this.getOutsideKey(name)] = {
+          busy: false,
+          edited: true,
+          marker
+        };
+        written.push(field);
+      }
+      this.announceOutside('apostrophe:outsideEdited', written);
+      // The input takes the value, then emits it to the editor
+      await this.$nextTick();
+      await this.$nextTick();
+      return {
+        written: written.map(field => field.name),
+        refused
+      };
+    },
+    // What this editor's save carries for the fields written from outside
+    // (see `getOutsideSave`)
+    getOutsideSave() {
+      return getOutsideSave(this.outsideFields);
+    },
+    // A nested editor (widget, array item) saves into the editor below it,
+    // which saves the document: that editor takes over the fields written
+    // from outside. On the page, the context bar carries them with its next
+    // save
+    handOverOutside() {
+      const edited = Object.fromEntries(
+        Object.entries(this.outsideFields)
+          .filter(([ , state ]) => state.edited && state.marker)
+      );
+      if (!Object.keys(edited).length) {
+        return;
+      }
+      const { stack } = useModalStore();
+      const index = stack.findIndex(modal => modal.outside === this.outside);
+      const below = stack
+        .slice(0, Math.max(index, 0))
+        .reverse()
+        .find(modal => modal.outside);
+      if (below) {
+        below.outside.adopt(edited);
+      } else {
+        apos.bus.$emit('outside-handed-over', { fields: edited });
+      }
+    },
+    // Fields a nested editor wrote from outside, by their paths in the
+    // document
+    adoptOutside(fields) {
+      for (const [ path, { marker } ] of Object.entries(fields)) {
+        this.outsideFields[path] = {
+          busy: false,
+          edited: true,
+          marker
+        };
+      }
+    },
+    // Save, a reload or a switch of locale ends what came from outside
+    clearOutside() {
+      this.outsideFields = {};
+      this.outsideAnnouncement = '';
+    },
+    async announceOutside(key, fields) {
+      if (!fields.length) {
+        return;
+      }
+      // The same message twice is read again only after a change
+      this.outsideAnnouncement = '';
+      await this.$nextTick();
+      this.outsideAnnouncement = this.$t(key, {
+        fields: fields.map(field => this.$t(field.label || field.name)).join(', ')
+      });
     },
     triggerValidate() {
       this.triggerValidation = true;

@@ -59,6 +59,23 @@ module.exports = {
           if (doc.aposMode === 'published') {
             return;
           }
+          // An editor's save of fields requests wrote into it from outside:
+          // each request's own, nothing for a write to wait on
+          if (marker.outside) {
+            for (const part of marker.outside) {
+              await self.recordChange(req, {
+                ...settled,
+                marker: {
+                  ...marker,
+                  requestId: part.requestId,
+                  chat: part.chat
+                },
+                fields: part.fields,
+                ended: part.ended
+              });
+            }
+            return;
+          }
           const entryId = await self.recordChange(req, settled);
           self.rememberSettled(marker, {
             entryId,

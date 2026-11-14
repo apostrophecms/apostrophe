@@ -1,5 +1,7 @@
 // A component designed to be used as a scaffold for AposInputString and
 // friends, which override the `body` slot
+import { unref } from 'vue';
+
 export default {
   name: 'AposInputWrapper',
   inject: {
@@ -7,6 +9,9 @@ export default {
       default: () => ({
         ref: null
       })
+    },
+    aposOutsideStates: {
+      default: null
     }
   },
   emits: [ 'replace-field-value' ],
@@ -145,6 +150,26 @@ export default {
     },
     hasExtraInfo() {
       return !!this.$slots.info;
+    },
+    // Busy while a value from outside is on its way, then edited
+    outsideState() {
+      return unref(this.aposOutsideStates)?.[this.field.name] || null;
+    }
+  },
+  watch: {
+    // A busy field is inert: the editor typing in it gets the focus back
+    // once its value lands
+    'outsideState.busy'(busy) {
+      if (busy) {
+        const active = document.activeElement;
+        this.focusedBeforeBusy = this.$el.contains(active) ? active : null;
+      } else {
+        const focused = this.focusedBeforeBusy;
+        this.focusedBeforeBusy = null;
+        if (focused?.isConnected) {
+          this.$nextTick(() => focused.focus());
+        }
+      }
     }
   },
   mounted: function () {

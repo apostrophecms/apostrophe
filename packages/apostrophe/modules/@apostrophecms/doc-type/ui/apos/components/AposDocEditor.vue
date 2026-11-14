@@ -6,6 +6,8 @@
     :modal-data="modalData"
     :graph-key="graphKey"
     :screen="screen"
+    :outside="outside"
+    :announcement="outsideAnnouncement"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
@@ -97,6 +99,7 @@
               :model-value="docFields"
               :meta="docMeta"
               :server-errors="serverErrors"
+              :outside-states="outsideStates"
               :generation="generation"
               @update:model-value="updateDocFields"
               @validate="triggerValidate"
@@ -124,6 +127,7 @@
             :meta="docMeta"
             :modifiers="['small', 'inverted']"
             :server-errors="serverErrors"
+            :outside-states="outsideStates"
             :generation="generation"
             @update:model-value="updateDocFields"
             @validate="triggerValidate"
@@ -582,6 +586,7 @@ export default {
           }
           this.original = klona(docData);
           this.docFields.data = docData;
+          this.clearOutside();
 
           resetToSchema(this.schema, this.docFields.data);
 
@@ -743,6 +748,11 @@ export default {
         this.addLockToRequest(body);
       }
       body._explicitSave = true;
+      delete body._outside;
+      const outside = this.getOutsideSave();
+      if (outside) {
+        body._outside = outside;
+      }
 
       let doc;
       try {
@@ -841,11 +851,14 @@ export default {
 
       this.evaluateConditions();
     },
+    isOutsideReady() {
+      return this.docReady;
+    },
     getAposSchema(field) {
       if (field.group.name === 'utility') {
         return this.$refs.utilitySchema;
       } else {
-        return this.$refs[field.group.name][0];
+        return this.$refs[field.group.name]?.[0];
       }
     },
     filterOutParkedFields(fields) {
@@ -955,6 +968,7 @@ export default {
       }
       this.docFields.data = doc;
       this.generation++;
+      this.clearOutside();
 
       if (
         action === 'archive' ||

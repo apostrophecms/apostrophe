@@ -18,6 +18,7 @@
           :options="field.options"
           :doc-id="docId"
           :read-only="field.readOnly"
+          :generation="generation"
           empty-label="apostrophe:emptyRichText"
           @update:model-value="update"
         />
@@ -36,6 +37,12 @@ import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin'
 export default {
   name: 'AposInputRichText',
   mixins: [ AposInputMixin ],
+  props: {
+    generation: {
+      type: Number,
+      default: null
+    }
+  },
   emits: [ 'update:modelValue' ],
   methods: {
     update(content) {

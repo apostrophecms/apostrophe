@@ -50,6 +50,15 @@
           data-apos-modal-inner
           @mousedown="startDragging"
         >
+          <div
+            v-if="props.announcement !== null"
+            class="apos-sr-only"
+            aria-live="polite"
+            aria-atomic="true"
+            data-apos-test="modal-announcement"
+          >
+            {{ props.announcement }}
+          </div>
           <template v-if="modal.busy">
             <div class="apos-modal__busy">
               <p class="apos-modal__busy-text">
@@ -209,6 +218,18 @@ const props = defineProps({
   screen: {
     type: Object,
     default: null
+  },
+  // What code outside the modal may write into it through, such as an
+  // editor's handle for values from outside (see `AposEditorMixin`). Kept on
+  // the modal's stack entry, found there by the screen it reports
+  outside: {
+    type: Object,
+    default: null
+  },
+  // Read to screen readers when it changes; `null` for no live region
+  announcement: {
+    type: String,
+    default: null
   }
 });
 
@@ -325,6 +346,9 @@ watch(() => props.screen, screen => {
   immediate: true,
   deep: true
 });
+if (props.outside) {
+  store.updateModalData(props.modalData.id, { outside: props.outside });
+}
 
 // Wrap handler to only work for window modals and primary mouse button. A
 // window whose `dragFrom` is `header` drags from its header only, so that

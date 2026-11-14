@@ -273,6 +273,7 @@ export default {
         for (const item of this.next) {
           item.metaType = 'arrayItem';
         }
+        this.handOverOutside();
         this.$emit('modal-result', this.next);
         this.modal.showModal = false;
       }
@@ -286,6 +287,14 @@ export default {
     },
     getFieldValue(name) {
       return this.currentDoc.data[name];
+    },
+    // Values from outside go into the current item, its fields keyed by
+    // their path in the document
+    isOutsideReady() {
+      return Boolean(this.currentId);
+    },
+    getOutsideKey(name) {
+      return `@${this.currentId}.${name}`;
     },
 
     async validate(validateItem, validateLength) {

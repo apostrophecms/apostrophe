@@ -300,6 +300,12 @@ export default {
     historyTarget: {
       type: String,
       default: null
+    },
+    // Changes when the value changed for an outside reason, such as a value
+    // written from outside a modal: the editor shows it, whatever its history
+    generation: {
+      type: Number,
+      default: null
     }
   },
   emits: [ 'update:modelValue', 'focus', 'blur', 'interaction' ],
@@ -528,6 +534,13 @@ export default {
       setContent(this.editor, this.transformNamedAnchors(value || ''));
       // What the editor shows came from outside: the value it reported
       // last, put back later, is no echo
+      this.lastEmitted = null;
+    },
+    generation() {
+      if (!this.editor || (this.modelValue === this.editor.getHTML())) {
+        return;
+      }
+      setContent(this.editor, this.transformNamedAnchors(this.modelValue || ''));
       this.lastEmitted = null;
     },
     isFocused(newVal) {

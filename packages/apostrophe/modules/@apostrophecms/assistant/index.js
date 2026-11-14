@@ -114,6 +114,28 @@ module.exports = {
       }
     };
   },
+  middleware(self) {
+    if (!self.options.enabled) {
+      return {};
+    }
+    return {
+      // Before the route reads it: an editor's save of fields the
+      // assistant wrote into it (see lib/outside.js)
+      async markOutsideSave(req, res, next) {
+        if (!self.active || !req.body?._outside) {
+          return next();
+        }
+        try {
+          await self.markOutsideSave(req);
+        } catch (e) {
+          self.logError(req, 'outside-save', e.message, {
+            stack: e.stack
+          });
+        }
+        return next();
+      }
+    };
+  },
   apiRoutes(self) {
     if (!self.options.enabled) {
       return {};
@@ -257,6 +279,7 @@ module.exports = {
       ...require('./lib/editor-tools')(self),
       ...require('./lib/gates')(self),
       ...require('./lib/edit-mode')(self),
+      ...require('./lib/outside')(self),
       ...require('./lib/screen')(self),
       ...require('./lib/reconcile')(self),
       ...require('./lib/revert')(self),
