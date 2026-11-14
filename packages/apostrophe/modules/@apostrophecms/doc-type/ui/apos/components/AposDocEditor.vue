@@ -848,6 +848,7 @@ export default {
         ...this.docFields.data,
         ...value.data
       };
+      this.dropTouchedOutside();
 
       this.evaluateConditions();
     },

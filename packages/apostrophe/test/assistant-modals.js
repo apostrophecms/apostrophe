@@ -123,6 +123,23 @@ describe('Assistant: working in open editors', function () {
       assert.equal(entry.head, undefined);
     });
 
+    it('leaves the save the user\'s: its version is not AI-made', async function () {
+      const request = await endedRequest(editor);
+      const note = await insertNote('Before');
+      const draft = await getDraft(note, jar);
+      draft.title = 'Written by the assistant';
+      await put(draft, jar, outside(request, [ 'title' ]));
+
+      assert.equal((await entriesOf(request, note)).length, 1);
+      const [ version ] = await apos.docVersions.db
+        .find({ docId: note.aposDocId })
+        .sort({ createdAt: -1 })
+        .limit(1)
+        .toArray();
+      assert.equal((await apos.docVersions.unpack(version.doc)).title, draft.title);
+      assert.equal(version.ai, false);
+    });
+
     it('records a widget\'s and an array item\'s fields by their paths, nothing else of theirs', async function () {
       const request = await endedRequest(editor);
       const note = await insertNote('Paths', {

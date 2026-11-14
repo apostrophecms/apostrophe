@@ -491,6 +491,7 @@ export default {
         ...this.docFields.data,
         ...value.data
       };
+      this.dropTouchedOutside();
       this.evaluateConditions();
       this.updatePreview(value);
     },
@@ -753,6 +754,12 @@ export default {
     // The widget's fields, by their path in the document
     getOutsideKey(name) {
       return `@${this.id || this.newId}.${name}`;
+    },
+    getOutsideData() {
+      return {
+        ...this.docFields.data,
+        _id: this.id || this.newId
+      };
     }
   }
 };

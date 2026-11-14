@@ -239,6 +239,7 @@ export default {
     },
     currentDocUpdate(currentDoc) {
       this.currentDoc = currentDoc;
+      this.dropTouchedOutside();
       this.evaluateConditions();
     },
     async add() {
@@ -295,6 +296,12 @@ export default {
     },
     getOutsideKey(name) {
       return `@${this.currentId}.${name}`;
+    },
+    // The items, the current one as edited
+    getOutsideData() {
+      return this.next.map(item => {
+        return (item._id === this.currentId) ? this.currentDoc.data : item;
+      });
     },
 
     async validate(validateItem, validateLength) {

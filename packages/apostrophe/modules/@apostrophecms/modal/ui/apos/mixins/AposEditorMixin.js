@@ -11,7 +11,8 @@
  *   `conditionalFields` method
  * 5. Values from outside the editor, such as the assistant's, through the
  *   `outside` handle: `busy(names)`, `apply(values)` and `release(names)`,
- *   and `adopt(fields)` for what a nested editor's save hands over
+ *   and `adopt(fields)` for what a nested editor's save hands over. A field
+ *   the editor changes afterwards is the editor's own again
  *
  * This mixin is designed to accommodate extension by components like
  *   AposDocEditor that split the UI into several AposSchemas.
@@ -19,7 +20,8 @@
 
 import { markRaw } from 'vue';
 import { klona } from 'klona';
-import { getOutsideSave } from 'Modules/@apostrophecms/ui/utils';
+import { getOutsideSave, getOutsideValue } from 'Modules/@apostrophecms/ui/utils';
+import { detectFieldChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import {
   evaluateExternalConditions, getConditionalFields, getConditionTypesObject
@@ -44,7 +46,8 @@ export default {
       externalConditionsResults: getConditionTypesObject(),
       conditionalFields: getConditionTypesObject(),
       // Fields written from outside, by `getOutsideKey`:
-      // `{ busy, edited, marker }`. In memory only
+      // `{ busy, edited, marker, type, value }`, `value` what landed in a
+      // field of that `type`. In memory only
       outsideFields: {},
       outsideAnnouncement: '',
       // Passed to `AposModal`, which keeps it on the modal's stack entry.
@@ -251,6 +254,11 @@ export default {
     getOutsideState(name) {
       return this.outsideFields[this.getOutsideKey(name)] || null;
     },
+    // What the keys of `outsideFields` are read from: the document, or the
+    // part of one the editor holds, with its `_id`
+    getOutsideData() {
+      return this.docFields.data;
+    },
     // A field of the schema code outside may write: shown, and not read only
     getOutsideField(name) {
       const field = this.schema.find(field => field.name === name);
@@ -316,7 +324,8 @@ export default {
         this.outsideFields[this.getOutsideKey(name)] = {
           busy: false,
           edited: true,
-          marker
+          marker,
+          type: field.type
         };
         written.push(field);
       }
@@ -324,15 +333,52 @@ export default {
       // The input takes the value, then emits it to the editor
       await this.$nextTick();
       await this.$nextTick();
+      const data = this.getOutsideData();
+      for (const field of written) {
+        const key = this.getOutsideKey(field.name);
+        if (this.outsideFields[key]) {
+          this.outsideFields[key].value = klona(getOutsideValue(data, key));
+        }
+      }
       return {
         written: written.map(field => field.name),
         refused
       };
     },
+    // Whether the editor changed a field since a value from outside landed
+    // in it
+    isOutsideTouched(key, state) {
+      return Object.hasOwn(state, 'value') && detectFieldChange(
+        { type: state.type },
+        state.value,
+        getOutsideValue(this.getOutsideData(), key)
+      );
+    },
+    // Touched by the editor, owned by the editor: a field of the schema the
+    // editor changed after a value from outside loses its mark, and the save
+    // no longer lists it. Called on each update of the fields
+    dropTouchedOutside() {
+      for (const field of this.schema) {
+        const key = this.getOutsideKey(field.name);
+        const state = this.outsideFields[key];
+        if (state && !state.busy && this.isOutsideTouched(key, state)) {
+          delete this.outsideFields[key];
+        }
+      }
+    },
+    // The fields still as written from outside, those a nested editor
+    // handed over included
+    getOutsideEdited() {
+      return Object.fromEntries(
+        Object.entries(this.outsideFields).filter(([ key, state ]) => {
+          return state.edited && !this.isOutsideTouched(key, state);
+        })
+      );
+    },
     // What this editor's save carries for the fields written from outside
     // (see `getOutsideSave`)
     getOutsideSave() {
-      return getOutsideSave(this.outsideFields);
+      return getOutsideSave(this.getOutsideEdited());
     },
     // A nested editor (widget, array item) saves into the editor below it,
     // which saves the document: that editor takes over the fields written
@@ -340,8 +386,8 @@ export default {
     // save
     handOverOutside() {
       const edited = Object.fromEntries(
-        Object.entries(this.outsideFields)
-          .filter(([ , state ]) => state.edited && state.marker)
+        Object.entries(this.getOutsideEdited())
+          .filter(([ , state ]) => state.marker)
       );
       if (!Object.keys(edited).length) {
         return;
@@ -359,14 +405,10 @@ export default {
       }
     },
     // Fields a nested editor wrote from outside, by their paths in the
-    // document
+    // document, each with the value it saves
     adoptOutside(fields) {
-      for (const [ path, { marker } ] of Object.entries(fields)) {
-        this.outsideFields[path] = {
-          busy: false,
-          edited: true,
-          marker
-        };
+      for (const [ path, state ] of Object.entries(fields)) {
+        this.outsideFields[path] = { ...state };
       }
     },
     // Save, a reload or a switch of locale ends what came from outside

@@ -1,5 +1,5 @@
 import { getTabId } from './tab-id.js';
-import { getOutsideSave } from './outside.js';
+import { getOutsideSave, getOutsideValue } from './outside.js';
 
 export {
   debounceAsync,
@@ -8,7 +8,8 @@ export {
   throttle,
   asyncTaskQueue,
   getTabId,
-  getOutsideSave
+  getOutsideSave,
+  getOutsideValue
 };
 
 // Debounce the async function "fn". For synchronous functions, use

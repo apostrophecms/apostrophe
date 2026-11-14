@@ -3,10 +3,10 @@
 // (core's `_outside`, see `apos.doc.launderOutside`). A marker counts when
 // its request is one of the user's own, owned by the browser tab that
 // saves; the save is then marked for the change log, which records those
-// fields as each request's rows (see the harness's `recordChange`). The
-// editor usually saves after the request ended, so an ended request counts
-// too: at worst a forged marker names the user's own typing as their own
-// assistant's.
+// fields as each request's rows (see the harness's `recordChange`). The save
+// itself stays the user's, never AI. The editor usually saves after the
+// request ended, so an ended request counts too: at worst a forged marker
+// names the user's own typing as their own assistant's.
 
 const DOOR = 'assistant';
 const LIVE = [ 'running', 'stopping', 'waiting' ];
@@ -63,7 +63,6 @@ module.exports = (self) => {
         chat: parts[0].chat,
         outside: parts
       };
-      req.aposAi = true;
     }
   };
 };

@@ -27,3 +27,29 @@ export function getOutsideSave(fields) {
     }
     : null;
 }
+
+// The value at one of those paths in `data`, a document or a part of one.
+// `undefined` when the widget or item is not in it
+export function getOutsideValue(data, path) {
+  if (!path.startsWith('@')) {
+    return data?.[path];
+  }
+  const dot = path.indexOf('.');
+  return findById(data, path.slice(1, dot))?.[path.slice(dot + 1)];
+
+  function findById(value, _id) {
+    if (!value || (typeof value !== 'object')) {
+      return null;
+    }
+    if (value._id === _id) {
+      return value;
+    }
+    for (const child of Object.values(value)) {
+      const found = findById(child, _id);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  }
+}
