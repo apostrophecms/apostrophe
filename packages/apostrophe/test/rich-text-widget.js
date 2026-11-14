@@ -93,6 +93,9 @@ describe('Rich Text Widget', function () {
     );
     assert.equal(richText.schema.some(field => field.name === 'content'), false);
     assert.equal(richText.getAiSchema(apos.task.getReq())[0], richText.shadowSchema[0]);
+    // Marked once, so a reader of the AI-facing schema tells them apart
+    assert.equal(richText.shadowSchema[0]._shadow, true);
+    assert.equal(richText.schema.some(field => field._shadow), false);
   });
 
   it('should let any widget type describe the data it keeps outside its schema', async function () {

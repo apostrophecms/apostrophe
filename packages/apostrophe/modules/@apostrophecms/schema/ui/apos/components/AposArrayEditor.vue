@@ -3,6 +3,7 @@
     class="apos-array-editor"
     :modal="modal"
     :modal-title="modalTitle"
+    :screen="screen"
     @inactive="modal.active = false"
     @show-modal="show"
     @esc="confirmAndCancel"

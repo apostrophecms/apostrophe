@@ -3,6 +3,7 @@
     :data-apos-test="chooserTestId"
     :modal="modal"
     :modal-title="modalTitle"
+    :screen="screen"
     class="apos-media-manager"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
@@ -194,6 +195,21 @@ export default {
     };
   },
   computed: {
+    // The image open in the right rail is the document it works on
+    screen() {
+      const { autocomplete, ...filters } = this.filterValues;
+      return {
+        kind: this.relationshipField ? 'chooser' : 'mediaManager',
+        docId: this.editing?._id || null,
+        docType: this.moduleName,
+        field: this.relationshipField?.name || null,
+        selection: [ ...this.checked ],
+        filters: {
+          ...filters,
+          ...(autocomplete && { search: autocomplete })
+        }
+      };
+    },
     modalTitle () {
       let result;
       if (this.relationshipField) {

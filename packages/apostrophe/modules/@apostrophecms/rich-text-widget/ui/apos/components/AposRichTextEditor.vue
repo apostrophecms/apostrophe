@@ -526,6 +526,9 @@ export default {
         return;
       }
       setContent(this.editor, this.transformNamedAnchors(value || ''));
+      // What the editor shows came from outside: the value it reported
+      // last, put back later, is no echo
+      this.lastEmitted = null;
     },
     isFocused(newVal) {
       if (!newVal) {

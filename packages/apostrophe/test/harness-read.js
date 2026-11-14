@@ -66,6 +66,12 @@ describe('Harness: read tools and the schema read', function () {
             localized: false
           }
         },
+        'read-auto': {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            autopublish: true
+          }
+        },
         'read-hero-widget': {
           extend: '@apostrophecms/widget-type',
           options: {
@@ -360,11 +366,15 @@ describe('Harness: read tools and the schema read', function () {
       const result = await run('search_content', { query: 'launch' });
 
       assert.equal(result.locale, 'en');
+      assert.equal(result.total, 1);
       assert.deepEqual(result.results, [ {
         _id: article._id,
         type: 'read-article',
         title: 'Launch news',
-        slug: 'launch-news'
+        slug: 'launch-news',
+        updatedAt: article.updatedAt,
+        lastPublishedAt: null,
+        modified: true
       } ]);
     });
 
@@ -414,6 +424,205 @@ describe('Harness: read tools and the schema read', function () {
 
     it('should ask for words or a type', async function () {
       await assert.rejects(run('search_content', {}), { name: 'aiToolError' });
+    });
+  });
+
+  describe('search_content counts and dates', function () {
+    // Published long ago, published lately with changes waiting, never
+    // published but updated last
+    const dates = {
+      'Old note': {
+        updatedAt: new Date('2026-01-03'),
+        lastPublishedAt: new Date('2026-01-02'),
+        modified: false
+      },
+      'Fresh note': {
+        updatedAt: new Date('2026-03-02'),
+        lastPublishedAt: new Date('2026-03-01'),
+        modified: true
+      },
+      'Draft note': {
+        updatedAt: new Date('2026-05-01'),
+        modified: true
+      }
+    };
+
+    before(async function () {
+      const req = userReq();
+      for (const [ title, set ] of Object.entries(dates)) {
+        const {
+          updatedAt, lastPublishedAt, modified
+        } = set;
+        const note = await apos.modules['read-note'].insert(req, { title });
+        if (lastPublishedAt) {
+          await apos.modules['read-note'].publish(req, note);
+        }
+        await apos.doc.db.updateOne({ _id: note._id }, {
+          $set: {
+            updatedAt,
+            lastPublishedAt: lastPublishedAt || null,
+            modified
+          }
+        });
+      }
+      await apos.modules['read-setting'].insert(req, { title: 'Site note' });
+      await apos.modules['read-auto'].insert(req, { title: 'Auto note' });
+    });
+
+    it('should count every match, not only the page', async function () {
+      const result = await run('search_content', {
+        type: 'read-note',
+        limit: 1
+      });
+
+      assert.equal(result.total, 3);
+      assert.equal(result.results.length, 1);
+      assert.equal(result.next, 1);
+    });
+
+    it('should date each result, a never published one with a null publish date', async function () {
+      const result = await run('search_content', { type: 'read-note' });
+
+      assert.deepEqual(
+        result.results.map(({
+          title, updatedAt, lastPublishedAt
+        }) => [
+          title,
+          updatedAt,
+          lastPublishedAt
+        ]),
+        [
+          [ 'Draft note', dates['Draft note'].updatedAt, null ],
+          [ 'Fresh note', dates['Fresh note'].updatedAt, dates['Fresh note'].lastPublishedAt ],
+          [ 'Old note', dates['Old note'].updatedAt, dates['Old note'].lastPublishedAt ]
+        ]
+      );
+    });
+
+    it('should sort by the last publication, never published last', async function () {
+      const result = await run('search_content', {
+        type: 'read-note',
+        sort: 'lastPublishedAt'
+      });
+
+      assert.deepEqual(
+        result.results.map(doc => doc.title),
+        [ 'Fresh note', 'Old note', 'Draft note' ]
+      );
+    });
+
+    it('should sort a text search when asked', async function () {
+      const result = await run('search_content', {
+        query: 'note',
+        type: 'read-note',
+        sort: 'updatedAt'
+      });
+
+      assert.equal(result.total, 3);
+      assert.deepEqual(
+        result.results.map(doc => doc.title),
+        [ 'Draft note', 'Fresh note', 'Old note' ]
+      );
+    });
+
+    it('should not give a publish date to a type without drafts', async function () {
+      const result = await run('search_content', { type: 'read-setting' });
+
+      assert.equal(result.total, 1);
+      assert(result.results[0].updatedAt instanceof Date);
+      assert.equal('lastPublishedAt' in result.results[0], false);
+      assert.equal('modified' in result.results[0], false);
+    });
+
+    it('should say whether each draft has changes not yet published', async function () {
+      const result = await run('search_content', { type: 'read-note' });
+
+      assert.deepEqual(
+        result.results.map(({ title, modified }) => [ title, modified ]),
+        [
+          [ 'Draft note', true ],
+          [ 'Fresh note', true ],
+          [ 'Old note', false ]
+        ]
+      );
+      const auto = await run('search_content', { type: 'read-auto' });
+      assert(auto.results[0].lastPublishedAt instanceof Date);
+      assert.equal('modified' in auto.results[0], false);
+    });
+
+    it('should filter by what is live, modified or never published, counting the filtered', async function () {
+      const titles = async state => {
+        const result = await run('search_content', {
+          type: 'read-note',
+          state
+        });
+        assert.equal(result.total, result.results.length);
+        assert.equal('note' in result, false);
+        return result.results.map(doc => doc.title);
+      };
+
+      assert.deepEqual(await titles('live'), [ 'Fresh note', 'Old note' ]);
+      assert.deepEqual(await titles('modified'), [ 'Fresh note' ]);
+      assert.deepEqual(await titles('neverPublished'), [ 'Draft note' ]);
+    });
+
+    it('should count a type that is always live as live across types', async function () {
+      const titles = async state => {
+        const result = await run('search_content', {
+          query: 'note',
+          state
+        });
+        return result.results.map(doc => doc.title);
+      };
+
+      const live = await titles('live');
+      assert.deepEqual(
+        [ 'Site note', 'Auto note', 'Fresh note', 'Old note', 'Draft note' ]
+          .filter(title => live.includes(title)),
+        [ 'Site note', 'Auto note', 'Fresh note', 'Old note' ]
+      );
+      const modified = await titles('modified');
+      assert.deepEqual(modified.filter(title => title.endsWith(' note')), [ 'Fresh note' ]);
+      const neverPublished = await titles('neverPublished');
+      assert.deepEqual(neverPublished.filter(title => title.endsWith(' note')), [ 'Draft note' ]);
+    });
+
+    it('should ignore the filter for a type that is always live, and say why', async function () {
+      const setting = await run('search_content', {
+        type: 'read-setting',
+        state: 'neverPublished'
+      });
+      assert.equal(setting.total, 1);
+      assert.equal(
+        setting.note,
+        'Every "read-setting" document is live (no drafts), so "state" does not apply.'
+      );
+
+      const auto = await run('search_content', {
+        type: 'read-auto',
+        state: 'modified'
+      });
+      assert.equal(auto.total, 1);
+      assert.equal(
+        auto.note,
+        'Every "read-auto" document is live (published on save), so "state" does not apply.'
+      );
+    });
+
+    it('should say in a document read whether it is live', async function () {
+      const { results } = await run('search_content', {
+        type: 'read-note',
+        sort: 'lastPublishedAt'
+      });
+      const fresh = await run('get_document', { _id: results[0]._id });
+
+      assert.equal(fresh.title, 'Fresh note');
+      assert.deepEqual(fresh.lastPublishedAt, dates['Fresh note'].lastPublishedAt);
+      assert.equal(fresh.modified, true);
+      const { results: [ setting ] } = await run('search_content', { type: 'read-setting' });
+      const read = await run('get_document', { _id: setting._id });
+      assert.equal('lastPublishedAt' in read, false);
+      assert.equal('modified' in read, false);
     });
   });
 
@@ -494,7 +703,34 @@ describe('Harness: read tools and the schema read', function () {
           widgets: []
         }
       ]);
+      // A widget's own fields come only with a read of that widget
+      assert.equal(main.widgets.some(widget => 'fields' in widget), false);
       assert.equal(JSON.stringify(result).includes('Retired'), false);
+    });
+
+    it('should list the fields of a widget named by path, its preview\'s without its value', async function () {
+      const { parts: [ part ] } = await run('get_document', {
+        _id: article._id,
+        paths: [ '@hero-1' ]
+      });
+
+      assert.equal(part.widget.preview, 'Welcome aboard');
+      assert.deepEqual(part.widget.fields, [
+        {
+          name: 'heading',
+          chars: 16
+        },
+        {
+          name: '_image',
+          chars: 66
+        },
+        {
+          name: 'items',
+          chars: 87
+        }
+      ]);
+      // Only the widget named, not those below it
+      assert.equal('fields' in part.widget.areas[0].widgets[0], false);
     });
 
     it('should read values by name, dot path and @id path, rich text included', async function () {
@@ -536,6 +772,30 @@ describe('Harness: read tools and the schema read', function () {
       ]);
     });
 
+    it('should name the fields where a path was not found', async function () {
+      const result = await run('get_document', {
+        _id: article._id,
+        view: 'properties',
+        paths: [ '@hero-1.headline', 'titel', '@hero-1.items.nope' ]
+      });
+      const [ widget, doc, array ] = result.properties;
+
+      assert.deepEqual(widget, {
+        path: '@hero-1.headline',
+        missing: true,
+        fields: [ 'heading', 'content', '_image', 'items' ]
+      });
+      assert.equal(doc.missing, true);
+      assert(doc.fields.includes('title'));
+      assert(doc.fields.includes('main'));
+      assert.equal(doc.fields.includes('_id'), false);
+      // Items of an array are named by "@<id>", not by field
+      assert.deepEqual(array, {
+        path: '@hero-1.items.nope',
+        missing: true
+      });
+    });
+
     it('should outline only the areas and widgets named by path', async function () {
       const { parts } = await run('get_document', {
         _id: article._id,
@@ -547,6 +807,10 @@ describe('Harness: read tools and the schema read', function () {
       ]);
       assert.deepEqual(parts[0].widgets.map(widget => widget._id), [ 'text-2' ]);
       assert.equal(parts[1].widget.preview, 'Team photo');
+      // The image it shows, by size
+      const image = parts[1].widget.fields.find(field => field.name === '_image');
+      assert(image.chars > 0);
+      assert.equal('value' in image, false);
       assert.equal(parts[2].missing, true);
     });
 

@@ -630,6 +630,10 @@ describe('AI tools', function() {
     let readGate = null;
     // [ [ 'before' | 'after', toolName, resultOrError ] ]
     const toolEvents = [];
+    // Set by a test: what an afterToolCall handler makes of a result
+    let amendResult = null;
+    // Set by a test: what a beforeToolCall handler does with a call
+    let beforeHook = null;
     const usageRecords = [];
     // [ toolName, req.aposAiToolCall ] per tracked handler run
     const stamps = [];
@@ -776,6 +780,23 @@ describe('AI tools', function() {
                 }
               });
               add({
+                name: 'sized',
+                input: {
+                  type: 'object',
+                  properties: {
+                    size: {
+                      type: 'integer',
+                      default: 3
+                    }
+                  },
+                  additionalProperties: false
+                },
+                handler: async (req, args) => ({
+                  size: args.size,
+                  input: args._context.input ?? null
+                })
+              });
+              add({
                 name: 'sub_agent',
                 kind: 'agent',
                 handler: async (req, args) => {
@@ -895,11 +916,21 @@ describe('AI tools', function() {
                 '@apostrophecms/ai:beforeToolCall': {
                   record(req, payload) {
                     toolEvents.push([ 'before', payload.tool.name ]);
+                  },
+                  async hook(req, payload) {
+                    if (beforeHook) {
+                      await beforeHook(payload);
+                    }
                   }
                 },
                 '@apostrophecms/ai:afterToolCall': {
                   record(req, payload) {
                     toolEvents.push([ 'after', payload.tool.name, payload.result ?? payload.error ]);
+                  },
+                  amend(req, payload) {
+                    if (amendResult && (payload.result !== undefined)) {
+                      payload.result = amendResult(payload.result);
+                    }
                   }
                 },
                 '@apostrophecms/ai:usage': {
@@ -932,6 +963,8 @@ describe('AI tools', function() {
       toolEvents.length = 0;
       usageRecords.length = 0;
       readGate = null;
+      amendResult = null;
+      beforeHook = null;
     });
 
     it('runs the loop to completion with transcript, steps and aggregated usage', async function() {
@@ -977,6 +1010,102 @@ describe('AI tools', function() {
         [ 'before', 'echo' ],
         [ 'after', 'echo', { value: 'pricing' } ]
       ]);
+    });
+
+    it('lets a beforeToolCall handler read the validated arguments, then suspend or refuse the call', async function() {
+      const req = apos.task.getReq();
+      const seen = [];
+      beforeHook = async ({ tool, args }) => {
+        if (tool.name !== 'sized') {
+          return;
+        }
+        seen.push({
+          size: args.size,
+          input: args._context.input
+        });
+        if (args._context.input === undefined) {
+          throw apos.error('aiInput', 'asked first', { kind: 'check' });
+        }
+        if (args._context.input.go) {
+          // Taken off before the handler sees it
+          delete args._context.input;
+          return;
+        }
+        throw apos.error('aiToolError', 'declined');
+      };
+      const tools = [ 'sized' ];
+      chatScript = [ toolTurn(toolCall('c1', 'sized')) ];
+      const first = await apos.ai.generate(req, 'go', { tools });
+      assert.equal(first.finishReason, 'input');
+      assert.deepEqual(first.suspended, [ {
+        callId: 'c1',
+        name: 'sized',
+        payload: { kind: 'check' }
+      } ]);
+
+      chatScript = [ textTurn('ran') ];
+      const approved = await apos.ai.generate(req, {
+        messages: first.messages,
+        tools,
+        pending: 'execute',
+        toolInput: { c1: { go: true } }
+      });
+      assert.deepEqual(approved.steps[0].result, {
+        size: 3,
+        input: null
+      });
+
+      chatScript = [ textTurn('kept back') ];
+      const declined = await apos.ai.generate(req, {
+        messages: first.messages,
+        tools,
+        pending: 'execute',
+        toolInput: { c1: { go: false } }
+      });
+      assert.equal(declined.text, 'kept back');
+      assert.equal(declined.steps[0].error, 'declined');
+      // The default the input schema declares, on every check
+      assert.deepEqual(seen, [
+        {
+          size: 3,
+          input: undefined
+        },
+        {
+          size: 3,
+          input: { go: true }
+        },
+        {
+          size: 3,
+          input: { go: false }
+        }
+      ]);
+
+      // Invalid arguments never reach the check
+      toolEvents.length = 0;
+      chatScript = [ toolTurn(toolCall('c2', 'sized', { size: 'big' })), textTurn('fixed') ];
+      await apos.ai.generate(req, 'go', { tools });
+      assert.equal(seen.length, 3);
+      assert.deepEqual(toolEvents.map(([ kind ]) => kind), [ 'after' ]);
+    });
+
+    it('lets an afterToolCall handler amend the result the model reads', async function() {
+      const req = apos.task.getReq();
+      amendResult = result => ({
+        ...result,
+        note: 'added'
+      });
+      chatScript = [
+        toolTurn(toolCall('c1', 'echo', { value: 'pricing' })),
+        textTurn('all done')
+      ];
+      const result = await apos.ai.generate(req, 'find it', { tools: [ 'echo' ] });
+      const amended = {
+        value: 'pricing',
+        note: 'added'
+      };
+      assert.deepEqual(result.steps[0].result, amended);
+      assert.deepEqual(result.messages[2].content[0].output, amended);
+      assert.deepEqual(chatCalls[1].messages[2].content[0].output, amended);
     });
 
     it('sums a share over the turns that reported it', async function() {
@@ -1409,6 +1538,45 @@ describe('AI tools', function() {
       // never called again
       assert.deepEqual(log, []);
       assert.equal(chatCalls.length, 1);
+    });
+
+    it('carries the work done before a hard stop on the error', async function() {
+      const req = apos.task.getReq();
+      chatScript = [
+        toolTurn(toolCall('c1', 'echo', { value: 'first' })),
+        toolTurn(
+          toolCall('c2', 'echo', { value: 'second' }),
+          toolCall('c3', 'boom_forbidden'),
+          toolCall('c4', 'echo', { value: 'never' })
+        )
+      ];
+      await assert.rejects(
+        apos.ai.generate(req, 'go', { tools: [ 'boom_forbidden', 'echo' ] }),
+        (e) => {
+          assert.equal(e.name, 'forbidden');
+          assert.equal(e.aposAiToolFailure, undefined);
+          const partial = e.aposAiPartial;
+          assert.equal(partial.finishReason, 'error');
+          assert.deepEqual(partial.failedToolCall, {
+            id: 'c3',
+            name: 'boom_forbidden'
+          });
+          assert.deepEqual(partial.messages.map(message => message.role),
+            [ 'user', 'assistant', 'tool', 'assistant', 'tool' ]);
+          // The stopped batch: what ran before the stop, nothing after
+          assert.deepEqual(partial.messages[4].content, [ {
+            type: 'toolResult',
+            toolCallId: 'c2',
+            output: { value: 'second' }
+          } ]);
+          assert.deepEqual(partial.steps.map(step => step.toolCall.id), [ 'c1', 'c2' ]);
+          assert.deepEqual(partial.usage, {
+            inputTokens: 20,
+            outputTokens: 10
+          });
+          return true;
+        }
+      );
     });
 
     it('hard-stops on a handler bug', async function() {

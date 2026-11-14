@@ -1,6 +1,7 @@
 <template>
   <AposModal
     :modal="modal"
+    :screen="screen"
     :modal-title="{ key: 'apostrophe:recentlyEditedDocuments' }"
     class="apos-recently-edited-manager"
     data-apos-test="recently-edited-manager"
@@ -179,6 +180,7 @@ const {
   clearSearch,
   onContentChanged,
   onSearch,
+  searchQuery,
   cancel,
   batchOperations,
   batchFilterValues,
@@ -190,6 +192,15 @@ const {
   setAllPiecesSelection,
   handleBatchAction
 } = useRecentlyEditedData(props.moduleName, props.initialFilters);
+
+const screen = computed(() => ({
+  kind: 'recentlyEdited',
+  selection: [ ...checked.value ],
+  filters: {
+    ...filterState.value,
+    ...(searchQuery.value && { search: searchQuery.value })
+  }
+}));
 
 const {
   start: startScroll, stop: stopScroll, recheck

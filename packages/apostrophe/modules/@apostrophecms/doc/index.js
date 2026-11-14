@@ -1746,6 +1746,51 @@ module.exports = {
           });
         }
       },
+      // Whether `lock` with the same arguments would succeed, without
+      // locking: `null` when it would, else the error it would throw, not
+      // thrown (`locked`, `forbidden` or `notfound`).
+      async checkLock(req, doc, tabId, options = {}) {
+        const { family, force } = options;
+        const stored = await self.db.findOne({
+          $and: [
+            { _id: doc._id },
+            self.apos.permission.criteria(req, 'edit')
+          ]
+        }, {
+          projection: {
+            advisoryLock: 1
+          }
+        });
+        if (!stored) {
+          return (await self.db.findOne({ _id: doc._id }, { projection: { _id: 1 } }))
+            ? self.apos.error('forbidden')
+            : self.apos.error('notfound');
+        }
+        const lock = stored.advisoryLock;
+        if (force || !lock) {
+          return null;
+        }
+        const expiry = self.getAdvisoryLockExpiration();
+        const memberAlive = Boolean(lock.member) && (lock.member.updatedAt >= expiry);
+        const mine = lock.username === req.user?.username;
+        const free = (lock.updatedAt < expiry) && !memberAlive;
+        const compatible = family
+          ? mine && (lock._id === family) &&
+            (!memberAlive || (lock.member._id === tabId))
+          : (lock._id === tabId) && (!memberAlive || mine);
+        if (free || compatible) {
+          return null;
+        }
+        return mine
+          ? self.apos.error('locked', {
+            me: true,
+            lockId: memberAlive ? lock.member._id : lock._id
+          })
+          : self.apos.error('locked', {
+            title: lock.title,
+            username: lock.username
+          });
+      },
       // Any advisory lock whose `updatedAt` time is older than the Date
       // object returned by this method should be considered expired
       getAdvisoryLockExpiration() {

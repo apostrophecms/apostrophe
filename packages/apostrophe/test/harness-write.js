@@ -152,6 +152,8 @@ describe('Harness: doors, the write path and guards', function () {
             tool('t_browser', [ 'assistant', 'browser' ]);
             tool('t_mcp', [ 'mcp' ]);
             tool('t_mcp_browser', [ 'mcp', 'browser' ]);
+            tool('t_content_mcp', [ 'content', 'mcp' ]);
+            tool('t_assistant_mcp', [ 'assistant', 'mcp' ]);
             tool('t_removed', [ 'content' ]);
             self.apos.ai.removeTool('t_removed');
             tool('t_write', [ 'content' ], {
@@ -233,7 +235,7 @@ describe('Harness: doors, the write path and guards', function () {
   }
 
   describe('doors', function () {
-    it('should select the harness tools for both doors, and each door its own', function () {
+    it('should select the harness tools for both doors, each door its own, and an MCP tool for MCP alone', function () {
       const names = door => apos.harness.getDoorTools(door).map(tool => tool.name);
       const test = door => names(door).filter(name => name.startsWith('t_'));
       const harness = door => names(door).filter(name => !name.startsWith('t_'));
@@ -241,7 +243,7 @@ describe('Harness: doors, the write path and guards', function () {
       assert.deepEqual(test('assistant'), [
         't_assistant', 't_browser', 't_content', 't_write'
       ]);
-      assert.deepEqual(test('mcp'), [ 't_content', 't_mcp', 't_write' ]);
+      assert.deepEqual(test('mcp'), [ 't_content', 't_content_mcp', 't_mcp', 't_write' ]);
       assert(harness('mcp').includes('search_content'));
       assert.deepEqual(harness('assistant'), harness('mcp'));
     });
@@ -646,7 +648,8 @@ describe('Harness: doors, the write path and guards', function () {
           _id: 'model-link',
           label: 'Link'
         } ],
-        _related: [ 'related-id:fr:published' ]
+        _related: [ 'related-id:fr:published' ],
+        secret: 'From the model'
       });
 
       const sent = [ 'model-widget', 'model-area', 'model-rich-text', 'model-link' ];
@@ -666,7 +669,8 @@ describe('Harness: doors, the write path and guards', function () {
       assert.equal(widget.body.metaType, 'area');
       // Read in any locale or mode, written as the draft in the request's
       assert.deepEqual(widget._related, [ { _id: 'related-id:en:draft' } ]);
-      assert.equal('secret' in widget, false);
+      // A field kept away from AI at its default, never the model's
+      assert.equal(widget.secret, '');
     });
 
     it('should keep the own id of a widget replaced in place', function () {

@@ -225,6 +225,39 @@ module.exports = {
             consolidate: self.apos.launder.boolean(req.query.consolidate)
           });
         }
+      },
+      post: {
+        // Whether the document `docId`, which the user may edit, holds every
+        // value `patches` set (see `isAsPatched`): `{ asPatched }`, `null`
+        // when the patches are not ones this can tell
+        'as-patched': async (req) => {
+          const docId = self.apos.launder.id(req.body.docId);
+          const { patches } = req.body;
+          if (!docId || !Array.isArray(patches) ||
+            !patches.every(patch => patch && (typeof patch === 'object'))) {
+            throw self.apos.error('invalid');
+          }
+          // Found in the locale and mode its `_id` names
+          const [ , locale, mode ] = docId.split(':');
+          const findReq = (locale && mode)
+            ? req.clone({
+              locale,
+              mode
+            })
+            : req;
+          const found = await self.apos.doc.find(findReq, { _id: docId })
+            .permission('edit')
+            .project({ _id: 1 })
+            .toObject();
+          // As stored, the form the diff engine reads
+          const doc = found && await self.apos.doc.db.findOne({ _id: found._id });
+          if (!doc || !self.getManager(doc.type)) {
+            throw self.apos.error('notfound');
+          }
+          return {
+            asPatched: self.isAsPatched(req, doc, patches)
+          };
+        }
       }
     };
   },
@@ -300,6 +333,25 @@ module.exports = {
   },
 
   methods(self) {
+    // `req` in the locale and mode of `doc`, whatever `req` is in
+    function getDocReq(req, doc) {
+      const [ locale, mode ] = (doc.aposLocale || '').split(':');
+      return locale
+        ? req.clone({
+          locale,
+          mode
+        })
+        : req;
+    }
+
+    // The `_id` a save finds a related document by: its version in the mode
+    // and locale of `req`, unless its type is not localized
+    function getRelatedId(req) {
+      return (field, id) => (self.getManager(field.withType)?.isLocalized()
+        ? `${id}:${req.locale}:${req.mode}`
+        : id);
+    }
+
     return {
       async enableCollection() {
         self.db = await self.apos.db.collection('aposDocsVersions');
@@ -1424,6 +1476,7 @@ module.exports = {
         const manager = self.getManager(doc.type);
         const editable = manager.allowedSchema(req, doc, doc._ancestors?.at(-1))
           .map(field => field.name);
+        const relatedId = getRelatedId(req);
         const ids = collect(relatedId);
         const loadable = ids.size
           ? await self.apos.doc.find(req, { _id: { $in: [ ...ids ] } })
@@ -1448,13 +1501,6 @@ module.exports = {
             Boolean(field.viewPermission && can(field.viewPermission));
         }
 
-        // The `_id` a save finds a related document by: its version in the
-        // mode and locale of `req`, unless its type is not localized
-        function relatedId(field, id) {
-          return self.getManager(field.withType)?.isLocalized()
-            ? `${id}:${req.locale}:${req.mode}`
-            : id;
-        }
       },
       // The change list between contents of one document, as the modal shows
       // it: `{ rows, counts: { added, modified, deleted, ai } }`. `pairs` are
@@ -1618,14 +1664,7 @@ module.exports = {
       // as its value in the empty document (see `getEmptyDoc`), so a save
       // that stores its empty or default value lists no change
       async getChangeRowsBetween(req, before, after) {
-        // In the locale and mode of the document, whatever `req` is in
-        const [ locale, mode ] = (after.aposLocale || '').split(':');
-        const docReq = locale
-          ? req.clone({
-            locale,
-            mode
-          })
-          : req;
+        const docReq = getDocReq(req, after);
         const empty = await self.getEmptyDoc(docReq, after.type);
         const manager = self.getManager(after.type);
         return diff.record(manager.schema, {
@@ -1635,6 +1674,47 @@ module.exports = {
           ...empty,
           ...after
         }, self.getDiffContext(docReq, after));
+      },
+      // The parts of a document a change from `before` to `after`, two of its
+      // stored states, made, each to be written whole by a PATCH of the
+      // document in its locale and mode (see `parts` in `lib/diff.js`):
+      // `[{ key, before, after }]`, values in the form a save takes. `before`
+      // `null` when the document did not exist
+      async getChangeParts(req, before, after) {
+        const docReq = getDocReq(req, after);
+        const empty = await self.getEmptyDoc(docReq, after.type);
+        const manager = self.getManager(after.type);
+        const older = {
+          ...empty,
+          ...before
+        };
+        const newer = {
+          ...empty,
+          ...after
+        };
+        const ctx = self.getDiffContext(docReq, after);
+        const rows = diff.record(manager.schema, older, newer, ctx);
+        return diff.parts(manager.schema, older, newer, rows, ctx, getRelatedId(docReq))
+          .map(part => ({
+            key: part.key,
+            before: part.older,
+            after: part.newer
+          }));
+      },
+      // Whether `doc`, as stored now, holds every value `patches` set, so that
+      // writing them would change nothing; `null` when a patch is not one this
+      // can tell (see `isAsPatched` in `lib/diff.js`). In the locale and mode
+      // of `doc`
+      isAsPatched(req, doc, patches) {
+        const docReq = getDocReq(req, doc);
+        const manager = self.getManager(doc.type);
+        return diff.isAsPatched(
+          manager.schema,
+          doc,
+          patches,
+          self.getDiffContext(docReq, doc),
+          getRelatedId(docReq)
+        );
       },
       // Checks rows of `getChangeRowsBetween` against `doc`, the document as
       // stored now, and makes the patch that puts each back for the user of
@@ -1646,13 +1726,7 @@ module.exports = {
         if (!doc || doc.archived) {
           return rows.map(() => ({ outcome: 'gone' }));
         }
-        const [ locale, mode ] = (doc.aposLocale || '').split(':');
-        const docReq = locale
-          ? req.clone({
-            locale,
-            mode
-          })
-          : req;
+        const docReq = getDocReq(req, doc);
         const manager = self.getManager(doc.type);
         const ctx = self.getDiffContext(docReq, doc);
         const options = await self.getRestoreOptions(docReq, doc, relatedId => new Set([

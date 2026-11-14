@@ -714,16 +714,30 @@ describe('Job module', function() {
       const realUpdateOne = jobModule.db.updateOne;
       const realError = apos.util.error;
       let failing = true;
+      let settled = 0;
       jobModule.db.updateOne = function(filter, update, ...rest) {
-        if (failing && update.$set?.heartbeatAt) {
-          return Promise.reject(new Error('database unreachable'));
+        if (!update.$set?.heartbeatAt) {
+          return realUpdateOne.call(this, filter, update, ...rest);
         }
-        return realUpdateOne.call(this, filter, update, ...rest);
+        const written = failing
+          ? Promise.reject(new Error('database unreachable'))
+          : realUpdateOne.call(this, filter, update, ...rest);
+        return written.finally(() => {
+          settled++;
+        });
       };
       apos.util.error = () => {};
+      // A beat is over once its write settles, however slow the database.
+      // `Date` is mocked: the wait is bounded by polls, not by a deadline
       const beatOnce = async () => {
+        const before = settled;
         mock.timers.tick(jobModule.options.heartbeatInterval);
-        await delay(50);
+        for (let i = 0; i < 400; i++) {
+          if (settled > before) {
+            return;
+          }
+          await delay(5);
+        }
       };
 
       try {

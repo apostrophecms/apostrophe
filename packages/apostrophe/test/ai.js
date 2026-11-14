@@ -1,6 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert/strict');
 const { spawn } = require('child_process');
+const { DENIED_TYPES } = require('../modules/@apostrophecms/ai/lib/constants.js');
 
 // A registrable fake adapter following the adapter contract, minus
 // anything that would talk to a network
@@ -1143,11 +1144,7 @@ describe('AI engine', function() {
 
     it('denies a denied type, as a type name or a document', function() {
       const admin = apos.task.getReq();
-      const denied = [
-        '@apostrophecms/user',
-        '@apostrophecms-pro/advanced-permission-group'
-      ];
-      for (const type of denied) {
+      for (const type of DENIED_TYPES) {
         for (const action of [ 'view', 'edit', 'create', 'delete', 'publish' ]) {
           assert.equal(apos.ai.can(admin, action, type), false);
           assert.equal(apos.ai.can(admin, action, { type }, 'draft'), false);
@@ -1174,10 +1171,7 @@ describe('AI engine', function() {
       } finally {
         apos.ai.getDeniedTypes = original;
       }
-      assert.deepEqual(apos.ai.getDeniedTypes(), [
-        '@apostrophecms/user',
-        '@apostrophecms-pro/advanced-permission-group'
-      ]);
+      assert.deepEqual(apos.ai.getDeniedTypes(), [ ...DENIED_TYPES ]);
     });
 
     it('denies without consulting apos.permission.can at all', function() {

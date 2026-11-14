@@ -10,7 +10,7 @@ const TREE_HEADROOM = 200;
 module.exports = (self) => {
   return {
     async searchContent(req, {
-      query, type, locale, limit, offset
+      query, type, locale, state, sort, limit, offset
     }) {
       if (!query && !type) {
         throw self.apos.error('aiToolError', 'Give a "query", a "type", or both.');
@@ -19,10 +19,21 @@ module.exports = (self) => {
         mode: 'draft',
         ...(locale && { locale })
       });
+      const types = type ? [ type ] : self.getDocTypeNames();
+      // Published on save or without drafts: every document of them is live
+      const alwaysLive = types.filter(name => self.getPublishing(name) !== 'drafts');
+      const filtered = state && (alwaysLive.length < types.length);
       let cursor = self.apos.doc.find(readReq, {
-        type: type || { $in: self.getDocTypeNames() }
+        type: type || { $in: types },
+        ...(filtered && getStateCriteria())
       });
-      cursor = query ? cursor.search(query) : cursor.sort({ updatedAt: -1 });
+      if (query) {
+        cursor = cursor.search(query);
+      }
+      if (sort || !query) {
+        cursor = cursor.sort({ [sort || 'updatedAt']: -1 });
+      }
+      const total = await cursor.toCount();
       const page = await cursor
         .project({
           _id: 1,
@@ -44,16 +55,55 @@ module.exports = (self) => {
       }
       return {
         locale: readReq.locale,
+        total,
         results: self.apos.util.orderById(found.map(doc => doc._id), docs)
           .map(doc => ({
             _id: doc._id,
             type: doc.type,
             title: doc.title,
             ...(doc.slug && { slug: doc.slug }),
-            ...(doc._url && { url: doc._url })
+            ...(doc._url && { url: doc._url }),
+            updatedAt: doc.updatedAt,
+            ...self.getPublication(doc)
           })),
-        ...((page.length > limit) && { next: offset + limit })
+        ...((page.length > limit) && { next: offset + limit }),
+        ...((state && !filtered && type) && {
+          note: `Every "${type}" document is live ` +
+            `(${(self.getPublishing(type) === 'autopublish') ? 'published on save' : 'no drafts'}), ` +
+            'so "state" does not apply.'
+        })
       };
+
+      // A type that publishes on save or has no drafts is live, never
+      // modified or unpublished
+      function getStateCriteria() {
+        const withDrafts = alwaysLive.length
+          ? { type: { $nin: alwaysLive } }
+          : {};
+        if (state === 'live') {
+          return {
+            $or: [
+              { lastPublishedAt: { $ne: null } },
+              ...(alwaysLive.length ? [ { type: { $in: alwaysLive } } ] : [])
+            ]
+          };
+        }
+        if (state === 'modified') {
+          return {
+            $and: [
+              withDrafts,
+              { lastPublishedAt: { $ne: null } },
+              { modified: true }
+            ]
+          };
+        }
+        return {
+          $and: [
+            withDrafts,
+            { lastPublishedAt: null }
+          ]
+        };
+      }
     },
 
     async getDocument(req, {
@@ -77,22 +127,27 @@ module.exports = (self) => {
         return {
           ...header,
           properties: paths.map(path => {
-            const value = self.apos.util.get(projected, path, {
-              ignoreDynamicProperties: true
-            });
-            return (value === undefined)
-              ? {
-                path,
-                missing: true
-              }
-              : {
+            const value = get(path);
+            if (value !== undefined) {
+              return {
                 path,
                 value
               };
+            }
+            const fields = getFieldsAt(path);
+            return {
+              path,
+              missing: true,
+              ...(fields && { fields })
+            };
           })
         };
       }
-      const outline = self.getOutline(draftReq, manager, projected);
+      // A widget named by path lists its own fields too
+      const widgetIds = (paths || [])
+        .filter(path => /^@[^.]+$/.test(path))
+        .map(path => path.slice(1));
+      const outline = self.getOutline(draftReq, manager, projected, widgetIds);
       if (!paths) {
         return {
           ...header,
@@ -106,6 +161,27 @@ module.exports = (self) => {
           missing: true
         })
       };
+
+      function get(path) {
+        return self.apos.util.get(projected, path, {
+          ignoreDynamicProperties: true
+        });
+      }
+
+      // The names of the fields where a missing path was looked for: the
+      // document's, a widget's, an item's or an object's, never an area's
+      // or an array's
+      function getFieldsAt(path) {
+        const dot = path.lastIndexOf('.');
+        const parent = (dot === -1) ? projected : get(path.slice(0, dot));
+        if (!parent || (typeof parent !== 'object') || Array.isArray(parent)) {
+          return null;
+        }
+        const names = Object.keys(parent).filter(name => ![ '_id', 'type' ].includes(name));
+        const area = (names.length === 1) && (names[0] === 'items') &&
+          Array.isArray(parent.items);
+        return area ? null : names;
+      }
 
       // The area at `path`, or the widget `@<_id>` with the areas below it
       function findPart(areas, path) {
@@ -173,36 +249,43 @@ module.exports = (self) => {
      * size of every field that is not an area, with its value when it is a
      * short string, number or boolean, and every area with its widgets,
      * each widget with a short text preview, its size and the areas below
-     * it. An area's `path` addresses it as `update_document`
-     * and `add_widgets` do: its field name, or `@<_id>.<field>` below the
+     * it. The widgets of `widgetIds` list their own fields as the document
+     * does. An area's `path` addresses it as `update_document` and
+     * `add_widgets` do: its field name, or `@<_id>.<field>` below the
      * nearest item with an `_id`.
      *
      * @param {object} req
      * @param {object} manager The document's type manager.
      * @param {object} projected
+     * @param {string[]} [widgetIds]
      * @returns {{ chars: number, fields: object[], areas: object[] }}
      */
-    getOutline(req, manager, projected) {
+    getOutline(req, manager, projected, widgetIds = []) {
       const schema = self.getAiSchemaOf(req, manager);
-      const fields = schema
-        .filter(field => (field.type !== 'area') && (field.name in projected))
-        .map(field => {
-          const value = projected[field.name];
-          const short = [ 'string', 'number', 'boolean' ].includes(typeof value) &&
-            (String(value).length <= PREVIEW_CHARS);
-          return {
-            name: field.name,
-            chars: getSize(value),
-            ...(short && { value })
-          };
-        });
       const areas = [];
       collectAreas(schema, projected, '', areas);
       return {
         chars: getSize(projected),
-        fields,
+        fields: getFields(schema, projected),
         areas
       };
+
+      // Every field of `value` that is not an area, with its size and its
+      // value when short, unless a widget's preview already shows it
+      function getFields(schema, value, previewed) {
+        return schema
+          .filter(field => (field.type !== 'area') && (field.name in value))
+          .map(field => {
+            const given = value[field.name];
+            const short = [ 'string', 'number', 'boolean' ].includes(typeof given) &&
+              (String(given).length <= PREVIEW_CHARS);
+            return {
+              name: field.name,
+              chars: getSize(given),
+              ...((short && (field.name !== previewed)) && { value: given })
+            };
+          });
+      }
 
       function collectAreas(schema, value, base, areas) {
         for (const field of schema) {
@@ -229,35 +312,38 @@ module.exports = (self) => {
         const areas = [];
         collectAreas(schema, widget, `@${widget._id}`, areas);
         const preview = getPreview(schema, widget);
+        const fields = widgetIds.includes(widget._id)
+          ? getFields(schema, widget, preview?.field)
+          : [];
         return {
           _id: widget._id,
           type: widget.type,
-          ...(preview && { preview }),
+          ...(preview && { preview: preview.text }),
           chars: getSize(widget),
+          ...(fields.length && { fields }),
           ...(areas.length && { areas })
         };
       }
 
-      // The widget's first text, else the titles of its first relationship
+      // The widget's first text, else the titles of its first relationship,
+      // with the field it comes from
       function getPreview(schema, widget) {
-        const texts = schema
-          .filter(field => [ 'string', 'richText' ].includes(field.type))
-          .map(field => widget[field.name]);
-        const text = texts.find(value => (typeof value === 'string') && value.trim());
-        const related = schema
-          .filter(field => field.type === 'relationship')
-          .map(field => widget[field.name])
-          .find(value => value?.some?.(item => item.title));
-        const preview = text
-          ? self.apos.util.htmlToPlaintext(text)
-          : related?.map(item => item.title).filter(Boolean).join(', ');
+        const textField = schema.find(field => [ 'string', 'richText' ].includes(field.type) &&
+          (typeof widget[field.name] === 'string') && widget[field.name].trim());
+        const relatedField = schema.find(field => (field.type === 'relationship') &&
+          widget[field.name]?.some?.(item => item.title));
+        const field = textField || relatedField;
+        const preview = textField
+          ? self.apos.util.htmlToPlaintext(widget[textField.name])
+          : widget[relatedField?.name]?.map(item => item.title).filter(Boolean).join(', ');
         if (!preview) {
           return null;
         }
         const flat = preview.replace(/\s+/g, ' ').trim();
-        return (flat.length > PREVIEW_CHARS)
-          ? `${flat.slice(0, PREVIEW_CHARS)}…`
-          : flat;
+        return {
+          text: (flat.length > PREVIEW_CHARS) ? `${flat.slice(0, PREVIEW_CHARS)}…` : flat,
+          field: field.name
+        };
       }
     },
 
@@ -527,8 +613,24 @@ module.exports = (self) => {
       );
     },
 
+    // Whether a draft is live: `lastPublishedAt` (`null` when never
+    // published) and `modified` (changes not yet published) for a type with
+    // drafts, `lastPublishedAt` alone for a type published on save, nothing
+    // for a type without drafts, which is always live
+    getPublication(doc) {
+      const publishing = self.getPublishing(doc.type);
+      if (publishing === 'noDrafts') {
+        return {};
+      }
+      return {
+        lastPublishedAt: doc.lastPublishedAt || null,
+        ...((publishing === 'drafts') && { modified: Boolean(doc.modified) })
+      };
+    },
+
     // What every document read starts with: `_id`, `type`, `title`, the
-    // `locale` read, and `locales`, every locale the document exists in
+    // `locale` read, `locales`, every locale the document exists in, and
+    // whether the draft is live (`getPublication`)
     async getReadHeader(req, doc) {
       const locale = self.getLocaleOf(doc);
       const locales = locale && (Object.keys(self.apos.i18n.locales).length > 1)
@@ -549,7 +651,8 @@ module.exports = (self) => {
         locale,
         ...(locales.length && {
           locales: locales.map(self.getLocaleOf).sort()
-        })
+        }),
+        ...self.getPublication(doc)
       };
     },
 

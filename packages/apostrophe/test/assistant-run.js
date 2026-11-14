@@ -45,6 +45,13 @@ describe('Assistant: chats and the run', function () {
         'assistant-note': {
           extend: '@apostrophecms/piece-type'
         },
+        // Hidden from every role below admin
+        'assistant-secret': {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            viewRole: 'admin'
+          }
+        },
         'assistant-test-tools': {
           init(self) {
             self.apos.ai.addTool({
@@ -59,6 +66,18 @@ describe('Assistant: chats and the run', function () {
               handler: async (req) => {
                 doors.push(self.apos.harness.getDoor(req));
                 return { ok: true };
+              }
+            });
+            self.apos.ai.addTool({
+              name: 't_throw',
+              description: 'Breaks.',
+              tags: [ 'assistant' ],
+              input: {
+                type: 'object',
+                properties: {}
+              },
+              handler: async () => {
+                throw new Error('the tool broke');
               }
             });
             self.apos.ai.addTool({
@@ -220,10 +239,7 @@ describe('Assistant: chats and the run', function () {
         return generate(...args);
       };
       try {
-        const request = await runToEnd(req, chat, 'tab-1', '  Rewrite   the intro\nof the about page ');
-        // The job ends once its end is stored and the chat named
-        await waitFor(async () => (await apos.modules['@apostrophecms/job'].db
-          .findOne({ _id: request.jobId }))?.ended);
+        await runToEnd(req, chat, 'tab-1', '  Rewrite   the intro\nof the about page ');
       } finally {
         apos.ai.generate = generate;
       }
@@ -261,8 +277,7 @@ describe('Assistant: chats and the run', function () {
           : { text: 'Done.' });
         const chat = await apos.assistant.createChat(req);
         await runToEnd(req, chat, 'tab-1', 'Plan the spring launch page');
-        await waitFor(async () => (await apos.assistant.getChat(req, chat._id)).title ===
-          'Spring launch');
+        assert.equal((await apos.assistant.getChat(req, chat._id)).title, 'Spring launch');
         const titleCall = calls.find(call => call.schema);
         assert.equal(titleCall.model, 'fake-small');
 
@@ -274,7 +289,7 @@ describe('Assistant: chats and the run', function () {
         await apos.assistant.renameChat(req, renamed._id, 'My summer');
         gate.release();
         await waitForEnd(req, renamed);
-        await waitFor(() => calls.filter(call => call.schema).length === 2);
+        assert.equal(calls.filter(call => call.schema).length, 2);
         assert.equal((await apos.assistant.getChat(req, renamed._id)).title, 'My summer');
       } finally {
         apos.assistant.options.titleEffort = 'none';
@@ -308,6 +323,10 @@ describe('Assistant: chats and the run', function () {
           {
             type: 'text',
             text: `Request id: ${request._id}`
+          },
+          {
+            type: 'text',
+            text: 'Current screen: {"locale":"en","editing":false}'
           },
           {
             type: 'text',
@@ -398,7 +417,7 @@ describe('Assistant: chats and the run', function () {
       assert.equal((await waitForEnd(req, two)).status, 'completed');
     });
 
-    it('replays the chat\'s earlier requests, never a failed one', async function () {
+    it('replays the chat\'s earlier requests, a failed one only as far as the model got', async function () {
       const req = userReq(editor);
       const chat = await apos.assistant.createChat(req);
       await runToEnd(req, chat, 'tab-1', 'Remember the word apple');
@@ -424,7 +443,7 @@ describe('Assistant: chats and the run', function () {
       await answer(req, chat, 'tab-1', 'shown');
       const failedLater = await waitForEnd(req, chat);
       assert.equal(failedLater.status, 'failed');
-      assert.equal(failedLater.messages[0].content[1].text, 'Ask, then fail');
+      assert.equal(failedLater.messages[0].content.at(-1).text, 'Ask, then fail');
 
       script = null;
       calls.length = 0;
@@ -432,7 +451,100 @@ describe('Assistant: chats and the run', function () {
       const texts = calls[0].messages
         .filter(message => message.role === 'user')
         .map(message => message.content.at(-1).text);
-      assert.deepEqual(texts, [ 'Remember the word apple', 'What was the word?' ]);
+      // The refused one never reached the model; the other kept its ask
+      assert.deepEqual(texts, [
+        'Remember the word apple',
+        'Ask, then fail',
+        'What was the word?'
+      ]);
+      assert.deepEqual(calls[0].messages.find(message => message.role === 'tool').content, [ {
+        type: 'toolResult',
+        toolCallId: 'call-t_browser',
+        output: {
+          answered: true,
+          answer: 'shown'
+        }
+      } ]);
+    });
+
+    it('keeps the calls of a run a tool stopped, and a retry reads them', async function () {
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      const logged = [];
+      const logError = apos.assistant.logError;
+      apos.assistant.logError = (req, name, message, data) => {
+        logged.push({
+          name,
+          message,
+          data
+        });
+      };
+      try {
+        script = sequence([ {
+          content: [
+            toolCall('t_write', {
+              _id: note._id.replace(':published', ':draft'),
+              title: 'Written before the stop'
+            }),
+            toolCall('t_throw')
+          ],
+          finishReason: 'toolCalls',
+          usage: usage()
+        } ]);
+        const failed = await runToEnd(req, chat, 'tab-1', 'Rename, then break');
+        assert.equal(failed.status, 'failed');
+        assert.equal(failed.error.message, 'the tool broke');
+        assert.deepEqual(failed.messages.map(message => message.role), [
+          'user',
+          'assistant',
+          'tool'
+        ]);
+        assert.deepEqual(failed.messages[2].content, [ {
+          type: 'toolResult',
+          toolCallId: 'call-t_write',
+          output: { ok: true }
+        } ]);
+        assert.deepEqual(failed.usage, {
+          inputTokens: 10,
+          outputTokens: 2
+        });
+        const failures = logged.filter(entry => entry.name === 'run-failed');
+        assert.equal(failures.length, 1);
+        assert.equal(failures[0].message, 'the tool broke');
+        assert.equal(failures[0].data.chatId, chat._id);
+        assert.equal(failures[0].data.requestId, failed._id);
+        assert.equal(failures[0].data.tool, 't_throw');
+
+        script = null;
+        calls.length = 0;
+        await apos.assistant.retry(req, chat._id, {
+          requestId: failed._id,
+          screen: { tabId: 'tab-1' }
+        });
+        assert.equal((await waitForEnd(req, chat)).status, 'completed');
+        const tool = calls[0].messages.find(message => message.role === 'tool');
+        assert.deepEqual(tool.content, [
+          {
+            type: 'toolResult',
+            toolCallId: 'call-t_write',
+            output: { ok: true }
+          },
+          {
+            type: 'toolResult',
+            toolCallId: 'call-t_throw',
+            output: {
+              executed: false,
+              reason: 'failed'
+            }
+          }
+        ]);
+        const texts = calls[0].messages
+          .filter(message => message.role === 'user')
+          .map(message => message.content.at(-1).text);
+        assert.deepEqual(texts, [ 'Rename, then break', 'Rename, then break' ]);
+      } finally {
+        apos.assistant.logError = logError;
+      }
     });
 
     it('replays a request that ran out of steps with its last calls answered as not run', async function () {
@@ -479,6 +591,148 @@ describe('Assistant: chats and the run', function () {
     });
   });
 
+  describe('mentions', function () {
+    let pricing;
+    let chart;
+    let guest;
+    let editorRole;
+    let secret;
+
+    before(async function () {
+      const req = apos.task.getReq({ mode: 'draft' });
+      pricing = await apos.modules['assistant-note'].insert(req, {
+        title: 'Pricing notes'
+      });
+      chart = await apos.image.insert(req, {
+        title: 'Pricing chart'
+      });
+      guest = await t.createUser(apos, 'guest', { username: 'mention-guest' });
+      editorRole = await t.createUser(apos, 'editor', { username: 'mention-editor' });
+      secret = await apos.modules['assistant-secret'].insert(req, {
+        title: 'Pricing secrets'
+      });
+    });
+
+    it('finds pages, pieces and images by the start of their words, only those the user may read', async function () {
+      const req = userReq(editor);
+      const found = await apos.assistant.findMentions(req, 'pric');
+      assert.deepEqual(
+        found.map(doc => [ doc._id, doc.kind ]).sort(),
+        [ [ chart._id, 'image' ], [ pricing._id, 'piece' ], [ secret._id, 'piece' ] ].sort()
+      );
+      assert.equal(
+        found.find(doc => doc._id === chart._id).label,
+        apos.image.options.label
+      );
+      const home = await apos.assistant.findMentions(req, 'hom');
+      assert.deepEqual(home.map(doc => [ doc.kind, doc.label ]), [ [ 'page', 'apostrophe:page' ] ]);
+      // Nothing typed yet: the latest updated
+      const latest = await apos.assistant.findMentions(req, '');
+      assert(latest.some(doc => doc._id === chart._id));
+      // Never a one-of-a-kind document
+      assert.deepEqual(await apos.assistant.findMentions(req, 'glob'), []);
+      assert.deepEqual(await apos.assistant.findMentions(req, 'zzqx'), []);
+      assert.deepEqual(await apos.assistant.findMentions(userReq(guest), 'pric'), []);
+      // An editor never sees a type its role may not view
+      assert.deepEqual(
+        (await apos.assistant.findMentions(userReq(editorRole), 'pric'))
+          .map(doc => doc._id).sort(),
+        [ chart._id, pricing._id ].sort()
+      );
+
+      const jar = await t.loginAs(apos, 'editor');
+      const { results } = await apos.http.get('/api/v1/@apostrophecms/assistant/mention', {
+        jar,
+        qs: { q: 'char' }
+      });
+      assert.deepEqual(results.map(doc => doc._id), [ chart._id ]);
+    });
+
+    it('keeps the mentions the user may read, with their own titles, and the model reads them', async function () {
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      const message = `Compare @[Old \\] name](image:${pricing._id}) with ` +
+        `@[Ghost](page:nope:en:draft), then @[Pricing notes](piece:${pricing._id})`;
+      const request = await runToEnd(req, chat, 'tab-1', message);
+      const token = `@[Pricing notes](piece:${pricing._id})`;
+      assert.equal(request.message, `Compare ${token} with Ghost, then ${token}`);
+      assert.deepEqual(request.mentions, [ {
+        _id: pricing._id,
+        type: 'assistant-note',
+        kind: 'piece',
+        title: 'Pricing notes',
+        locale: 'en'
+      } ]);
+      const [ user ] = calls[0].messages.filter(each => each.role === 'user');
+      const texts = user.content.map(part => part.text);
+      assert.equal(texts.at(-2), request.message);
+      assert.match(texts.at(-1), /^The message mentions these documents/);
+      assert(texts.at(-1).endsWith(JSON.stringify(request.mentions)));
+      // The chat's title reads the mention, not its token
+      assert.equal((await apos.assistant.getChat(req, chat._id)).title,
+        'Compare @Pricing notes with Ghost, then @Pricing notes');
+
+      const { message: guestMessage, mentions } = await apos.assistant
+        .verifyMentions(userReq(guest), token);
+      assert.equal(guestMessage, 'Pricing notes');
+      assert.deepEqual(mentions, []);
+    });
+
+    it('renders a message as Markdown, its mentions as chips that no text can make', async function () {
+      const req = userReq(editor);
+      const home = await apos.page.find(req, { slug: '/' }).toObject();
+      const typed = `**Bold** @[x](page:${home._id}), @[y](piece:${pricing._id}) and ` +
+        '@[Ghost](page:nope)\n<a class="apos-assistant-chip" href="https://x.test">fake</a> ' +
+        '\uE0000\uE001';
+      const { message, mentions } = await apos.assistant.verifyMentions(req, typed);
+      assert.equal(mentions.find(each => each._id === home._id).url, home._url);
+      const html = apos.assistant.renderMarkdown(message, { mentions });
+      assert(html.includes('<strong>Bold</strong>'));
+      // A page is a link to it, a piece without a page a button for its editor
+      assert(html.includes('<a class="apos-assistant-chip apos-assistant-chip--action" ' +
+        'data-apos-test="assistant-chip" data-kind="page" ' +
+        `title="Home" href="${home._url}">`));
+      assert(html.includes(`data-id="${pricing._id}" data-type="assistant-note">`));
+      assert(html.includes('and Ghost'));
+      assert.equal(html.match(/apos-assistant-chip--action/g).length, 2);
+      assert(!/[\uE000\uE001]/.test(html));
+      assert.equal(
+        apos.assistant.renderRequest({
+          message,
+          mentions,
+          messages: []
+        }).messageHtml,
+        html
+      );
+    });
+
+    it('renders a reply\'s documents as chips, any other token as its title, and tells the model how', async function () {
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      const home = await apos.page.find(req, { slug: '/' }).toObject();
+      // A wrong title and kind are the document's own, any form of an id
+      // names its document, and an id nobody may read is its title
+      script = () => ({
+        text: `I updated @[Notes](page:${pricing._id}) for @[Start](piece:${home.aposDocId}). ` +
+          '@[Ghost](page:nope:en:draft) was not found.'
+      });
+      const request = await runToEnd(req, chat, 'tab-1', 'Update the pricing notes');
+      assert.deepEqual(
+        request.replyMentions.map(each => [ each._id, each.kind, each.title ]),
+        [ [ pricing._id, 'piece', 'Pricing notes' ], [ home._id, 'page', 'Home' ] ]
+      );
+      const { html } = apos.assistant.renderRequest(request).messages.at(-1);
+      assert(html.includes(`data-kind="piece" title="Pricing notes" data-id="${pricing._id}"`));
+      assert(html.includes(`data-kind="page" title="Home" href="${home._url}"`));
+      assert.equal(html.match(/apos-assistant-chip--action/g).length, 2);
+      assert(html.includes('. Ghost was not found.'));
+      assert(calls[0].system.includes(apos.assistant.getReplySection()));
+      assert(apos.assistant.getReplySection().includes('@[title](kind:_id)'));
+      // The transcript keeps the model's words
+      assert(request.messages.at(-1).content[0].text.includes(`@[Notes](page:${pricing._id})`));
+    });
+  });
+
   describe('asks', function () {
     it('waits on a browser ask that only the owning browser tab answers', async function () {
       const req = userReq(editor);
@@ -512,7 +766,7 @@ describe('Assistant: chats and the run', function () {
         answered: true,
         answer: 'shown'
       });
-      assert.equal(done.messages[0].content[1].text, 'Show me');
+      assert.equal(done.messages[0].content.at(-1).text, 'Show me');
       assert.equal(done.usage.inputTokens > waiting.usage.inputTokens, true);
       assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest, null);
     });
@@ -524,9 +778,23 @@ describe('Assistant: chats and the run', function () {
         script = askScript(tool);
         await runToEnd(req, chat, 'tab-1', 'Ask');
 
-        const moved = await apos.assistant.continueHere(req, chat._id, { tabId: 'tab-2' });
+        await assert.rejects(apos.assistant.continueHere(req, chat._id, {
+          tabId: 'tab-2',
+          screen: { tabId: 'tab-1' }
+        }), { name: 'invalid' });
+        const moved = await apos.assistant.continueHere(req, chat._id, {
+          tabId: 'tab-2',
+          screen: {
+            tabId: 'tab-2',
+            url: '/elsewhere'
+          }
+        });
         assert.equal(moved.tabId, 'tab-2');
         assert.equal(moved.status, 'waiting');
+        // The new browser tab's screen is the request's
+        assert.equal(moved.screen.tabId, 'tab-2');
+        assert.equal(moved.screen.url, '/elsewhere');
+        assert.equal(moved.screen.visible, true);
         assert.deepEqual((await apos.assistant.getChat(req, chat._id)).openRequest, {
           _id: moved._id,
           tabId: 'tab-2',
@@ -696,7 +964,8 @@ describe('Assistant: chats and the run', function () {
     return waitForEnd(req, chat);
   }
 
-  // The chat's latest request once its run has ended (or waits)
+  // The chat's latest request once its run has ended (or waits), and the
+  // run's end handler with it
   async function waitForEnd(req, chat) {
     let request;
     await waitFor(async () => {
@@ -704,9 +973,16 @@ describe('Assistant: chats and the run', function () {
       request = requests.at(-1);
       const open = (await apos.assistant.getChat(req, chat._id)).openRequest;
       return request && (request.status !== 'running') &&
-        ((open === null) || (open.status === 'waiting'));
+        ((open === null) || (open.status === 'waiting')) &&
+        await jobEnded(request.jobId);
     });
     return request;
+
+    // A job ends only after its run's end handler
+    async function jobEnded(jobId) {
+      const job = jobId && await apos.modules['@apostrophecms/job'].db.findOne({ _id: jobId });
+      return !job || job.ended;
+    }
   }
 
   // Holds every model call until released; `waiting` counts the held ones

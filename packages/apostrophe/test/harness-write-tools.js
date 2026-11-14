@@ -50,8 +50,41 @@ describe('Harness: write tools and get_changes', function () {
               summary: {
                 type: 'string',
                 aiHow: 'Write it from the content, or leave it empty and say so.'
+              },
+              tone: {
+                type: 'select',
+                choices: [
+                  {
+                    label: 'Warm',
+                    value: 'warm'
+                  },
+                  {
+                    label: 'Formal',
+                    value: 'formal'
+                  }
+                ],
+                def: 'warm'
               }
             }
+          }
+        },
+        'tools-hidden-widget': {
+          extend: '@apostrophecms/widget-type',
+          fields: {
+            add: {
+              label: { type: 'string' },
+              internal: {
+                type: 'string',
+                def: 'Kept'
+              }
+            }
+          },
+          methods(self) {
+            return {
+              getAiSchema(req) {
+                return self.schema.filter(field => field.name !== 'internal');
+              }
+            };
           }
         },
         'tools-card-widget': {
@@ -99,7 +132,11 @@ describe('Harness: write tools and get_changes', function () {
                 type: 'object',
                 fields: {
                   add: {
-                    summary: { type: 'string' }
+                    summary: { type: 'string' },
+                    currency: {
+                      type: 'string',
+                      def: 'USD'
+                    }
                   }
                 }
               },
@@ -116,7 +153,8 @@ describe('Harness: write tools and get_changes', function () {
                 options: {
                   widgets: {
                     'tools-card': {},
-                    '@apostrophecms/rich-text': {}
+                    '@apostrophecms/rich-text': {},
+                    'tools-hidden': {}
                   }
                 }
               },
@@ -281,6 +319,46 @@ describe('Harness: write tools and get_changes', function () {
         docId: draft.aposDocId
       });
       assert.equal(version.ai, true);
+    });
+
+    it('should keep the type\'s defaults for the fields the model left out', async function () {
+      const page = await run('create_page', {
+        type: 'tools-page',
+        title: 'Defaults',
+        target: '/'
+      });
+      const piece = await run('create_piece', {
+        type: 'tools-article',
+        title: 'Defaults',
+        values: {
+          body: 'Body',
+          details: { summary: 'Partly given' },
+          main: {
+            items: [
+              {
+                type: 'tools-card',
+                heading: 'Card'
+              },
+              {
+                type: 'tools-hidden',
+                label: 'Hidden'
+              }
+            ]
+          }
+        }
+      });
+
+      assert.equal((await findDraft(page.written[0]._id)).tone, 'warm');
+      const article = await findDraft(piece.written[0]._id);
+      assert.equal(article.body, 'Body');
+      // Within what the model gave too: an object it gave in part, a widget
+      assert.equal(article.details.summary, 'Partly given');
+      assert.equal(article.details.currency, 'USD');
+      assert.equal(article.main.items[0].heading, 'Card');
+      assert.equal(article.main.items[0].kicker, 'News');
+      // A widget field kept away from AI
+      assert.equal(article.main.items[1].label, 'Hidden');
+      assert.equal(article.main.items[1].internal, 'Kept');
     });
 
     it('should give the aiHow of every field with one it left empty', async function () {

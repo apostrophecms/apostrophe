@@ -85,6 +85,12 @@ const entryKeys = [ 'patch', 'inverse', 'target', 'onSaved' ];
 // The `onSaved` callbacks of the patches waiting to be saved, by patch
 const onSavedByPatch = new WeakMap();
 
+// Widgets busy while a write from outside the page is under way, by the
+// document `_id` it writes, see `onContentChangeStarting`
+const busyWrites = new Map();
+// A write whose end never arrives leaves nothing busy longer than this
+const busyTimeout = 30000;
+
 export default {
   name: 'TheAposContextBar',
   mixins: [ AposPublishMixin, AposAdvisoryLockMixin ],
@@ -236,6 +242,8 @@ export default {
     apos.bus.$on('context-edited', this.onContextEdited);
     apos.bus.$on('context-history-record', this.onContextHistoryRecord);
     apos.bus.$on('content-changed', this.onContentChanged);
+    apos.bus.$on('content-change-starting', this.onContentChangeStarting);
+    apos.bus.$on('content-change-settled', this.onContentChangeSettled);
     // Versions module: its See Changes operation
     apos.bus.$on('see-changes', this.onSeeChanges);
 
@@ -246,6 +254,8 @@ export default {
     window.apos.adminBar.tabId = getTabId();
     window.apos.adminBar.editMode = false;
     window.apos.adminBar.seeChanges = false;
+    window.apos.adminBar.setEditMode = this.setEditMode;
+    window.apos.adminBar.hasUnsavedChanges = this.hasUnsavedChanges;
     const lastBaseContext = JSON.parse(sessionStorage.getItem('aposLastBaseContext') || '{}');
     // Explicit query parameter beats our state on the previous page
     lastBaseContext.draftMode = this.queryDraftMode || lastBaseContext.draftMode;
@@ -407,8 +417,14 @@ export default {
         }
       }
     },
+    // `apos.adminBar.hasUnsavedChanges()`: the page has in-context changes
+    // not saved yet, being saved or still being typed, the state that asks
+    // before the page is left. Reactive when read inside a watcher
+    hasUnsavedChanges() {
+      return Boolean(this.patchesSinceSave.length || this.saving || this.editing);
+    },
     onBeforeUnload(e) {
-      if (this.patchesSinceSave.length || this.saving || this.editing) {
+      if (this.hasUnsavedChanges()) {
         e.preventDefault();
         // No actual control over the message is possible in modern browsers,
         // but Chrome requires we set a string here
@@ -705,8 +721,7 @@ export default {
       this.patchesSinceLoaded.push(entry);
       if (this.patchesSinceLoaded.length > maxHistory) {
         const forgotten = this.patchesSinceLoaded.shift();
-        const patch = this.forwardPatch(forgotten);
-        if (patch) {
+        for (const patch of this.forwardPatches(forgotten)) {
           this.commitPatch(patch);
         }
       }
@@ -725,14 +740,15 @@ export default {
       }
       this.committedPatches.push(patch);
     },
-    // The patch that makes the edit in `entry`
-    forwardPatch(entry) {
+    // The patches that make the edit in `entry`, in order: one, or several
+    // for a write made outside the page
+    forwardPatches(entry) {
       if (entry.richText) {
         return entry.richText.target
-          ? { [entry.richText.target]: html(entry.richText, 'redo') }
-          : null;
+          ? [ { [entry.richText.target]: html(entry.richText, 'redo') } ]
+          : [];
       }
-      return entry.patch;
+      return [ entry.patch ].flat();
     },
     queuePatch(patch, onSaved) {
       if (onSaved) {
@@ -780,6 +796,117 @@ export default {
           scrollcheck: e.action === 'history'
         });
       }
+    },
+    // A write from outside the page, such as the assistant's, starts: the
+    // widgets it names on this page are busy until it settles
+    onContentChangeStarting({ docId, ids = [] } = {}) {
+      if (docId !== this.context._id) {
+        return;
+      }
+      this.clearBusy(docId);
+      useWidgetStore().setBusyWidgets(ids, true);
+      busyWrites.set(docId, {
+        ids,
+        timer: setTimeout(() => this.clearBusy(docId), busyTimeout)
+      });
+    },
+    clearBusy(docId) {
+      const busy = busyWrites.get(docId);
+      if (!busy) {
+        return;
+      }
+      clearTimeout(busy.timer);
+      useWidgetStore().setBusyWidgets(busy.ids, false);
+      busyWrites.delete(docId);
+    },
+    // A write from outside the page has settled, with `parts`, each part it
+    // changed with its value before and after (see the harness's change
+    // events). In edit mode it is one step of the undo history, shown in
+    // place: writes of one request to the page fold into one step, unless
+    // anything was done in between. Otherwise the page renders it again
+    async onContentChangeSettled({
+      docId, requestId, written, entryId, parts
+    } = {}) {
+      this.clearBusy(docId);
+      if (!written || (docId !== this.context._id)) {
+        return;
+      }
+      this.context = await apos.http.get(`${this.action}/${this.context._id}`, {});
+      if (!this.editMode || !parts) {
+        await this.flushSaves();
+        await this.refresh();
+        return;
+      }
+      if (!parts.length) {
+        return;
+      }
+      const patch = parts.map(part => ({ [part.key]: part.after }));
+      const inverse = parts.map(part => ({ [part.key]: part.before }));
+      const top = this.patchesSinceLoaded.at(-1);
+      if (
+        (top?.outside?.entryId === entryId) &&
+        (top.outside.requestId === requestId)
+      ) {
+        top.patch = [ ...top.patch, ...patch ];
+        top.inverse = [ ...inverse, ...top.inverse ];
+      } else {
+        this.pushEntry({
+          id: this.nextEntryId++,
+          patch,
+          inverse,
+          target: {
+            docId,
+            widgetId: getWidgetId(parts[0])
+          },
+          outside: {
+            requestId,
+            entryId
+          }
+        });
+      }
+      this.mergeableEntryId = null;
+      this.undone = [];
+      if (this.seeChanges) {
+        await this.refresh({ scrollcheck: true });
+        return;
+      }
+      const base = Object.fromEntries(parts.map(part => [ part.key, part.before ]));
+      const shown = patch
+        .map(each => this.applyToPage(each, [], base))
+        .every(Boolean);
+      if (!shown) {
+        await this.flushSaves();
+        await this.refresh({ scrollcheck: true });
+      }
+
+      // A widget the part is, or the first one it added or changed
+      function getWidgetId({
+        key, before, after
+      }) {
+        if (!key.startsWith('@')) {
+          return null;
+        }
+        if (after?.metaType !== 'area') {
+          return key.substring(1);
+        }
+        const was = new Map((before?.items || [])
+          .map(item => [ item._id, JSON.stringify(item) ]));
+        const item = (after.items || []).find(item => {
+          return was.get(item._id) !== JSON.stringify(item);
+        });
+        return item?._id || null;
+      }
+    },
+    // `apos.adminBar.setEditMode(editing)`: edit mode switched from outside
+    // the admin bar, as its Edit and Preview buttons do, when they are
+    // offered. Resolves whether edit mode is on once the page shows it; a
+    // lock someone else holds may leave it off
+    async setEditMode(editing) {
+      if (this.contextBarActive && (editing !== this.editMode) &&
+        (editing || !this.hasCustomUi)) {
+        await this.switchEditMode(editing);
+      }
+      return this.editMode;
     },
     async switchEditMode(editing) {
       if (!editing) {
@@ -1010,6 +1137,12 @@ export default {
         return;
       }
       const entry = this.patchesSinceLoaded.at(-1);
+      // Only a step of a write made outside the page waits for its check;
+      // the user's own go at once, as they always have
+      if (entry.outside && (!await this.confirmHistoryChange(entry, 'undo') ||
+        (this.patchesSinceLoaded.at(-1) !== entry))) {
+        return;
+      }
       if (!this.isReversible(entry)) {
         this.undone.push(this.patchesSinceLoaded.pop());
         return this.refreshAfterHistoryChange('apostrophe:undoFailed');
@@ -1023,6 +1156,10 @@ export default {
         return;
       }
       const entry = this.undone.at(-1);
+      if (entry.outside && (!await this.confirmHistoryChange(entry, 'redo') ||
+        (this.undone.at(-1) !== entry))) {
+        return;
+      }
       if (!this.isReversible(entry)) {
         this.patchesSinceLoaded.push(this.undone.pop());
         return this.refreshAfterHistoryChange('apostrophe:redoFailed');
@@ -1033,6 +1170,46 @@ export default {
     },
     isReversible(entry) {
       return !!(entry.richText || entry.inverse);
+    },
+    // For a step the page did not make itself, such as the assistant's
+    // write: asks the server whether those parts changed since the step (or
+    // since its undo, for a redo). If they did, the user decides whether
+    // undoing may replace that change. Resolves whether to go on
+    async confirmHistoryChange(entry, direction) {
+      const { action } = apos.modules['@apostrophecms/document-versions'] || {};
+      if (!action) {
+        return true;
+      }
+      const undo = direction === 'undo';
+      this.historyBusy = true;
+      try {
+        await this.flushSaves();
+        const { asPatched } = await apos.http.post(`${action}/as-patched`, {
+          body: {
+            docId: this.context._id,
+            patches: undo ? entry.patch : entry.inverse
+          }
+        });
+        if (asPatched !== false) {
+          return true;
+        }
+        return await apos.confirm({
+          icon: false,
+          heading: undo ? 'apostrophe:undoChangedSinceHeading' : 'apostrophe:redoChangedSinceHeading',
+          description: undo
+            ? 'apostrophe:undoChangedSinceDescription'
+            : 'apostrophe:redoChangedSinceDescription',
+          negativeLabel: 'apostrophe:keep',
+          affirmativeLabel: undo ? 'apostrophe:undoAnyway' : 'apostrophe:redoAnyway'
+        });
+      } catch (e) {
+        // Unchecked, it goes on as any other step does
+        // eslint-disable-next-line no-console
+        console.error(e);
+        return true;
+      } finally {
+        this.historyBusy = false;
+      }
     },
     // Undo or redo `entry` in place: change what is on the page, and save
     // the change just like any other edit. Nothing else on the page is
@@ -1113,11 +1290,14 @@ export default {
     // Ask whatever on the page holds the content `patch` touches, such as an
     // area editor or a field edited in place, to show the change. Returns
     // true if something did
-    applyToPage(patch, removed = []) {
+    applyToPage(patch, removed = [], base = null) {
       let claimed = false;
       apos.bus.$emit('context-history-apply', {
         patch,
         removed,
+        // Only for a change made elsewhere and shown here: the values its
+        // keys had before it
+        base,
         claim() {
           claimed = true;
         }
@@ -1196,8 +1376,7 @@ export default {
               this.original,
               ...this.committedPatches,
               ...this.patchesSinceLoaded
-                .map(entry => this.forwardPatch(entry))
-                .filter(Boolean)
+                .flatMap(entry => this.forwardPatches(entry))
             ]
           },
           busy: true

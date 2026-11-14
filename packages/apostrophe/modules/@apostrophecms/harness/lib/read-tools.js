@@ -25,7 +25,12 @@ module.exports = (self) => {
       name: 'search_content',
       label: 'apostrophe:aiToolSearchContent',
       description: 'Find documents by text, by type, or both, in one locale. The source of ' +
-        'every document id. Without "query", lists the type newest first.',
+        'every document id. Returns "total", the count of every match, and each ' +
+        'result\'s "updatedAt", "lastPublishedAt" (null: never published) and "modified" ' +
+        '(its draft has changes not yet published). A type that publishes on save or has ' +
+        'no drafts is always live and carries neither "modified" nor, without drafts, ' +
+        '"lastPublishedAt". Ordered by "sort", else a "query" by relevance and a type ' +
+        'listing by "updatedAt".',
       input: () => ({
         type: 'object',
         properties: {
@@ -39,6 +44,18 @@ module.exports = (self) => {
             enum: self.getDocTypeNames()
           },
           ...locale('The locale to search; the current one when omitted'),
+          state: {
+            type: 'string',
+            enum: [ 'live', 'modified', 'neverPublished' ],
+            description: '"live": has a live version, changes waiting or not; "modified": ' +
+              'live, with changes not yet published; "neverPublished": no live version. ' +
+              'Documents of a type that is always live count as live'
+          },
+          sort: {
+            type: 'string',
+            enum: [ 'updatedAt', 'lastPublishedAt' ],
+            description: 'Newest first; never published documents last'
+          },
           limit: {
             type: 'integer',
             minimum: 1,
@@ -61,10 +78,12 @@ module.exports = (self) => {
     {
       name: 'get_document',
       label: 'apostrophe:aiToolGetDocument',
-      description: 'Read one document, in its locale. "outline": every area with its ' +
+      description: 'Read one document, in its locale, with its "lastPublishedAt" and ' +
+        '"modified" as search_content gives them. "outline": every area with its ' +
         'widgets (id, type, text preview, size) and every other field with its size, ' +
-        'and its value when short. "properties": the values at "paths". "versions": its ' +
-        'version history, newest first.',
+        'and its value when short; a widget named in "paths" lists its own fields the ' +
+        'same way. "properties": the values at "paths"; a path not found names the ' +
+        'fields where it was looked for. "versions": its version history, newest first.',
       input: {
         type: 'object',
         properties: {
