@@ -223,7 +223,10 @@ describe('Harness: the change log', function () {
     });
     draft.title = 'Edited by Ann';
     await apos.modules['log-article'].update(userReq(), draft);
-    await write(req, article._id, { body: 'AI second' });
+    // Read again: a write over the editor's save is refused until then
+    await write(door({ requestId: apos.harness.getDoor(req).requestId }), article._id, {
+      body: 'AI second'
+    });
     await apos.harness.endRequest(req);
 
     const entries = await entriesOf(req);

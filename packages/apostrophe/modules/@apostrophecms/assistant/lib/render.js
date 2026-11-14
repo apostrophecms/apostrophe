@@ -18,9 +18,10 @@ module.exports = (self) => {
      * tool calls in order, `{ id, name, label, input, output?, error? }`,
      * the arguments and result as capped JSON text; `locked` lists the
      * documents a write was refused for a lock and no later write of the
-     * request reached, `{ _id, title }`. The vendor and model are left out
-     * unless `modelDisplay` is set, and what the model was told of its
-     * changes to the page always.
+     * request reached, `{ _id, title, lockedBy }`, `lockedBy` the holder's
+     * name, `null` for the editor's own other browser tab or chat. The
+     * vendor and model are left out unless `modelDisplay` is set, and what
+     * the model was told of its changes to the page always.
      *
      * @param {object} request
      * @returns {object}
@@ -105,7 +106,8 @@ module.exports = (self) => {
             if (item.reason === 'locked') {
               locked.set(item._id, {
                 _id: item._id,
-                title: item.title || null
+                title: item.title || null,
+                lockedBy: item.lockedBy || null
               });
             }
           }

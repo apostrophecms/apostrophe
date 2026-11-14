@@ -66,10 +66,12 @@ module.exports = (self) => {
       return chat;
     },
 
-    // The user's chats, newest first
+    // The user's chats, newest first, without what each chat saw of the
+    // documents it read
     async listChats(req) {
       return self.chats
         .find({ ownerId: self.getOwnerId(req) })
+        .project({ seen: 0 })
         .sort({ createdAt: -1 })
         .toArray();
     },

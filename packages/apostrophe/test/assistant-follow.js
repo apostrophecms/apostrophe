@@ -1422,7 +1422,8 @@ describe('Assistant: following a request', function () {
       assert(update.input.endsWith('…'));
       assert.deepEqual(request.locked, [ {
         _id: draft._id,
-        title: 'A note'
+        title: 'A note',
+        lockedBy: other.title
       } ]);
     });
   });

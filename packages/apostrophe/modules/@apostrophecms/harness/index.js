@@ -48,6 +48,23 @@ module.exports = {
           }
         }
       },
+      '@apostrophecms/doc-type:beforeUpdate': {
+        // A door's write to a document saved since the door last read or
+        // wrote it is refused here: inside the save's own lock, after the
+        // document was read for it, before anything is written. Once per
+        // save; a document without `updatedAt` is not checked
+        checkUnchanged(req, doc) {
+          const expected = req.aposHarnessExpected;
+          if (!expected || expected.checked || (expected.docId !== doc._id)) {
+            return;
+          }
+          expected.checked = true;
+          const saved = new Date(doc.updatedAt ?? NaN).getTime();
+          if (!isNaN(saved) && (saved !== new Date(expected.updatedAt).getTime())) {
+            throw self.apos.error('conflict');
+          }
+        }
+      },
       '@apostrophecms/doc-type:afterSaveSettled': {
         async recordChange(req, doc, settled) {
           const { marker } = settled;

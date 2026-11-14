@@ -119,11 +119,13 @@ module.exports = (self) => {
           ...await getVersions()
         };
       }
+      if ((view === 'properties') && !paths) {
+        throw self.apos.error('aiToolError', 'Name the "paths" to read; the outline lists the fields and areas.');
+      }
+      // A write of the door to a document saved since is refused
+      await self.rememberSeen(draftReq, doc);
       const projected = self.projectDocument(draftReq, doc);
       if (view === 'properties') {
-        if (!paths) {
-          throw self.apos.error('aiToolError', 'Name the "paths" to read; the outline lists the fields and areas.');
-        }
         return {
           ...header,
           properties: paths.map(path => {

@@ -316,6 +316,7 @@ describe('Harness: doors, the write path and guards', function () {
         lockId: 'chat-1',
         family: 'tab-1',
         requestId: 'request-1',
+        seen: new Map(),
         chat: 'chat-1',
         model: {
           provider: 'p',
@@ -593,7 +594,71 @@ describe('Harness: doors, the write path and guards', function () {
         [ 'Two', 'locked' ]
       ]);
       assert.match(refused[0].message, /Bob/);
+      assert.equal(refused[0].lockedBy, 'Bob');
       assert.equal((await findDraft(two._id)).body, undefined);
+    });
+
+    it('should let a colleague who opens the document mid-write see who is editing it', async function () {
+      const article = await insertArticle();
+      let seen = null;
+
+      const { written } = await apos.harness.writeDocuments(door(userReq('ann')), [ {
+        _id: article._id,
+        patch: async () => {
+          try {
+            await apos.doc.lock(userReq('bob'), article, 'bob-tab');
+          } catch (e) {
+            seen = e;
+          }
+          return { body: 'Written' };
+        }
+      } ]);
+
+      assert.equal(written.length, 1);
+      assert.equal(seen?.name, 'locked');
+      assert.equal(seen.data.title, 'Ann');
+      assert.equal(seen.data.me, undefined);
+      // Released once written: the colleague takes it
+      await apos.doc.lock(userReq('bob'), article, 'bob-tab');
+      assert.equal((await findDraft(article._id)).advisoryLock.username, 'bob');
+    });
+
+    it('should refuse a save that lands between the write\'s read and its own save', async function () {
+      const article = await insertArticle({ body: 'Original' });
+      const seen = await findDraft(article._id);
+      const req = door(userReq('ann'), {
+        seen: new Map([ [ article._id, seen.updatedAt.toISOString() ] ])
+      });
+
+      const { written, refused } = await apos.harness.writeDocuments(req, [ {
+        _id: article._id,
+        // Bob saves after the write found the draft, before it saves
+        patch: async () => {
+          const draft = await apos.doc.find(userReq('bob'), { _id: article._id }).toObject();
+          draft.body = 'Saved by Bob';
+          await apos.modules['harness-article'].update(userReq('bob'), draft);
+          return { body: 'From the model' };
+        }
+      } ]);
+
+      assert.deepEqual(written, []);
+      assert.equal(refused[0].reason, 'changed');
+      assert.equal((await findDraft(article._id)).body, 'Saved by Bob');
+    });
+
+    it('should refuse a document the same user has open in another browser tab', async function () {
+      const article = await insertArticle();
+      await apos.doc.lock(userReq('ann'), article, 'tab-2');
+
+      const { written, refused } = await apos.harness.writeDocuments(door(userReq('ann')), [ {
+        _id: article._id,
+        patch: { body: 'Chat one' }
+      } ]);
+
+      assert.deepEqual(written, []);
+      assert.equal(refused[0].reason, 'locked');
+      assert.equal(refused[0].lockedBy, null);
+      assert.match(refused[0].message, /another browser tab or chat/);
     });
 
     it('should share the page\'s lock of the family and hand it back', async function () {
@@ -625,6 +690,7 @@ describe('Harness: doors, the write path and guards', function () {
 
       assert.deepEqual(written, []);
       assert.equal(refused[0].reason, 'locked');
+      assert.equal(refused[0].lockedBy, null);
       assert.match(refused[0].message, /another browser tab or chat/);
       assert.equal((await findDraft(article._id)).advisoryLock.member._id, 'chat-2');
     });

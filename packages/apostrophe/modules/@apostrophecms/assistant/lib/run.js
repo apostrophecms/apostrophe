@@ -378,6 +378,9 @@ module.exports = (self) => {
         family: request.tabId,
         chat: chat._id,
         requestId: request._id,
+        // A write to a document saved since the chat last read or wrote it
+        // is refused, across requests
+        seen: new Map((chat.seen || []).map(({ _id, updatedAt }) => [ _id, updatedAt ])),
         ...(model && { model })
       });
       const tools = self.apos.harness.getDoorTools(DOOR);

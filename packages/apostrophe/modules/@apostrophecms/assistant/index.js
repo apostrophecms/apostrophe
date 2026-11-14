@@ -75,6 +75,23 @@ module.exports = {
           await self.checkEditMode(req, payload);
         }
       },
+      '@apostrophecms/harness:documentSeen': {
+        // The chat keeps what it saw of each document for its next requests
+        async storeSeen(req) {
+          const door = self.apos.harness.getDoor(req);
+          if (!self.active || (door?.door !== 'assistant')) {
+            return;
+          }
+          await self.chats.updateOne({ _id: door.chat }, {
+            $set: {
+              seen: [ ...door.seen ].map(([ _id, updatedAt ]) => ({
+                _id,
+                updatedAt
+              }))
+            }
+          });
+        }
+      },
       '@apostrophecms/ai:afterToolCall': {
         // A screen another request of the browser tab changed comes with
         // this run's next tool result; a browser tool's carries its own

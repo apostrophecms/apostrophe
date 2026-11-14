@@ -1,7 +1,7 @@
 // The one write path every mutating harness tool goes through.
 
 // Errors a target is refused with; anything else is a bug and stops the call
-const REFUSALS = new Set([ 'notfound', 'forbidden', 'locked', 'invalid' ]);
+const REFUSALS = new Set([ 'notfound', 'forbidden', 'locked', 'invalid', 'conflict' ]);
 
 const LIVE_NOTICE = 'The change is live on the site now.';
 const DRAFT_NOTICE = 'The change is saved in the draft; it goes live when an editor publishes it.';
@@ -18,7 +18,8 @@ module.exports = (self) => {
      * the engine's call id. With a door context the save carries the marker
      * the change log records (`aposSaveMarker`), and the browser tab of the
      * door's family hears of the save as it starts and once it settles (see
-     * lib/change-events.js).
+     * lib/change-events.js). A door's write to a document saved since the
+     * door last read or wrote it is refused as `changed`.
      *
      * Targets naming one document are written together: one permission
      * check, one lock and one save. A refused document is reported and the
@@ -35,10 +36,10 @@ module.exports = (self) => {
      *   content that is the document's own, such as a widget it moves.
      * @returns {Promise<{ written: object[], refused: object[] }>}
      *   `written`: `{ _id, title, type, locale, published, notice, doc }`,
-     *   `doc` the saved draft, for the tool's own result. `refused`: `{ _id,
-     *   title?, reason, message, fields? }`, `reason` one of `notfound`,
-     *   `forbidden`, `locked`, `invalid`; `fields` the `{ path, reason }` an
-     *   `invalid` one names.
+     *   `doc` the saved draft, for the tool's own result.
+     *   `refused`: `{ _id, title?, reason, message, lockedBy?, fields? }`,
+     *   `reason` one of `notfound`, `forbidden`, `locked`, `invalid`,
+     *   `changed` (see `describeRefusal`).
      */
     async writeDocuments(req, targets) {
       const byId = new Map();
@@ -143,7 +144,7 @@ module.exports = (self) => {
           _lossless: true,
           ...input
         }));
-        const saveReq = getSaveRequest(self, draftReq);
+        const saveReq = getSaveRequest(self, draftReq, doc);
         const body = (inputs.length === 1)
           ? inputs[0]
           : { _patches: inputs };
@@ -158,6 +159,7 @@ module.exports = (self) => {
           throw e;
         }
         await self.publishChangeSettled(draftReq, doc, saveReq.aposSaveMarker);
+        await self.rememberSeen(draftReq, saved);
         return saved;
       }
     },
@@ -275,6 +277,7 @@ module.exports = (self) => {
             field: field.name,
             aiHow: field.aiHow.trim()
           }));
+        await self.rememberSeen(draftReq, saved);
         return {
           _id: saved._id,
           title: saved.title,
@@ -347,14 +350,28 @@ module.exports = (self) => {
       return doc.aposLocale ? doc.aposLocale.split(':')[0] : null;
     },
 
-    // `{ reason, message, fields? }` for a write refused with `error`
+    // `{ reason, message, ... }` for a write refused with `error`: a
+    // `locked` one with `lockedBy`, the holder's name, `null` for the same
+    // user elsewhere; an `invalid` one with the `fields` it names; a
+    // `changed` one saved by someone else since the door's last read
     describeRefusal(error) {
       if (error.name === 'locked') {
+        const lockedBy = error.data?.me
+          ? null
+          : (error.data?.title || error.data?.username || null);
         return {
           reason: 'locked',
+          lockedBy,
           message: error.data?.me
             ? 'The document is being edited in another browser tab or chat of the same user.'
-            : `The document is being edited by ${error.data?.title || error.data?.username || 'another user'}.`
+            : `The document is being edited by ${lockedBy || 'another user'}.`
+        };
+      }
+      if (error.name === 'conflict') {
+        return {
+          reason: 'changed',
+          message: 'The document was saved by someone else since you last read it, so ' +
+            'nothing was written to it. Read it again before writing it.'
         };
       }
       if (error.name === 'invalid') {
@@ -409,11 +426,20 @@ module.exports = (self) => {
 
 // The request a door's save runs on: marked as AI's unless the request
 // reverts, and with a door context, carrying the marker the change log
-// records
-function getSaveRequest(self, draftReq) {
+// records and, for a document the door read or wrote, the `updatedAt` the
+// save is checked against (see the harness's `checkUnchanged`)
+function getSaveRequest(self, draftReq, doc = null) {
   const door = self.getDoor(draftReq);
+  const updatedAt = doc && !door?.revert && door?.seen.get(doc._id);
   return draftReq.clone({
     aposAi: !door?.revert,
+    ...(updatedAt && {
+      aposHarnessExpected: {
+        docId: doc._id,
+        updatedAt,
+        checked: false
+      }
+    }),
     ...(door && {
       aposSaveMarker: {
         door: door.door,

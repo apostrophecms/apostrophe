@@ -374,6 +374,18 @@ const confirmAsk = computed(() => {
   return request.asks?.find(ask => ask.kind === 'confirm') || null;
 });
 
+// The documents the request left because someone was editing them, as one
+// list of titles
+const lockedTitles = computed(() => {
+  const locked = props.request.locked || [];
+  if (!locked.length) {
+    return null;
+  }
+  return new Intl.ListFormat(apos.i18n.adminLocale, {
+    type: 'conjunction'
+  }).format(locked.map(doc => doc.title || $t('apostrophe:assistantUntitled')));
+});
+
 const activities = computed(() => {
   const { request } = props;
   const list = [];
@@ -406,10 +418,10 @@ const activities = computed(() => {
       text: $t('apostrophe:assistantQuestionSkippedText')
     });
   }
+  // Retry is a send: only on the latest request of an idle chat
+  const canRetry = props.latest && (store.getOwner(chat.value) === 'none');
   if (request.status === 'failed') {
     const error = ERRORS[request.error?.name] || ERROR;
-    // Retry is a send: only on the latest request of an idle chat
-    const canRetry = props.latest && (store.getOwner(chat.value) === 'none');
     list.push({
       name: 'failed',
       tone: 'error',
@@ -440,26 +452,34 @@ const activities = computed(() => {
       text: $t('apostrophe:assistantOutOfStepsText')
     });
   }
-  const locked = request.locked || [];
-  if (locked.length) {
-    const titles = locked.map(doc => doc.title || $t('apostrophe:assistantUntitled'));
-    list.push((titles.length === 1)
-      ? {
-        name: 'locked',
-        tone: 'error',
-        title: $t('apostrophe:assistantLocked', { title: titles[0] }),
-        text: $t('apostrophe:assistantLockedText')
-      }
-      : {
-        name: 'locked',
-        tone: 'error',
-        title: $t('apostrophe:assistantLockedMany', { count: titles.length }),
-        text: $t('apostrophe:assistantLockedManyText', {
-          titles: new Intl.ListFormat(apos.i18n.adminLocale, {
-            type: 'conjunction'
-          }).format(titles)
-        })
-      });
+  if (lockedTitles.value) {
+    const { length } = request.locked;
+    // Named only when every document has the same named holder
+    const holders = [ ...new Set(request.locked.map(doc => doc.lockedBy)) ];
+    const name = (holders.length === 1) ? holders[0] : null;
+    const values = {
+      name,
+      title: lockedTitles.value,
+      titles: lockedTitles.value
+    };
+    const text = (length === 1)
+      ? (name ? 'apostrophe:assistantLockedBy' : 'apostrophe:assistantLockedText')
+      : (name ? 'apostrophe:assistantLockedManyBy' : 'apostrophe:assistantLockedManyText');
+    list.push({
+      name: 'locked',
+      tone: 'error',
+      title: (length === 1)
+        ? $t('apostrophe:assistantLocked', values)
+        : $t('apostrophe:assistantLockedMany', { count: length }),
+      text: $t(text, values),
+      actions: canRetry
+        ? [ {
+          name: 'retryLocked',
+          label: $t('apostrophe:assistantRetry'),
+          disabled: retrying.value
+        } ]
+        : []
+    });
   }
   return list;
 });
@@ -594,12 +614,22 @@ async function onAction(name) {
     }
     return;
   }
-  if ((name !== 'retry') || retrying.value) {
+  if (![ 'retry', 'retryLocked' ].includes(name) || retrying.value) {
     return;
   }
   retrying.value = true;
   try {
-    await store.retry(props.request.chatId, props.request._id);
+    // The model is asked again for what it couldn't write, in a message of
+    // the editor's own
+    if (name === 'retryLocked') {
+      await store.send(props.request.chatId, {
+        message: $t('apostrophe:assistantLockedRetryMessage', {
+          titles: lockedTitles.value
+        })
+      });
+    } else {
+      await store.retry(props.request.chatId, props.request._id);
+    }
   } finally {
     retrying.value = false;
   }

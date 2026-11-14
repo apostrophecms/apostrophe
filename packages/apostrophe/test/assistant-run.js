@@ -344,6 +344,7 @@ describe('Assistant: chats and the run', function () {
         family: 'tab-1',
         chat: chat._id,
         requestId: request._id,
+        seen: new Map(),
         model: {
           provider: 'fake',
           model: 'fake-large'
@@ -354,6 +355,32 @@ describe('Assistant: chats and the run', function () {
         assert(names.includes(name), name);
       }
       assert.match(calls[0].system, /^You work on the content of this ApostropheCMS site/);
+    });
+
+    it('keeps what the chat saw of each document on the chat, for its next request', async function () {
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      const draftId = note._id.replace(':published', ':draft');
+      script = writeScript('Seen by the chat');
+      await runToEnd(req, chat, 'tab-1', 'Rename the note');
+
+      const { updatedAt } = await apos.doc.db.findOne({ _id: draftId });
+      const stored = await apos.assistant.chats.findOne({ _id: chat._id });
+      assert.deepEqual(stored.seen, [ {
+        _id: draftId,
+        updatedAt: updatedAt.toISOString()
+      } ]);
+      // Never sent to the browser with the chat list
+      const listed = await apos.assistant.listChats(req);
+      assert.equal(listed.find(each => each._id === chat._id).seen, undefined);
+
+      script = sequence([
+        toolTurn('t_door', {}),
+        { text: 'Looked.' }
+      ]);
+      await runToEnd(req, chat, 'tab-1', 'Look again');
+      const { seen } = doors.at(-1);
+      assert.deepEqual([ ...seen ], [ [ draftId, updatedAt.toISOString() ] ]);
     });
 
     it('records the request\'s writes in the change log and ends them there', async function () {

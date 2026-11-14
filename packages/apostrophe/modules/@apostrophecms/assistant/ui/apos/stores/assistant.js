@@ -738,14 +738,16 @@ export const useAssistantStore = defineStore('assistant', () => {
   }
 
   /**
-   * Sends the draft of a chat tab. A refused send keeps the draft and says
-   * why on the chat tab, and the records are read again, so the panel
-   * shows what is true now.
+   * Sends the draft of a chat tab, or `message` with the draft left as it
+   * is. A refused send keeps the draft and says why on the chat tab, and
+   * the records are read again, so the panel shows what is true now.
    *
    * @param {string} id A chat id, or `NEW_CHAT`.
+   * @param {object} [options]
+   * @param {string} [options.message]
    */
-  async function send(id) {
-    const message = (drafts.value[id] || '').trim();
+  async function send(id, { message: given = null } = {}) {
+    const message = (given ?? drafts.value[id] ?? '').trim();
     if (!message) {
       return;
     }
@@ -771,7 +773,7 @@ export const useAssistantStore = defineStore('assistant', () => {
           screen: getScreen()
         }
       });
-      if ((drafts.value[chatId] || '').trim() === message) {
+      if ((given === null) && ((drafts.value[chatId] || '').trim() === message)) {
         delete drafts.value[chatId];
       }
       requests.value[chatId] = [
