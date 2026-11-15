@@ -824,6 +824,43 @@ Any of the four methods that your object does not provide falls back to the cons
 
 This matters for applications that write structured logs: a raw `console.warn` bypasses their filtering and formatting, and puts unparseable text on a stream that is expected to be one JSON object per line.
 
+### Custom escaping
+
+The optional `escapeHtml(text, isAttribute)` function replaces the built-in
+escaping implementation. It receives a string and a boolean indicating whether
+that string is being written inside a quoted attribute value. Return the escaped
+string. A non-function option or a non-string return value throws a `TypeError`;
+errors thrown by your function propagate to the caller.
+
+This is trusted configuration code. Your function takes full responsibility for
+escaping text, attribute values, and serialized disallowed tags. Its return value
+is written directly, without further escaping. Incorrect escaping can introduce
+XSS vulnerabilities. Keep the default for normal HTML sanitization; use this
+option only when you can supply and verify the escaping rules for your target
+format. The callback receives the parser's output, so consider your
+`parser.decodeEntities` setting when handling existing entity references.
+
+For example, a custom escaper can leave `>` literal while still
+escaping ampersands, less-than signs, and attribute quotation marks:
+
+```js
+const clean = sanitizeHtml('<p title="a &gt; b">a &gt; b</p>', {
+  allowedAttributes: { p: [ 'title' ] },
+  escapeHtml(text, isAttribute) {
+    let escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    if (isAttribute) {
+      escaped = escaped.replace(/"/g, '&quot;');
+    }
+    return escaped;
+  }
+});
+// <p title="a > b">a > b</p>
+```
+
+This example uses the default `parser.decodeEntities: true`. Text passed to
+`textFilter` has already gone through your escaper. Without `escapeHtml`, the
+existing built-in escaping behavior is unchanged.
+
 ### Advanced filtering
 
 For more advanced filtering you can hook directly into the parsing process using tag open and tag close events.
