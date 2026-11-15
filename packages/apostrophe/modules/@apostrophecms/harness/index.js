@@ -11,6 +11,8 @@
 // type's own patch with nothing silently lost, marked as AI's. A door's
 // saves land in the change log, `aposAiChanges`, which `revertRequests`
 // takes back. A door sends the instructions `getInstructions` assembles.
+// What an open editor holds is read and changed in memory, never saved,
+// with the same code (`readContent`, `editContent`).
 
 module.exports = {
   options: {
