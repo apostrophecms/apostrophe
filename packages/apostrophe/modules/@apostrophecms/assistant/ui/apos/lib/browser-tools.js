@@ -14,6 +14,8 @@
 
 import { watch } from 'vue';
 import { pinia } from 'Modules/@apostrophecms/ui/lib/vue';
+import { getTabId } from 'Modules/@apostrophecms/ui/utils';
+import { isWindow } from 'Modules/@apostrophecms/ui/composables/useScreen.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { liftToCommonParent } from 'Modules/@apostrophecms/area/lib/widget-selection.js';
@@ -37,7 +39,8 @@ const executors = new Map([
   [ 'read_screen', readScreen ],
   [ 'navigate', navigate ],
   [ 'open_editor', openEditor ],
-  [ 'show_widgets', showWidgets ]
+  [ 'show_widgets', showWidgets ],
+  [ 'edit_open_document', editOpenDocument ]
 ]);
 
 export const browserTools = {
@@ -164,6 +167,88 @@ async function showWidgets({ _id, widgetIds }) {
     executed: true,
     selected
   };
+}
+
+// What the editor on top holds, read or changed: the server reads it or
+// builds the change on it, and the change lands through the editor's
+// `outside` handle, the keys it names busy meanwhile, then marked
+async function editOpenDocument(args, { request, ask }) {
+  const entry = useModalStore(pinia).stack.filter(entry => !isWindow(entry)).at(-1);
+  const outside = entry?.outside;
+  if (!outside) {
+    return {
+      executed: false,
+      reason: 'no editor is on top of the screen'
+    };
+  }
+  const root = outside.read();
+  if (!root) {
+    return {
+      executed: false,
+      reason: 'the editor is still loading'
+    };
+  }
+  const busy = outside.busy(getArgumentKeys(args));
+  try {
+    const change = await apos.http.post(
+      `${apos.modules['@apostrophecms/assistant'].action}/chat/${request.chatId}/open-editor`,
+      {
+        body: {
+          tabId: getTabId(),
+          callId: ask.callId,
+          root
+        }
+      }
+    );
+    const names = Object.keys(change.values || {});
+    if (!change.executed || !names.length) {
+      return change.executed
+        ? { executed: true }
+        : change;
+    }
+    // Every field the change reaches takes it, or none does
+    const taken = outside.busy(names);
+    if (taken.length < names.length) {
+      return {
+        executed: false,
+        reason: `the editor can't take ${
+          names.filter(name => !taken.includes(name)).join(', ')
+        } now`
+      };
+    }
+    const { refused } = await outside.apply(change.values, {
+      marker: { requestId: request._id },
+      touched: change.touched
+    });
+    return refused.length
+      ? {
+        executed: false,
+        reason: `the editor did not take ${refused.map(({ name }) => name).join(', ')}`
+      }
+      : { executed: true };
+  } catch (e) {
+    report(e);
+    return {
+      executed: false,
+      reason: e.body?.message || 'the editor\'s content could not be read'
+    };
+  } finally {
+    outside.release(busy);
+  }
+}
+
+// The keys a call names, relative to the editor's root: the keys of its
+// values, its area, the widgets it names by id. A read names none
+function getArgumentKeys({
+  values, area, widgets
+}) {
+  return [
+    ...Object.keys(values || {}),
+    ...(area ? [ area ] : []),
+    ...(widgets || [])
+      .filter(widget => typeof widget === 'string')
+      .map(_id => `@${_id}`)
+  ];
 }
 
 /**

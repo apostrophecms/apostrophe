@@ -28,18 +28,20 @@ export function getOutsideSave(fields) {
     : null;
 }
 
-// The value at one of those paths in `data`, a document or a part of one.
-// `undefined` when the widget or item is not in it
+// The value at one of those paths in `data`, a document or a part of one:
+// a field, a dot path through objects, from a widget or item by `@<_id>`,
+// or that widget or item whole. `undefined` when the widget or item is not
+// in it
 export function getOutsideValue(data, path) {
-  if (!path.startsWith('@')) {
-    return data?.[path];
-  }
-  const dot = path.indexOf('.');
-  return findById(data, path.slice(1, dot))?.[path.slice(dot + 1)];
+  const [ first, ...rest ] = path.split('.');
+  const start = first.startsWith('@')
+    ? findById(data, first.slice(1))
+    : data?.[first];
+  return rest.reduce((value, name) => value?.[name], start);
 
   function findById(value, _id) {
     if (!value || (typeof value !== 'object')) {
-      return null;
+      return undefined;
     }
     if (value._id === _id) {
       return value;
@@ -50,6 +52,6 @@ export function getOutsideValue(data, path) {
         return found;
       }
     }
-    return null;
+    return undefined;
   }
 }

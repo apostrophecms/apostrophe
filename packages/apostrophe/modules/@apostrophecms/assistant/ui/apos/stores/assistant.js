@@ -25,7 +25,7 @@ import { browserTools } from '../lib/browser-tools.js';
  * holds: another request while one of its executors runs or an editor it
  * opened is open; the editor with a modal open or unsaved changes on the
  * page. An `editMode` ask is such a step too, before a write to the page:
- * the page enters edit mode.
+ * the page enters edit mode, under any modal of the editor's.
  *
  * Revert takes back a request and every later one. A dry run decides: a
  * clean revert runs at once, any other waits on the editor's confirmation,
@@ -426,7 +426,9 @@ export const useAssistantStore = defineStore('assistant', () => {
         if (changes && (activeId.value !== id)) {
           return { state: 'attention' };
         }
-        const holder = changes ? getHolder(request._id) : null;
+        const holder = changes
+          ? getHolder(request._id, { modals: ask.kind !== 'editMode' })
+          : null;
         if (holder) {
           return {
             state: 'hold',
@@ -565,9 +567,12 @@ export const useAssistantStore = defineStore('assistant', () => {
    * (`{ unsaved: true }`). `null` when nobody does.
    *
    * @param {string} requestId
+   * @param {object} [options]
+   * @param {boolean} [options.modals] Whether the editor's own modals hold
+   *   it.
    * @returns {object|null}
    */
-  function getHolder(requestId) {
+  function getHolder(requestId, { modals = true } = {}) {
     const other = owner => (owner !== requestId) && getOpenChat(owner);
     for (const owner of executors.value.values()) {
       if (other(owner)) {
@@ -585,7 +590,9 @@ export const useAssistantStore = defineStore('assistant', () => {
         }
         return byRequest(owner);
       }
-      return { modal: entry.screen?.kind || 'other' };
+      if (modals) {
+        return { modal: entry.screen?.kind || 'other' };
+      }
     }
     if (window.apos.adminBar?.hasUnsavedChanges?.()) {
       return { unsaved: true };

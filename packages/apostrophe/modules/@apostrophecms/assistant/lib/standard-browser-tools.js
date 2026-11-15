@@ -165,7 +165,8 @@ module.exports = (self) => {
           widgetIds
         };
       }
-    }
+    },
+    self.getOpenEditorTool()
   ];
 
   async function findDoc(req, _id) {

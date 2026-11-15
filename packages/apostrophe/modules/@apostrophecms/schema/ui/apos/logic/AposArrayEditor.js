@@ -294,8 +294,21 @@ export default {
     isOutsideReady() {
       return Boolean(this.currentId);
     },
-    getOutsideKey(name) {
-      return `@${this.currentId}.${name}`;
+    getOutsideRootId() {
+      return this.currentId;
+    },
+    getOutsideRoot() {
+      return this.currentId
+        ? {
+          kind: 'item',
+          data: {
+            ...this.currentDoc.data,
+            _id: this.currentId
+          },
+          fieldId: this.field._id,
+          locale: this.getOutsideLocale()
+        }
+        : null;
     },
     // The items, the current one as edited
     getOutsideData() {

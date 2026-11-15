@@ -52,6 +52,8 @@ module.exports = {
     // Set once the AI engine is active too
     self.active = false;
     self.askKinds = {};
+    // Browser tools that turn the answer into their result, by name
+    self.browserToolAccepts = {};
     // Gates added by name, and the tools whose gates were all taken off
     self.gates = {};
     self.ungated = new Set();
@@ -66,6 +68,11 @@ module.exports = {
   handlers(self) {
     return {
       '@apostrophecms/ai:beforeToolCall': {
+        // A document open in an editor is written through that editor; a
+        // refused call never asks for approval
+        async checkHeldDocuments(req, payload) {
+          await self.checkHeldDocuments(req, payload);
+        },
         async checkGates(req, payload) {
           await self.checkGates(req, payload);
         },
@@ -199,6 +206,11 @@ module.exports = {
             screen: req.body.screen
           }))
         })),
+        'chat/:_id/open-editor': route(async (req) => self.serveOpenEditor(req, req.params._id, {
+          tabId: req.body.tabId,
+          callId: req.body.callId,
+          root: req.body.root
+        })),
         'chat/:_id/skip': route(async (req) => ({
           request: self.renderRequest(await self.skip(req, req.params._id, {
             tabId: req.body.tabId
@@ -296,6 +308,7 @@ module.exports = {
       ...require('./lib/editor-tools')(self),
       ...require('./lib/gates')(self),
       ...require('./lib/edit-mode')(self),
+      ...require('./lib/open-editor')(self),
       ...require('./lib/outside')(self),
       ...require('./lib/screen')(self),
       ...require('./lib/reconcile')(self),

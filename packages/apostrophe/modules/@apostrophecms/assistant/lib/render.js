@@ -33,6 +33,10 @@ module.exports = (self) => {
       const messages = request.messages || [];
       return {
         ...rest,
+        // A result an ask keeps for the model is not the panel's
+        ...(rest.asks && {
+          asks: rest.asks.map(({ result, ...ask }) => ask)
+        }),
         messageHtml: self.renderMarkdown(request.message, {
           mentions: request.mentions
         }),

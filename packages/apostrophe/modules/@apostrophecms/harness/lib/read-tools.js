@@ -291,3 +291,5 @@ module.exports = (self) => {
     }
   ];
 };
+
+module.exports.BUDGETS = BUDGETS;

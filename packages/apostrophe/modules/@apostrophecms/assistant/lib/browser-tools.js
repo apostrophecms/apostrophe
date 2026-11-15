@@ -70,10 +70,16 @@ module.exports = (self) => {
      * @param {object} [tool.whenHidden] The tool's answer while the owning
      *   browser tab is hidden, beside the stored screen: by default
      *   `executed: false` with the reason.
+     * @param {(req: object, ask: object, answer: object) => object}
+     *   [tool.accept] Turns the browser's answer into the tool's own fields
+     *   and `executed`, as the model reads them; by default the answer as
+     *   given. `ask` is the stored ask.
+     * @param {number} [tool.maxResultChars] The result's budget, as the AI
+     *   engine's tools have it.
      */
     addBrowserTool({
       name, description, label, screenEffect, input, schema = {}, prepare,
-      whenHidden = HIDDEN
+      whenHidden = HIDDEN, accept, maxResultChars
     }) {
       if (!self.options.enabled) {
         return;
@@ -88,10 +94,16 @@ module.exports = (self) => {
           `The browser tool "${name}" answers "executed" when its browser tab is hidden.`
         );
       }
+      if (accept) {
+        self.browserToolAccepts[name] = accept;
+      } else {
+        delete self.browserToolAccepts[name];
+      }
       self.apos.ai.addTool({
         name,
         description,
         ...(label && { label }),
+        ...(maxResultChars && { maxResultChars }),
         kind: 'action',
         tags: [ 'assistant', 'browser' ],
         input,
@@ -102,7 +114,7 @@ module.exports = (self) => {
             ...schema.properties
           },
           required: [ 'answered', 'executed', 'screen', ...(schema.required || []) ],
-          additionalProperties: false
+          additionalProperties: schema.additionalProperties === true
         },
         async handler(req, { _context, ...args }) {
           if (_context.input !== undefined) {
@@ -151,9 +163,11 @@ module.exports = (self) => {
       if (!screen) {
         throw self.apos.error('invalid', 'a browser answer carries the screen');
       }
+      const given = (answer && (typeof answer === 'object')) ? answer : {};
+      const accept = self.browserToolAccepts[ask.name];
       const {
         answered, screen: ignored, ...rest
-      } = (answer && (typeof answer === 'object')) ? answer : {};
+      } = accept ? accept(req, ask, given) : given;
       const result = {
         ...rest,
         answered: true,

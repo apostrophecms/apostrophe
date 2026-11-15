@@ -855,6 +855,19 @@ export default {
     isOutsideReady() {
       return this.docReady;
     },
+    getOutsideRoot() {
+      return this.docReady
+        ? {
+          kind: 'document',
+          data: {
+            ...this.docFields.data,
+            type: this.docType,
+            ...(this.currentId && { _id: this.currentId })
+          },
+          locale: this.getOutsideLocale()
+        }
+        : null;
+    },
     getAposSchema(field) {
       if (field.group.name === 'utility') {
         return this.$refs.utilitySchema;

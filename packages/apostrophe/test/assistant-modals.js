@@ -3,13 +3,16 @@ const t = require('../test-lib/test.js');
 
 // The assistant in open editors, on the scripted mock: an editor's save of
 // fields the assistant wrote into it records those fields, and only those,
-// as the request's rows in the change log.
+// as the request's rows in the change log; `edit_open_document` reads and
+// changes what the editor on top holds, and the document tools leave a
+// document open in an editor alone.
 
 describe('Assistant: working in open editors', function () {
   this.timeout(t.timeout);
 
   let apos;
   let editor;
+  let script = null;
 
   before(async function () {
     process.env.APOS_AI_MOCK = '1';
@@ -19,8 +22,8 @@ describe('Assistant: working in open editors', function () {
         '@apostrophecms/ai': {
           options: {
             providers: { fake: {} },
-            mock() {
-              return { text: 'Done.' };
+            mock(req) {
+              return script ? script(req) : { text: 'Done.' };
             }
           },
           init(self) {
@@ -88,6 +91,10 @@ describe('Assistant: working in open editors', function () {
   after(async function () {
     delete process.env.APOS_AI_MOCK;
     await t.destroy(apos);
+  });
+
+  beforeEach(function () {
+    script = null;
   });
 
   describe('an editor\'s save of fields written from outside', function () {
@@ -288,11 +295,402 @@ describe('Assistant: working in open editors', function () {
     });
   });
 
+  describe('edit_open_document and the modal rule', function () {
+    let note;
+
+    before(async function () {
+      note = await insertNote('Open note', {
+        subtitle: 'Saved subtitle',
+        body: area([ card('card-1', 'Saved heading') ]),
+        items: [ item('item-1', 'Saved label') ]
+      });
+    });
+
+    it('is a browser tool of the assistant, named in the screen section', async function () {
+      const tool = apos.ai.getTool('edit_open_document');
+      assert.deepEqual(tool.tags, [ 'assistant', 'browser' ]);
+      assert.equal(tool.maxResultChars, apos.harness.getReadBudget('document'));
+      assert(apos.assistant.getScreenSection().includes('edit_open_document'));
+    });
+
+    it('refuses a call no editor on top can serve, from the stored screen', async function () {
+      assert.match(
+        await refusalOf([], { action: 'get_document' }),
+        /No editor is open/
+      );
+      assert.match(
+        await refusalOf([ { kind: 'manager' } ], { action: 'get_document' }),
+        /No editor is open/
+      );
+      assert.match(
+        await refusalOf([
+          editorModal(),
+          {
+            kind: 'chooser',
+            field: 'related'
+          }
+        ], { action: 'get_document' }),
+        /a chooser for "related" is open over the editor; ask the user to close it first/
+      );
+      // A type AI may not read is dropped from the screen
+      assert.match(
+        await refusalOf([ {
+          kind: 'editor',
+          docType: '@apostrophecms/user'
+        } ], {
+          action: 'update_document',
+          values: { title: 'x' }
+        }),
+        /may not change the document in this editor/
+      );
+    });
+
+    it('checks the arguments against the named document tool\'s', async function () {
+      const screen = [ editorModal() ];
+      assert.match(
+        await refusalOf(screen, { action: 'update_document' }),
+        /invalid arguments for "update_document": arguments must have required property 'values'/
+      );
+      assert.match(
+        await refusalOf(screen, {
+          action: 'get_document',
+          widgets: [ 'card-1' ]
+        }),
+        /invalid arguments for "get_document"/
+      );
+      assert.match(
+        await refusalOf(screen, {
+          action: 'remove_widgets',
+          widgets: []
+        }),
+        /invalid arguments for "remove_widgets"/
+      );
+    });
+
+    it('asks the browser with the arguments prepared, defaults filled in', async function () {
+      const {
+        req, chat, request
+      } = await callOnScreen([ editorModal() ], {
+        action: 'get_document'
+      });
+      assert.equal(request.status, 'waiting');
+      assert.deepEqual(request.asks[0].payload, {
+        kind: 'browser',
+        screenEffect: 'keeps',
+        args: {
+          action: 'get_document',
+          view: 'outline'
+        },
+        whenHidden: {
+          executed: false,
+          reason: 'the user is in another browser tab'
+        }
+      });
+      await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+    });
+
+    it('reads what the editor holds, unsaved changes included', async function () {
+      const { req, chat } = await callOnScreen([ editorModal() ], {
+        action: 'get_document',
+        view: 'properties',
+        paths: [ 'subtitle', '@card-1.heading' ]
+      });
+      const served = await serve(req, chat, documentRoot({
+        subtitle: 'Typed subtitle',
+        body: area([ card('card-1', 'Typed heading') ])
+      }));
+      assert.deepEqual(served, {
+        executed: true,
+        values: {},
+        touched: [],
+        removed: []
+      });
+      const done = await answer(req, chat, { executed: true });
+      const output = resultOf(done, 'call-edit_open_document').output;
+      assert.equal(output.executed, true);
+      assert.equal(output.type, 'assistant-note');
+      assert.deepEqual(output.properties, [
+        {
+          path: 'subtitle',
+          value: 'Typed subtitle'
+        },
+        {
+          path: '@card-1.heading',
+          value: 'Typed heading'
+        }
+      ]);
+    });
+
+    it('changes what the editor holds, unsaved, the model reading the change kept on the ask', async function () {
+      const { req, chat } = await callOnScreen([ editorModal() ], {
+        action: 'update_document',
+        values: {
+          subtitle: 'New subtitle',
+          '@card-1.heading': 'New heading'
+        }
+      });
+      const served = await serve(req, chat, documentRoot());
+      assert.equal(served.executed, true);
+      assert.deepEqual(Object.keys(served.values).sort(), [ 'body', 'subtitle' ]);
+      assert.equal(served.values.subtitle, 'New subtitle');
+      assert.equal(served.values.body.items[0].heading, 'New heading');
+      assert.deepEqual(served.touched.sort(), [ '@card-1.heading', 'subtitle' ]);
+      // The panel never reads the kept result
+      const [ waiting ] = (await apos.assistant.getChatRequests(req, chat._id)).slice(-1);
+      assert.equal(apos.assistant.renderRequest(waiting).asks[0].result, undefined);
+      const done = await answer(req, chat, {
+        executed: true,
+        // The browser's word on the result is not taken
+        written: 'forged'
+      });
+      const output = resultOf(done, 'call-edit_open_document').output;
+      assert.equal(output.saved, false);
+      assert.equal(output.written[0]._id, note._id);
+      assert.match(output.notice, /in the open editor, not saved/);
+      const draft = await apos.doc.db.findOne({ _id: note._id });
+      assert.equal(draft.subtitle, 'Saved subtitle');
+    });
+
+    it('reaches only the widget a widget editor holds', async function () {
+      const screen = [
+        editorModal(),
+        {
+          kind: 'widgetEditor',
+          docId: note._id,
+          widgetId: 'card-1',
+          field: 'body'
+        }
+      ];
+      const { req, chat } = await callOnScreen(screen, {
+        action: 'update_document',
+        values: { subtitle: 'Not here' }
+      });
+      const widget = widgetRoot(card('card-1', 'Saved heading'));
+      const served = await serve(req, chat, widget);
+      assert.deepEqual(served.values, {});
+      const done = await answer(req, chat, { executed: true });
+      const output = resultOf(done, 'call-edit_open_document').output;
+      assert.equal(output.saved, false);
+      assert(output.refused[0].fields
+        .every(field => /only it can change until its editor closes/.test(field.message)));
+
+      const changed = await callOnScreen(screen, {
+        action: 'update_document',
+        values: { heading: 'Widget heading' }
+      });
+      const result = await serve(changed.req, changed.chat, widget);
+      assert.deepEqual(result.values, { heading: 'Widget heading' });
+      assert.deepEqual(result.touched, [ 'heading' ]);
+      await apos.assistant.skip(changed.req, changed.chat._id, { tabId: 'tab-1' });
+    });
+
+    it('refuses a root that is not the editor on top, and takes the browser\'s reason', async function () {
+      const { req, chat } = await callOnScreen([ editorModal() ], {
+        action: 'update_document',
+        values: { subtitle: 'x' }
+      });
+      const served = await serve(req, chat, widgetRoot(card('card-1', 'Saved heading')));
+      assert.equal(served.executed, false);
+      assert.match(served.reason, /no longer the one the call was made for/);
+      const done = await answer(req, chat, { executed: true });
+      assert.deepEqual(stripScreen(resultOf(done, 'call-edit_open_document').output), {
+        executed: false,
+        reason: served.reason,
+        answered: true
+      });
+
+      const second = await callOnScreen([ editorModal() ], {
+        action: 'update_document',
+        values: { subtitle: 'y' }
+      });
+      await serve(second.req, second.chat, documentRoot());
+      const refused = await answer(second.req, second.chat, {
+        executed: false,
+        reason: 'the editor can\'t take subtitle now'
+      });
+      assert.equal(
+        resultOf(refused, 'call-edit_open_document').output.reason,
+        'the editor can\'t take subtitle now'
+      );
+    });
+
+    it('serves only the browser tab that owns the waiting request', async function () {
+      const { req, chat } = await callOnScreen([ editorModal() ], { action: 'get_document' });
+      await assert.rejects(
+        apos.assistant.serveOpenEditor(req, chat._id, {
+          tabId: 'tab-2',
+          callId: 'call-edit_open_document',
+          root: documentRoot()
+        })
+      );
+      await assert.rejects(
+        apos.assistant.serveOpenEditor(req, chat._id, {
+          tabId: 'tab-1',
+          callId: 'call-other',
+          root: documentRoot()
+        }),
+        { name: 'notfound' }
+      );
+      await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+    });
+
+    it('refuses a document tool\'s write to a document an editor holds', async function () {
+      const update = {
+        targets: [ {
+          _id: note._id,
+          values: { subtitle: 'Written' }
+        } ]
+      };
+      assert.match(
+        await writeRefusal([ editorModal() ], 'update_document', update),
+        /"Open note" is open in an editor on the user's screen: change it with edit_open_document/
+      );
+      assert.match(
+        await writeRefusal([ editorModal(), {
+          kind: 'arrayEditor',
+          docId: note._id,
+          itemId: 'item-1',
+          field: 'items'
+        } ],
+        'remove_widgets', {
+          _id: note._id,
+          widgets: [ 'card-1' ]
+        }),
+        /has its array item editor open on the user's screen: change that array item/
+      );
+      assert.match(
+        await writeRefusal([ editorModal(), {
+          kind: 'chooser',
+          field: 'related'
+        } ],
+        'update_document', update),
+        /under a chooser for "related"; ask the user to close what is over the editor first/
+      );
+      const draft = await apos.doc.db.findOne({ _id: note._id });
+      assert.equal(draft.subtitle, 'Saved subtitle');
+    });
+
+    it('writes a document no editor holds, and reads a held one', async function () {
+      const other = await insertNote('Other note');
+      script = sequence([
+        toolTurn('update_document', {
+          targets: [ {
+            _id: other._id,
+            values: { subtitle: 'Written' }
+          } ]
+        }),
+        toolTurn('get_document', { _id: note._id }, 'call-read'),
+        { text: 'Done.' }
+      ]);
+      const { request } = await sendOnScreen([ editorModal() ], 'Write the other note');
+      assert.equal(request.status, 'completed');
+      assert.equal(resultOf(request, 'call-update_document').error, undefined);
+      assert.equal(resultOf(request, 'call-read').error, undefined);
+      const draft = await apos.doc.db.findOne({ _id: other._id });
+      assert.equal(draft.subtitle, 'Written');
+    });
+
+    function editorModal() {
+      return {
+        kind: 'editor',
+        docId: note._id
+      };
+    }
+
+    function documentRoot(values = {}) {
+      return {
+        kind: 'document',
+        data: {
+          ...note,
+          ...values
+        }
+      };
+    }
+
+    function widgetRoot(data) {
+      return {
+        kind: 'widget',
+        data,
+        areaFieldId: apos.modules['assistant-note'].schema
+          .find(field => field.name === 'body')._id
+      };
+    }
+
+    async function sendOnScreen(modals, message) {
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      await apos.assistant.send(req, chat._id, {
+        message,
+        screen: {
+          tabId: 'tab-1',
+          modals
+        }
+      });
+      return {
+        req,
+        chat,
+        request: await waitForEnd(req, chat)
+      };
+    }
+
+    // One `edit_open_document` call on a screen with these modals
+    function callOnScreen(modals, input) {
+      script = sequence([ toolTurn('edit_open_document', input) ]);
+      return sendOnScreen(modals, 'Work in the editor');
+    }
+
+    async function refusalOf(modals, input) {
+      script = sequence([ toolTurn('edit_open_document', input), { text: 'Refused.' } ]);
+      const { request } = await sendOnScreen(modals, 'Work in the editor');
+      assert.equal(request.status, 'completed');
+      return resultOf(request, 'call-edit_open_document').error;
+    }
+
+    async function writeRefusal(modals, name, input) {
+      script = sequence([ toolTurn(name, input), { text: 'Refused.' } ]);
+      const { request } = await sendOnScreen(modals, 'Write it');
+      assert.equal(request.status, 'completed');
+      return resultOf(request, `call-${name}`).error;
+    }
+
+    function serve(req, chat, root) {
+      return apos.assistant.serveOpenEditor(req, chat._id, {
+        tabId: 'tab-1',
+        callId: 'call-edit_open_document',
+        root
+      });
+    }
+
+    async function answer(req, chat, given) {
+      await apos.assistant.answer(req, chat._id, {
+        tabId: 'tab-1',
+        callId: 'call-edit_open_document',
+        answer: given,
+        screen: { tabId: 'tab-1' }
+      });
+      return waitForEnd(req, chat);
+    }
+  });
+
   function userReq(user) {
     return apos.task.getReq({
       user,
       mode: 'draft'
     });
+  }
+
+  // The chat's latest request once its run has ended or waits
+  async function waitForEnd(req, chat) {
+    let request;
+    await waitFor(async () => {
+      request = (await apos.assistant.getChatRequests(req, chat._id)).at(-1);
+      const open = (await apos.assistant.getChat(req, chat._id)).openRequest;
+      const job = request?.jobId &&
+        await apos.modules['@apostrophecms/job'].db.findOne({ _id: request.jobId });
+      return request && (request.status !== 'running') &&
+        ((open === null) || (open.status === 'waiting')) && (!job || job.ended);
+    });
+    return request;
   }
 
   // A request of the user's that ran and ended, sent from `tab-1`
@@ -347,6 +745,38 @@ describe('Assistant: working in open editors', function () {
       .toArray();
   }
 });
+
+// The turns in order, then the default
+function sequence(turns) {
+  const queue = [ ...turns ];
+  return () => queue.shift() || { text: 'Done.' };
+}
+
+function toolTurn(name, input = {}, id = `call-${name}`) {
+  return {
+    content: [ {
+      type: 'toolCall',
+      id,
+      name,
+      input
+    } ],
+    finishReason: 'toolCalls',
+    usage: {
+      inputTokens: 10,
+      outputTokens: 2
+    }
+  };
+}
+
+function resultOf(request, callId) {
+  return request.messages
+    .flatMap(message => (message.role === 'tool') ? message.content : [])
+    .find(part => part.toolCallId === callId);
+}
+
+function stripScreen({ screen, ...rest }) {
+  return rest;
+}
 
 function outside(request, fields, tabId = 'tab-1') {
   return {

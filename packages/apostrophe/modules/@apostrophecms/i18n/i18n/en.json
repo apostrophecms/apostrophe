@@ -13,6 +13,7 @@
   "aiToolConfirm": "Ask before going on",
   "aiToolCreatePage": "Create a page",
   "aiToolCreatePiece": "Create a piece",
+  "aiToolEditOpenDocument": "Work in the open editor",
   "aiToolFindReferences": "Find where something is used",
   "aiToolGetChanges": "Read the changes",
   "aiToolGetDocument": "Read a document",

@@ -10,9 +10,13 @@
  * 4. A scaffold for handling conditional fields, via the
  *   `conditionalFields` method
  * 5. Values from outside the editor, such as the assistant's, through the
- *   `outside` handle: `busy(names)`, `apply(values)` and `release(names)`,
- *   and `adopt(fields)` for what a nested editor's save hands over. A field
- *   the editor changes afterwards is the editor's own again
+ *   `outside` handle: `read()` for what the editor holds, `busy(keys)`,
+ *   `apply(values)` and `release(keys)`, and `adopt(fields)` for what a
+ *   nested editor's save hands over. A key is a field's, at any depth,
+ *   relative to what the editor holds (`title`, `seo.title`,
+ *   `@<widget or item id>.title`, `@<widget id>`); its state shows on the
+ *   top-level field holding it. A field the editor changes afterwards is
+ *   the editor's own again
  *
  * This mixin is designed to accommodate extension by components like
  *   AposDocEditor that split the UI into several AposSchemas.
@@ -45,18 +49,21 @@ export default {
       changed: [],
       externalConditionsResults: getConditionTypesObject(),
       conditionalFields: getConditionTypesObject(),
-      // Fields written from outside, by `getOutsideKey`:
-      // `{ busy, edited, marker, type, value }`, `value` what landed in a
-      // field of that `type`. In memory only
+      // Fields written from outside, by their path in the document (see
+      // `getOutsideKey`): `{ busy, edited, marker, type, value }`, `value`
+      // what landed, in a field of that `type` when it is a top-level one.
+      // In memory only
       outsideFields: {},
       outsideAnnouncement: '',
       // Passed to `AposModal`, which keeps it on the modal's stack entry.
-      // Each call takes field names of this editor's schema; `apply` takes a
-      // `marker` the save carries for the fields it wrote
+      // `apply` takes values by field name of this editor's schema, the
+      // `touched` keys to mark (the names by default) and a `marker` the
+      // save carries for them
       outside: markRaw({
-        busy: names => this.markOutsideBusy(names),
+        read: () => this.getOutsideRoot(),
+        busy: keys => this.markOutsideBusy(keys),
         apply: (values, options) => this.applyOutside(values, options),
-        release: names => this.releaseOutside(names),
+        release: keys => this.releaseOutside(keys),
         adopt: fields => this.adoptOutside(fields)
       })
     };
@@ -79,14 +86,19 @@ export default {
     docMeta() {
       return this.docFields.data?.aposMeta || {};
     },
-    // What came from outside for the fields shown, by field name
+    // What came from outside for the fields shown, by field name: a field
+    // is busy or edited when a key it holds is
     outsideStates() {
       const states = {};
-      for (const field of this.schema) {
-        const state = this.getOutsideState(field.name);
-        if (state) {
-          states[field.name] = state;
+      for (const [ path, state ] of Object.entries(this.outsideFields)) {
+        const name = this.getOutsideTop(path);
+        if (!name) {
+          continue;
         }
+        states[name] = {
+          busy: Boolean(states[name]?.busy || state.busy),
+          edited: Boolean(states[name]?.edited || state.edited)
+        };
       }
       return states;
     }
@@ -246,13 +258,47 @@ export default {
         });
       }
     },
-    // A field's key in `outsideFields`: its name, or its path in the
-    // document where the editor holds part of one
-    getOutsideKey(name) {
-      return name;
+    // A key's path in the document, as `outsideFields` and the save name
+    // it: the key itself, or below the widget or item the editor holds
+    getOutsideKey(key) {
+      const rootId = this.getOutsideRootId();
+      return (rootId && !key.startsWith('@'))
+        ? `@${rootId}.${key}`
+        : key;
     },
-    getOutsideState(name) {
-      return this.outsideFields[this.getOutsideKey(name)] || null;
+    // The `_id` of the widget or item the editor holds, `null` for a
+    // document
+    getOutsideRootId() {
+      return null;
+    },
+    // The top-level field of this editor's schema holding a key or a path,
+    // `null` when none of the fields shown holds it
+    getOutsideTop(key) {
+      const rootId = this.getOutsideRootId();
+      const rest = (rootId && key.startsWith(`@${rootId}.`))
+        ? key.slice(rootId.length + 2)
+        : key;
+      const name = rest.startsWith('@')
+        ? this.schema.find(field => {
+          return hasOutsideId(this.getFieldValue(field.name), rest.slice(1).split('.')[0]);
+        })?.name
+        : rest.split('.')[0];
+      return (name && this.schema.some(field => field.name === name)) ? name : null;
+    },
+    // What the editor holds, as code outside reads and changes it: `{ kind,
+    // data, locale }`, `kind` one of `document`, `widget` and `item`, a
+    // widget's `areaFieldId` and an item's `fieldId`. `null` while it loads
+    getOutsideRoot() {
+      return null;
+    },
+    // The editor's locale: that of the nearest modal at or below it that
+    // has one, else the page's
+    getOutsideLocale() {
+      const { stack } = useModalStore();
+      const index = stack.findIndex(modal => modal.outside === this.outside);
+      return stack
+        .slice(0, index + 1)
+        .findLast(modal => modal.locale)?.locale || apos.i18n.locale;
     },
     // What the keys of `outsideFields` are read from: the document, or the
     // part of one the editor holds, with its `_id`
@@ -268,44 +314,52 @@ export default {
     isOutsideReady() {
       return true;
     },
-    // Marks fields busy while a write from outside is on its way. Returns the
-    // names it marked
-    markOutsideBusy(names) {
-      const fields = this.isOutsideReady()
-        ? names
-          .map(name => this.getOutsideField(name))
-          .filter(field => field && this.getAposSchema(field))
-        : [];
-      for (const field of fields) {
-        const key = this.getOutsideKey(field.name);
-        this.outsideFields[key] = {
-          ...this.outsideFields[key],
+    // A field of the schema code outside may write now, by key: its
+    // top-level field, shown and ready
+    getOutsideTarget(key) {
+      const name = this.isOutsideReady() && this.getOutsideTop(key);
+      const field = name && this.getOutsideField(name);
+      return (field && this.getAposSchema(field)) ? field : null;
+    },
+    // Marks keys busy while a write from outside is on its way. Returns the
+    // keys it marked
+    markOutsideBusy(keys) {
+      const marked = keys.filter(key => this.getOutsideTarget(key));
+      for (const key of marked) {
+        const path = this.getOutsideKey(key);
+        this.outsideFields[path] = {
+          ...this.outsideFields[path],
           busy: true
         };
       }
-      this.announceOutside('apostrophe:outsideBusy', fields);
-      return fields.map(field => field.name);
+      this.announceOutside('apostrophe:outsideBusy', [
+        ...new Set(marked.map(key => this.getOutsideTarget(key)))
+      ]);
+      return marked;
     },
-    // Frees busy fields no value came for
-    releaseOutside(names) {
-      for (const name of names) {
-        const key = this.getOutsideKey(name);
-        if (this.outsideFields[key]?.edited) {
-          this.outsideFields[key] = {
-            ...this.outsideFields[key],
-            busy: false
-          };
-        } else {
-          delete this.outsideFields[key];
-        }
+    // Frees busy keys no value came for
+    releaseOutside(keys) {
+      for (const key of keys) {
+        this.releaseOutsidePath(this.getOutsideKey(key));
+      }
+    },
+    releaseOutsidePath(path) {
+      if (this.outsideFields[path]?.edited) {
+        this.outsideFields[path] = {
+          ...this.outsideFields[path],
+          busy: false
+        };
+      } else {
+        delete this.outsideFields[path];
       }
     },
     // Writes `values`, by field name, into the fields as if typed: conditions,
-    // validation and the modified state follow, and each field is marked
-    // edited. Resolves once the values reached `docFields`, with the names
-    // `written` and those `refused` with a `reason`: `unknown`, `readOnly`
-    // or `notReady` while the editor loads
-    async applyOutside(values, { marker = null } = {}) {
+    // validation and the modified state follow, and each key of `touched`
+    // in them (each field written by default) is marked edited, the other
+    // keys busy in them freed. Resolves once the values reached
+    // `docFields`, with the names `written` and those `refused` with a
+    // `reason`: `unknown`, `readOnly` or `notReady` while the editor loads
+    async applyOutside(values, { marker = null, touched = null } = {}) {
       const written = [];
       const refused = [];
       for (const [ name, value ] of Object.entries(values)) {
@@ -321,25 +375,33 @@ export default {
           continue;
         }
         schema.applyOutsideValue(name, klona(value));
-        this.outsideFields[this.getOutsideKey(name)] = {
-          busy: false,
-          edited: true,
-          marker,
-          type: field.type
-        };
         written.push(field);
       }
-      this.announceOutside('apostrophe:outsideEdited', written);
+      const names = written.map(field => field.name);
+      for (const path of Object.keys(this.outsideFields)) {
+        if (this.outsideFields[path].busy && names.includes(this.getOutsideTop(path))) {
+          this.releaseOutsidePath(path);
+        }
+      }
       // The input takes the value, then emits it to the editor
       await this.$nextTick();
       await this.$nextTick();
       const data = this.getOutsideData();
-      for (const field of written) {
-        const key = this.getOutsideKey(field.name);
-        if (this.outsideFields[key]) {
-          this.outsideFields[key].value = klona(getOutsideValue(data, key));
-        }
+      const marked = (touched || names).filter(key => {
+        return names.includes(this.getOutsideTop(this.getOutsideKey(key)));
+      });
+      for (const key of marked) {
+        const path = this.getOutsideKey(key);
+        const field = written.find(field => field.name === key);
+        this.outsideFields[path] = {
+          busy: false,
+          edited: true,
+          marker,
+          type: field?.type || null,
+          value: klona(getOutsideValue(data, path))
+        };
       }
+      this.announceOutside('apostrophe:outsideEdited', written);
       return {
         written: written.map(field => field.name),
         refused
@@ -354,15 +416,13 @@ export default {
         getOutsideValue(this.getOutsideData(), key)
       );
     },
-    // Touched by the editor, owned by the editor: a field of the schema the
-    // editor changed after a value from outside loses its mark, and the save
-    // no longer lists it. Called on each update of the fields
+    // Touched by the editor, owned by the editor: a field the editor
+    // changed after a value from outside loses its mark, and the save no
+    // longer lists it. Called on each update of the fields
     dropTouchedOutside() {
-      for (const field of this.schema) {
-        const key = this.getOutsideKey(field.name);
-        const state = this.outsideFields[key];
-        if (state && !state.busy && this.isOutsideTouched(key, state)) {
-          delete this.outsideFields[key];
+      for (const [ path, state ] of Object.entries(this.outsideFields)) {
+        if (!state.busy && this.isOutsideTouched(path, state)) {
+          delete this.outsideFields[path];
         }
       }
     },
@@ -441,3 +501,14 @@ export default {
     }
   }
 };
+
+// Whether a value holds a widget or item with this `_id`, at any depth
+function hasOutsideId(value, _id) {
+  if (!value || (typeof value !== 'object')) {
+    return false;
+  }
+  if (value._id === _id) {
+    return true;
+  }
+  return Object.values(value).some(child => hasOutsideId(child, _id));
+}

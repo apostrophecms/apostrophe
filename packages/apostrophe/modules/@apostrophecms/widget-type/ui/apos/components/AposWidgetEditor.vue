@@ -752,8 +752,16 @@ export default {
       return this.$refs[field.group.name]?.[0];
     },
     // The widget's fields, by their path in the document
-    getOutsideKey(name) {
-      return `@${this.id || this.newId}.${name}`;
+    getOutsideRootId() {
+      return this.id || this.newId;
+    },
+    getOutsideRoot() {
+      return {
+        kind: 'widget',
+        data: this.getWidgetObject(),
+        areaFieldId: this.areaFieldId,
+        locale: this.getOutsideLocale()
+      };
     },
     getOutsideData() {
       return {
