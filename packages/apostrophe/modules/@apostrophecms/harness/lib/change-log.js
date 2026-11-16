@@ -71,7 +71,7 @@ module.exports = (self) => {
       const allFields = fields && [ ...new Set([ ...(open?.fields || []), ...fields ]) ];
       const between = await self.apos.docVersions.getChangeRowsBetween(req, base, after);
       const rows = allFields
-        ? between.filter(row => isWithinFields(row, allFields))
+        ? between.filter(row => self.apos.docVersions.isWithinFields(row, allFields))
         : between;
       if (allFields && !rows.length) {
         return null;
@@ -199,23 +199,3 @@ module.exports = (self) => {
     }
   };
 };
-
-// Whether a change row is at or below one of `fields`: a top-level field's
-// name, or `@<_id>.<path>` below the widget or array item `_id` wherever it
-// is. Row paths name fields and the `_id`s of widgets and items
-function isWithinFields(row, fields) {
-  const names = row.path.map(segment => segment.name);
-  return fields.some(field => {
-    const segments = field.split('.');
-    const start = segments[0].startsWith('@')
-      ? names.indexOf(segments[0].slice(1))
-      : 0;
-    if (start === -1) {
-      return false;
-    }
-    const wanted = segments[0].startsWith('@')
-      ? [ segments[0].slice(1), ...segments.slice(1) ]
-      : segments;
-    return wanted.every((name, i) => names[start + i] === name);
-  });
-}

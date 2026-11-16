@@ -71,6 +71,21 @@ describe('Assistant: working in open editors', function () {
             }
           }
         },
+        'assistant-page': {
+          extend: '@apostrophecms/page-type',
+          fields: {
+            add: {
+              main: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    'assistant-card': {}
+                  }
+                }
+              }
+            }
+          }
+        },
         'assistant-card-widget': {
           extend: '@apostrophecms/widget-type',
           fields: {
@@ -182,6 +197,20 @@ describe('Assistant: working in open editors', function () {
       assert.deepEqual(entry.rows.map(pathOf).sort(), [ 'body.c3', 'body.w1' ]);
     });
 
+    it('records a rich text widget\'s markup written by its key', async function () {
+      const request = await endedRequest(editor);
+      const note = await insertNote('Rich text', {
+        body: area([ richText('w1', '<p>One</p>'), richText('w2', '<p>Two</p>') ])
+      });
+      const draft = await getDraft(note, jar);
+      draft.body.items[0].content = '<p>One, rewritten</p>';
+      draft.body.items[1].content = '<p>Two, typed</p>';
+      await put(draft, jar, outside(request, [ '@w1.content' ]));
+
+      const [ entry ] = await entriesOf(request, note);
+      assert.deepEqual(entry.rows.map(pathOf), [ 'body.w1' ]);
+    });
+
     it('records a PATCH of the page\'s patches the same way', async function () {
       const request = await endedRequest(editor);
       const note = await insertNote('Patched', {
@@ -263,21 +292,115 @@ describe('Assistant: working in open editors', function () {
       draft.subtitle = 'Typed by the editor';
       await put(draft, jar, outside(request, [ 'title' ]));
 
-      const req = userReq(editor);
-      const started = await apos.assistant.revert(req, request.chatId, {
-        requestId: request._id,
-        tabId: 'tab-1'
-      });
-      await waitFor(async () => {
-        const stored = await apos.assistant.getRevert(req, started._id);
-        const job = stored.jobId &&
-          await apos.modules['@apostrophecms/job'].db.findOne({ _id: stored.jobId });
-        return (stored.status !== 'running') && (!job || job.ended);
-      });
-      assert.equal((await apos.assistant.getRevert(req, started._id)).status, 'done');
+      assert.equal(await revertRequest(request), 'done');
       const reverted = await apos.doc.db.findOne({ _id: draft._id });
       assert.equal(reverted.title, 'Before');
       assert.equal(reverted.subtitle, 'Typed by the editor');
+    });
+
+    it('records a widget moved inside its area as the request\'s, and the chat reverts the move', async function () {
+      const request = await endedRequest(editor);
+      const note = await insertNote('Moved', {
+        body: area([ card('c1', 'One'), card('c2', 'Two'), card('c3', 'Three') ])
+      });
+      const draft = await getDraft(note, jar);
+      draft.body.items.unshift(draft.body.items.pop());
+      await put(draft, jar, outside(request, [ '@c3' ]));
+
+      const [ entry ] = await entriesOf(request, note);
+      assert.deepEqual(entry.rows.map(pathOf), [ 'body' ]);
+      assert.equal(entry.rows[0].kind, 'area');
+
+      assert.equal(await revertRequest(request), 'done');
+      const reverted = await apos.doc.db.findOne({ _id: draft._id });
+      assert.deepEqual(reverted.body.items.map(widget => widget._id), [ 'c1', 'c2', 'c3' ]);
+    });
+
+    it('leaves a reorder the moved widget does not explain the editor\'s', async function () {
+      const request = await endedRequest(editor);
+      const note = await insertNote('Both moved', {
+        body: area([ card('c1', 'One'), card('c2', 'Two'), card('c3', 'Three') ])
+      });
+      const draft = await getDraft(note, jar);
+      // The assistant moved the last card to the top, the editor then
+      // swapped the other two
+      const [ c1, c2, c3 ] = draft.body.items;
+      draft.body.items = [ c3, c2, c1 ];
+      await put(draft, jar, outside(request, [ '@c3' ]));
+      assert.deepEqual(await entriesOf(request, note), []);
+    });
+
+    it('shows the fields the request wrote as AI-made in the version and See Changes', async function () {
+      const request = await endedRequest(editor);
+      const note = await insertNote('Before');
+      const draft = await getDraft(note, jar);
+      draft.title = 'Written by the assistant';
+      draft.subtitle = 'Typed by the editor';
+      await put({
+        ...draft,
+        _explicitSave: true
+      }, jar, outside(request, [ 'title' ]));
+
+      const req = userReq(editor);
+      const { results } = await apos.docVersions.getTimelinePage(
+        req,
+        apos.docVersions.getTimelineCriteria(draft)
+      );
+      assert.equal(results[0].ai, true);
+      const { rows } = await apos.docVersions.getVersionChanges(req, results[0]._id);
+      assert.deepEqual(rows.map(aiOf), [ [ 'title', 'changed' ], [ 'subtitle', false ] ]);
+      const changes = await apos.docVersions.getDraftChanges(req, draft._id);
+      assert.deepEqual(
+        changes.rows.filter(row => [ 'title', 'subtitle' ].includes(pathOf(row))).map(aiOf),
+        [ [ 'title', 'changed' ], [ 'subtitle', false ] ]
+      );
+    });
+
+    it('keeps them AI-made through the page\'s autosaves of a widget editor', async function () {
+      const request = await endedRequest(editor);
+      const req = userReq(editor);
+      const inserted = await apos.page.insert(req, '_home', 'lastChild', {
+        title: 'Cards',
+        type: 'assistant-page',
+        main: area([ card('p1', 'One'), card('p2', 'Two') ])
+      });
+      await apos.page.publish(req, await apos.page.findOneForEditing(req, {
+        _id: inserted._id
+      }));
+      // As the page loads it in edit mode
+      await apos.http.get(`/api/v1/@apostrophecms/page/${inserted._id}`, {
+        jar,
+        qs: { aposMode: 'draft' }
+      });
+      const patch = (patches, outsideBody) => apos.http.patch(
+        `/api/v1/@apostrophecms/page/${inserted._id}`,
+        {
+          jar,
+          body: {
+            _patches: patches,
+            ...(outsideBody && { _outside: outsideBody })
+          }
+        }
+      );
+      await patch([
+        { '@p1.heading': 'One, rewritten' },
+        { '@p2.heading': 'Two, typed' }
+      ], outside(request, [ '@p1.heading' ]));
+      await patch([ { '@p2.heading': 'Two, typed again' } ]);
+
+      const versions = await apos.docVersions.find(
+        req,
+        apos.docVersions.getTimelineCriteria(inserted)
+      );
+      assert.deepEqual(
+        versions.map(version => [ version.mode, version.aiFields ?? null ]),
+        [ [ 'draft', [ '@p1.heading' ] ], [ 'published', null ] ]
+      );
+      const { rows } = await apos.docVersions.getDraftChanges(req, inserted._id);
+      assert.deepEqual(rows.map(aiOf), [
+        [ 'main.p1.heading', 'changed' ],
+        [ 'main.p2.heading', false ]
+      ]);
     });
 
     it('leaves the entry open while the request runs, as its own writes do', async function () {
@@ -848,6 +971,22 @@ describe('Assistant: working in open editors', function () {
     });
   }
 
+  // The status a revert of the request by its chat ends in
+  async function revertRequest(request) {
+    const req = userReq(editor);
+    const started = await apos.assistant.revert(req, request.chatId, {
+      requestId: request._id,
+      tabId: 'tab-1'
+    });
+    await waitFor(async () => {
+      const stored = await apos.assistant.getRevert(req, started._id);
+      const job = stored.jobId &&
+        await apos.modules['@apostrophecms/job'].db.findOne({ _id: stored.jobId });
+      return (stored.status !== 'running') && (!job || job.ended);
+    });
+    return (await apos.assistant.getRevert(req, started._id)).status;
+  }
+
   function entriesOf(request, note) {
     return apos.harness.changes
       .find({
@@ -912,6 +1051,10 @@ function outside(request, fields, tabId = 'tab-1') {
 
 function pathOf(row) {
   return row.path.map(segment => segment.name).join('.');
+}
+
+function aiOf(row) {
+  return [ pathOf(row), row.ai ];
 }
 
 function area(items) {

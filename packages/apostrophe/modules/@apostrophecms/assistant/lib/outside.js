@@ -16,7 +16,8 @@ module.exports = (self) => {
     /**
      * Marks `req` for the change log when its write body carries fields the
      * user's requests wrote from outside: `req.aposSaveMarker` with one
-     * `outside` part per request, `{ requestId, chat, fields, ended }`.
+     * `outside` part per request, `{ requestId, chat, fields, ended }`, and
+     * for Document Versions `req.aposAiFields`, the fields of them all.
      * Does nothing otherwise.
      *
      * @param {object} req A REST write of a document.
@@ -63,6 +64,7 @@ module.exports = (self) => {
         chat: parts[0].chat,
         outside: parts
       };
+      req.aposAiFields = [ ...new Set(parts.flatMap(part => part.fields)) ];
     }
   };
 };

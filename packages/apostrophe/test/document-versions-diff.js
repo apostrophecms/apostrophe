@@ -3665,6 +3665,56 @@ describe('Document Versions diff engine', function () {
       ]);
     });
 
+    it('should read a version that lists the fields AI wrote as two edits', function () {
+      const pairs = pairsOf({
+        edit: doc => {
+          doc.title = 'By AI';
+          doc.subtitle = 'By hand';
+        }
+      });
+      pairs[0].aiFields = [ 'title' ];
+      assert.deepEqual(apos.docVersions.getConsolidatedRows(req, pairs).map(brief), [
+        [ 'modified', 'string', 'title', 'changed' ],
+        [ 'added', 'string', 'subtitle', false ]
+      ]);
+    });
+
+    it('should call a listed field changed by hand in the next version assisted', function () {
+      const pairs = pairsOf(
+        {
+          edit: doc => {
+            doc.title = 'By AI';
+            doc.subtitle = 'By hand';
+          }
+        },
+        {
+          edit: doc => {
+            doc.title = 'By hand';
+          }
+        }
+      );
+      pairs[0].aiFields = [ 'title' ];
+      assert.deepEqual(apos.docVersions.getConsolidatedRows(req, pairs).map(brief), [
+        [ 'modified', 'string', 'title', 'assisted' ],
+        [ 'added', 'string', 'subtitle', false ]
+      ]);
+    });
+
+    it('should read a version saved with AI whole, whatever it lists', function () {
+      const pairs = pairsOf({
+        ai: true,
+        edit: doc => {
+          doc.title = 'By AI';
+          doc.subtitle = 'By AI';
+        }
+      });
+      pairs[0].aiFields = [ 'title' ];
+      assert.deepEqual(
+        apos.docVersions.getConsolidatedRows(req, pairs).map(row => row.ai),
+        [ 'changed', 'changed' ]
+      );
+    });
+
     it('should give each moved item AI\'s part in its own moves', function () {
       const toTop = doc => {
         const { items } = getRows(doc)[0].content;
@@ -3684,6 +3734,110 @@ describe('Document Versions diff engine', function () {
       assert.equal(row.kind, 'area');
       assert.equal(row.ai, 'assisted');
       assert.deepEqual([ ...row.aiItems ], [ [ moved, 'assisted' ] ]);
+    });
+  });
+
+  describe('isWithinFields', function () {
+    function article() {
+      return {
+        _id: 'a1:en:draft',
+        aposDocId: 'a1',
+        type: 'article',
+        title: 'Title',
+        int: 1,
+        object: {
+          key1: 'One',
+          key2: 'Two'
+        },
+        main: {
+          _id: 'area1',
+          metaType: 'area',
+          items: [ text('w1'), text('w2'), text('w3') ]
+        },
+        array: [ item('i1'), item('i2') ]
+      };
+    }
+    function text(_id) {
+      return {
+        _id,
+        metaType: 'widget',
+        type: '@apostrophecms/rich-text',
+        content: `<p>${_id}</p>`
+      };
+    }
+    function item(_id) {
+      return {
+        _id,
+        metaType: 'arrayItem',
+        label: `Label ${_id}`,
+        value: `Value ${_id}`
+      };
+    }
+    // The paths of the rows of `edit` that `fields` hold, sorted
+    function within(edit, fields) {
+      const older = article();
+      const newer = article();
+      edit(newer);
+      return apos.docVersions.getChangeRows(req, older, newer)
+        .filter(row => apos.docVersions.isWithinFields(row, fields))
+        .map(row => row.path.map(segment => segment.name).join('.'))
+        .sort();
+    }
+    const moveToTop = _id => doc => {
+      const { items } = doc.main;
+      items.unshift(...items.splice(items.findIndex(widget => widget._id === _id), 1));
+    };
+
+    it('should hold a top-level field and what is below it', function () {
+      const edit = doc => {
+        doc.title = 'Renamed';
+        doc.int = 2;
+        doc.object.key1 = 'Changed';
+      };
+      assert.deepEqual(within(edit, [ 'title', 'object' ]), [ 'object.key1', 'title' ]);
+    });
+
+    it('should hold a field below a top-level one by its dotted path', function () {
+      const edit = doc => {
+        doc.object.key1 = 'Changed';
+        doc.object.key2 = 'Changed';
+      };
+      assert.deepEqual(within(edit, [ 'object.key2' ]), [ 'object.key2' ]);
+    });
+
+    it('should hold an item\'s field, or the item written whole', function () {
+      const edit = doc => {
+        doc.array[0].label = 'Changed';
+        doc.array[0].value = 'Changed';
+        doc.array[1].label = 'Changed';
+      };
+      assert.deepEqual(within(edit, [ '@i1.label' ]), [ 'array.i1.label' ]);
+      assert.deepEqual(within(edit, [ '@i1' ]), [ 'array.i1.label', 'array.i1.value' ]);
+    });
+
+    it('should hold a rich text widget\'s markup by its content', function () {
+      const edit = doc => {
+        doc.main.items[0].content = '<p>Changed</p>';
+        doc.main.items[1].content = '<p>Changed</p>';
+      };
+      assert.deepEqual(within(edit, [ '@w1.content' ]), [ 'main.w1' ]);
+      assert.deepEqual(within(edit, [ '@w1' ]), [ 'main.w1' ]);
+    });
+
+    it('should hold an order its area holds, or the widgets written whole explain', function () {
+      const edit = moveToTop('w3');
+      assert.deepEqual(within(edit, [ '@w3' ]), [ 'main' ]);
+      assert.deepEqual(within(edit, [ 'main' ]), [ 'main' ]);
+      assert.deepEqual(within(edit, [ '@w3.content' ]), []);
+      assert.deepEqual(within(edit, [ '@w9' ]), []);
+    });
+
+    it('should leave an order the widgets written whole do not explain', function () {
+      const edit = doc => {
+        doc.main.items.reverse();
+      };
+      assert.deepEqual(within(edit, [ '@w3' ]), []);
+      assert.deepEqual(within(edit, [ '@w3', '@w1' ]), [ 'main' ]);
     });
   });
 

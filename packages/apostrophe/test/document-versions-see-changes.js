@@ -597,6 +597,41 @@ describe('Document Versions draft changes', function () {
     assert.deepEqual(authorsOf(rowAt(rows, 'count')), [ 'bob' ]);
   });
 
+  describe('a save holding fields AI wrote', function () {
+    function annWithAi(aiFields) {
+      return Object.assign(ann(), { aposAiFields: aiFields });
+    }
+
+    it('should mark the fields AI wrote AI\'s, the rest of the save the person\'s', async function () {
+      let draft = await insertPublished(apos.nested, nestedDoc());
+      draft.title = 'By AI';
+      draft.subtitle = 'By hand';
+      draft = await saveAs(apos.nested, annWithAi([ 'title' ]), draft);
+
+      const { rows, doc } = await apos.docVersions.getDraftChanges(ann(), draft._id, {
+        annotate: true
+      });
+      assert.equal(rowAt(rows, 'title').ai, 'changed');
+      assert.equal(rowAt(rows, 'subtitle').ai, false);
+      assert.deepEqual(authorsOf(rowAt(rows, 'title')), [ 'ann' ]);
+      assert.equal(doc.aposMeta.title['@apostrophecms/document-versions:ai'], 'changed');
+      assert.equal(doc.aposMeta.subtitle['@apostrophecms/document-versions:ai'], undefined);
+    });
+
+    it('should mark them in a document never published', async function () {
+      const draft = await apos.nested.insert(annWithAi([ 'title' ]), {
+        ...apos.nested.newInstance(),
+        title: 'By AI',
+        subtitle: 'By hand'
+      });
+
+      const { rows, baseline } = await apos.docVersions.getDraftChanges(ann(), draft._id);
+      assert.deepEqual(baseline, { kind: 'default' });
+      assert.equal(rowAt(rows, 'title').ai, 'changed');
+      assert.equal(rowAt(rows, 'subtitle').ai, false);
+    });
+  });
+
   it('should compare a document never published with a new one as a save stores it', async function () {
     const req = ann();
     const doc = apos.modules.blank.newInstance();

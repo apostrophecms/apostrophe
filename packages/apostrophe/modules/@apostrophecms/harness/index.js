@@ -79,8 +79,12 @@ module.exports = {
             return;
           }
           // An editor's save of fields requests wrote into it from outside:
-          // each request's own, nothing for a write to wait on
+          // each request's own, nothing for a write to wait on. Only of the
+          // document saved, not of another one its handlers save
           if (marker.outside) {
+            if (!self.apos.doc.getAiFields(req, doc)) {
+              return;
+            }
             for (const part of marker.outside) {
               await self.recordChange(req, {
                 ...settled,
