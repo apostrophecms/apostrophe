@@ -345,6 +345,7 @@ describe('Assistant: chats and the run', function () {
         chat: chat._id,
         requestId: request._id,
         seen: new Map(),
+        pendingSeen: new Map(),
         model: {
           provider: 'fake',
           model: 'fake-large'

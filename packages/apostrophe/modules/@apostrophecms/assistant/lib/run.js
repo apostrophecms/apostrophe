@@ -381,6 +381,9 @@ module.exports = (self) => {
         // A write to a document saved since the chat last read or wrote it
         // is refused, across requests
         seen: new Map((chat.seen || []).map(({ _id, updatedAt }) => [ _id, updatedAt ])),
+        // A read counts from the end of its step: a write of the same step
+        // came from what the model read before
+        deferSeen: true,
         ...(model && { model })
       });
       const tools = self.apos.harness.getDoorTools(DOOR);
@@ -401,6 +404,7 @@ module.exports = (self) => {
         }),
         notify: false,
         ...self.getProgressHooks(doorReq, request, tools),
+        betweenSteps: () => self.apos.harness.commitSeen(doorReq),
         onEnd: async (error, result) => {
           await self.endRun(doorReq, chat, request, {
             error,

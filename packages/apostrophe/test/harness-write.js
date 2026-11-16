@@ -333,6 +333,7 @@ describe('Harness: doors, the write path and guards', function () {
       assert.throws(() => door(req, { family: 'chat-1' }), { name: 'invalid' });
       assert.throws(() => door(req, { model: 'm' }), { name: 'invalid' });
       assert.throws(() => door(req, { tab: 'x' }), { name: 'invalid' });
+      assert.throws(() => door(req, { deferSeen: 'yes' }), { name: 'invalid' });
     });
 
     it('should reach every handler of a generate call, and mark its saves', async function () {
@@ -644,6 +645,50 @@ describe('Harness: doors, the write path and guards', function () {
       assert.deepEqual(written, []);
       assert.equal(refused[0].reason, 'changed');
       assert.equal((await findDraft(article._id)).body, 'Saved by Bob');
+    });
+
+    it('should check a write of a read\'s own step against the stamp before the read', async function () {
+      const article = await insertArticle({ body: 'Original' });
+      const before = await findDraft(article._id);
+      const req = door(userReq('ann'), {
+        seen: new Map([ [ article._id, before.updatedAt.toISOString() ] ]),
+        deferSeen: true
+      });
+      const draft = await apos.doc.find(userReq('bob'), { _id: article._id }).toObject();
+      draft.body = 'Saved by Bob';
+      await apos.modules['harness-article'].update(userReq('bob'), draft);
+
+      // The read and the write in one step
+      await apos.harness.getDocument(req, { _id: article._id });
+      const step = await apos.harness.writeDocuments(req, [ {
+        _id: article._id,
+        patch: { body: 'From the model' }
+      } ]);
+      await apos.harness.commitSeen(req);
+      const next = await apos.harness.writeDocuments(req, [ {
+        _id: article._id,
+        patch: { body: 'From the model' }
+      } ]);
+
+      assert.equal(step.refused[0].reason, 'changed');
+      assert.equal(next.written.length, 1);
+      assert.equal((await findDraft(article._id)).body, 'From the model');
+    });
+
+    it('should keep a write\'s stamp over a read of the same step', async function () {
+      const article = await insertArticle();
+      const req = door(userReq('ann'), { deferSeen: true });
+
+      await apos.harness.getDocument(req, { _id: article._id });
+      await apos.harness.writeDocuments(req, [ {
+        _id: article._id,
+        patch: { body: 'From the model' }
+      } ]);
+      await apos.harness.commitSeen(req);
+
+      const { updatedAt } = await findDraft(article._id);
+      const { seen } = apos.harness.getDoor(req);
+      assert.equal(seen.get(article._id), updatedAt.toISOString());
     });
 
     it('should refuse a document the same user has open in another browser tab', async function () {

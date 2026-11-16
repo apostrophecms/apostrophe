@@ -121,7 +121,7 @@ module.exports = (self) => {
       }
       checkPaths(view, paths);
       // A write of the door to a document saved since is refused
-      await self.rememberSeen(draftReq, doc);
+      await self.rememberSeen(draftReq, doc, { read: true });
       return {
         ...header,
         ...readView(
