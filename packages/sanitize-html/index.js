@@ -1176,7 +1176,7 @@ function sanitizeHtml(html, options, _fallback) {
       if (has(selectedRule, attributeObject.prop)) {
         const matchesRegex = selectedRule[attributeObject.prop]
           .some(function(regularExpression) {
-            return regularExpression.test(attributeObject.value);
+            return testRegex(regularExpression, attributeObject.value);
           });
 
         if (matchesRegex) {
@@ -1187,6 +1187,20 @@ function sanitizeHtml(html, options, _fallback) {
     };
   }
 
+  function testRegex(regex, value) {
+    if (!regex.global && !regex.sticky) {
+      return regex.test(value);
+    }
+    const lastIndex = regex.lastIndex;
+    try {
+      // Each class or declaration is a separate input, not a continuation.
+      regex.lastIndex = 0;
+      return regex.test(value);
+    } finally {
+      regex.lastIndex = lastIndex;
+    }
+  }
+
   function filterClasses(classes, allowed, allowedGlobs) {
     if (!allowed) {
       // The class attribute is allowed without filtering on this tag
@@ -1195,7 +1209,7 @@ function sanitizeHtml(html, options, _fallback) {
     classes = classes.split(/\s+/);
     return classes.filter(function(clss) {
       return allowed.indexOf(clss) !== -1 || allowedGlobs.some(function(glob) {
-        return glob.test(clss);
+        return testRegex(glob, clss);
       });
     }).join(' ');
   }

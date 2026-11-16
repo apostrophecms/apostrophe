@@ -612,6 +612,76 @@ describe('sanitizeHtml', function() {
       '<p class="nifty33 dippy">whee</p>'
     );
   });
+  for (const flags of [ 'g', 'y' ]) {
+    for (const tag of [ 'p', '*' ]) {
+      it(`should test ${flags} class allowlist regexes independently for ${tag}`, function() {
+        const expression = new RegExp('^keep[123]$', flags);
+        const options = { allowedClasses: { [tag]: [ expression ] } };
+        const html = '<p class="keep1 keep2 drop">one</p><p class="keep3">two</p>';
+        const expected = '<p class="keep1 keep2">one</p><p class="keep3">two</p>';
+        for (const lastIndex of [ 0, 2 ]) {
+          expression.lastIndex = lastIndex;
+          assert.equal(sanitizeHtml(html, options), expected);
+          assert.equal(sanitizeHtml(html, options), expected);
+          assert.equal(expression.lastIndex, lastIndex);
+        }
+      });
+
+      it(`should test ${flags} style allowlist regexes independently for ${tag}`, function() {
+        const expression = new RegExp('^(red|blue)$', flags);
+        const options = {
+          allowedAttributes: { p: [ 'style' ] },
+          allowedStyles: { [tag]: { color: [ expression ] } }
+        };
+        const html = '<p style="color:red;color:blue">one</p><p style="color:red">two</p><p style="color:orange">three</p>';
+        const expected = '<p style="color:red;color:blue">one</p><p style="color:red">two</p><p>three</p>';
+        for (const lastIndex of [ 0, 2 ]) {
+          expression.lastIndex = lastIndex;
+          assert.equal(sanitizeHtml(html, options), expected);
+          assert.equal(sanitizeHtml(html, options), expected);
+          assert.equal(expression.lastIndex, lastIndex);
+        }
+      });
+    }
+  }
+
+  it('should keep sticky class matching anchored to the beginning', function() {
+    const expression = /keep/y;
+    expression.lastIndex = 1;
+    assert.equal(sanitizeHtml('<p class="xkeep keep">one</p>', {
+      allowedClasses: { p: [ expression ] }
+    }), '<p class="keep">one</p>');
+    assert.equal(expression.lastIndex, 1);
+  });
+
+  it('should preserve class regex state when matching throws', function() {
+    const expression = /keep/g;
+    const error = new Error('class match failed');
+    expression.lastIndex = 2;
+    expression.test = function() {
+      this.lastIndex = 4;
+      throw error;
+    };
+    assert.throws(() => sanitizeHtml('<p class="keep">one</p>', {
+      allowedClasses: { p: [ expression ] }
+    }), err => err === error);
+    assert.equal(expression.lastIndex, 2);
+  });
+
+  it('should preserve style regex state when matching throws', function() {
+    const expression = /red/g;
+    expression.lastIndex = 2;
+    expression.test = function() {
+      this.lastIndex = 3;
+      throw new Error('style match failed');
+    };
+    assert.equal(sanitizeHtml('<p style="color:red">one</p>', {
+      allowedAttributes: { p: [ 'style' ] },
+      allowedStyles: { p: { color: [ expression ] } }
+    }), '<p>one</p>');
+    assert.equal(expression.lastIndex, 2);
+  });
+
   it('should allow defining schemes on a per-tag basis', function() {
     assert.equal(
       sanitizeHtml(
