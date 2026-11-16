@@ -556,7 +556,7 @@ describe('Assistant: working in open editors', function () {
           _id: note._id,
           widgets: [ 'card-1' ]
         }),
-        /has its array item editor open on the user's screen: change that array item/
+        /has its array editor open on the user's screen: change that array with/
       );
       assert.match(
         await writeRefusal([ editorModal(), {
@@ -585,10 +585,123 @@ describe('Assistant: working in open editors', function () {
       const { request } = await sendOnScreen([ editorModal() ], 'Write the other note');
       assert.equal(request.status, 'completed');
       assert.equal(resultOf(request, 'call-update_document').error, undefined);
-      assert.equal(resultOf(request, 'call-read').error, undefined);
+      const read = resultOf(request, 'call-read');
+      assert.equal(read.error, undefined);
+      assert.match(
+        read.output.openEditor,
+        /"Open note" is open in an editor on the user's screen, which may hold changes not saved yet: this is the saved draft\. edit_open_document reads/
+      );
       const draft = await apos.doc.db.findOne({ _id: other._id });
       assert.equal(draft.subtitle, 'Written');
     });
+
+    it('reads a document no editor holds without the note', async function () {
+      const other = await insertNote('Unheld note');
+      script = sequence([
+        toolTurn('get_document', { _id: other._id }, 'call-read'),
+        { text: 'Done.' }
+      ]);
+      const { request } = await sendOnScreen([ editorModal() ], 'Read the other note');
+      assert.equal(resultOf(request, 'call-read').output.openEditor, undefined);
+    });
+
+    it('carries the keys the turn\'s later writes in the editor name, for busy ahead', async function () {
+      script = sequence([ {
+        content: [
+          toolCall('call-1', 'edit_open_document', {
+            action: 'update_document',
+            values: { subtitle: 'One' }
+          }),
+          toolCall('call-2', 'edit_open_document', { action: 'get_document' }),
+          toolCall('call-3', 'edit_open_document', {
+            action: 'remove_widgets',
+            widgets: [ 'card-1' ]
+          }),
+          toolCall('call-4', 'edit_open_document', {
+            action: 'update_document',
+            values: {
+              '@item-1.label': 'Four',
+              subtitle: 'Four'
+            }
+          })
+        ],
+        finishReason: 'toolCalls',
+        usage: {
+          inputTokens: 10,
+          outputTokens: 2
+        }
+      } ]);
+      const {
+        req, chat, request
+      } = await sendOnScreen([ editorModal() ], 'Work in the editor');
+      assert.equal(request.status, 'waiting');
+      assert.deepEqual(request.asks.map(ask => ask.callId), [ 'call-1' ]);
+      assert.deepEqual(request.asks[0].payload.ahead, [ '@card-1', '@item-1.label', 'subtitle' ]);
+      await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+    });
+
+    it('takes the screen the browser tab posts when its modals change, before the next write', async function () {
+      const update = {
+        targets: [ {
+          _id: note._id,
+          values: { subtitle: 'Written' }
+        } ]
+      };
+      script = sequence([
+        toolTurn('confirm', { action: 'Go on?' }),
+        toolTurn('update_document', update),
+        { text: 'Refused.' }
+      ]);
+      const {
+        req, chat, request
+      } = await sendOnScreen([], 'Write the note');
+      assert.equal(request.status, 'waiting');
+      const otherTab = await sendFromTab(userReq(editor), 'tab-2');
+      // The editor opens over the page while the request waits
+      await apos.assistant.postScreen(req, {
+        tabId: 'tab-1',
+        screen: {
+          tabId: 'tab-1',
+          modals: [ editorModal() ]
+        }
+      });
+      const stored = await apos.assistant.getRequest(req, request._id);
+      assert.deepEqual(stored.screen.modals.map(modal => modal.docId), [ note._id ]);
+      assert.equal(stored.screen.locale, request.screen.locale);
+      const untouched = await apos.assistant.getRequest(req, otherTab._id);
+      assert.deepEqual(untouched.screen.modals, []);
+      await apos.assistant.answer(req, chat._id, {
+        tabId: 'tab-1',
+        callId: 'call-confirm',
+        answer: { approved: true }
+      });
+      const done = await waitForEnd(req, chat);
+      assert.match(
+        resultOf(done, 'call-update_document').error,
+        /"Open note" is open in an editor on the user's screen: change it with edit_open_document/
+      );
+      const draft = await apos.doc.db.findOne({ _id: note._id });
+      assert.equal(draft.subtitle, 'Saved subtitle');
+      await apos.assistant.skip(req, otherTab.chatId, { tabId: 'tab-2' });
+    });
+
+    // A request of another browser tab, left waiting on a confirmation
+    async function sendFromTab(req, tabId) {
+      const chat = await apos.assistant.createChat(req);
+      const turns = [ toolTurn('confirm', { action: 'Wait?' }) ];
+      const before = script;
+      script = () => turns.shift() || before();
+      await apos.assistant.send(req, chat._id, {
+        message: 'Wait',
+        screen: {
+          tabId,
+          modals: []
+        }
+      });
+      const waiting = await waitForEnd(req, chat);
+      script = before;
+      return waiting;
+    }
 
     function editorModal() {
       return {
@@ -750,6 +863,15 @@ describe('Assistant: working in open editors', function () {
 function sequence(turns) {
   const queue = [ ...turns ];
   return () => queue.shift() || { text: 'Done.' };
+}
+
+function toolCall(id, name, input) {
+  return {
+    type: 'toolCall',
+    id,
+    name,
+    input
+  };
 }
 
 function toolTurn(name, input = {}, id = `call-${name}`) {

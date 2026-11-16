@@ -27,10 +27,14 @@ module.exports = (self) => {
      * @param {object} input
      * @param {string} input.requestId The earliest request to revert.
      * @param {string} input.tabId The browser tab asking.
+     * @param {object} [input.screen] Its screen: a document one of its
+     *   editors holds is left, retryable.
      * @returns {Promise<{ requestIds: string[], documents: object[] }>}
      *   `documents` as `revertRequests` describes them.
      */
-    async checkRevert(req, chatId, { requestId, tabId } = {}) {
+    async checkRevert(req, chatId, {
+      requestId, tabId, screen
+    } = {}) {
       const clean = self.launderTabId(tabId);
       const chat = await self.reconcileChat(req, await self.getChat(req, chatId));
       if (chat.openRequest || chat.openRevert || chat.deleting) {
@@ -40,7 +44,10 @@ module.exports = (self) => {
       const documents = await self.apos.harness.revertRequests(
         getDoorReq(req, chat, clean, self.apos.util.generateId()),
         requestIds,
-        { dryRun: true }
+        {
+          dryRun: true,
+          isHeld: getHeld(await getHeldKeys(req, screen))
+        }
       );
       return {
         requestIds,
@@ -61,12 +68,15 @@ module.exports = (self) => {
      *   page hears of each save.
      * @param {string} [input.cause] `planCancel` when the editor cancelled
      *   the request's plan.
+     * @param {object} [input.screen] The browser tab's screen: a document
+     *   one of its editors holds is left, retryable.
      * @returns {Promise<object>} The revert record.
      */
     async revert(req, chatId, {
-      requestId, tabId, cause
+      requestId, tabId, cause, screen
     } = {}) {
       const clean = self.launderTabId(tabId);
+      const held = await getHeldKeys(req, screen);
       const revertId = self.apos.util.generateId();
       const chat = await claim(req, self.apos.launder.id(chatId), {
         _id: revertId,
@@ -90,7 +100,10 @@ module.exports = (self) => {
           updatedAt: now
         };
         await self.reverts.insertOne(record);
-        await startRevert(req, chat, record, { docIds: null });
+        await startRevert(req, chat, record, {
+          docIds: null,
+          held
+        });
       } catch (e) {
         await endRevert(req, chat, { _id: revertId }, { error: e });
         throw e;
@@ -109,10 +122,14 @@ module.exports = (self) => {
      * @param {object} input
      * @param {string} input.revertId
      * @param {string} input.tabId
+     * @param {object} [input.screen]
      * @returns {Promise<object>} The revert record.
      */
-    async retryRevert(req, chatId, { revertId, tabId } = {}) {
+    async retryRevert(req, chatId, {
+      revertId, tabId, screen
+    } = {}) {
       const clean = self.launderTabId(tabId);
+      const held = await getHeldKeys(req, screen);
       const found = await self.getRevert(req, self.apos.launder.id(revertId));
       const locked = found.documents
         .filter(document => document.outcome === 'locked')
@@ -154,7 +171,10 @@ module.exports = (self) => {
         await startRevert(req, chat, {
           ...found,
           tabId: clean
-        }, { docIds: (found.status === 'done') ? locked : null });
+        }, {
+          docIds: (found.status === 'done') ? locked : null,
+          held
+        });
       } catch (e) {
         await endRevert(req, chat, found, { error: e });
         throw e;
@@ -302,6 +322,19 @@ module.exports = (self) => {
     return requests.map(({ _id }) => _id);
   }
 
+  // The documents the editors of the browser tab's screen hold
+  async function getHeldKeys(req, screen) {
+    return screen
+      ? self.getHeldDocumentKeys(req, await self.verifyScreen(req, screen))
+      : [];
+  }
+
+  // A revert never writes a document an editor of its browser tab holds:
+  // the assistant's values there are unsaved, the backend never had them
+  function getHeld(keys) {
+    return ({ aposDocId, locale }) => keys.includes(`${aposDocId}:${locale}`);
+  }
+
   // The `req` a revert writes with: the user's, through the assistant's
   // door, as the user's own change
   function getDoorReq(req, chat, tabId, revertId) {
@@ -318,7 +351,7 @@ module.exports = (self) => {
   // Runs the revert of `record` on a new job, the documents `docIds` only
   // when given. Once the job starts, the job alone stores the revert's
   // job id and its end; a throw from here means it never started
-  async function startRevert(req, chat, record, { docIds }) {
+  async function startRevert(req, chat, record, { docIds, held }) {
     const started = await self.apos.modules['@apostrophecms/job'].run(
       req,
       async (workReq, reporting, info) => {
@@ -333,6 +366,7 @@ module.exports = (self) => {
           });
           documents = await self.apos.harness.revertRequests(doorReq, record.requestIds, {
             docIds,
+            isHeld: getHeld(held),
             onProgress: async ({ done, total }) => {
               if (done === 1) {
                 await reporting.setTotal(total);

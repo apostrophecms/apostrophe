@@ -100,6 +100,10 @@ module.exports = {
         }
       },
       '@apostrophecms/ai:afterToolCall': {
+        // A read of a document open in an editor is the saved draft
+        async noteHeldDocument(req, payload) {
+          await self.noteHeldDocument(req, payload);
+        },
         // A screen another request of the browser tab changed comes with
         // this run's next tool result; a browser tool's carries its own
         async addChangedScreen(req, payload) {
@@ -236,7 +240,8 @@ module.exports = {
         'chat/:_id/revert-check': route(async (req) => {
           const { requestIds, documents } = await self.checkRevert(req, req.params._id, {
             requestId: req.body.requestId,
-            tabId: req.body.tabId
+            tabId: req.body.tabId,
+            screen: req.body.screen
           });
           return {
             requestIds,
@@ -247,18 +252,27 @@ module.exports = {
           revert: self.renderRevert(await self.revert(req, req.params._id, {
             requestId: req.body.requestId,
             tabId: req.body.tabId,
-            cause: req.body.cause
+            cause: req.body.cause,
+            screen: req.body.screen
           }))
         })),
         'chat/:_id/revert-retry': route(async (req) => ({
           revert: self.renderRevert(await self.retryRevert(req, req.params._id, {
             revertId: req.body.revertId,
-            tabId: req.body.tabId
+            tabId: req.body.tabId,
+            screen: req.body.screen
           }))
         })),
         'chat/:_id/revert-dismiss': route(async (req) => {
           await self.dismissRevert(req, req.params._id, {
             revertId: req.body.revertId
+          });
+          return {};
+        }),
+        screen: route(async (req) => {
+          await self.postScreen(req, {
+            tabId: req.body.tabId,
+            screen: req.body.screen
           });
           return {};
         }),

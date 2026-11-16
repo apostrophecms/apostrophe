@@ -509,7 +509,7 @@ module.exports = (self) => {
               callId,
               name,
               kind: payload?.kind,
-              payload
+              payload: self.addOpenEditorAhead(name, callId, payload, result.toolCalls)
             }))
             : null
         });

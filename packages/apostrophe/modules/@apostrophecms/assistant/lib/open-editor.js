@@ -1,6 +1,6 @@
 // Working in an open editor. `edit_open_document` reads and changes what the
 // editor on top of the screen holds, unsaved: its document, or only its
-// widget or array item. Each call names a document tool and does the same
+// widget or array. Each call names a document tool and does the same
 // with that tool's arguments and no `_id`. The browser tab that owns the
 // request posts what the editor holds to the `open-editor` route, which
 // reads it or builds the change on it with the harness's own code; the
@@ -22,12 +22,12 @@ const ACTIONS = [ 'get_document', 'update_document', 'add_widgets', 'move_widget
 const ROOTS = {
   editor: 'document',
   widgetEditor: 'widget',
-  arrayEditor: 'item'
+  arrayEditor: 'array'
 };
 // What an editor of each kind holds, as the model reads it
 const PARTS = {
   widgetEditor: 'widget',
-  arrayEditor: 'array item'
+  arrayEditor: 'array'
 };
 const REASON_MAX = 300;
 
@@ -42,7 +42,7 @@ module.exports = (self) => {
         name: TOOL,
         label: 'apostrophe:aiToolEditOpenDocument',
         description: 'Read and change what the editor open on top of the screen holds, ' +
-          'unsaved: its document, or only its widget or array item. Nothing is stored ' +
+          'unsaved: its document, or only its widget or array. Nothing is stored ' +
           'until the user saves, and they may cancel. "action" names a document tool and ' +
           'does the same here, with that tool\'s arguments and no "_id": get_document ' +
           '("view" outline or properties, "paths"), update_document ("values"), ' +
@@ -248,6 +248,82 @@ module.exports = (self) => {
     },
 
     /**
+     * An `edit_open_document` ask carries the keys the later calls of its
+     * turn write (`ahead`), so they go busy with its own: the turn runs
+     * them in order with no model call between.
+     *
+     * @param {string} name The suspended call's tool.
+     * @param {string} callId
+     * @param {object} payload The ask's payload.
+     * @param {object[]} [calls] The turn's calls not run yet, in order.
+     * @returns {object} The payload.
+     */
+    addOpenEditorAhead(name, callId, payload, calls = []) {
+      if (name !== TOOL) {
+        return payload;
+      }
+      const index = calls.findIndex(call => call.id === callId);
+      const ahead = calls
+        .slice(index + 1)
+        .filter(call => (call.name === TOOL) && !isRead(call.input?.action))
+        .flatMap(call => getWriteKeys(call.input || {}));
+      return ahead.length
+        ? {
+          ...payload,
+          ahead: [ ...new Set(ahead) ]
+        }
+        : payload;
+    },
+
+    /**
+     * After `get_document` (`afterToolCall`): a document an editor in the
+     * stack of the request's browser tab holds is read as saved, so the
+     * result notes that the editor may hold unsaved changes and
+     * `edit_open_document` reads those.
+     *
+     * @param {object} req
+     * @param {object} payload The engine's `{ tool, args, result }`.
+     */
+    async noteHeldDocument(req, payload) {
+      const {
+        tool, args, result
+      } = payload;
+      const door = self.apos.harness.getDoor(req);
+      if (!self.active || (door?.door !== DOOR) || (tool.name !== 'get_document') ||
+        (args.view === 'versions') || !result || (typeof result !== 'object')) {
+        return;
+      }
+      const key = getDocumentKey(req, args._id);
+      const holder = ((await getScreen(req))?.modals || [])
+        .findLast(modal => ROOTS[modal.kind] && modal.docId &&
+          (getDocumentKey(req, modal.docId) === key));
+      if (!holder) {
+        return;
+      }
+      const title = holder.title ? `"${holder.title}"` : 'This document';
+      payload.result = {
+        ...result,
+        openEditor: `${title} is open in an editor on the user's screen, which may hold ` +
+          `changes not saved yet: this is the saved draft. ${TOOL} reads what the editor ` +
+          'holds while it is on top.'
+      };
+    },
+
+    /**
+     * The documents the editors of a verified screen hold, as
+     * `<aposDocId>:<locale>`.
+     *
+     * @param {object} req
+     * @param {object|null} screen
+     * @returns {string[]}
+     */
+    getHeldDocumentKeys(req, screen) {
+      return [ ...new Set((screen?.modals || [])
+        .filter(modal => ROOTS[modal.kind] && modal.docId)
+        .map(modal => getDocumentKey(req, modal.docId))) ];
+    },
+
+    /**
      * Before a write tool of the assistant runs (`beforeToolCall`): a
      * document held by an editor in the stack of the request's browser tab
      * is refused, with the pointer to `edit_open_document` when its editor
@@ -327,6 +403,20 @@ module.exports = (self) => {
   // Whether an action's document tool reads
   function isRead(action) {
     return self.apos.ai.getTool(action)?.kind === 'query';
+  }
+
+  // The keys a call's arguments write, as the model sent them: the keys of
+  // its values, its area, the widgets it names by id
+  function getWriteKeys({
+    values, area, widgets
+  }) {
+    return [
+      ...((values && (typeof values === 'object')) ? Object.keys(values) : []),
+      ...((typeof area === 'string') ? [ area ] : []),
+      ...(Array.isArray(widgets) ? widgets : [])
+        .filter(widget => typeof widget === 'string')
+        .map(_id => `@${_id}`)
+    ];
   }
 
   // The input schema of a document tool without `_id`; for a tool that

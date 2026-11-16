@@ -31,6 +31,9 @@ const WAIT_LIMIT = 10000;
 // The navigation in flight, in this browser tab: the page that loads next
 // answers it
 const NAVIGATION_KEY = 'aposAssistantNavigation';
+// The keys an `edit_open_document` call left busy for the later calls of its
+// turn: `{ requestId, outside, keys }`
+let held = null;
 
 // The executors by browser tool name, the assistant's own in it from the
 // moment this module is evaluated: nothing here depends on the order
@@ -171,11 +174,14 @@ async function showWidgets({ _id, widgetIds }) {
 
 // What the editor on top holds, read or changed: the server reads it or
 // builds the change on it, and the change lands through the editor's
-// `outside` handle, the keys it names busy meanwhile, then marked
+// `outside` handle, the keys it names busy meanwhile, then marked. The keys
+// of the turn's later calls (`ahead` on the ask) go busy with them and stay
+// busy for those calls
 async function editOpenDocument(args, { request, ask }) {
   const entry = useModalStore(pinia).stack.filter(entry => !isWindow(entry)).at(-1);
   const outside = entry?.outside;
   if (!outside) {
+    releaseAhead();
     return {
       executed: false,
       reason: 'no editor is on top of the screen'
@@ -183,12 +189,20 @@ async function editOpenDocument(args, { request, ask }) {
   }
   const root = outside.read();
   if (!root) {
+    releaseAhead();
     return {
       executed: false,
       reason: 'the editor is still loading'
     };
   }
-  const busy = outside.busy(getArgumentKeys(args));
+  const keys = getArgumentKeys(args);
+  const ahead = (ask.payload.ahead || []).filter(key => !keys.includes(key));
+  if ((held?.outside !== outside) || (held.requestId !== request._id)) {
+    releaseAhead();
+  } else {
+    outside.release(held.keys.filter(key => !keys.includes(key) && !ahead.includes(key)));
+  }
+  const busy = outside.busy([ ...keys, ...ahead ]);
   try {
     const change = await apos.http.post(
       `${apos.modules['@apostrophecms/assistant'].action}/chat/${request.chatId}/open-editor`,
@@ -218,7 +232,8 @@ async function editOpenDocument(args, { request, ask }) {
     }
     const { refused } = await outside.apply(change.values, {
       marker: { requestId: request._id },
-      touched: change.touched
+      touched: change.touched,
+      removed: change.removed
     });
     return refused.length
       ? {
@@ -233,7 +248,16 @@ async function editOpenDocument(args, { request, ask }) {
       reason: e.body?.message || 'the editor\'s content could not be read'
     };
   } finally {
-    outside.release(busy);
+    outside.release(busy.filter(key => !ahead.includes(key)));
+    // Applying frees what was busy in the fields it wrote
+    const kept = outside.busy(busy.filter(key => ahead.includes(key)));
+    held = kept.length
+      ? {
+        requestId: request._id,
+        outside,
+        keys: kept
+      }
+      : null;
   }
 }
 
@@ -249,6 +273,20 @@ function getArgumentKeys({
       .filter(widget => typeof widget === 'string')
       .map(_id => `@${_id}`)
   ];
+}
+
+/**
+ * Frees the keys kept busy for the later calls of a request's turn, those
+ * of any request when `requestId` is not given. The request that ends
+ * frees what its calls did not reach.
+ *
+ * @param {string} [requestId]
+ */
+export function releaseAhead(requestId) {
+  if (held && (!requestId || (held.requestId === requestId))) {
+    held.outside.release(held.keys);
+    held = null;
+  }
 }
 
 /**

@@ -12,6 +12,9 @@ export default {
     },
     aposOutsideStates: {
       default: null
+    },
+    aposOutsideScope: {
+      default: null
     }
   },
   emits: [ 'replace-field-value' ],
@@ -151,15 +154,26 @@ export default {
     hasExtraInfo() {
       return !!this.$slots.info;
     },
-    // Busy while a value from outside is on its way, then edited
+    // Busy while a value from outside is on its way, then edited; `null`
+    // when what came shows on a field nested in it or on a widget of its
+    // area instead
     outsideState() {
-      return unref(this.aposOutsideStates)?.[this.field.name] || null;
+      const scope = unref(this.aposOutsideScope);
+      const state = (scope !== null) &&
+        unref(this.aposOutsideStates)?.fields[scope]?.[this.field.name];
+      return (state?.busy || state?.edited) ? state : null;
+    },
+    // A top-level field is out of reach while a value from outside is on
+    // its way to anything it holds
+    isOutsideInert() {
+      return (unref(this.aposOutsideScope) === '') &&
+        Boolean(unref(this.aposOutsideStates)?.fields['']?.[this.field.name]?.inert);
     }
   },
   watch: {
-    // A busy field is inert: the editor typing in it gets the focus back
-    // once its value lands
-    'outsideState.busy'(busy) {
+    // An inert field gives the editor typing in it the focus back once the
+    // value lands
+    isOutsideInert(busy) {
       if (busy) {
         const active = document.activeElement;
         this.focusedBeforeBusy = this.$el.contains(active) ? active : null;

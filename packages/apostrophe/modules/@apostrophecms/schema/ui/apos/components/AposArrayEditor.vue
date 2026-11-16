@@ -60,6 +60,7 @@
           <AposSlatList
             class="apos-modal-array-items__items"
             :selected="currentId"
+            :outside-states="outsideItems"
             :model-value="withLabels(next)"
             :draggable="field.draggable !== false"
             @update:model-value="update"

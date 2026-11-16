@@ -22,14 +22,17 @@ module.exports = (self) => {
      * @param {object} [options]
      * @param {string} [options._id] The widget's own `_id`, kept when it
      *   replaces a widget in place; a new one otherwise.
+     * @param {object} [options.held] The widget it replaces, as the document
+     *   holds it: its fields kept away from AI and its arrays' items stay
+     *   (see `newValue`).
      * @returns {{ widget: object, ids: Array<{ _id: string, type: string }> }}
      *   `ids` are the widgets' new `_id`s, the outer one first, depth first.
      * @throws `invalid` for a type with no widget module.
      */
-    newWidget(req, widget, { _id } = {}) {
+    newWidget(req, widget, { _id, held } = {}) {
       const content = newContent(self, req);
       return {
-        widget: content.widget(widget, _id),
+        widget: content.widget(widget, _id, held),
         ids: content.ids
       };
     },
@@ -44,10 +47,12 @@ module.exports = (self) => {
      * @param {object} [options]
      * @param {string} [options._id] Its own `_id`, kept when it replaces an
      *   item in place; a new one otherwise.
+     * @param {object} [options.held] The item it replaces, as the document
+     *   holds it (see `newValue`).
      * @returns {object}
      */
-    newItem(req, schema, item, { _id } = {}) {
-      return newContent(self, req).item(schema, item, _id);
+    newItem(req, schema, item, { _id, held } = {}) {
+      return newContent(self, req).item(schema, item, _id, held);
     },
 
     /**
@@ -58,13 +63,20 @@ module.exports = (self) => {
      * written. Any other value is returned as it is, for conversion to
      * check.
      *
+     * Given what the field `held`, an array item the model sends with the
+     * `_id` of an item the array holds once is that item still: it keeps its
+     * `_id` and the fields kept away from AI, and its own arrays the same.
+     * Any other `_id` is replaced, so none can repeat one the document holds.
+     *
      * @param {object} req In the locale of the document written.
      * @param {object} field A schema field.
      * @param {any} value
+     * @param {object} [options]
+     * @param {any} [options.held] The field's value as the document holds it.
      * @returns {any}
      */
-    newValue(req, field, value) {
-      return newContent(self, req).value(field, value);
+    newValue(req, field, value, { held } = {}) {
+      return newContent(self, req).value(field, value, held);
     },
 
     /**
@@ -179,7 +191,7 @@ function newContent(self, req) {
     value
   };
 
-  function widget(given, _id) {
+  function widget(given, _id, held = null) {
     const manager = self.apos.area.getWidgetManager(given?.type);
     if (!manager) {
       throw self.apos.error('invalid', `"${given?.type}" is not a widget type`);
@@ -189,19 +201,21 @@ function newContent(self, req) {
       _id: own,
       type: given.type
     });
-    // Fields kept away from AI at their defaults too
+    // Fields kept away from AI at their defaults too, unless it replaces one
     return {
       ...self.apos.schema.newInstance(manager.schema),
-      ...item(self.getAiSchemaOf(req, manager), given, own),
+      ...item(self.getAiSchemaOf(req, manager), given, own, held),
       type: given.type,
       metaType: 'widget'
     };
   }
 
   // Every field it omits at its default, every field it holds made new.
-  // Only the fields of `schema`: one kept away from AI is never the model's
-  function item(schema, given, _id) {
+  // Only the fields of `schema`: one kept away from AI is never the model's,
+  // and stays as the item it replaces (`held`) holds it
+  function item(schema, given, _id, held = null) {
     const made = {
+      ...(held && keptAway(schema, held)),
       ...self.apos.schema.newInstance(schema),
       _id: _id || self.apos.util.generateId()
     };
@@ -210,13 +224,39 @@ function newContent(self, req) {
         made[field.name] = given[field.name];
       }
       if (made[field.name] != null) {
-        made[field.name] = value(field, made[field.name]);
+        made[field.name] = value(field, made[field.name], held?.[field.name]);
       }
     }
     return made;
   }
 
-  function value(field, given) {
+  // What an item holds beside the fields of `schema`
+  function keptAway(schema, held) {
+    return Object.fromEntries(Object.entries(held).filter(([ name ]) => {
+      return !name.startsWith('_') && !schema.some(field => field.name === name);
+    }));
+  }
+
+  // The items of an array as it is held, by `_id`, each held once only
+  function heldOnce(held) {
+    const items = new Map();
+    const twice = new Set();
+    for (const entry of Array.isArray(held) ? held : []) {
+      if (typeof entry?._id !== 'string') {
+        continue;
+      }
+      if (items.has(entry._id)) {
+        twice.add(entry._id);
+      }
+      items.set(entry._id, entry);
+    }
+    for (const _id of twice) {
+      items.delete(_id);
+    }
+    return items;
+  }
+
+  function value(field, given, held) {
     if (field.type === 'area') {
       // As reads show an area, or as a plain list of widgets
       const items = Array.isArray(given) ? given : given?.items;
@@ -227,12 +267,22 @@ function newContent(self, req) {
       };
     }
     if ((field.type === 'array') && Array.isArray(given)) {
-      return given.map(entry => ((entry && (typeof entry === 'object'))
-        ? item(field.schema, entry)
-        : entry));
+      const kept = heldOnce(held);
+      return given.map(entry => {
+        if (!entry || (typeof entry !== 'object')) {
+          return entry;
+        }
+        // Sent twice, only the first is the item held
+        const same = kept.get(entry._id);
+        kept.delete(entry._id);
+        return same
+          ? item(field.schema, entry, same._id, same)
+          : item(field.schema, entry);
+      });
     }
     if ((field.type === 'object') && given && (typeof given === 'object')) {
-      return item(field.schema, given);
+      const same = (held && (typeof held === 'object') && !Array.isArray(held)) ? held : null;
+      return item(field.schema, given, same?._id, same);
     }
     if ((field.type === 'relationship') && Array.isArray(given)) {
       return given.map(entry => related(field, entry));

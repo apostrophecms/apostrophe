@@ -15,10 +15,20 @@
           :id="tab.name"
           class="apos-modal-tabs__btn"
           role="tab"
+          :class="{ 'apos-modal-tabs__btn--busy': outsideStates?.[tab.name]?.busy }"
           :aria-selected="tab.name === current ? true : false"
+          :aria-busy="outsideStates?.[tab.name]?.busy ? 'true' : null"
           @click="selectTab"
         >
           {{ $t(tab.label) }}
+          <transition name="apos-modal-tabs__ai-mark">
+            <AposAiMark
+              v-if="outsideStates?.[tab.name]"
+              class="apos-modal-tabs__ai-mark"
+              :busy="outsideStates[tab.name].busy"
+              :focusable="false"
+            />
+          </transition>
           <span
             v-if="tabErrors[tab.name] && tabErrors[tab.name].length"
             class="apos-modal-tabs__label apos-modal-tabs__label--error"
@@ -49,6 +59,11 @@ export default {
       default() {
         return {};
       }
+    },
+    // What came from outside the editor, by tab name: `{ busy, edited }`
+    outsideStates: {
+      type: Object,
+      default: null
     }
   },
   emits: [ 'select-tab' ],
@@ -239,5 +254,39 @@ export default {
       width: 6px;
     }
   }
+}
+// Busy while a value from outside is on its way to a field of the tab, then
+// "Edited by AI", before any error count
+.apos-modal-tabs__btn--busy {
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--a-primary) 10%, transparent),
+    color-mix(in srgb, var(--a-primary) 10%, transparent)
+  );
+
+  &[aria-selected='true'] {
+    background-image: linear-gradient(
+      color-mix(in srgb, var(--a-primary) 7%, transparent),
+      color-mix(in srgb, var(--a-primary) 7%, transparent)
+    );
+  }
+}
+
+.apos-modal-tabs__ai-mark {
+  margin-right: 8px;
+  margin-left: auto;
+}
+
+.apos-modal-tabs__ai-mark-enter-active {
+  transition: opacity 240ms ease-out, transform 240ms ease-out;
+}
+
+.apos-modal-tabs__ai-mark-leave-active {
+  transition: opacity 200ms ease-out, transform 200ms ease-out;
+}
+
+.apos-modal-tabs__ai-mark-enter-from,
+.apos-modal-tabs__ai-mark-leave-to {
+  opacity: 0;
+  transform: scale(0.5);
 }
 </style>

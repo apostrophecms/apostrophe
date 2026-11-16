@@ -611,11 +611,55 @@ describe('Harness: write tools and get_changes', function () {
       assert.equal(saved._id, widget._id);
       assert.equal(saved.type, 'tools-card');
       assert.equal(saved.heading, 'Whole');
-      // Omitted fields are at their default, the model's ids replaced
+      // Omitted fields are at their default; an item the widget held keeps
+      // its id
       assert.equal(saved.kicker, 'News');
       assert.deepEqual(saved.body.items, []);
       assert.equal(saved.links[0].label, 'Again');
-      assert.notEqual(saved.links[0]._id, widget.links[0]._id);
+      assert.equal(saved.links[0]._id, widget.links[0]._id);
+    });
+
+    it('should keep the items an array holds by the ids the model sends, new ids otherwise', async function () {
+      const article = await insertArticle({
+        slides: [
+          {
+            _id: 'slide-1',
+            caption: 'One'
+          },
+          {
+            _id: 'slide-2',
+            caption: 'Two'
+          }
+        ]
+      });
+
+      await run('update_document', {
+        targets: [ {
+          _id: article._id,
+          values: {
+            slides: [
+              {
+                _id: 'slide-2',
+                caption: 'Two, first'
+              },
+              {
+                _id: 'slide-2',
+                caption: 'Two, again'
+              },
+              {
+                _id: 'elsewhere',
+                caption: 'New'
+              }
+            ]
+          }
+        } ]
+      });
+
+      const { slides } = await findDraft(article._id);
+      assert.deepEqual(slides.map(slide => slide.caption), [ 'Two, first', 'Two, again', 'New' ]);
+      assert.equal(slides[0]._id, 'slide-2');
+      assert.equal(new Set(slides.map(slide => slide._id)).size, 3);
+      assert(!slides.slice(1).some(slide => [ 'slide-1', 'slide-2', 'elsewhere' ].includes(slide._id)));
     });
 
     it('should refuse areas, the document and keys outside the AI-facing schema', async function () {

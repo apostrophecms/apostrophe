@@ -3,7 +3,7 @@ import { ref, watch } from 'vue';
 import { getTabId } from 'Modules/@apostrophecms/ui/utils';
 import { useScreen, isWindow } from 'Modules/@apostrophecms/ui/composables/useScreen.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
-import { browserTools } from '../lib/browser-tools.js';
+import { browserTools, releaseAhead } from '../lib/browser-tools.js';
 
 /**
  * The assistant's chats as this browser tab sees them. The records on the
@@ -91,8 +91,9 @@ export const useAssistantStore = defineStore('assistant', () => {
   const chatSequences = new Map();
   const pending = new Set();
   let timer = null;
-  // The browser asks taken on this page, by call id: each runs once
-  const served = new Set();
+  // The browser asks taken on this page, call id to request id: each runs
+  // once. Forgotten once their request is no longer open
+  const served = new Map();
   // The reverts this page started, whose message returns once done
   const returning = new Set();
 
@@ -154,8 +155,28 @@ export const useAssistantStore = defineStore('assistant', () => {
       apos.bus.$on('modal-resolved', (item) => {
         modalOwners.value.delete(item.id);
       });
+      watch(() => JSON.stringify(getScreen().modals), postScreen);
     }
     await catchUp();
+  }
+
+  // While it owns an open request, the browser tab posts its screen when its
+  // modal stack changes: the server never writes a document an editor
+  // opened meanwhile
+  async function postScreen() {
+    if (!chats.value.some(chat => getOwner(chat) === 'here')) {
+      return;
+    }
+    try {
+      await apos.http.post(`${getAction()}/screen`, {
+        body: {
+          tabId: getTabId(),
+          screen: getScreen()
+        }
+      });
+    } catch (e) {
+      // The next message or answer reports the screen again
+    }
   }
 
   // At page load: a browser tab with chat tabs from an earlier page follows
@@ -275,6 +296,12 @@ export const useAssistantStore = defineStore('assistant', () => {
     }
     chats.value = result.chats;
     loaded.value = true;
+    const open = new Set(chats.value.map(chat => chat.openRequest?._id));
+    for (const [ callId, requestId ] of served) {
+      if (!open.has(requestId)) {
+        served.delete(callId);
+      }
+    }
     for (const id of tabs.value) {
       if ((id !== NEW_CHAT) && !getChat(id)) {
         forget(id);
@@ -307,6 +334,11 @@ export const useAssistantStore = defineStore('assistant', () => {
     }
     setChat(result.chat);
     requests.value[id] = result.requests;
+    for (const request of result.requests) {
+      if (![ 'running', 'waiting', 'stopping' ].includes(request.status)) {
+        releaseAhead(request._id);
+      }
+    }
     reverts.value[id] = result.reverts;
     returnMessages(id);
     serveAsks(id);
@@ -341,7 +373,7 @@ export const useAssistantStore = defineStore('assistant', () => {
       if (!SERVED_KINDS.includes(ask.kind) || served.has(ask.callId)) {
         continue;
       }
-      served.add(ask.callId);
+      served.set(ask.callId, request._id);
       serveAsk(id, request, ask);
     }
   }
@@ -699,6 +731,11 @@ export const useAssistantStore = defineStore('assistant', () => {
     if (id === NEW_CHAT) {
       delete drafts.value[NEW_CHAT];
       delete refusals.value[NEW_CHAT];
+    } else if (getOwner(getChat(id)) !== 'here') {
+      // Its thread is read again when it opens; a request this browser tab
+      // runs keeps it meanwhile
+      delete requests.value[id];
+      delete reverts.value[id];
     }
     if (activeId.value === id) {
       const next = tabs.value[index] || tabs.value[index - 1];
@@ -941,7 +978,8 @@ export const useAssistantStore = defineStore('assistant', () => {
         {
           body: {
             requestId,
-            tabId: getTabId()
+            tabId: getTabId(),
+            screen: getScreen()
           }
         }
       );
@@ -994,6 +1032,7 @@ export const useAssistantStore = defineStore('assistant', () => {
       body: {
         requestId,
         tabId: getTabId(),
+        screen: getScreen(),
         ...(cause && { cause })
       }
     });
@@ -1016,7 +1055,8 @@ export const useAssistantStore = defineStore('assistant', () => {
       await apos.http.post(`${getAction()}/chat/${id}/revert-retry`, {
         body: {
           revertId,
-          tabId: getTabId()
+          tabId: getTabId(),
+          screen: getScreen()
         }
       });
       if (rewinds) {

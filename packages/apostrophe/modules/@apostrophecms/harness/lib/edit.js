@@ -1,8 +1,8 @@
 // The write tools' handlers. Every change is a patch built from the content
 // as it is, nothing sends a whole area or document back. The patch builders
-// take a root, the content of a document, a widget or an array item: a
-// stored draft written through `writeDocuments`, or what an open editor
-// holds, changed in memory by `editContent`.
+// take a root, the content of a document, a widget or an array: a stored
+// draft written through `writeDocuments`, or what an open editor holds,
+// changed in memory by `editContent`.
 
 const _ = require('lodash');
 const { klona } = require('klona');
@@ -11,10 +11,14 @@ const MIXED_NOTICE = 'Changes with "published": true are live on the site now; t
   'are saved in drafts and go live when an editor publishes them.';
 const EDITOR_NOTICE = 'The change is in the open editor, not saved; the user saves or ' +
   'cancels it.';
+const NOOP_NOTICE = 'Nothing changed: the open editor already holds these values.';
 
 // Fields whose change is an action no tool takes, not a value: archiving,
 // and changing a page's type, which converts the page to another schema
 const ACTIONS = [ 'archived', 'type' ];
+
+// What a widget holds beside its fields that tells nothing of its content
+const WIDGET_META = [ 'metaType', 'aposPlaceholder' ];
 
 // The document tools whose change `editContent` makes in an open editor
 const EDIT_ACTIONS = [ 'update_document', 'add_widgets', 'move_widgets', 'remove_widgets' ];
@@ -32,8 +36,8 @@ const HINTS = {
   styles: 'Global Styles are not changed with update_document.'
 };
 
-// The hints of a widget or array item root, where only the root can change
-// until its editor closes
+// The hints of a widget or array root, where only the root can change until
+// its editor closes
 const ROOT_HINTS = {
   widget: {
     unknown: 'No field of that name in the widget open in the editor; only it can change ' +
@@ -43,11 +47,11 @@ const ROOT_HINTS = {
     self: 'That is the widget open in the editor; it can\'t be moved or removed from ' +
       'inside it.'
   },
-  item: {
-    unknown: 'No field of that name in the item open in the editor; only it can change ' +
-      'until its dialog closes.',
-    notfound: 'No widget or item with that id in the item open in the editor; only it can ' +
-      'change until its dialog closes.'
+  array: {
+    unknown: 'No field of that name in the array open in the dialog: its items are ' +
+      'addressed as "@<item id>.<field>", and nothing else can change until the dialog closes.',
+    notfound: 'No item or widget with that id in the array open in the dialog; nothing else ' +
+      'can change until the dialog closes.'
   }
 };
 
@@ -209,15 +213,18 @@ module.exports = (self) => {
      * @param {object} operation `action`, one of `update_document`,
      *   `add_widgets`, `move_widgets` and `remove_widgets`, with that tool's
      *   arguments without `_id` (`targets` becomes the root's `values`).
-     *   Keys and paths are relative to the root; a widget or item root's own
-     *   fields are also accepted as `@<root id>.<field>`.
+     *   Keys and paths are relative to the root; a widget root's own fields
+     *   are also accepted as `@<root id>.<field>`, an array root's items are
+     *   `@<item id>` and the array itself is its field's name.
      * @returns {Promise<{ values: object, touched: string[], removed:
      *   string[], result: object }>} `values`: the whole new value of every
      *   top-level field of the root the change reaches. `touched`: the keys
      *   it wrote, a field's (`title`, `seo.title`, `@<id>.title`) or a
-     *   widget's or item's whole (`@<id>`). `removed`: the widgets it
-     *   removed. `result`: the tool's result, `saved: false`; a refused
-     *   change has only `result`'s `refused` and nothing else.
+     *   widget's or item's whole (`@<id>`). A field or widget written with
+     *   the value it held is in neither, and the result lists its key as
+     *   `unchanged`. `removed`: the widgets it removed. `result`: the tool's
+     *   result, `saved: false`, the root named as it is after the change; a
+     *   refused change has only `result`'s `refused` and nothing else.
      */
     async editContent(req, root, { action, ...args }) {
       if (!EDIT_ACTIONS.includes(action)) {
@@ -238,32 +245,50 @@ module.exports = (self) => {
       } catch (e) {
         return refused(e, fromHolder);
       }
-      const names = built.tops.includes(null)
+      const changed = indexContent(opened.req, {
+        ...opened,
+        value
+      });
+      // A key written with the value it held is neither applied nor marked
+      const unchanged = built.touched
+        .filter(key => isSameAt(resolve(content, key), resolve(changed, key)));
+      const touched = built.touched.filter(key => !unchanged.includes(key));
+      const names = (built.tops.includes(null)
         ? opened.schema.map(field => field.name)
-        : [ ...new Set(built.tops) ];
+        : [ ...new Set(built.tops) ])
+        .filter(name => Object.hasOwn(value, name))
+        .filter(name => {
+          const field = opened.schema.find(field => field.name === name);
+          return !field || !isSameValue(field, opened.value[name], value[name]);
+        });
       // Where added or moved widgets landed, as the document tools say it
       const extra = built.widgets
         ? {
           area: args.area,
-          widgets: locate(indexContent(opened.req, {
-            ...opened,
-            value
-          }), built.widgets)
+          widgets: locate(changed, built.widgets)
         }
         : (built.removed && { removed: built.removed });
+      const isNoop = !names.length && !built.removed?.length;
       return {
-        values: Object.fromEntries(names
-          .filter(name => Object.hasOwn(value, name))
-          .map(name => [ name, value[name] ])),
-        touched: built.touched,
+        values: Object.fromEntries(names.map(name => {
+          const field = opened.schema.find(field => field.name === name);
+          return [
+            name,
+            field ? keepHeld(field, opened.value[name], value[name]) : value[name]
+          ];
+        })),
+        touched,
         removed: built.removed || [],
         result: {
           written: [ {
             ...header,
-            ...extra
+            // Named as it is after the change
+            ...((opened.kind === 'document') && value.title && { title: value.title }),
+            ...extra,
+            ...(unchanged.length && { unchanged })
           } ],
           saved: false,
-          notice: EDITOR_NOTICE
+          notice: isNoop ? NOOP_NOTICE : EDITOR_NOTICE
         }
       };
 
@@ -317,11 +342,11 @@ module.exports = (self) => {
         };
       }
 
-      // A path conversion names through the holder of a widget or item root
-      // (see `applyToRoot`), as the root names it: by index or id in the
-      // holder's area or array
+      // A path conversion names through the holder of a widget root (see
+      // `applyToRoot`), as the root names it: by index or id in the holder's
+      // area
       function fromHolder(path) {
-        if (opened.kind === 'document') {
+        if (opened.kind !== 'widget') {
           return path;
         }
         const rootId = opened.value._id;
@@ -333,24 +358,26 @@ module.exports = (self) => {
 
     /**
      * The content of an open editor as the harness reads and changes it:
-     * a document, a widget or an array item, with the AI-facing schema of
-     * its fields. Throws `invalid` for a root it can't place.
+     * a document, a widget or the array of an array editor, with the
+     * AI-facing schema of its fields. Throws `invalid` for a root it can't
+     * place.
      *
      * @param {object} req
      * @param {object} root
-     * @param {string} root.kind `document`, `widget` or `item`.
+     * @param {string} root.kind `document`, `widget` or `array`.
      * @param {object} root.data What the editor holds: the document, a
-     *   never-saved one included, the widget, or the item.
+     *   never-saved one included, the widget, or the array's items under its
+     *   field's name.
      * @param {string} [root.locale] The editor's locale; that of `req`
      *   when omitted.
      * @param {string} [root.areaFieldId] A widget's: the field id of the
      *   area holding it, whose options its conversion takes.
-     * @param {string} [root.fieldId] An item's: the field id of its array.
+     * @param {string} [root.fieldId] An array's field id.
      * @returns {{ kind: string, req: object, schema: object[], value: object,
      *   header: object, manager?: object, field?: object }} `req` in draft
      *   mode in the editor's locale; `header` names the root in results;
-     *   `manager` is a document's type, `field` the area or array field a
-     *   widget or item is converted in.
+     *   `manager` is a document's type, `field` the area a widget is
+     *   converted in, or the array field itself, whole.
      */
     getContentRoot(req, {
       kind, data, locale, areaFieldId, fieldId
@@ -406,26 +433,30 @@ module.exports = (self) => {
           }
         };
       }
-      if (kind === 'item') {
+      if (kind === 'array') {
         const field = findAiField(rootReq, fieldId);
-        if ((field?.type !== 'array') || !value?._id) {
-          throw self.apos.error('invalid', 'The item is no item of an array AI reads.');
+        const items = value?.[field?.name];
+        if ((field?.type !== 'array') || !Array.isArray(items)) {
+          throw self.apos.error('invalid', 'The array is no array AI reads.');
         }
         return {
           kind,
           req: rootReq,
-          schema: field.schema,
-          value,
-          // Only what converts the item: the array's limits and conditions
-          // are the document's
+          schema: [ field ],
+          value: { [field.name]: items },
+          // Converted with every field of its items, those AI doesn't read
+          // included, as the editor gets the items whole. Its limits and
+          // conditions are the document's
           field: {
-            _id: field._id,
-            name: 'root',
-            type: 'array',
-            schema: field.schema
+            ...self.apos.schema.getFieldById(fieldId),
+            min: undefined,
+            max: undefined,
+            required: false,
+            if: undefined,
+            requiredIf: undefined
           },
           header: {
-            ...header,
+            locale: rootReq.locale,
             field: field.name
           }
         };
@@ -619,8 +650,8 @@ module.exports = (self) => {
   /**
    * What AI can address in a root (see `getContentRoot`), through the
    * AI-facing schema: every widget, array item, object and area holding an
-   * `_id`, by `_id`, and a widget or item root itself (`root: true`, its
-   * `key` empty). Each node has its `kind`, its `key` (where a patch finds
+   * `_id`, by `_id`, and a widget root itself (`root: true`, its `key`
+   * empty). Each node has its `kind`, its `key` (where a patch finds
    * it), its stored `value`, the `schema` of its own fields, the `_id`s of
    * the widgets and items it is `within`, the root's field it is under
    * (`top`); an area node its `field` and `widgets` (those AI sees, in
@@ -630,7 +661,7 @@ module.exports = (self) => {
     kind, schema, value
   }) {
     const ids = new Map();
-    if (kind !== 'document') {
+    if (kind === 'widget') {
       add(value._id, {
         kind,
         root: true,
@@ -808,12 +839,18 @@ module.exports = (self) => {
       return self.newWidget(req, {
         type: node.value.type,
         ...value
-      }, { _id: node.value._id }).widget;
+      }, {
+        _id: node.value._id,
+        held: node.value
+      }).widget;
     }
     if (node) {
-      return self.newItem(req, node.schema, value, { _id: node.value._id });
+      return self.newItem(req, node.schema, value, {
+        _id: node.value._id,
+        held: node.value
+      });
     }
-    return self.newValue(req, field, value);
+    return self.newValue(req, field, value, { held: target.value });
   }
 
   // The area node at `path`: a field reached as `resolve` does, or an area
@@ -914,8 +951,8 @@ module.exports = (self) => {
 
   // A patch putting `widgets` into `area` at `where`: a `$push`, or the area
   // whole when the root never stored it, since there is nothing to push
-  // into. An area of a widget or item root's own is reached through the
-  // root, by `@<root id>`, where `applyToRoot` finds it
+  // into. An area of a widget root's own is reached through the root, by
+  // `@<root id>`, where `applyToRoot` finds it
   function place(area, widgets, where) {
     if (!Array.isArray(area.value?.items)) {
       return {
@@ -959,11 +996,176 @@ module.exports = (self) => {
     }
   }
 
+  // Whether what `before` and `after` resolve (see `resolve`) hold the
+  // same value
+  function isSameAt(before, after) {
+    if (before.error || after.error) {
+      return false;
+    }
+    if (before.node || after.node) {
+      const one = before.node?.value;
+      const two = after.node?.value;
+      if (!one || !two) {
+        return false;
+      }
+      if (before.node.kind === 'widget') {
+        // A moved widget is changed though its value is the same
+        const { area } = before.node;
+        return isSameWidget(one, two) &&
+          (area.key === after.node.area.key) &&
+          (area.widgets.indexOf(one) === after.node.area.widgets.indexOf(two));
+      }
+      return isSameFields(before.node.schema, one, two);
+    }
+    return isSameValue(before.field, before.value, after.value);
+  }
+
+  // Whether two values of `field` are the same as a save stores them:
+  // relationships by document and relationship fields, areas and arrays
+  // item by item, along the schema
+  function isSameValue(field, one, two) {
+    switch (field.type) {
+      case 'area': {
+        const first = one?.items || [];
+        const second = two?.items || [];
+        return (first.length === second.length) &&
+          first.every((widget, i) => isSameWidget(widget, second[i]));
+      }
+      case 'array': {
+        const first = Array.isArray(one) ? one : [];
+        const second = Array.isArray(two) ? two : [];
+        return (first.length === second.length) &&
+          first.every((item, i) => (item?._id === second[i]?._id) &&
+            isSameFields(field.schema, item, second[i]));
+      }
+      case 'object':
+        return isSameFields(field.schema, one, two);
+      case 'relationship': {
+        const first = Array.isArray(one) ? one : [];
+        const second = Array.isArray(two) ? two : [];
+        return (first.length === second.length) &&
+          first.every((doc, i) => (docIdOf(doc) === docIdOf(second[i])) &&
+            _.isEqual(doc?._fields || {}, second[i]?._fields || {}));
+      }
+      default:
+        return _.isEqual(one ?? null, two ?? null);
+    }
+  }
+
+  function isSameFields(schema, one, two) {
+    return schema.every(field => {
+      return isSameValue(field, one?.[field.name], two?.[field.name]);
+    });
+  }
+
+  // Whether two widgets are the same: their schema fields, and what they
+  // hold beside them, such as a rich text's content
+  function isSameWidget(one, two) {
+    if (!one || !two || (one._id !== two._id) || (one.type !== two.type)) {
+      return false;
+    }
+    const schema = getWidgetSchema(one.type);
+    // A relationship's storage is compared with the relationship
+    const names = new Set(schema.flatMap(field => [
+      field.name,
+      field.idsStorage,
+      field.fieldsStorage
+    ]));
+    const beside = widget => Object.keys(widget).filter(key => {
+      return !names.has(key) && !key.startsWith('_') && !WIDGET_META.includes(key);
+    });
+    return [ ...new Set([ ...beside(one), ...beside(two) ]) ]
+      .every(key => {
+        return (isBlank(one[key]) && isBlank(two[key])) || _.isEqual(one[key], two[key]);
+      }) &&
+      isSameFields(schema, one, two);
+
+    // A list conversion adds empty is the same as none
+    function isBlank(value) {
+      return (value == null) || (Array.isArray(value) && !value.length);
+    }
+  }
+
+  function getWidgetSchema(type) {
+    return self.apos.area.getWidgetManager(type)?.schema || [];
+  }
+
+  // `after` with each widget, item, object and field whose value is the
+  // same as in `before` given back as `before` holds it, so the editor
+  // keeps what it shows and redraws only what changed
+  function keepHeld(field, before, after) {
+    if (isSameValue(field, before, after)) {
+      return before;
+    }
+    switch (field.type) {
+      case 'area': {
+        if (!after?.items) {
+          return after;
+        }
+        const held = new Map((before?.items || [])
+          .map(widget => [ widget?._id, widget ]));
+        return {
+          ...after,
+          items: after.items.map(widget => {
+            const old = held.get(widget?._id);
+            if (old?.type !== widget?.type) {
+              return widget;
+            }
+            return isSameWidget(old, widget)
+              ? old
+              : mergeHeld(getWidgetSchema(widget.type), old, widget);
+          })
+        };
+      }
+      case 'array': {
+        if (!Array.isArray(after)) {
+          return after;
+        }
+        const held = new Map((Array.isArray(before) ? before : [])
+          .map(item => [ item?._id, item ]));
+        return after.map(item => {
+          const old = item?._id && held.get(item._id);
+          return old ? keepHeldFields(field.schema, old, item) : item;
+        });
+      }
+      case 'object':
+        return keepHeldFields(field.schema, before, after);
+      default:
+        return after;
+    }
+  }
+
+  function keepHeldFields(schema, before, after) {
+    if (!before || !after || (typeof before !== 'object') || (typeof after !== 'object')) {
+      return after;
+    }
+    return isSameFields(schema, before, after)
+      ? before
+      : mergeHeld(schema, before, after);
+  }
+
+  // `after`, each of its schema fields kept as `before` holds it where its
+  // value is the same (see `keepHeld`)
+  function mergeHeld(schema, before, after) {
+    const kept = { ...after };
+    for (const field of schema) {
+      if (Object.hasOwn(after, field.name)) {
+        kept[field.name] = keepHeld(field, before[field.name], after[field.name]);
+      }
+    }
+    return kept;
+  }
+
+  function docIdOf(doc) {
+    return doc?.aposDocId || doc?._id?.split(':')[0];
+  }
+
   // The root's value with `patches` applied and converted as a save would,
   // each lossless unless it says otherwise, the root left as it is. A
-  // document goes through its type's own patch; a widget or an item is held
-  // as the only entry of an area or array of its own field, so core's patch
-  // operators reach it by `@<id>` and conversion takes it as a save does
+  // document goes through its type's own patch; a widget is held as the only
+  // entry of an area of its own field and an array as the only field of an
+  // object, so core's patch operators reach them by `@<id>` and conversion
+  // takes them as a save does
   async function applyToRoot(opened, patches) {
     const { req, kind } = opened;
     if (kind === 'document') {
@@ -987,18 +1189,22 @@ module.exports = (self) => {
       return doc;
     }
     const value = klona(opened.value);
-    const holder = {
-      _id: self.apos.util.generateId(),
-      root: (kind === 'widget')
-        ? {
+    const isArray = (kind === 'array');
+    const holder = isArray
+      ? {
+        _id: self.apos.util.generateId(),
+        ...value
+      }
+      : {
+        _id: self.apos.util.generateId(),
+        root: {
           _id: self.apos.util.generateId(),
           metaType: 'area',
           items: [ value ]
         }
-        : [ value ]
-    };
+      };
     for (const patch of patches) {
-      const input = throughRoot(klona(patch), value._id);
+      const input = isArray ? klona(patch) : throughRoot(klona(patch), value._id);
       const lossless = input._lossless !== false;
       const drops = lossless ? [] : undefined;
       const patchPaths = lossless ? [] : undefined;
@@ -1009,7 +1215,9 @@ module.exports = (self) => {
         self.apos.schema.checkLosslessPatch(req, holder, drops, patchPaths);
       }
     }
-    return (kind === 'widget') ? holder.root.items[0] : holder.root[0];
+    return isArray
+      ? { [opened.field.name]: holder[opened.field.name] }
+      : holder.root.items[0];
   }
 
   // `patch` with the keys of the root's own fields reached through the

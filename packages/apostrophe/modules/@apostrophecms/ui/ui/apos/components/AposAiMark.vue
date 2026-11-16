@@ -15,7 +15,7 @@
         class="apos-ai-mark__edited"
         role="img"
         :aria-label="$t('apostrophe:editedByAi')"
-        tabindex="0"
+        :tabindex="focusable ? 0 : null"
       >
         <creation-icon :size="14" />
       </span>
@@ -30,6 +30,11 @@ defineProps({
   busy: {
     type: Boolean,
     default: false
+  },
+  // Off inside a control that has the focus itself, such as a tab
+  focusable: {
+    type: Boolean,
+    default: true
   }
 });
 </script>

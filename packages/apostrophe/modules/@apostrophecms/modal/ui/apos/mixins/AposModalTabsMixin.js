@@ -68,6 +68,24 @@ export default {
 
       return tabs;
     },
+    // What came from outside the editor, by tab name: `{ busy, edited }` for
+    // any field of the tab (see `AposEditorMixin`)
+    outsideTabs() {
+      const tops = this.outsideStates?.tops || {};
+      const tabs = {};
+      for (const tab of this.tabs) {
+        const states = tab.fields.map(name => tops[name]).filter(Boolean);
+        const busy = states.some(state => state.busy);
+        const edited = states.some(state => state.edited);
+        if (busy || edited) {
+          tabs[tab.name] = {
+            busy,
+            edited
+          };
+        }
+      }
+      return tabs;
+    },
     firstVisibleTabName() {
       if (this.defaultTab) {
         const defaultTab = this.tabs.find(({ name }) => name === this.defaultTab);

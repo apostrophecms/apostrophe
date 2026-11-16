@@ -13,7 +13,7 @@
     <component
       :is="wrapEl"
       :class="classList"
-      :inert="outsideState?.busy || null"
+      :inert="isOutsideInert || null"
     >
       <div class="apos-field__info">
         <!-- Beside the label, never in it: not part of the field's name -->

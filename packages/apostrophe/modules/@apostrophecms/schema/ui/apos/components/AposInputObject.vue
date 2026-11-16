@@ -28,6 +28,7 @@
             :conditional-fields="conditionalFields"
             :following-values="followingValuesWithParent"
             :server-errors="currentDocServerErrors"
+            :outside-scope="outsideScope"
             @update:model-value="evaluateConditions(values)"
             @validate="emitValidate()"
           />

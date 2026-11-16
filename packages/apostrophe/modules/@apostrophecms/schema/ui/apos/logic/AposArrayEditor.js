@@ -3,6 +3,9 @@ import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin
 import { klona } from 'klona';
 import { createId, get } from 'apostrophe/lib/beneath.js';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
+import {
+  getOutsideValue, hasOutsideId, isSameOutsideValue
+} from 'Modules/@apostrophecms/ui/utils';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 
 export default {
@@ -88,6 +91,23 @@ export default {
     },
     moduleOptions() {
       return window.apos.schema || {};
+    },
+    // What came from outside for the items, by `_id`: `{ busy, edited }`,
+    // shown on their rows. The array itself busy makes every item busy
+    outsideItems() {
+      const items = {};
+      for (const [ path, state ] of Object.entries(this.outsideFields)) {
+        const ids = (path === this.field.name)
+          ? this.next.map(({ _id }) => _id)
+          : [ this.getOutsideItem(path) ].filter(Boolean);
+        for (const _id of ids) {
+          items[_id] = {
+            busy: Boolean(items[_id]?.busy || state.busy),
+            edited: Boolean(items[_id]?.edited || state.edited)
+          };
+        }
+      }
+      return items;
     },
     itemError() {
       return this.currentDoc && this.currentDoc.hasErrors;
@@ -289,32 +309,129 @@ export default {
     getFieldValue(name) {
       return this.currentDoc.data[name];
     },
-    // Values from outside go into the current item, its fields keyed by
-    // their path in the document
-    isOutsideReady() {
-      return Boolean(this.currentId);
-    },
-    getOutsideRootId() {
-      return this.currentId;
-    },
+    // Values from outside reach the whole array: the array by its field's
+    // name, its items by `@<id>`. The current item takes them in its fields,
+    // the others in the list. A changed item's row shows busy and "Edited
+    // by AI", the current item's fields too
     getOutsideRoot() {
-      return this.currentId
-        ? {
-          kind: 'item',
-          data: {
-            ...this.currentDoc.data,
-            _id: this.currentId
-          },
-          fieldId: this.field._id,
-          locale: this.getOutsideLocale()
-        }
-        : null;
+      return {
+        kind: 'array',
+        data: this.getOutsideData(),
+        fieldId: this.field._id,
+        locale: this.getOutsideLocale()
+      };
     },
     // The items, the current one as edited
     getOutsideData() {
-      return this.next.map(item => {
-        return (item._id === this.currentId) ? this.currentDoc.data : item;
+      return {
+        [this.field.name]: this.next.map(item => {
+          return (item._id === this.currentId)
+            ? {
+              ...this.currentDoc.data,
+              _id: this.currentId
+            }
+            : item;
+        })
+      };
+    },
+    // The `_id` of the item holding a key, `null` for the array itself
+    getOutsideItem(key) {
+      if (!key.startsWith('@')) {
+        return null;
+      }
+      const _id = key.slice(1).split('.')[0];
+      return this.getOutsideData()[this.field.name]
+        .find(item => hasOutsideId(item, _id))?._id || null;
+    },
+    // A field of the current item holding a key; the other items show
+    // their state on their rows only
+    getOutsideTop(key) {
+      if (!this.currentId || (this.getOutsideItem(key) !== this.currentId)) {
+        return null;
+      }
+      return AposEditorMixin.methods.getOutsideTop.call(this, key);
+    },
+    getOutsideRelative(key) {
+      const prefix = `@${this.currentId}.`;
+      return key.startsWith(prefix) ? key.slice(prefix.length) : key;
+    },
+    getOutsideTarget(key) {
+      return ((key === this.field.name) || this.getOutsideItem(key)) ? this.field : null;
+    },
+    // Writes the array, `values` by the array field's name: each item it
+    // keeps stays as it is, a changed one takes its new value, the current
+    // one in its fields. Each key of `touched` is marked edited, the array
+    // itself as each item it changed or added
+    async applyOutside(values, {
+      marker = null, touched = null, removed = []
+    } = {}) {
+      const { name } = this.field;
+      const refused = Object.keys(values)
+        .filter(key => key !== name)
+        .map(key => ({
+          name: key,
+          reason: 'unknown'
+        }));
+      if (!Array.isArray(values[name])) {
+        return {
+          written: [],
+          refused
+        };
+      }
+      const held = new Map(this.getOutsideData()[name].map(item => [ item._id, item ]));
+      const items = klona(values[name]);
+      const changed = items
+        .filter(item => {
+          return !held.has(item._id) || !isSameOutsideValue(held.get(item._id), item);
+        })
+        .map(item => item._id);
+      this.next = items.map(item => {
+        const kept = this.next.find(({ _id }) => _id === item._id);
+        if (!changed.includes(item._id)) {
+          return kept;
+        }
+        if (item._id === this.currentId) {
+          this.$refs.schema.applyOutsideData(item);
+          return kept;
+        }
+        return item;
       });
+      if (!this.next.some(({ _id }) => _id === this.currentId)) {
+        if (this.next.length) {
+          this.setCurrentDoc(this.next[0]._id);
+        } else {
+          this.currentId = null;
+          this.currentDoc = { data: {} };
+        }
+      }
+      this.updateMinMax();
+      for (const path of Object.keys(this.outsideFields)) {
+        if (this.outsideFields[path].busy) {
+          this.releaseOutsidePath(path);
+        }
+      }
+      // The current item's fields take their values, then emit them
+      await this.$nextTick();
+      await this.$nextTick();
+      const data = this.getOutsideData();
+      const keys = (touched || [ name ]).flatMap(key => {
+        return (key === name) ? changed.map(_id => `@${_id}`) : [ key ];
+      });
+      for (const key of keys) {
+        this.outsideFields[key] = {
+          busy: false,
+          edited: true,
+          marker,
+          type: null,
+          value: klona(getOutsideValue(data, key))
+        };
+      }
+      this.listOutsideRemoved(removed, marker);
+      this.announceOutside('apostrophe:outsideEdited', [ this.field ]);
+      return {
+        written: [ name ],
+        refused
+      };
     },
 
     async validate(validateItem, validateLength) {

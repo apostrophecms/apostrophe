@@ -37,7 +37,9 @@ export function getConfirmLines(documents, $t) {
   const unrestorable = of(doc => doc.outcome === 'unrestorable');
   add('apostrophe:assistantRevertUnrestorable', unrestorable.filter(doc => !doc.partly), {}, true);
   add('apostrophe:assistantRevertUnrestorablePartly', unrestorable.filter(doc => doc.partly), {}, true);
-  const locked = of(doc => doc.outcome === 'locked');
+  add('apostrophe:assistantRevertInEditor', of(doc => (doc.outcome === 'locked') &&
+    (doc.reason === 'editor')), {}, true);
+  const locked = of(doc => (doc.outcome === 'locked') && (doc.reason !== 'editor'));
   const holders = [ ...new Set(locked.map(doc => doc.lockedBy)) ];
   if ((holders.length === 1) && holders[0]) {
     add('apostrophe:assistantRevertLockedBy', locked, { name: holders[0] }, true);
@@ -130,6 +132,9 @@ export function getReason(doc, $t) {
 function getReasonText({
   outcome, reason, lockedBy
 }, $t) {
+  if ((outcome === 'locked') && (reason === 'editor')) {
+    return $t('apostrophe:assistantRevertReasonEditor');
+  }
   if (outcome === 'locked') {
     return lockedBy
       ? $t('apostrophe:assistantRevertReasonLockedBy', { name: lockedBy })

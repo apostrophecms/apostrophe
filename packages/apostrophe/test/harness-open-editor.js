@@ -317,12 +317,90 @@ describe('Harness: content in an open editor', function () {
       assert.deepEqual(removed, []);
       assert.equal(result.saved, false);
       assert.equal(result.written[0]._id, article._id);
+      // Named as it is after the change
+      assert.equal(result.written[0].title, 'New title');
+      assert.equal(result.written[0].unchanged, undefined);
       assert.match(result.notice, /not saved/);
       // The editor's own copy and the database are left as they are
       assert.equal(article.title, 'An article');
       const draft = await findDraft(article._id);
       assert.equal(draft.title, 'An article');
       assert.equal(draft.main.items[0].heading, 'A card');
+    });
+
+    it('should neither apply nor mark what a write leaves as it was', async function () {
+      const topic = await apos.modules['open-topic'].insert(userReq(), { title: 'Topic' });
+      const first = richText('First');
+      const widget = card();
+      const article = await openArticle({
+        main: area([ first, widget ]),
+        details: { summary: 'Kept' }
+      });
+      // As the editor holds it: a relationship loaded with its documents
+      article.main.items[1]._topics = [
+        await apos.modules['open-topic'].findOneForEditing(userReq(), { _id: topic._id })
+      ];
+
+      const mixed = await apos.harness.editContent(userReq(), documentRoot(article), {
+        action: 'update_document',
+        values: {
+          title: 'An article',
+          'details.summary': 'Kept',
+          [`@${widget._id}.heading`]: 'New heading',
+          [`@${widget._id}._topics`]: [ topic._id ]
+        }
+      });
+      assert.deepEqual(Object.keys(mixed.values), [ 'main' ]);
+      assert.deepEqual(mixed.touched, [ `@${widget._id}.heading` ]);
+      assert.deepEqual(mixed.result.written[0].unchanged, [
+        'title',
+        'details.summary',
+        `@${widget._id}._topics`
+      ]);
+      assert.match(mixed.result.notice, /not saved/);
+      // What kept its value comes back as the editor holds it
+      const [ kept, changed ] = mixed.values.main.items;
+      assert.deepEqual(kept, article.main.items[0]);
+      assert.equal(changed.heading, 'New heading');
+      assert.deepEqual(changed._topics, article.main.items[1]._topics);
+      assert.deepEqual(changed.body, article.main.items[1].body);
+
+      const same = await apos.harness.editContent(userReq(), documentRoot(article), {
+        action: 'update_document',
+        values: { title: 'An article' }
+      });
+      assert.deepEqual(same.values, {});
+      assert.deepEqual(same.touched, []);
+      assert.deepEqual(same.result.written[0].unchanged, [ 'title' ]);
+      assert.match(same.result.notice, /^Nothing changed/);
+
+      const still = await apos.harness.editContent(userReq(), documentRoot(article), {
+        action: 'move_widgets',
+        widgets: [ first._id ],
+        area: 'main',
+        position: 0
+      });
+      assert.deepEqual(still.values, {});
+      assert.deepEqual(still.touched, []);
+      assert.deepEqual(still.result.written[0].unchanged, [ `@${first._id}` ]);
+    });
+
+    it('should see a change of what a widget holds beside its fields', async function () {
+      const first = richText('First');
+      const second = richText('Second');
+      const article = await openArticle({ main: area([ first, second ]) });
+
+      const { values, touched } = await apos.harness.editContent(
+        userReq(),
+        documentRoot(article),
+        {
+          action: 'update_document',
+          values: { [`@${second._id}.content`]: '<p>Rewritten</p>' }
+        }
+      );
+      assert.deepEqual(touched, [ `@${second._id}.content` ]);
+      assert.deepEqual(values.main.items[0], article.main.items[0]);
+      assert.equal(values.main.items[1].content, '<p>Rewritten</p>');
     });
 
     it('should add, move and remove widgets, as the document tools do', async function () {
@@ -563,7 +641,8 @@ describe('Harness: content in an open editor', function () {
           values: { [`@${widget._id}`]: { heading: 'Whole' } }
         }
       );
-      assert.deepEqual(touched, [ 'heading', 'kicker', 'body', 'links', '_topics' ]);
+      // `_topics` was empty and stays empty
+      assert.deepEqual(touched, [ 'heading', 'kicker', 'body', 'links' ]);
       assert.equal(values.heading, 'Whole');
       assert.equal(values.kicker, 'News');
       assert.deepEqual(values.body.items, []);
@@ -652,63 +731,162 @@ describe('Harness: content in an open editor', function () {
     });
   });
 
-  describe('an array item', function () {
-    function itemRoot(data) {
+  describe('an array', function () {
+    function arrayRoot(slides) {
       return {
-        kind: 'item',
-        data,
+        kind: 'array',
+        data: { slides },
         fieldId: fieldOf('open-article', 'slides')._id
       };
     }
 
-    it('should read and change the item through the AI-facing schema', async function () {
-      const item = {
+    function slide(caption) {
+      return {
         _id: apos.util.generateId(),
         metaType: 'arrayItem',
         scopedArrayName: 'open-article.slides',
-        caption: 'Before',
+        caption,
         internal: 'Kept'
       };
+    }
 
-      const outline = apos.harness.readContent(userReq(), itemRoot(item));
+    it('should read the whole array through the AI-facing schema', function () {
+      const slides = [ slide('First'), slide('Second') ];
+
+      const outline = apos.harness.readContent(userReq(), arrayRoot(slides));
       assert.equal(outline.field, 'slides');
-      assert.deepEqual(outline.fields.map(field => field.name), [ 'caption' ]);
+      assert.deepEqual(outline.fields.map(field => field.name), [ 'slides' ]);
+
+      const read = apos.harness.readContent(userReq(), arrayRoot(slides), {
+        view: 'properties',
+        paths: [ `@${slides[1]._id}` ]
+      });
+      assert.equal(read.properties[0].value.caption, 'Second');
+      assert.equal(read.properties[0].value.internal, undefined);
+    });
+
+    it('should change any item, the others kept as the editor holds them', async function () {
+      const slides = [ slide('First'), slide('Second') ];
 
       const { values, touched } = await apos.harness.editContent(
         userReq(),
-        itemRoot(item),
+        arrayRoot(slides),
         {
           action: 'update_document',
-          values: { [`@${item._id}.caption`]: 'After' }
+          values: { [`@${slides[1]._id}.caption`]: 'Second, rewritten' }
         }
       );
-      assert.deepEqual(values, { caption: 'After' });
-      assert.deepEqual(touched, [ 'caption' ]);
+      assert.deepEqual(touched, [ `@${slides[1]._id}.caption` ]);
+      assert.deepEqual(Object.keys(values), [ 'slides' ]);
+      assert.equal(values.slides[0], slides[0]);
+      assert.equal(values.slides[1].caption, 'Second, rewritten');
+      // What AI doesn't read comes back as the editor holds it
+      assert.equal(values.slides[1].internal, 'Kept');
+    });
 
-      const { result } = await apos.harness.editContent(userReq(), itemRoot(item), {
+    it('should take the array whole, the items it holds kept by their ids', async function () {
+      const slides = [ slide('First'), slide('Second') ];
+
+      const { values, touched } = await apos.harness.editContent(
+        userReq(),
+        arrayRoot(slides),
+        {
+          action: 'update_document',
+          values: {
+            slides: [
+              {
+                _id: slides[1]._id,
+                caption: 'Second'
+              },
+              {
+                _id: slides[0]._id,
+                caption: 'First, rewritten'
+              },
+              { caption: 'Added' }
+            ]
+          }
+        }
+      );
+      assert.deepEqual(touched, [ 'slides' ]);
+      // Unchanged, as the editor holds it
+      assert.equal(values.slides[0], slides[1]);
+      assert.equal(values.slides[1]._id, slides[0]._id);
+      assert.equal(values.slides[1].caption, 'First, rewritten');
+      // What AI doesn't read stays with the item
+      assert.equal(values.slides[1].internal, 'Kept');
+      assert(![ slides[0]._id, slides[1]._id ].includes(values.slides[2]._id));
+      assert.equal(values.slides[2].internal, '');
+    });
+
+    it('should make new ids for an id sent twice or held twice', async function () {
+      const slides = [ slide('First'), slide('Second') ];
+      const twice = {
+        ...slide('Again'),
+        _id: slides[1]._id
+      };
+
+      const { values } = await apos.harness.editContent(
+        userReq(),
+        arrayRoot([ ...slides, twice ]),
+        {
+          action: 'update_document',
+          values: {
+            slides: [
+              {
+                _id: slides[0]._id,
+                caption: 'One'
+              },
+              {
+                _id: slides[0]._id,
+                caption: 'One again'
+              },
+              {
+                _id: slides[1]._id,
+                caption: 'Two'
+              }
+            ]
+          }
+        }
+      );
+      const ids = values.slides.map(item => item._id);
+      assert.equal(ids[0], slides[0]._id);
+      assert.equal(new Set(ids).size, 3);
+      assert(!ids.slice(1).includes(slides[1]._id));
+    });
+
+    it('should refuse what is outside the array', async function () {
+      const slides = [ slide('First') ];
+
+      const { result } = await apos.harness.editContent(userReq(), arrayRoot(slides), {
         action: 'update_document',
         values: {
-          internal: 'Hidden',
-          title: 'The document\'s'
+          caption: 'Bare',
+          title: 'The document\'s',
+          [`@${slides[0]._id}.internal`]: 'Hidden'
         }
       });
       assert.deepEqual(fieldsOf(result.refused[0]), [
         {
-          path: 'internal',
+          path: 'caption',
           reason: 'unknown'
         },
         {
           path: 'title',
           reason: 'unknown'
+        },
+        {
+          path: `@${slides[0]._id}.internal`,
+          reason: 'unknown'
         }
       ]);
-      assert(result.refused[0].fields.every(field => /until its dialog closes/.test(field.message)));
+      assert(result.refused[0].fields.slice(0, 2)
+        .every(field => /until the dialog closes/.test(field.message)));
     });
 
-    it('should not place an item of an array AI doesn\'t read', function () {
+    it('should not place an array AI doesn\'t read', function () {
       assert.throws(() => apos.harness.getContentRoot(userReq(), {
-        kind: 'item',
-        data: { _id: 'item-1' },
+        kind: 'array',
+        data: { nope: [] },
         fieldId: 'doc.open-article.nope'
       }), { name: 'invalid' });
     });

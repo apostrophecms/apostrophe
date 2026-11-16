@@ -72,6 +72,7 @@
           :current="currentTab"
           :tabs="tabs"
           :errors="fieldErrors"
+          :outside-states="outsideTabs"
           @select-tab="switchPane"
         />
       </AposModalRail>

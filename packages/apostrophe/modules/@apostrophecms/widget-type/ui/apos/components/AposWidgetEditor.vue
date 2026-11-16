@@ -48,6 +48,7 @@
         :tabs="tabs"
         orientation="horizontal"
         :errors="fieldErrors"
+        :outside-states="outsideTabs"
         @select-tab="switchPane"
       />
     </template>

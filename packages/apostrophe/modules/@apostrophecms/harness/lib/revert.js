@@ -37,6 +37,9 @@ module.exports = (self) => {
      *   `docId` of their change log entries.
      * @param {Function} [options.onProgress] `async ({ done, total })`,
      *   after each document.
+     * @param {Function} [options.isHeld] `({ docId, aposDocId, locale })`,
+     *   true for a document an editor holds open: it is left as `locked`,
+     *   `reason` `editor`, and can be retried.
      * @returns {Promise<object[]>} One outcome per document, `{ docId,
      *   aposDocId, locale, type, title, created, outcome, reason?,
      *   lockedBy?, rows }`. `outcome`: `putBack`; `reverted`, nothing left
@@ -44,16 +47,17 @@ module.exports = (self) => {
      *   since, and for a created document `published`, `children` or
      *   `used`; `unrestorable`, `reason` as `checkChangeRows` gives it, or
      *   `permission` or `invalid`; `locked`, `lockedBy` the holder's name,
-     *   `null` for the user's own; `deleted` or `archived`, a created
-     *   document removed. `rows`: `{ entryId, index, outcome, reason? }`
-     *   per change row checked, `outcome` `putBack`, `reverted`, `edited`,
-     *   `gone` or `unrestorable`. `title` is the document's own, else the
+     *   `null` for the user's own, `reason` `editor` for one `isHeld`;
+     *   `deleted` or `archived`, a created document removed. `rows`:
+     *   `{ entryId, index, outcome, reason? }` per change row checked,
+     *   `outcome` `putBack`, `reverted`, `edited`, `gone` or
+     *   `unrestorable`. `title` is the document's own, else the
      *   one its newest entry stored. With `dryRun`, a created document has
      *   `rows` whatever its outcome, and `createdRows`, its creation's rows
      *   checked the same way, `putBack` meaning still as created.
      */
     async revertRequests(req, requestIds, {
-      dryRun = false, ignoreLocks = false, docIds = null, onProgress = null
+      dryRun = false, ignoreLocks = false, docIds = null, onProgress = null, isHeld = null
     } = {}) {
       const door = self.getDoor(req);
       if (!door?.revert) {
@@ -130,6 +134,12 @@ module.exports = (self) => {
             : end('kept', { reason: stored ? 'archived' : 'removed' });
         }
         result.title = stored.title;
+        if (isHeld?.(result)) {
+          return end('locked', {
+            lockedBy: null,
+            reason: 'editor'
+          });
+        }
         let found;
         try {
           found = await self.findDraft(req, result.docId);

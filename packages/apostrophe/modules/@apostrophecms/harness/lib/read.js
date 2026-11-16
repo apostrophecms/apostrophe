@@ -177,8 +177,9 @@ module.exports = (self) => {
     /**
      * Reads what an open editor holds, as `get_document` reads a document:
      * its `outline` or its `properties` at `paths`, unsaved changes
-     * included. Paths are relative to the root; a widget or item root's own
-     * fields are also read as `@<root id>.<field>`. The caller checks that
+     * included. Paths are relative to the root; a widget root's own fields
+     * are also read as `@<root id>.<field>`, an array root's items as
+     * `@<item id>`. The caller checks that
      * AI may read the root's document.
      *
      * @param {object} req
@@ -187,19 +188,21 @@ module.exports = (self) => {
      * @param {string} [options.view] `outline` (the default) or
      *   `properties`.
      * @param {string[]} [options.paths]
-     * @returns {object} The root's header (`_id`, `locale`, and a
-     *   document's `type` and `title`, a widget's `type`, an item's array
+     * @returns {object} The root's header (`locale`, a document's `_id`,
+     *   `type` and `title`, a widget's `_id` and `type`, an array's
      *   `field`), then the read as `get_document` gives it.
      */
     readContent(req, root, { view = 'outline', paths } = {}) {
       checkPaths(view, paths);
       const opened = self.getContentRoot(req, root);
       const projected = {
-        _id: opened.value._id,
-        ...((opened.kind !== 'item') && { type: opened.value.type }),
+        ...((opened.kind !== 'array') && {
+          _id: opened.value._id,
+          type: opened.value.type
+        }),
         ...self.projectFields(opened.req, opened.schema, opened.value)
       };
-      const rootId = (opened.kind !== 'document') && opened.value._id;
+      const rootId = (opened.kind === 'widget') && opened.value._id;
       return {
         ...opened.header,
         ...readView(opened.req, opened.schema, projected, {

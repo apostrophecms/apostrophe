@@ -31,6 +31,12 @@
       @action="retry"
     />
     <AposAssistantActivity
+      v-if="!running && unsaved"
+      tone="warning"
+      :text="$t('apostrophe:assistantRevertUnsaved')"
+      data-apos-test="assistant-revert-unsaved"
+    />
+    <AposAssistantActivity
       v-if="!running && listed.length && !revert.dismissed"
       tone="warning"
       :title="listTitle"
@@ -81,6 +87,7 @@
 import {
   computed, inject, ref
 } from 'vue';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useAssistantStore } from '../stores/assistant.js';
 import {
   getNotReverted, getReason, getRevertFailure, getRevertStatus, getTitle, showDocument
@@ -98,6 +105,7 @@ const props = defineProps({
 
 const $t = inject('i18n');
 const store = useAssistantStore();
+const modalStore = useModalStore();
 const busy = ref(false);
 
 const running = computed(() => props.revert.status === 'running');
@@ -113,6 +121,12 @@ const status = computed(() => getRevertStatus(props.revert, store.revertProgress
 const failed = computed(() => ((props.revert.status === 'failed')
   ? getRevertFailure(props.revert, $t)
   : null));
+// What its requests wrote into an editor open in this browser tab is
+// unsaved: the revert can't reach it, the editor's cancel does
+const unsaved = computed(() => modalStore.stack.some(entry => {
+  return Object.values(entry.outside?.edited() || {})
+    .some(state => props.revert.requestIds.includes(state.marker?.requestId));
+}));
 const listed = computed(() => getNotReverted(props.revert));
 const listTitle = computed(() => $t(listed.value.some(doc => doc.partly)
   ? 'apostrophe:assistantRevertNotFully'

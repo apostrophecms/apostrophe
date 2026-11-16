@@ -1,4 +1,5 @@
 import { createId } from 'apostrophe/lib/beneath.js';
+import { isSameOutsideValue } from 'Modules/@apostrophecms/ui/utils';
 import { unref } from 'vue';
 import { mapState, mapActions } from 'pinia';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
@@ -1323,8 +1324,23 @@ export default {
       }
     },
 
-    getValidItems() {
-      return this.items.filter(item => {
+    // Widgets from outside the editor, such as the assistant's, in place of
+    // those the area holds. Like `update`, a changed widget is a new object
+    // and an unchanged one keeps its own, so only changed widgets render
+    // again, in place
+    applyOutsideItems(items) {
+      const held = new Map(this.next.map(widget => [ widget._id, widget ]));
+      this.next = this.getValidItems(items).map(item => {
+        const widget = held.get(item._id);
+        if (widget && isSameOutsideValue(widget, item)) {
+          return widget;
+        }
+        this.edited[item._id] = true;
+        return item;
+      });
+    },
+    getValidItems(items = this.items) {
+      return items.filter(item => {
         if (!window.apos.modules[`${item.type}-widget`]) {
           // eslint-disable-next-line no-console
           console.warn(`The widget type ${item.type} exists in the content but is not configured.`);
