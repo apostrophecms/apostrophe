@@ -196,6 +196,10 @@ function sentHere() {
 // move it up too, but leaves it at the end
 function onScroll() {
   const el = root.value;
+  // A scroll can be reported after the panel closed
+  if (!el) {
+    return;
+  }
   const top = el.scrollTop;
   const fromEnd = el.scrollHeight - top - el.clientHeight;
   if ((top < lastTop) && (fromEnd > 1)) {
