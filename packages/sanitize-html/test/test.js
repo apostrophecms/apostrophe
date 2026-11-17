@@ -1621,6 +1621,55 @@ describe('sanitizeHtml', function() {
       }), '<iframe sandbox></iframe><iframe sandbox="allow-popups"></iframe><iframe sandbox="allow-scripts"></iframe>');
   }
   );
+  it('Should apply value rules listed under the * wildcard to every tag', function() {
+    assert.equal(
+      sanitizeHtml('<p dir="rtl">a</p><p dir="evil">b</p><span dir="ltr">c</span>', {
+        allowedTags: [ 'p', 'span' ],
+        allowedAttributes: {
+          '*': [
+            {
+              name: 'dir',
+              values: [ 'ltr', 'rtl' ]
+            }
+          ]
+        }
+      }), '<p dir="rtl">a</p><p dir>b</p><span dir="ltr">c</span>');
+  });
+  it('Should apply * value rules when the tag has its own allowed attributes', function() {
+    assert.equal(
+      sanitizeHtml('<p class="x" dir="rtl">a</p><span dir="ltr">b</span>', {
+        allowedTags: [ 'p', 'span' ],
+        allowedAttributes: {
+          p: [ 'class' ],
+          '*': [
+            {
+              name: 'dir',
+              values: [ 'ltr', 'rtl' ]
+            }
+          ]
+        }
+      }), '<p class="x" dir="rtl">a</p><span dir="ltr">b</span>');
+  });
+  it('Should allow a value allowed by either the tag or the * value rule', function() {
+    assert.equal(
+      sanitizeHtml('<p dir="auto">a</p><p dir="rtl">b</p><span dir="auto">c</span>', {
+        allowedTags: [ 'p', 'span' ],
+        allowedAttributes: {
+          p: [
+            {
+              name: 'dir',
+              values: [ 'auto' ]
+            }
+          ],
+          '*': [
+            {
+              name: 'dir',
+              values: [ 'ltr', 'rtl' ]
+            }
+          ]
+        }
+      }), '<p dir="auto">a</p><p dir="rtl">b</p><span dir>c</span>');
+  });
   it('Should not allow cite urls that do not have an allowed scheme', function() {
     assert.equal(
       sanitizeHtml('<q cite="http://www.google.com">HTTP</q><q cite="https://www.google.com">HTTPS</q><q cite="mailto://www.google.com">MAILTO</q><q cite="tel://www.google.com">TEL</q><q cite="ms-calculator:">ms-calculator</q><q cite="ftp://www.google.com">FTP</q><q cite="data://www.google.com">DATA</q><q cite="ldap://www.google.com">LDAP</q><q cite="acrobat://www.google.com">ACROBAT</q><q cite="vbscript://www.google.com">VBSCRIPT</q><q cite="file://www.google.com">FILE</q><q cite="rlogin://www.google.com">RLOGIN</q><q cite="webcal://www.google.com">WEBCAL</q><q cite="javascript://www.google.com">JAVASCRIPT</q><q cite="mms://www.google.com">MMS</q>', {
