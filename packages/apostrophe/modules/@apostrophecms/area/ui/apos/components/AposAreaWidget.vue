@@ -247,6 +247,7 @@
         v-if="outsideState"
         class="apos-area-widget__ai-mark"
         :busy="isBusy"
+        labelled
       />
     </transition>
   </div>
@@ -1248,18 +1249,18 @@ export default {
   }
 }
 
-// Busy, then "Edited by AI", on a widget written from outside its editor;
-// above the dimmed widget, out of the way of its controls
+// Busy, then "AI edited", on a widget written from outside its editor. On
+// the widget's top edge, where it covers no content and stays clear of the
+// widget's label; its background cuts the edge's line
 .apos-area-widget__ai-mark {
   z-index: $z-index-widget-label;
   position: absolute;
-  top: 2px;
-  left: 2px;
-  box-sizing: content-box;
-  padding: 4px;
+  top: 0;
+  right: 12px;
+  translate: 0 -50%;
+  padding: 2px 8px 2px 6px;
   border-radius: var(--a-border-radius);
   background-color: var(--a-background-primary);
-  box-shadow: var(--a-box-shadow);
 }
 
 .apos-area-widget__ai-mark-enter-active,

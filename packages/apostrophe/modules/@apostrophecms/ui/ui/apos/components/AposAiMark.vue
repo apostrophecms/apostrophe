@@ -1,6 +1,7 @@
 <template>
   <span
     class="apos-ai-mark"
+    :class="{ 'apos-ai-mark--labelled': labelled }"
     :data-apos-state="busy ? 'busy' : 'edited'"
     data-apos-test="ai-mark"
   >
@@ -9,6 +10,13 @@
       mode="out-in"
     >
       <AposThinkingMark v-if="busy" />
+      <span
+        v-else-if="labelled"
+        class="apos-ai-mark__edited"
+      >
+        <creation-icon :size="12" />
+        {{ $t('apostrophe:versionChangeAi') }}
+      </span>
       <span
         v-else
         v-apos-tooltip="$t('apostrophe:editedByAi')"
@@ -35,6 +43,11 @@ defineProps({
   focusable: {
     type: Boolean,
     default: true
+  },
+  // The words next to the icon, where nothing else names the mark
+  labelled: {
+    type: Boolean,
+    default: false
   }
 });
 </script>
@@ -58,6 +71,22 @@ defineProps({
     &:focus-visible {
       outline: 2px solid var(--a-primary);
       outline-offset: 2px;
+    }
+  }
+
+  .apos-ai-mark--labelled {
+    width: auto;
+    height: auto;
+
+    .apos-ai-mark__edited {
+      align-items: center;
+      gap: 4px;
+      font-family: var(--a-family-default);
+      font-size: var(--a-type-tiny);
+      font-weight: var(--a-weight-bold);
+      letter-spacing: 0.2px;
+      line-height: 1.5;
+      white-space: nowrap;
     }
   }
 
