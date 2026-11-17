@@ -43,6 +43,8 @@ module.exports = (self) => {
         token_endpoint_auth_methods_supported: [ 'none' ],
         revocation_endpoint_auth_methods_supported: [ 'none' ],
         code_challenge_methods_supported: [ 'S256' ],
+        // RFC 9207: the authorize endpoint's answers name this server
+        authorization_response_iss_parameter_supported: true,
         // A client may use the URL of its metadata document as its client id
         client_id_metadata_document_supported: self.options.clientMetadataDocuments
       };

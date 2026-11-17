@@ -14,15 +14,16 @@
 // fall back to whatever else they accept. While it's on, the site's
 // `baseUrl` is required, since the issuer must be one stable URL.
 //
-// So far it serves the two metadata documents (S1) and registers clients
-// (S2, see lib/clients.js). The other endpoints the metadata names
-// (authorize, token, revoke) come in later slices (PRO-10455).
+// So far it serves the two metadata documents (S1), registers clients (S2,
+// see lib/clients.js), and asks the user's approval at the authorize
+// endpoint (S3, see lib/authorize.js). The token and revoke endpoints come
+// in later slices (PRO-10455).
 
 const bodyParser = require('body-parser');
 
-// Client metadata is small. The site's own JSON limit is far larger, and
-// the register endpoint is open to anyone
-const REGISTER_BODY_LIMIT = '16kb';
+// Client metadata and the approval form are small. The site's own limits
+// are far larger, and the register endpoint is open to anyone
+const BODY_LIMIT = '16kb';
 
 module.exports = {
   options: {
@@ -48,6 +49,7 @@ module.exports = {
           self.validatePrefix();
           if (self.isEnabled()) {
             await self.ensureClientsCollection();
+            await self.ensureAuthorizeCollections();
           }
         }
       }
@@ -59,32 +61,46 @@ module.exports = {
     }
     return {
       // Before the express module's middleware, so that for the endpoints
-      // clients post to:
+      // posted to:
       //
-      // - The CSRF check is skipped. Clients send no cookies, and these
-      //   endpoints take no identity from a session, so there is nothing
-      //   for a cross-site request to borrow.
+      // - Apostrophe's CSRF check is skipped. The register endpoint takes no
+      //   identity from a session, so there is nothing for a cross-site
+      //   request to borrow. The approval form does, and is protected by its
+      //   own token instead (see lib/authorize.js): a plain form post can't
+      //   send the header Apostrophe's check wants.
       // - The body is parsed with a small limit first. The express module's
-      //   parser then leaves it alone.
+      //   parsers then leave it alone.
       ownEndpoints: {
         before: '@apostrophecms/express',
         middleware(req, res, next) {
-          if ((req.method !== 'POST') || (req.path !== self.getEndpointPath('register'))) {
+          if (req.method !== 'POST') {
             return next();
           }
-          req.csrfExempt = true;
-          return self.registerBodyParser(req, res, (err) => {
-            if (err) {
-              return self.sendOauthError(res, self.oauthError(
-                'invalid_client_metadata',
-                (err.type === 'entity.too.large')
-                  ? `The client metadata is larger than ${REGISTER_BODY_LIMIT}.`
-                  : 'The client metadata is not valid JSON.',
-                err.status || 400
-              ));
-            }
-            return next();
-          });
+          if (req.path === self.getEndpointPath('register')) {
+            req.csrfExempt = true;
+            return self.jsonBodyParser(req, res, (err) => {
+              if (err) {
+                return self.sendOauthError(res, self.oauthError(
+                  'invalid_client_metadata',
+                  (err.type === 'entity.too.large')
+                    ? `The client metadata is larger than ${BODY_LIMIT}.`
+                    : 'The client metadata is not valid JSON.',
+                  err.status || 400
+                ));
+              }
+              return next();
+            });
+          }
+          if (req.path === self.getEndpointPath('authorize')) {
+            req.csrfExempt = true;
+            return self.formBodyParser(req, res, (err) => {
+              if (err) {
+                return res.status(err.status || 400).send({ name: 'invalid' });
+              }
+              return next();
+            });
+          }
+          return next();
         }
       }
     };
@@ -108,7 +124,8 @@ module.exports = {
             return res.status(404).send({ name: 'notfound' });
           }
           return self.sendMetadata(res, metadata);
-        })
+        }),
+        authorize: self.whenEnabled(self.withPageErrors(self.authorize))
       },
       // The CORS preflight a browser-based client (MCP Inspector, say) sends
       // before reading the metadata
@@ -128,7 +145,9 @@ module.exports = {
           } catch (e) {
             return self.sendOauthError(res, e);
           }
-        })
+        }),
+        // The approval page's form
+        authorize: self.whenEnabled(self.withPageErrors(self.decide))
       }
     };
   },
@@ -138,6 +157,7 @@ module.exports = {
       ...require('./lib/resources')(self),
       ...require('./lib/clients')(self),
       ...require('./lib/cimd')(self),
+      ...require('./lib/authorize')(self),
 
       validateOptions() {
         const { enabled, clientMetadataDocuments } = self.options;
@@ -147,10 +167,14 @@ module.exports = {
         if (typeof clientMetadataDocuments !== 'boolean') {
           throw new Error('The "@apostrophecms/oauth" module\'s clientMetadataDocuments option must be a boolean.');
         }
-        self.registerBodyParser = bodyParser.json({
-          limit: REGISTER_BODY_LIMIT,
+        self.jsonBodyParser = bodyParser.json({
+          limit: BODY_LIMIT,
           // Any content type: a client may leave out the header
           type: () => true
+        });
+        self.formBodyParser = bodyParser.urlencoded({
+          limit: BODY_LIMIT,
+          extended: false
         });
       },
 
@@ -212,6 +236,21 @@ module.exports = {
           return self.options.enabled;
         }
         return self.resources.size > 0;
+      },
+
+      // Wraps a route that answers with a page: an unexpected error is
+      // logged, and the user sees a plain error page
+      withPageErrors(route) {
+        return async (req, res) => {
+          try {
+            return await route(req, res);
+          } catch (e) {
+            self.logError('oauth-page-error', e.message, { stack: e.stack });
+            return self.sendAuthorizePage(req, res, 500, {
+              error: req.t('apostrophe:oauthServerError')
+            });
+          }
+        };
       },
 
       // Wraps a route so it answers 404 while the server is off
