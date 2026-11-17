@@ -71,6 +71,7 @@ module.exports = (self) => {
         // caches
         cacheHints: { 'tools/list': { cacheScope: 'private' } }
       });
+      self.registerTools(server, req);
       return server;
     },
 

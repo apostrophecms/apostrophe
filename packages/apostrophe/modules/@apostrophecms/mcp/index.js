@@ -69,6 +69,7 @@ module.exports = {
     return {
       ...require('./lib/http')(self),
       ...require('./lib/auth')(self),
+      ...require('./lib/tools')(self),
 
       validateOptions() {
         const { enabled, allowedOrigins } = self.options;
