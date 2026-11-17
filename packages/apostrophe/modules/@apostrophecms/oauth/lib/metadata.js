@@ -44,7 +44,7 @@ module.exports = (self) => {
         revocation_endpoint_auth_methods_supported: [ 'none' ],
         code_challenge_methods_supported: [ 'S256' ],
         // A client may use the URL of its metadata document as its client id
-        client_id_metadata_document_supported: true
+        client_id_metadata_document_supported: self.options.clientMetadataDocuments
       };
     },
 
