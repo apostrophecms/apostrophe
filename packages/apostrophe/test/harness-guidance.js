@@ -165,6 +165,14 @@ describe('Harness: guidance and language', function () {
       assert.deepEqual(door, [ 'The editor is on /about.', 'The plan: one step left.' ]);
     });
 
+    it('should give the site\'s part on its own, as the instructions carry it', function () {
+      const site = apos.harness.getSiteInstructions(userReq());
+
+      assert.match(site, /^Write in a warm, plain tone\.\n\nWhen to use each type\./);
+      assert.doesNotMatch(site, /You work on the content/);
+      assert(apos.harness.getInstructions(userReq()).includes(`\n\n${site}`));
+    });
+
     it('should send every type\'s aiWhen through either door', function () {
       for (const req of [ doorReq('assistant'), doorReq('mcp'), userReq() ]) {
         const instructions = apos.harness.getInstructions(req);

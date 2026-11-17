@@ -32,9 +32,8 @@ const MEDIA_TYPES = {
 };
 
 const INSTRUCTIONS_MAX = 4000;
-// The subagent's whole system: the task carries the context it needs, so the
-// run's instructions (writing rules, the site's guidance, the type lines) stay
-// out, and so does `get_guidance`, which reads the rules for working with a type
+// The subagent's own instructions, in place of the door's base ones, which
+// are about writing and replying to people; what the site provides follows
 const DELEGATE_SYSTEM = 'You are a research assistant answering one self-contained task ' +
   'about the content of this ApostropheCMS site, for another assistant who will act on ' +
   'your answer. Look things up with the tools rather than guessing. You can only read: no ' +
@@ -44,7 +43,6 @@ const DELEGATE_SYSTEM = 'You are a research assistant answering one self-contain
   'in the language the task is written in, with only what it asks for: a focused brief, ' +
   'not an account of your work, with partial results and doubts stated plainly, and the ' +
   'ids that assistant needs for its tools.';
-const DELEGATE_EXCLUDED = [ 'get_guidance' ];
 
 // What the model reads when a model call of the tools fails on the
 // provider's side
@@ -347,13 +345,14 @@ module.exports = (self) => {
       }) {
         const level = effort || self.options.delegationEffort;
         const tools = self.apos.harness.getDoorTools('assistant')
-          .filter(tool => (tool.kind === 'query') && !tool.tags?.includes('browser') &&
-            !DELEGATE_EXCLUDED.includes(tool.name))
+          .filter(tool => (tool.kind === 'query') && !tool.tags?.includes('browser'))
           .map(tool => tool.name);
         let result;
         try {
           result = await self.apos.ai.generate(req, instructions, {
-            system: DELEGATE_SYSTEM,
+            system: [ DELEGATE_SYSTEM, self.apos.harness.getSiteInstructions(req) ]
+              .filter(Boolean)
+              .join('\n\n'),
             tools,
             maxSteps: self.options.delegationMaxSteps,
             ...(level && { effort: level }),

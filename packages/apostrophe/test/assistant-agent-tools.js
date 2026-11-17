@@ -45,6 +45,11 @@ describe('Assistant: describe_images and delegate', function () {
             self.apos.ai.addAdapter(fakeAdapter());
           }
         },
+        '@apostrophecms/harness': {
+          options: {
+            guidance: 'Sections start at a widget with an h2.'
+          }
+        },
         '@apostrophecms/assistant': {
           options: {
             enabled: true,
@@ -56,7 +61,9 @@ describe('Assistant: describe_images and delegate', function () {
         'assistant-note': {
           extend: '@apostrophecms/piece-type',
           options: {
-            label: 'Note'
+            label: 'Note',
+            aiWhen: 'Short internal notes.',
+            aiHow: 'One paragraph at most.'
           }
         }
       }
@@ -268,7 +275,7 @@ describe('Assistant: describe_images and delegate', function () {
       assert.match(effort.description, /\n- low: Quick reads\n- medium: Most work\n- high: Hard problems$/);
     });
 
-    it('runs on delegationEffort with its own instructions and the read tools only, and stops at delegationMaxSteps', async function () {
+    it('runs on delegationEffort with its own instructions, the site\'s and the read tools only, and stops at delegationMaxSteps', async function () {
       const req = userReq(editor);
       const chat = await apos.assistant.createChat(req);
       script = {
@@ -289,13 +296,17 @@ describe('Assistant: describe_images and delegate', function () {
       }
       const { request: first } = subagent[0];
       assert.equal(first.messages[0].content[0].text, 'Find the notes about launches');
-      // Not the run's instructions: no writing rules
+      // Its own paragraph in place of the door's base instructions, then what
+      // the site provides
       assert.doesNotMatch(first.system, /Every write result/);
       assert.match(first.system, /in the language the task is written in/);
+      assert(first.system.endsWith(`\n\n${apos.harness.getSiteInstructions(req)}`));
+      assert.match(first.system, /\n\nSections start at a widget with an h2\.\n\n/);
+      assert.match(first.system, /\nassistant-note: Short internal notes\. \(aiHow\)/);
       const tools = first.tools.map(tool => tool.name);
       assert.deepEqual(tools, [
-        'find_references', 'get_changes', 'get_document', 'get_page_tree', 'get_schema',
-        'list_types', 'search_content'
+        'find_references', 'get_changes', 'get_document', 'get_guidance', 'get_page_tree',
+        'get_schema', 'list_types', 'search_content'
       ]);
       assert.deepEqual(resultOf(request, 'call-delegate').output, {
         answer: '',
