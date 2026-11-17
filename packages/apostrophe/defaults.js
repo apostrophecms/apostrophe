@@ -25,6 +25,7 @@ module.exports = {
     '@apostrophecms/admin-bar': {},
     '@apostrophecms/notification': {},
     '@apostrophecms/login': {},
+    '@apostrophecms/oauth': {},
     '@apostrophecms/doc': {},
     '@apostrophecms/job': {},
     '@apostrophecms/ai': {},
