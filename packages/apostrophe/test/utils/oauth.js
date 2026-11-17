@@ -9,7 +9,11 @@ const ACTION = '/api/v1/@apostrophecms/oauth';
 
 const resourceModule = {
   init(self) {
-    self.registered = self.apos.oauth.addResource(RESOURCE, { name: 'Test resource' });
+    self.registered = self.apos.oauth.addResource(RESOURCE, {
+      name: 'Test resource',
+      // As the MCP module will, through req.t
+      description: (req) => `It can read <your> content (${req.locale}).`
+    });
   },
   routes(self) {
     return {
