@@ -15,17 +15,41 @@ module.exports = (self) => {
     // the resource module's `init`. Returns false, and registers nothing,
     // when the site has turned the server off with `enabled: false`.
     //
-    // `name` is shown to people (the approval page, the metadata's
-    // `resource_name`)
-    addResource(path, { name } = {}) {
+    // `name` is the metadata's `resource_name`.
+    //
+    // `description` says what a tool connected to this resource can and
+    // can't do, on the approval page, under the general line that it acts
+    // as the user within their permissions. Only the resource knows its own
+    // limits, so it supplies this, next to the code that enforces them. A
+    // string, or a function of `req` returning one, for translation
+    // (`req => req.t('...')`)
+    addResource(path, { name, description } = {}) {
       if (!((typeof path === 'string') && path.startsWith('/') && !path.endsWith('/'))) {
         throw new Error(`An OAuth resource's path must start with / and not end with /: "${path}".`);
+      }
+      if ((description != null) && ![ 'string', 'function' ].includes(typeof description)) {
+        throw new Error(`An OAuth resource's description must be a string or a function of req: "${path}".`);
       }
       if (self.options.enabled === false) {
         return false;
       }
-      self.resources.set(path, { name });
+      self.resources.set(path, {
+        name,
+        description
+      });
       return true;
+    },
+
+    // The approval page's description of the resource whose identifier is
+    // `url`, or null
+    getResourceDescription(req, url) {
+      for (const [ path, { description } ] of self.resources) {
+        if (self.getResourceUrl(path) === url) {
+          const text = (typeof description === 'function') ? description(req) : description;
+          return text || null;
+        }
+      }
+      return null;
     },
 
     // The resource identifier for `path`

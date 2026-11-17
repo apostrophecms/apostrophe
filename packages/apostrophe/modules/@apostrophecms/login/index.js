@@ -142,7 +142,7 @@ module.exports = {
         // Login page
         [self.login()]: async (req, res) => {
           if (req.user) {
-            return res.redirect('/');
+            return res.redirect(self.getReturnTo(req) || '/');
           }
           req.scene = 'apos';
           req.aposLoginPage = true;
@@ -493,6 +493,32 @@ module.exports = {
         return self.options.loginUrl ? self.options.loginUrl : '/login';
       },
 
+      // Where to send the user after logging in: the login page's
+      // `returnTo` query parameter, when it's a path on this site, or null.
+      // Only site-relative paths are taken, so the login page can't be used
+      // to send people to another site. The path is without the prefix, as
+      // `res.redirect` takes it
+      getReturnTo(req) {
+        const value = req.query && req.query.returnTo;
+        if (
+          (typeof value !== 'string') ||
+          (value.length > 2000) ||
+          !value.startsWith('/') ||
+          // "//host" and "/\host" are other sites to a browser
+          /^\/[/\\]/.test(value) ||
+          // Browsers drop tabs and newlines, and treat \ as /
+          [ ...value ].some(char => (char < ' ') || (char === '\u007f') || (char === '\\'))
+        ) {
+          return null;
+        }
+        const base = 'http://apos.invalid';
+        const url = URL.parse(value, base);
+        if (!url || (url.origin !== base)) {
+          return null;
+        }
+        return `${url.pathname}${url.search}${url.hash}`;
+      },
+
       // The text direction of the login page for this request: the `direction`
       // option when set, otherwise the direction of the request locale.
       // Pages related to login (rendered with `sendPage` while
@@ -657,6 +683,9 @@ module.exports = {
           action: self.action,
           passwordResetEnabled: self.isPasswordResetEnabled(),
           direction: self.getDirection(req),
+          ...(req.aposLoginPage && self.getReturnTo(req) && {
+            returnTo: self.getReturnTo(req)
+          }),
           ...(req.user
             ? {
               user: {

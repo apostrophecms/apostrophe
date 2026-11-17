@@ -61,6 +61,7 @@ describe('OAuth: metadata and the challenge', function () {
         token_endpoint_auth_methods_supported: [ 'none' ],
         revocation_endpoint_auth_methods_supported: [ 'none' ],
         code_challenge_methods_supported: [ 'S256' ],
+        authorization_response_iss_parameter_supported: true,
         client_id_metadata_document_supported: true
       });
     });
@@ -148,6 +149,13 @@ describe('OAuth: metadata and the challenge', function () {
       )).json();
       assert.equal(serverMetadata.issuer, issuer);
       assert.deepEqual(serverMetadata.code_challenge_methods_supported, [ 'S256' ]);
+    });
+
+    it('refuses a resource description that is not a string or a function', function () {
+      assert.throws(
+        () => apos.oauth.addResource('/api/v1/other', { description: 42 }),
+        /description must be a string or a function of req/
+      );
     });
 
     it('refuses a resource path that does not start with / or ends with /', function () {
