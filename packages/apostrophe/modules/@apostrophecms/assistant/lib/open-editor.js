@@ -291,8 +291,9 @@ module.exports = (self) => {
         tool, args, result
       } = payload;
       const door = self.apos.harness.getDoor(req);
+      // A call refused before it ran has no result and no `args`
       if (!self.active || (door?.door !== DOOR) || (tool.name !== 'get_document') ||
-        (args.view === 'versions') || !result || (typeof result !== 'object')) {
+        !result || (typeof result !== 'object') || (args.view === 'versions')) {
         return;
       }
       const key = getDocumentKey(req, args._id);

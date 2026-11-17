@@ -824,6 +824,20 @@ describe('Assistant: working in open editors', function () {
       assert.equal(resultOf(request, 'call-read').output.openEditor, undefined);
     });
 
+    it('hands the model a read refused for its arguments while an editor is open', async function () {
+      script = sequence([
+        toolTurn('get_document', {
+          _id: note._id,
+          view: 'properties',
+          paths: Array.from({ length: 21 }, (value, i) => `path${i}`)
+        }, 'call-read'),
+        { text: 'Done.' }
+      ]);
+      const { request } = await sendOnScreen([ editorModal() ], 'Read the open note');
+      assert.equal(request.status, 'completed');
+      assert.match(resultOf(request, 'call-read').error, /must NOT have more than 20 items/);
+    });
+
     it('carries the keys the turn\'s later writes in the editor name, for busy ahead', async function () {
       script = sequence([ {
         content: [
