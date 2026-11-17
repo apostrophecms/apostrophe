@@ -24,6 +24,8 @@ const ROOTS = {
   widgetEditor: 'widget',
   arrayEditor: 'array'
 };
+// The media manager lists images and edits the one open beside the list
+const SIDE_EDITORS = new Set([ 'mediaManager' ]);
 // What an editor of each kind holds, as the model reads it
 const PARTS = {
   widgetEditor: 'widget',
@@ -124,7 +126,7 @@ module.exports = (self) => {
      */
     findOpenEditor(req, screen, action) {
       const modals = screen?.modals || [];
-      const index = modals.findLastIndex(modal => ROOTS[modal.kind]);
+      const index = modals.findLastIndex(modal => getRoot(modal));
       if (index === -1) {
         throw self.apos.error('aiToolError', 'No editor is open on the user\'s screen; ' +
           'change documents with the document tools.');
@@ -295,7 +297,7 @@ module.exports = (self) => {
       }
       const key = getDocumentKey(req, args._id);
       const holder = ((await getScreen(req))?.modals || [])
-        .findLast(modal => ROOTS[modal.kind] && modal.docId &&
+        .findLast(modal => getRoot(modal) && modal.docId &&
           (getDocumentKey(req, modal.docId) === key));
       if (!holder) {
         return;
@@ -319,7 +321,7 @@ module.exports = (self) => {
      */
     getHeldDocumentKeys(req, screen) {
       return [ ...new Set((screen?.modals || [])
-        .filter(modal => ROOTS[modal.kind] && modal.docId)
+        .filter(modal => getRoot(modal) && modal.docId)
         .map(modal => getDocumentKey(req, modal.docId))) ];
     },
 
@@ -345,7 +347,7 @@ module.exports = (self) => {
           modal,
           index
         }))
-        .filter(({ modal }) => ROOTS[modal.kind] && modal.docId);
+        .filter(({ modal }) => getRoot(modal) && modal.docId);
       if (!holders.length) {
         return;
       }
@@ -438,7 +440,7 @@ module.exports = (self) => {
   // editor on top, a document of the type the screen names
   function checkRoot(req, screen, root, action) {
     const { editor, held } = self.findOpenEditor(req, screen, action);
-    if (!root || (typeof root !== 'object') || (root.kind !== ROOTS[editor.kind])) {
+    if (!root || (typeof root !== 'object') || (root.kind !== getRoot(editor))) {
       throw self.apos.error('invalid', 'the editor on top is no longer the one the call ' +
         'was made for');
     }
@@ -446,6 +448,13 @@ module.exports = (self) => {
       throw self.apos.error('invalid', 'the document in the editor is not the one the ' +
         'screen names');
     }
+  }
+
+  // The root an editor modal holds: of its kind, or the document open
+  // beside a manager's list
+  function getRoot(modal) {
+    return ROOTS[modal.kind] ||
+      ((SIDE_EDITORS.has(modal.kind) && modal.docId) ? 'document' : null);
   }
 
   // A modal as the model reads it in a refusal
@@ -460,6 +469,8 @@ module.exports = (self) => {
         return 'a widget editor';
       case 'arrayEditor':
         return 'an array editor';
+      case 'mediaManager':
+        return `the media manager${title}`;
       case 'other':
         return 'a dialog';
       default:

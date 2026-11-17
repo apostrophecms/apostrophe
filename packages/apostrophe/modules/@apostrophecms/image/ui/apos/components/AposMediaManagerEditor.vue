@@ -109,9 +109,17 @@
         :following-values="followingValues()"
         :conditional-fields="conditionalFields"
         :server-errors="serverErrors"
+        :outside-states="outsideStates"
         @validate="triggerValidate"
         @reset="$emit('modified', false)"
       />
+      <div
+        class="apos-sr-only"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {{ outsideAnnouncement }}
+      </div>
     </div>
     <AposModalLip :refresh="lipKey">
       <div
@@ -173,7 +181,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'back', 'modified' ],
+  emits: [ 'back', 'modified', 'outside' ],
   data() {
     return {
       // Primarily use `activeMedia` to support hot-swapping image docs.
@@ -330,6 +338,9 @@ export default {
   mounted() {
     this.generateLipKey();
     this.$emit('modified', false);
+    // The image open here is an editor in the stack: values from outside
+    // reach it through the manager's modal
+    this.$emit('outside', this.outside);
   },
   methods: {
     moreMenuHandler(item) {
@@ -340,6 +351,7 @@ export default {
     },
     async updateActiveDoc(newMedia) {
       newMedia = newMedia || {};
+      this.clearOutside();
       this.activeMedia = klona(newMedia);
       this.restoreOnly = !!this.activeMedia.archived;
       this.original = klona(newMedia);
@@ -408,7 +420,12 @@ export default {
         return;
       }
 
-      let body = this.docFields.data;
+      let body = { ...this.docFields.data };
+      delete body._outside;
+      const outside = this.getOutsideSave();
+      if (outside) {
+        body._outside = outside;
+      }
       this.addLockToRequest(body);
       try {
         const requestMethod = this.restoreOnly ? apos.http.patch : apos.http.put;
@@ -422,6 +439,7 @@ export default {
           body,
           draft: true
         });
+        this.clearOutside();
         apos.bus.$emit('content-changed', {
           doc,
           action: this.restoreOnly ? 'restore' : 'update'
@@ -448,6 +466,30 @@ export default {
           });
         }
       }
+    },
+    isOutsideReady() {
+      return Boolean(this.activeMedia?._id) &&
+        (this.docFields.data.title !== undefined) &&
+        !this.restoreOnly;
+    },
+    // The file is replaced with its own button, never from outside
+    getOutsideField(name) {
+      return (name === 'attachment')
+        ? null
+        : AposEditorMixin.methods.getOutsideField.call(this, name);
+    },
+    getOutsideRoot() {
+      return this.isOutsideReady()
+        ? {
+          kind: 'document',
+          data: {
+            ...this.docFields.data,
+            _id: this.activeMedia._id,
+            type: this.activeMedia.type
+          },
+          locale: this.getOutsideLocale()
+        }
+        : null;
     },
     generateLipKey() {
       this.lipKey = createId();

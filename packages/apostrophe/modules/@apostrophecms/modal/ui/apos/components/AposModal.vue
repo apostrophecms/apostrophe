@@ -346,9 +346,13 @@ watch(() => props.screen, screen => {
   immediate: true,
   deep: true
 });
-if (props.outside) {
-  store.updateModalData(props.modalData.id, { outside: props.outside });
-}
+// A modal whose handle belongs to a part of it, such as the media manager's
+// image editor, gets it once that part is there
+watch(() => props.outside, outside => {
+  if (outside) {
+    store.updateModalData(props.modalData.id, { outside });
+  }
+}, { immediate: true });
 
 // Wrap handler to only work for window modals and primary mouse button. A
 // window whose `dragFrom` is `header` drags from its header only, so that

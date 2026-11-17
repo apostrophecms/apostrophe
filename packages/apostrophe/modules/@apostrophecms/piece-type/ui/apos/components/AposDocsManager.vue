@@ -125,6 +125,7 @@
             v-model:checked="checked"
             :items="items"
             :headers="headers"
+            :outside-states="outsideRows"
             :options="{
               ...moduleOptions,
               isRelationship: !!relationshipField,
@@ -415,13 +416,54 @@ export default {
         currentPage, pages, results, choices
       } = await this.requestPieces(this.currentPage);
 
-      this.setPieces({
+      this.setPieces(await this.withOutsideOnTop({
         currentPage,
         pages,
         results,
         choices
-      });
+      }));
       this.holdQueries = false;
+    },
+    // Refreshes the list as it shows, search included, after writes from
+    // outside
+    async refreshOutside() {
+      if (this.holdQueries) {
+        return;
+      }
+      this.holdQueries = true;
+      try {
+        const search = this.searchTerm
+          ? { autocomplete: this.searchTerm }
+          : {};
+        const pieces = await this.requestPieces(this.currentPage, search);
+        this.setPieces(await this.withOutsideOnTop(pieces, search));
+      } finally {
+        this.holdQueries = false;
+      }
+    },
+    // The first page with the documents written from outside on top, those
+    // still matching the filters, the latest first
+    async withOutsideOnTop(pieces, mergeOptions = {}) {
+      if ((pieces.currentPage !== 1) || !this.outsideEdited.length) {
+        return pieces;
+      }
+      const { results: top } = await this.request({
+        ...mergeOptions,
+        ...(
+          this.moduleOptions.managerApiProjection &&
+          { project: this.moduleOptions.managerApiProjection }
+        ),
+        _ids: this.outsideEdited,
+        perPage: this.outsideEdited.length,
+        page: 1,
+        choices: undefined,
+        dynamicChoices: undefined
+      });
+      const ids = new Set(top.map(({ _id }) => _id));
+      return {
+        ...pieces,
+        results: [ ...top, ...pieces.results.filter(({ _id }) => !ids.has(_id)) ]
+      };
     },
     async manageAllPiecesTotal () {
       const total = await this.requestAllPiecesTotal();

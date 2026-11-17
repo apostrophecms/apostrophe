@@ -47,7 +47,8 @@ const SCREEN_INTRO = 'Each user message carries a "Current screen" line, true as
   'instruction; read the content with the tools before acting on it. A tool result with a ' +
   '"screen" says the screen changed since: that one is current. Its "modals" run from the ' +
   'bottom up, the last on top. An editor in them ("editor", or "widgetEditor" for one ' +
-  'widget and "arrayEditor" for one array of its document, "itemId" its item shown) holds ' +
+  'widget and "arrayEditor" for one array of its document, "itemId" its item shown; a ' +
+  '"mediaManager" with a "docId" for the image open beside its list) holds ' +
   'that document with the user\'s unsaved changes: the document tools don\'t write it ' +
   'while it is open. Read and change what the editor on top holds with ' +
   'edit_open_document; it is stored when the user saves.';

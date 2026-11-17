@@ -71,6 +71,22 @@ describe('Assistant: working in open editors', function () {
             }
           }
         },
+        // Published on save, with versions, as images are
+        'assistant-notice': {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            autopublish: true,
+            versions: true
+          },
+          fields: {
+            add: {
+              subtitle: {
+                type: 'string',
+                label: 'Subtitle'
+              }
+            }
+          }
+        },
         'assistant-page': {
           extend: '@apostrophecms/page-type',
           fields: {
@@ -352,6 +368,45 @@ describe('Assistant: working in open editors', function () {
       const changes = await apos.docVersions.getDraftChanges(req, draft._id);
       assert.deepEqual(
         changes.rows.filter(row => [ 'title', 'subtitle' ].includes(pathOf(row))).map(aiOf),
+        [ [ 'title', 'changed' ], [ 'subtitle', false ] ]
+      );
+    });
+
+    it('records them for a type published on save, as the media manager\'s image editor saves it', async function () {
+      const request = await endedRequest(editor);
+      const notice = await apos.modules['assistant-notice'].insert(userReq(editor), {
+        title: 'Before'
+      });
+      const draft = await apos.http.get(`/api/v1/assistant-notice/${notice._id}`, {
+        jar,
+        qs: { aposMode: 'draft' }
+      });
+      await apos.http.put(`/api/v1/assistant-notice/${draft._id}`, {
+        jar,
+        body: {
+          ...draft,
+          title: 'Written by the assistant',
+          subtitle: 'Typed by the editor',
+          _outside: outside(request, [ 'title' ])
+        }
+      });
+
+      const published = await apos.doc.db.findOne({
+        _id: draft._id.replace(':draft', ':published')
+      });
+      assert.equal(published.title, 'Written by the assistant');
+      const entries = await entriesOf(request, notice);
+      assert.equal(entries.length, 1);
+      assert.deepEqual(entries[0].rows.map(pathOf), [ 'title' ]);
+      const req = userReq(editor);
+      const { results } = await apos.docVersions.getTimelinePage(
+        req,
+        apos.docVersions.getTimelineCriteria(published)
+      );
+      assert.equal(results[0].ai, true);
+      const { rows } = await apos.docVersions.getVersionChanges(req, results[0]._id);
+      assert.deepEqual(
+        rows.filter(row => [ 'title', 'subtitle' ].includes(pathOf(row))).map(aiOf),
         [ [ 'title', 'changed' ], [ 'subtitle', false ] ]
       );
     });
@@ -691,6 +746,47 @@ describe('Assistant: working in open editors', function () {
       );
       const draft = await apos.doc.db.findOne({ _id: note._id });
       assert.equal(draft.subtitle, 'Saved subtitle');
+    });
+
+    it('holds the document open beside a media manager\'s list, and nothing without one', async function () {
+      const update = {
+        targets: [ {
+          _id: note._id,
+          values: { subtitle: 'Written' }
+        } ]
+      };
+      const side = {
+        kind: 'mediaManager',
+        docId: note._id,
+        selection: [ note._id ]
+      };
+      assert.match(
+        await writeRefusal([ side ], 'update_document', update),
+        /"Open note" is open in an editor on the user's screen: change it with edit_open_document/
+      );
+      assert.match(
+        await writeRefusal([ side, { kind: 'other' } ], 'update_document', update),
+        /under a dialog; ask the user to close what is over the editor first/
+      );
+      const { req, chat } = await callOnScreen([ side ], {
+        action: 'update_document',
+        values: { subtitle: 'Typed by the assistant' }
+      });
+      const served = await serve(req, chat, documentRoot());
+      assert.equal(served.executed, true);
+      assert.deepEqual(served.values, { subtitle: 'Typed by the assistant' });
+      await answer(req, chat, { executed: true });
+      assert.equal((await apos.doc.db.findOne({ _id: note._id })).subtitle, 'Saved subtitle');
+
+      // The list alone holds nothing: its checked rows are written
+      script = sequence([ toolTurn('update_document', update), { text: 'Done.' } ]);
+      const { request } = await sendOnScreen([ {
+        kind: 'mediaManager',
+        selection: [ note._id ]
+      } ], 'Write the checked one');
+      assert.equal(resultOf(request, 'call-update_document').error, undefined);
+      assert.equal((await apos.doc.db.findOne({ _id: note._id })).subtitle, 'Written');
+      await apos.doc.db.updateOne({ _id: note._id }, { $set: { subtitle: 'Saved subtitle' } });
     });
 
     it('writes a document no editor holds, and reads a held one', async function () {

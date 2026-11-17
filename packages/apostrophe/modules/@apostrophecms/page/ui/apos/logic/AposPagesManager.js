@@ -107,7 +107,8 @@ export default {
         bulkSelect: true,
         draggable: !this.filterValues.archived,
         ghostUnpublished: true,
-        max: this.relationshipField.max || null
+        max: this.relationshipField.max || null,
+        outsideStates: this.outsideRows
       };
     },
     moduleOptions() {
@@ -606,6 +607,18 @@ export default {
           this.setCheckedDocs(newDocs.slice(0, limit));
         }
       }
+    },
+    isOutsideType(type) {
+      return this.moduleOptions.validPageTypes.includes(type);
+    },
+    // The tree keeps its order, the site's: the first page written from
+    // outside is scrolled into view when it shows
+    async refreshOutside() {
+      await this.getPages();
+      await this.$nextTick();
+      const marked = [ ...this.$el.querySelectorAll('[data-apos-outside]') ]
+        .find(row => row.offsetParent && !row.closest('.apos-is-collapsed'));
+      marked?.scrollIntoView({ block: 'nearest' });
     },
     async switchLocale({ locale }) {
       this.updateModalData(this.modalData.id, { locale: locale.name });
