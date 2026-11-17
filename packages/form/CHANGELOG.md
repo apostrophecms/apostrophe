@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.7 (2026-11-11)
+
+### Fixes
+
+- Conditional fields now behave on the server as they do in the browser. A conditional triggered by a checkboxes field is kept when any checked value matches, where before it was always skipped because the answer is an array. Fields nested in a group inside a hidden conditional are skipped too, so their required checks no longer block the submission. Thanks to [Vlad Bisceanu](https://github.com/vladbisceanu) for the contribution.
+
+### Security
+
+- When processing a form submission, condition names and values from the form's conditional widgets were used as keys of plain objects, so a conditional widget naming `__proto__` could modify or remove properties of `Object.prototype` for the whole server process each time the form was submitted. These keys are now stored in objects with no prototype. Uploaded file field names are counted the same way, which also fixes uploads for file fields whose names match built-in object properties such as `constructor`. Planting the conditional required a user with permission to edit forms; the submission itself could be anonymous (CWE-1321, GHSA-3fg6-2672-62jf).
+
+  Thanks to [Jace](https://github.com/manus-use) for reporting the vulnerability.
+
 ## 1.5.6 (2026-10-14)
 
 ### Fixes
