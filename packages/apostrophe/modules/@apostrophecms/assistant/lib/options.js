@@ -7,7 +7,7 @@ module.exports = (self) => {
   return {
     validateOptions() {
       const {
-        enabled, maxSteps, screenWait, usageDisplay, modelDisplay
+        enabled, maxSteps, delegationMaxSteps, screenWait, usageDisplay, modelDisplay
       } = self.options;
       for (const [ name, value ] of Object.entries({
         enabled,
@@ -19,6 +19,7 @@ module.exports = (self) => {
       }
       for (const [ name, value ] of Object.entries({
         maxSteps,
+        delegationMaxSteps,
         screenWait
       })) {
         if (!Number.isInteger(value) || (value < 1)) {

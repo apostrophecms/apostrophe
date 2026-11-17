@@ -21,14 +21,15 @@ module.exports = (self) => {
      * request reached, `{ _id, title, lockedBy }`, `lockedBy` the holder's
      * name, `null` for the editor's own other browser tab or chat. The
      * vendor and model are left out unless `modelDisplay` is set, and what
-     * the model was told of its changes to the page always.
+     * the model was told of its changes to the page always. `usage`
+     * includes what the agent tools spent.
      *
      * @param {object} request
      * @returns {object}
      */
     renderRequest(request) {
       const {
-        provider, model, pageChanges, pageRows, ...rest
+        provider, model, pageChanges, pageRows, agentUsage, ...rest
       } = request;
       const messages = request.messages || [];
       return {
@@ -63,8 +64,18 @@ module.exports = (self) => {
             : message;
         }),
         steps: getSteps(),
-        locked: getLocked()
+        locked: getLocked(),
+        // What the agent tools spent counts with the run's own
+        ...(agentUsage && { usage: getUsage() })
       };
+
+      function getUsage() {
+        const usage = { ...rest.usage };
+        for (const [ key, value ] of Object.entries(agentUsage)) {
+          usage[key] = (usage[key] || 0) + value;
+        }
+        return usage;
+      }
 
       function getSteps() {
         const labels = new Map(self.apos.harness.getDoorTools(DOOR)

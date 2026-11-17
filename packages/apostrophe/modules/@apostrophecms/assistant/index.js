@@ -21,8 +21,11 @@ module.exports = {
     //   unset
     // The effort route of the chat-title call; 'none' makes no model call
     titleEffort: 'low',
-    // The effort route a delegated read runs on when the model names none
+    // The effort route a delegated read and image descriptions run on when
+    // the model names none
     delegationEffort: 'low',
+    // Model steps per delegated read
+    delegationMaxSteps: 15,
     // summaryEffort: the effort route long-chat summaries run on; the
     //   chat's own when unset
     // Model steps per request
@@ -63,6 +66,7 @@ module.exports = {
       self.addBrowserTool(tool);
     }
     self.addEditorTools();
+    self.addAgentTools();
     self.enableBrowserData();
   },
   handlers(self) {
@@ -108,8 +112,10 @@ module.exports = {
         // this run's next tool result; a browser tool's carries its own
         async addChangedScreen(req, payload) {
           const { result } = payload;
+          // Not to a subagent's result (its `generate` runs inside a tool),
+          // which the run's model never sees
           if (!self.active || (self.apos.harness.getDoor(req)?.door !== 'assistant') ||
-            payload.tool.tags?.includes('browser') ||
+            req.aposAiDepth || payload.tool.tags?.includes('browser') ||
             !result || (typeof result !== 'object') || Array.isArray(result)) {
             return;
           }
@@ -320,6 +326,7 @@ module.exports = {
       ...require('./lib/asks')(self),
       ...require('./lib/browser-tools')(self),
       ...require('./lib/editor-tools')(self),
+      ...require('./lib/agent-tools')(self),
       ...require('./lib/gates')(self),
       ...require('./lib/edit-mode')(self),
       ...require('./lib/open-editor')(self),
