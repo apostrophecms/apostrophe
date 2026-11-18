@@ -20,6 +20,13 @@ const crypto = require('node:crypto');
 const LIFETIME_MS = 10 * 60 * 1000;
 // RFC 7636 section 4.1: 43 to 128 unreserved characters
 const CODE_CHALLENGE = /^[A-Za-z0-9\-._~]{43,128}$/;
+// See setPageHeaders
+const PAGE_POLICY = [
+  'default-src \'none\'',
+  'style-src \'unsafe-inline\'',
+  'base-uri \'none\'',
+  'frame-ancestors \'none\''
+].join('; ');
 
 module.exports = (self) => {
   return {
@@ -360,10 +367,16 @@ module.exports = (self) => {
 
     // For the approval page and its errors: never framed by another site,
     // so it can't be overlaid to trick a click on Approve, never cached,
-    // and its URL (with the request's state) never sent on as a referrer
+    // and its URL (with the request's state) never sent on as a referrer.
+    //
+    // The page is self-contained, so its policy allows nothing but its own
+    // inline styles. It replaces any site-wide policy (that of
+    // @apostrophecms/security-headers, say), so it must be at least as
+    // strict. No `form-action`: browsers apply it to the redirect after the
+    // form is posted, which goes to the tool
     setPageHeaders(res) {
       res.set('X-Frame-Options', 'DENY');
-      res.set('Content-Security-Policy', 'frame-ancestors \'none\'');
+      res.set('Content-Security-Policy', PAGE_POLICY);
       res.set('Cache-Control', 'no-store');
       res.set('Referrer-Policy', 'no-referrer');
     }

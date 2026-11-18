@@ -14,6 +14,9 @@ const AUTHORIZE = `${ACTION}/authorize`;
 const REDIRECT_URI = 'https://tool.example.com/callback';
 const VERIFIER = 'a-verifier-of-at-least-43-characters-0123456789';
 const CHALLENGE = crypto.createHash('sha256').update(VERIFIER).digest('base64url');
+// Spelled out, not taken from the module, so a change to it shows here
+const PAGE_POLICY = 'default-src \'none\'; style-src \'unsafe-inline\'; base-uri \'none\'; ' +
+  'frame-ancestors \'none\'';
 
 describe('OAuth: authorize', function () {
   this.timeout(t.timeout);
@@ -325,12 +328,23 @@ describe('OAuth: authorize', function () {
       assert.doesNotMatch(html, /data-oauth-resource-description/);
     });
 
-    it('can\'t be framed, cached or leak its URL', async function () {
-      const response = await authorize();
-      assert.equal(response.headers.get('x-frame-options'), 'DENY');
-      assert.equal(response.headers.get('content-security-policy'), 'frame-ancestors \'none\'');
-      assert.equal(response.headers.get('cache-control'), 'no-store');
-      assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
+    it('can\'t be framed, cached or leak its URL, and loads nothing', async function () {
+      for (const response of [
+        await authorize(),
+        await authorize({ client_id: 'unknown' })
+      ]) {
+        assert.equal(response.headers.get('x-frame-options'), 'DENY');
+        assert.equal(response.headers.get('content-security-policy'), PAGE_POLICY);
+        assert.equal(response.headers.get('cache-control'), 'no-store');
+        assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
+      }
+    });
+
+    it('has no script, no outside resource and no form-action limit, which the policy relies on', async function () {
+      const html = await (await authorize()).text();
+      assert.doesNotMatch(html, /<script|<link|<img|<iframe|url\(|@import|\son\w+=/i);
+      // A form-action limit would stop the redirect to the tool
+      assert.doesNotMatch(PAGE_POLICY, /form-action/);
     });
 
     it('describes a loopback redirect as this computer', async function () {
@@ -698,5 +712,83 @@ describe('Login: return to', function () {
     const response = await fetch(getUrl(apos, `/login?returnTo=${encodeURIComponent('/some/page')}`));
     const html = await response.text();
     assert.match(html, /"returnTo":"\\\/some\\\/page"|"returnTo":"\/some\/page"/);
+  });
+});
+
+describe('OAuth: authorize, on a site with its own security headers', function () {
+  this.timeout(t.timeout);
+
+  let apos;
+
+  before(async function () {
+    apos = await createOauthApos(module, {
+      modules: {
+        // As @apostrophecms/security-headers does: a policy for every
+        // response, set in middleware before any route runs
+        'site-wide-headers': {
+          middleware() {
+            return {
+              sendHeaders(req, res, next) {
+                res.setHeader('Content-Security-Policy', 'default-src \'self\'; frame-src \'self\'');
+                res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+                return next();
+              }
+            };
+          }
+        }
+      }
+    });
+    await t.createUser(apos, 'editor', { username: 'editor' });
+  });
+
+  after(async function () {
+    await t.destroy(apos);
+  });
+
+  it('replaces the site\'s policy with its stricter one, and still sends the user back to the tool', async function () {
+    const jar = await t.loginAs(apos, 'editor');
+    const cookie = jar.getCookieStringSync(apos.http.getBase());
+    const redirectUri = 'https://tool.example.com/callback';
+    const client = await apos.oauth.registerClient({
+      client_name: 'Test tool',
+      redirect_uris: [ redirectUri ]
+    });
+    const search = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.client_id,
+      redirect_uri: redirectUri,
+      code_challenge: CHALLENGE,
+      code_challenge_method: 'S256',
+      state: 'the-state',
+      resource: `${BASE_URL}${RESOURCE}`
+    });
+    const page = await fetch(getUrl(apos, `${AUTHORIZE}?${search}`), {
+      redirect: 'manual',
+      headers: { cookie }
+    });
+    assert.equal(page.status, 200);
+    assert.equal(page.headers.get('content-security-policy'), PAGE_POLICY);
+    assert.equal(page.headers.get('x-frame-options'), 'DENY');
+    const approval = (await page.text()).match(/name="approval" value="([^"]+)"/)[1];
+    const decision = await fetch(getUrl(apos, AUTHORIZE), {
+      method: 'POST',
+      redirect: 'manual',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        cookie
+      },
+      body: new URLSearchParams({
+        approval,
+        decision: 'approve'
+      }).toString()
+    });
+    assert.equal(decision.status, 303);
+    assert.ok(decision.headers.get('location').startsWith(`${redirectUri}?code=`));
+  });
+
+  it('leaves the site\'s headers alone elsewhere', async function () {
+    const response = await fetch(getUrl(apos, '/'));
+    assert.equal(response.headers.get('content-security-policy'), 'default-src \'self\'; frame-src \'self\'');
+    assert.equal(response.headers.get('x-frame-options'), 'SAMEORIGIN');
   });
 });
