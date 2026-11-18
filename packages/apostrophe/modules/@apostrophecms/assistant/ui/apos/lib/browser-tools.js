@@ -2,9 +2,11 @@
 // assistant's own (see the server's lib/standard-browser-tools.js, which
 // checks each call and hands its arguments here).
 //
-// An executor is `async (args, { screen, request, ask, release }) => result`:
-// `args` as the server's tool prepared them, `screen` as the editor sees it
-// now, `request` and `ask` the records being answered. It acts on the live
+// An executor is `async (args, { screen, request, ask, release, stopped })
+// => result`: `args` as the server's tool prepared them, `screen` as the
+// editor sees it now, `request` and `ask` the records being answered, and
+// `stopped()` whether the editor stopped the request since: an executor
+// that waits checks it before it acts again. It acts on the live
 // page and returns `{ executed, reason?, ...its own fields }`; `null` leaves
 // the ask to the page that loads next. Executors act one at a time: one that
 // is done acting and only waits on the editor (to close an editor it
@@ -28,6 +30,10 @@ import {
 
 // How long the page may take to show what an executor waits for
 const WAIT_LIMIT = 10000;
+const STOPPED = {
+  executed: false,
+  reason: 'the user stopped the request'
+};
 // The navigation in flight, in this browser tab: the page that loads next
 // answers it
 const NAVIGATION_KEY = 'aposAssistantNavigation';
@@ -177,7 +183,9 @@ async function showWidgets({ _id, widgetIds }) {
 // `outside` handle, the keys it names busy meanwhile, then marked. The keys
 // of the turn's later calls (`ahead` on the ask) go busy with them and stay
 // busy for those calls
-async function editOpenDocument(args, { request, ask }) {
+async function editOpenDocument(args, {
+  request, ask, stopped
+}) {
   const entry = useModalStore(pinia).stack.filter(entry => !isWindow(entry)).at(-1);
   const outside = entry?.outside;
   if (!outside) {
@@ -202,6 +210,10 @@ async function editOpenDocument(args, { request, ask }) {
   } else {
     outside.release(held.keys.filter(key => !keys.includes(key) && !ahead.includes(key)));
   }
+  if (stopped()) {
+    releaseAhead();
+    return STOPPED;
+  }
   const busy = outside.busy([ ...keys, ...ahead ]);
   try {
     const change = await apos.http.post(
@@ -219,6 +231,10 @@ async function editOpenDocument(args, { request, ask }) {
       return change.executed
         ? { executed: true }
         : change;
+    }
+    // A change computed before the stop is not applied
+    if (stopped()) {
+      return STOPPED;
     }
     // Every field the change reaches takes it, or none does
     const taken = outside.busy(names);

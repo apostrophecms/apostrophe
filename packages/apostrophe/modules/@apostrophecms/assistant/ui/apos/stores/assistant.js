@@ -1,19 +1,29 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import { getTabId } from 'Modules/@apostrophecms/ui/utils';
+import { createId } from 'apostrophe/lib/beneath.js';
+import { getFirstTitle } from 'Modules/@apostrophecms/assistant/universal/message.js';
 import { useScreen, isWindow } from 'Modules/@apostrophecms/ui/composables/useScreen.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { browserTools, releaseAhead } from '../lib/browser-tools.js';
 
 /**
  * The assistant's chats as this browser tab sees them. The records on the
- * server are the truth: everything here is read from the routes, and the
+ * server are the truth: they are read from the routes, and the
  * `assistant-chat` bus event only says what to read again. A missed event
  * costs speed, never truth: coming back to the browser tab reads it all.
  *
- * The chat tabs are this browser tab's own, kept in session storage. A new
- * chat is created on the server by its first send, so `NEW_CHAT` stands for
- * the chat tab of a chat that has no record yet.
+ * What the panel shows is the records with the editor's pending actions
+ * folded over them (`getChat`, `getChats`, `getRequests`, `getReverts`):
+ * an action shows its effect at the click and the server's answer settles
+ * it (`act`). Components read only those getters. A read never undoes an
+ * action: one in flight when an action starts or settles is dropped and
+ * read again, and a chat with an action pending is never forgotten.
+ *
+ * The chat tabs are this browser tab's own, kept in session storage. The
+ * browser names a new chat and each request; a new chat is created on the
+ * server by its first send, so `NEW_CHAT` stands for the chat tab of a chat
+ * not sent to yet.
  *
  * A request this browser tab owns may wait on a browser ask: the store runs
  * the browser tool's executor (lib/browser-tools.js) and answers with the
@@ -40,6 +50,8 @@ const STORAGE_KEY = 'aposAssistantTabs';
 const SERVED_KINDS = [ 'browser', 'editMode' ];
 // Events arrive in bursts: one read per chat for each burst
 const LOAD_DELAY = 50;
+// A request not stored yet sorts last, where its record lands
+const PENDING_SEQUENCE = Number.MAX_SAFE_INTEGER;
 
 export const useAssistantStore = defineStore('assistant', () => {
   const { getScreen } = useScreen();
@@ -69,6 +81,10 @@ export const useAssistantStore = defineStore('assistant', () => {
   const confirmations = ref({});
   // The request whose revert's dry run is under way, by chat id
   const checking = ref({});
+  // What the editor did in this browser tab that the server hasn't answered
+  // yet, by chat id, in the order clicked: `{ id, kind, key, data }`. Never
+  // stored: the getters fold them over the records
+  const actions = ref({});
 
   // Whether this browser tab is visible, as the page last reported it
   const visible = ref(document.visibilityState !== 'hidden');
@@ -87,8 +103,18 @@ export const useAssistantStore = defineStore('assistant', () => {
   const modalOwners = ref(new Map());
 
   let started = false;
+  // Reads are numbered: an answer to any but the latest is dropped. An
+  // action starting or settling moves the number on, so a read in flight
+  // then is dropped too, and requested again
   let chatsSequence = 0;
+  let chatsStarted = 0;
   const chatSequences = new Map();
+  const chatStarted = new Map();
+  // Each chat's actions on the wire, one at a time: the latest one's run
+  const queues = new Map();
+  // The chats an event was heard for while an action of theirs was on the
+  // wire: its answer may be older than a read that landed meanwhile
+  const heard = new Set();
   const pending = new Set();
   let timer = null;
   // The browser asks taken on this page, call id to request id: each runs
@@ -101,8 +127,151 @@ export const useAssistantStore = defineStore('assistant', () => {
     return apos.modules['@apostrophecms/assistant'].action;
   }
 
-  function getChat(id) {
+  // A chat's record as the server last said it, or `null`
+  function getChatRecord(id) {
     return chats.value.find(chat => chat._id === id) || null;
+  }
+
+  /**
+   * A chat as the panel shows it: its record with this browser tab's
+   * pending actions folded over it, or `null`.
+   *
+   * @param {string} id
+   * @returns {object|null}
+   */
+  function getChat(id) {
+    return fold(id).chat;
+  }
+
+  /**
+   * The editor's chats as the panel shows them, newest first: a chat this
+   * browser tab is creating comes first.
+   *
+   * @returns {object[]}
+   */
+  function getChats() {
+    const known = new Set(chats.value.map(chat => chat._id));
+    const created = Object.keys(actions.value).filter(id => !known.has(id));
+    return [ ...created, ...known ].map(getChat).filter(Boolean);
+  }
+
+  /**
+   * A chat's requests as the panel shows them, in the order they were sent.
+   *
+   * @param {string} id
+   * @returns {object[]}
+   */
+  function getRequests(id) {
+    return fold(id).requests;
+  }
+
+  /**
+   * A chat's reverts as the panel shows them, in the order they were made.
+   *
+   * @param {string} id
+   * @returns {object[]}
+   */
+  function getReverts(id) {
+    return fold(id).reverts;
+  }
+
+  /**
+   * Whether an action of this kind is pending on the chat.
+   *
+   * @param {string} id
+   * @param {string} kind
+   * @returns {boolean}
+   */
+  function isPending(id, kind) {
+    return (actions.value[id] || []).some(action => action.kind === kind);
+  }
+
+  // The chat's records with its pending actions applied in the order they
+  // were clicked
+  function fold(id) {
+    let view = {
+      chat: getChatRecord(id),
+      requests: requests.value[id] || [],
+      reverts: reverts.value[id] || []
+    };
+    for (const action of actions.value[id] || []) {
+      view = folds[action.kind]?.(view, action) || view;
+    }
+    return view;
+  }
+
+  // How a pending action changes what the panel shows, by kind
+  const folds = {
+    send: foldSend,
+    retry: foldSend,
+    stop: foldStop
+  };
+
+  // A stop on its way: the open request reads "Stopping…" until it ends
+  function foldStop(view) {
+    const open = view.chat?.openRequest;
+    if (!open || (open.status === 'stopping')) {
+      return view;
+    }
+    return {
+      ...view,
+      chat: {
+        ...view.chat,
+        openRequest: {
+          ...open,
+          status: 'stopping'
+        }
+      },
+      requests: view.requests.map(request => (((request._id === open._id) &&
+        [ 'running', 'waiting' ].includes(request.status))
+        ? {
+          ...request,
+          status: 'stopping'
+        }
+        : request))
+    };
+  }
+
+  // A message on its way: this browser tab's running request at the end of
+  // the thread, in a chat that exists from the click. Its record settles
+  // it, whichever brings it first: the answer or a read
+  function foldSend(view, { data }) {
+    if (view.requests.some(request => request._id === data.requestId)) {
+      return view;
+    }
+    const chat = view.chat || {
+      _id: data.chatId,
+      title: data.title,
+      openRequest: null,
+      openRevert: null,
+      createdAt: data.createdAt
+    };
+    return {
+      ...view,
+      chat: {
+        ...chat,
+        openRequest: {
+          _id: data.requestId,
+          tabId: getTabId(),
+          status: 'running'
+        }
+      },
+      requests: [
+        ...view.requests,
+        {
+          _id: data.requestId,
+          chatId: data.chatId,
+          tabId: getTabId(),
+          message: data.message,
+          ...(data.retryOf && { retryOf: data.retryOf }),
+          status: 'running',
+          sequence: PENDING_SEQUENCE,
+          messages: [],
+          asks: null,
+          pending: true
+        }
+      ]
+    };
   }
 
   /**
@@ -230,6 +399,9 @@ export const useAssistantStore = defineStore('assistant', () => {
     if (!chatId) {
       return;
     }
+    if (actions.value[chatId]) {
+      heard.add(chatId);
+    }
     if ((stage === 'chat') && event.deleted) {
       forget(chatId);
       return;
@@ -284,6 +456,7 @@ export const useAssistantStore = defineStore('assistant', () => {
 
   async function loadChats() {
     const sequence = ++chatsSequence;
+    chatsStarted = sequence;
     let result;
     try {
       result = await apos.http.get(`${getAction()}/chat`, {});
@@ -292,6 +465,10 @@ export const useAssistantStore = defineStore('assistant', () => {
       return;
     }
     if (sequence !== chatsSequence) {
+      // Dropped for an action, not for a later read: read again
+      if (sequence === chatsStarted) {
+        schedule('chats');
+      }
       return;
     }
     chats.value = result.chats;
@@ -303,7 +480,7 @@ export const useAssistantStore = defineStore('assistant', () => {
       }
     }
     for (const id of tabs.value) {
-      if ((id !== NEW_CHAT) && !getChat(id)) {
+      if ((id !== NEW_CHAT) && !getChatRecord(id) && !actions.value[id]) {
         forget(id);
       }
     }
@@ -318,18 +495,23 @@ export const useAssistantStore = defineStore('assistant', () => {
   async function loadChat(id) {
     const sequence = (chatSequences.get(id) || 0) + 1;
     chatSequences.set(id, sequence);
+    chatStarted.set(id, sequence);
     let result;
     try {
       result = await apos.http.get(`${getAction()}/chat/${id}`, {});
     } catch (e) {
-      if (e.status === 404) {
+      // Not created yet, or deleted here: its action settles it
+      if ((e.status === 404) && !actions.value[id]) {
         forget(id);
-      } else {
+      } else if (e.status !== 404) {
         report(e);
       }
       return;
     }
     if (chatSequences.get(id) !== sequence) {
+      if (sequence === chatStarted.get(id)) {
+        schedule(id);
+      }
       return;
     }
     setChat(result.chat);
@@ -356,15 +538,14 @@ export const useAssistantStore = defineStore('assistant', () => {
       const message = (revert.status === 'done') &&
         requests.value[id]?.find(request => request._id === first)?.message;
       if (message) {
-        const draft = drafts.value[id] || '';
-        setDraft(id, draft.trim() ? `${message}\n\n${draft}` : message);
+        prependDraft(id, message);
       }
     }
   }
 
   // The browser asks of the chat's request, when this browser tab owns it
   function serveAsks(id) {
-    const chat = getChat(id);
+    const chat = getChatRecord(id);
     if ((getOwner(chat) !== 'here') || (chat.openRequest.status !== 'waiting')) {
       return;
     }
@@ -448,8 +629,9 @@ export const useAssistantStore = defineStore('assistant', () => {
       }
       stop = watch(getTurn, settle);
 
+      // A step the editor stopped never starts
       function getTurn() {
-        if (!isServed(id, request._id, ask.callId)) {
+        if (!isServed(id, request._id, ask.callId) || isPending(id, 'stop')) {
           return { state: 'gone' };
         }
         if (!visible.value) {
@@ -549,7 +731,8 @@ export const useAssistantStore = defineStore('assistant', () => {
           screen: getScreen(),
           request,
           ask,
-          release
+          release,
+          stopped: () => isPending(id, 'stop') || !isServed(id, request._id, callId)
         })
         : {
           executed: false,
@@ -581,7 +764,7 @@ export const useAssistantStore = defineStore('assistant', () => {
   // Whether the ask is still one this browser tab serves: its request open
   // here, waiting, and the ask among its asks
   function isServed(id, requestId, callId) {
-    const chat = getChat(id);
+    const chat = getChatRecord(id);
     const open = chat?.openRequest;
     if ((getOwner(chat) !== 'here') || (open._id !== requestId) ||
       (open.status !== 'waiting')) {
@@ -731,7 +914,7 @@ export const useAssistantStore = defineStore('assistant', () => {
     if (id === NEW_CHAT) {
       delete drafts.value[NEW_CHAT];
       delete refusals.value[NEW_CHAT];
-    } else if (getOwner(getChat(id)) !== 'here') {
+    } else if (getOwner(getChatRecord(id)) !== 'here') {
       // Its thread is read again when it opens; a request this browser tab
       // runs keeps it meanwhile
       delete requests.value[id];
@@ -749,11 +932,167 @@ export const useAssistantStore = defineStore('assistant', () => {
     rememberTabs();
   }
 
-  async function rename(id, title) {
-    const { chat } = await apos.http.patch(`${getAction()}/chat/${id}`, {
-      body: { title }
+  /**
+   * Runs an action of the editor's on a chat. It shows at once (`folds`),
+   * is posted once the chat's earlier actions are answered, and the
+   * server's answer settles it in one tick. Taken: the answer goes into the
+   * records. Refused, or no answer: the view is the records again, which are
+   * read again since the view was stale. The same action already pending is
+   * ignored.
+   *
+   * @param {string} kind
+   * @param {string} id The chat's id.
+   * @param {object} options
+   * @param {Function} options.post Posts it; resolves with the route's
+   *   answer.
+   * @param {*} [options.key] Tells two actions of a kind apart.
+   * @param {object} [options.data] What its fold shows.
+   * @param {Function} [options.taken] Called with the answer, in the tick
+   *   it settles.
+   * @param {Function} [options.refused] Called with the error, in the tick
+   *   it settles: says why.
+   * @param {Function} [options.check] On no answer, resolves with what the
+   *   server stored meanwhile as an answer, or `null`.
+   * @returns {Promise<{ taken: boolean, answer?: object, error?: Error }>}
+   */
+  function act(kind, id, {
+    post, key = null, data = null, taken = null, refused = report, check = null
+  }) {
+    const pending = actions.value[id] || [];
+    if (pending.some(action => (action.kind === kind) && (action.key === key))) {
+      return Promise.resolve({ taken: false });
+    }
+    const action = {
+      id: createId(),
+      kind,
+      key,
+      data
+    };
+    actions.value = {
+      ...actions.value,
+      [id]: [ ...pending, action ]
+    };
+    bump(id);
+    const run = (queues.get(id) || Promise.resolve()).then(async () => {
+      let answer;
+      try {
+        answer = await post();
+      } catch (error) {
+        answer = (!error.status && check) ? await check().catch(() => null) : null;
+        if (!answer) {
+          drop(id, action);
+          refused(error);
+          schedule('chats');
+          schedule(id);
+          return {
+            taken: false,
+            error
+          };
+        }
+      }
+      applyAnswer(answer);
+      taken?.(answer);
+      drop(id, action);
+      return {
+        taken: true,
+        answer
+      };
+    }).catch((error) => {
+      report(error);
+      return {
+        taken: false,
+        error
+      };
     });
-    setChat(chat);
+    queues.set(id, run);
+    return run;
+  }
+
+  // An action started or settled: reads in flight are dropped, and read
+  // again
+  function bump(id) {
+    chatsSequence++;
+    chatSequences.set(id, (chatSequences.get(id) || 0) + 1);
+  }
+
+  // By its id: what the ref gives back is a reactive copy, never the action
+  function drop(id, action) {
+    const rest = (actions.value[id] || []).filter(each => each.id !== action.id);
+    const { [id]: ignored, ...others } = actions.value;
+    actions.value = rest.length
+      ? {
+        ...others,
+        [id]: rest
+      }
+      : others;
+    bump(id);
+    // The server changed the chat meanwhile: its answer may be older than a
+    // read that landed while it was on the wire
+    if (heard.delete(id)) {
+      schedule('chats');
+      schedule(id);
+    }
+  }
+
+  // A route's answer into the records: the chat, the request or the revert
+  // as the action left them
+  function applyAnswer({
+    chat, request, revert
+  } = {}) {
+    if (chat) {
+      setChat(chat);
+    }
+    if (request) {
+      setRequest(request);
+    }
+    if (revert) {
+      setRevert(revert);
+    }
+    const chatId = chat?._id || request?.chatId;
+    if (chatId) {
+      serveAsks(chatId);
+    }
+  }
+
+  function setRequest(request) {
+    const list = (requests.value[request.chatId] || [])
+      .filter(each => each._id !== request._id);
+    const index = list.findIndex(each => each.sequence > request.sequence);
+    list.splice((index === -1) ? list.length : index, 0, request);
+    requests.value[request.chatId] = list;
+    if (![ 'running', 'waiting', 'stopping' ].includes(request.status)) {
+      releaseAhead(request._id);
+    }
+  }
+
+  function setRevert(revert) {
+    const list = reverts.value[revert.chatId] || [];
+    const index = list.findIndex(each => each._id === revert._id);
+    reverts.value[revert.chatId] = (index === -1)
+      ? [ ...list, revert ]
+      : list.map(each => ((each._id === revert._id) ? revert : each));
+  }
+
+  // The request the browser named, if the server stored it: an answer that
+  // never arrived may still have been taken
+  async function findSent(id, requestId) {
+    const { chat, requests: list } = await apos.http.get(`${getAction()}/chat/${id}`, {});
+    const request = list.find(each => each._id === requestId);
+    return request
+      ? {
+        chat,
+        request
+      }
+      : null;
+  }
+
+  async function rename(id, title) {
+    await act('rename', id, {
+      data: { title },
+      post: () => apos.http.patch(`${getAction()}/chat/${id}`, {
+        body: { title }
+      })
+    });
   }
 
   /**
@@ -764,27 +1103,31 @@ export const useAssistantStore = defineStore('assistant', () => {
    * @returns {Promise<boolean>}
    */
   async function remove(id) {
-    try {
-      await apos.http.delete(`${getAction()}/chat/${id}`, {});
-    } catch (e) {
-      if (e.status === 404) {
-        forget(id);
-        return true;
+    const { taken, error } = await act('delete', id, {
+      post: () => apos.http.delete(`${getAction()}/chat/${id}`, {}),
+      taken: () => forget(id),
+      refused(e) {
+        if (e.status === 404) {
+          forget(id);
+        }
       }
-      await loadChats();
-      if (e.status === 409) {
-        return false;
-      }
-      throw e;
+    });
+    if (taken || (error?.status === 404)) {
+      return true;
     }
-    forget(id);
-    return true;
+    if (error?.status === 409) {
+      return false;
+    }
+    throw error;
   }
 
   /**
    * Sends the draft of a chat tab, or `message` with the draft left as it
-   * is. A refused send keeps the draft and says why on the chat tab, and
-   * the records are read again, so the panel shows what is true now.
+   * is. The message shows at once as a running request and the composer
+   * empties; a first send creates its chat, whose chat tab is the chat's
+   * own from the click. A refused send is taken back: the text returns to
+   * the composer, in front of anything typed since, and the chat tab says
+   * why.
    *
    * @param {string} id A chat id, or `NEW_CHAT`.
    * @param {object} [options]
@@ -795,42 +1138,58 @@ export const useAssistantStore = defineStore('assistant', () => {
     if (!message) {
       return;
     }
+    const create = id === NEW_CHAT;
+    const chatId = create ? createId() : id;
+    const requestId = createId();
     delete refusals.value[id];
-    let chatId = id;
-    try {
-      if (id === NEW_CHAT) {
-        const { chat } = await apos.http.post(`${getAction()}/chat`, { body: {} });
-        setChat(chat);
-        chatId = chat._id;
-        requests.value[chatId] = [];
-        tabs.value.splice(tabs.value.indexOf(NEW_CHAT), 1, chatId);
-        drafts.value[chatId] = drafts.value[NEW_CHAT];
-        delete drafts.value[NEW_CHAT];
-        if (activeId.value === NEW_CHAT) {
-          activeId.value = chatId;
-        }
-        rememberTabs();
+    if (given === null) {
+      delete drafts.value[id];
+    }
+    if (create) {
+      tabs.value.splice(tabs.value.indexOf(NEW_CHAT), 1, chatId);
+      if (activeId.value === NEW_CHAT) {
+        activeId.value = chatId;
       }
-      const { request } = await apos.http.post(`${getAction()}/chat/${chatId}/send`, {
+      rememberTabs();
+    }
+    await act('send', chatId, {
+      data: {
+        chatId,
+        requestId,
+        message,
+        title: create ? getFirstTitle(message) : null,
+        createdAt: new Date().toISOString()
+      },
+      post: () => apos.http.post(`${getAction()}/chat/${chatId}/send`, {
         body: {
           message,
-          screen: getScreen()
+          screen: getScreen(),
+          requestId,
+          ...(create && { create })
         }
-      });
-      if ((given === null) && ((drafts.value[chatId] || '').trim() === message)) {
-        delete drafts.value[chatId];
+      }),
+      check: () => findSent(chatId, requestId),
+      refused(e) {
+        // A new chat that never was: its chat tab is New chat again
+        const target = create ? NEW_CHAT : chatId;
+        if (create) {
+          const index = tabs.value.indexOf(chatId);
+          if (tabs.value.includes(NEW_CHAT)) {
+            tabs.value.splice(index, 1);
+          } else {
+            tabs.value.splice(index, 1, NEW_CHAT);
+          }
+          if (activeId.value === chatId) {
+            activeId.value = NEW_CHAT;
+          }
+          rememberTabs();
+        }
+        if (given === null) {
+          prependDraft(target, message);
+        }
+        refuse(target, e);
       }
-      requests.value[chatId] = [
-        ...(requests.value[chatId] || []).filter(each => each._id !== request._id),
-        request
-      ];
-    } catch (e) {
-      refuse(chatId, e);
-    }
-    await loadChats();
-    if (getChat(chatId)) {
-      await loadChat(chatId);
-    }
+    });
   }
 
   /**
@@ -839,18 +1198,17 @@ export const useAssistantStore = defineStore('assistant', () => {
    * reading the records again shows what is true now.
    *
    * @param {string} id
+   * @param {object} [options]
+   * @param {boolean} [options.planCancel] The editor cancelled the
+   *   request's plan.
    */
-  async function stop(id) {
-    try {
-      await apos.http.post(`${getAction()}/chat/${id}/stop`, { body: {} });
-    } catch (e) {
-      // Not running any more, or deleted: the records say which
-      if (![ 404, 409 ].includes(e.status)) {
-        report(e);
-      }
-    }
-    await loadChats();
-    await loadChat(id);
+  async function stop(id, { planCancel = false } = {}) {
+    await act('stop', id, {
+      post: () => apos.http.post(`${getAction()}/chat/${id}/stop`, {
+        body: planCancel ? { planCancel } : {}
+      }),
+      refused: ignoreStale
+    });
   }
 
   /**
@@ -861,20 +1219,15 @@ export const useAssistantStore = defineStore('assistant', () => {
    * @param {string} id
    */
   async function continueHere(id) {
-    try {
-      await apos.http.post(`${getAction()}/chat/${id}/continue-here`, {
+    await act('continueHere', id, {
+      post: () => apos.http.post(`${getAction()}/chat/${id}/continue-here`, {
         body: {
           tabId: getTabId(),
           screen: getScreen()
         }
-      });
-    } catch (e) {
-      if (![ 404, 409 ].includes(e.status)) {
-        report(e);
-      }
-    }
-    await loadChats();
-    await loadChat(id);
+      }),
+      refused: ignoreStale
+    });
   }
 
   /**
@@ -888,24 +1241,18 @@ export const useAssistantStore = defineStore('assistant', () => {
    * @returns {Promise<boolean>} Whether the server took it.
    */
   async function answer(id, callId, value) {
-    let taken = true;
-    try {
-      await apos.http.post(`${getAction()}/chat/${id}/answer`, {
+    const { taken } = await act('answer', id, {
+      key: callId,
+      post: () => apos.http.post(`${getAction()}/chat/${id}/answer`, {
         body: {
           tabId: getTabId(),
           callId,
           answer: value,
           screen: getScreen()
         }
-      });
-    } catch (e) {
-      taken = false;
-      if (![ 404, 409 ].includes(e.status)) {
-        report(e);
-      }
-    }
-    await loadChats();
-    await loadChat(id);
+      }),
+      refused: ignoreStale
+    });
     return taken;
   }
 
@@ -916,42 +1263,42 @@ export const useAssistantStore = defineStore('assistant', () => {
    * @param {string} id
    */
   async function skip(id) {
-    try {
-      await apos.http.post(`${getAction()}/chat/${id}/skip`, {
+    await act('skip', id, {
+      post: () => apos.http.post(`${getAction()}/chat/${id}/skip`, {
         body: { tabId: getTabId() }
-      });
-    } catch (e) {
-      if (![ 404, 409 ].includes(e.status)) {
-        report(e);
-      }
-    }
-    await loadChats();
-    await loadChat(id);
+      }),
+      refused: ignoreStale
+    });
   }
 
   /**
-   * Sends the chat's failed latest request again, as a new request. A
-   * refusal says why on the chat tab, as a refused send does.
+   * Sends the chat's failed latest request again, as a new request under
+   * the same message. A refusal says why on the chat tab, as a refused send
+   * does.
    *
    * @param {string} id
-   * @param {string} requestId
+   * @param {string} failedId
    */
-  async function retry(id, requestId) {
+  async function retry(id, failedId) {
+    const requestId = createId();
     delete refusals.value[id];
-    try {
-      await apos.http.post(`${getAction()}/chat/${id}/retry`, {
+    await act('retry', id, {
+      data: {
+        chatId: id,
+        requestId,
+        message: requests.value[id]?.find(request => request._id === failedId)?.message || '',
+        retryOf: failedId
+      },
+      post: () => apos.http.post(`${getAction()}/chat/${id}/retry`, {
         body: {
+          retryOf: failedId,
           requestId,
           screen: getScreen()
         }
-      });
-    } catch (e) {
-      refuse(id, e);
-    }
-    await loadChats();
-    if (getChat(id)) {
-      await loadChat(id);
-    }
+      }),
+      check: () => findSent(id, requestId),
+      refused: e => refuse(id, e)
+    });
   }
 
   /**
@@ -972,37 +1319,32 @@ export const useAssistantStore = defineStore('assistant', () => {
     }
     checking.value[id] = requestId;
     delete confirmations.value[id];
-    try {
-      const { requestIds, documents } = await apos.http.post(
-        `${getAction()}/chat/${id}/revert-check`,
-        {
-          body: {
-            requestId,
-            tabId: getTabId(),
-            screen: getScreen()
-          }
-        }
-      );
-      const clean = documents.every(document => [ 'putBack', 'reverted' ].includes(document.outcome));
-      if (clean) {
-        await runRevert(id, requestId, cause);
-      } else {
-        confirmations.value[id] = {
+    const { taken, answer: check } = await act('revertCheck', id, {
+      post: () => apos.http.post(`${getAction()}/chat/${id}/revert-check`, {
+        body: {
           requestId,
-          requestIds,
-          documents,
-          cause
-        };
-      }
-    } catch (e) {
-      if (![ 400, 404, 409 ].includes(e.status)) {
-        report(e);
-      }
-    } finally {
-      delete checking.value[id];
+          tabId: getTabId(),
+          screen: getScreen()
+        }
+      }),
+      refused: ignoreRevertStale
+    });
+    delete checking.value[id];
+    if (!taken) {
+      return;
     }
-    await loadChats();
-    await loadChat(id);
+    const clean = check.documents
+      .every(document => [ 'putBack', 'reverted' ].includes(document.outcome));
+    if (clean) {
+      await runRevert(id, requestId, cause);
+    } else {
+      confirmations.value[id] = {
+        requestId,
+        requestIds: check.requestIds,
+        documents: check.documents,
+        cause
+      };
+    }
   }
 
   // The revert the editor confirmed
@@ -1012,15 +1354,7 @@ export const useAssistantStore = defineStore('assistant', () => {
       return;
     }
     delete confirmations.value[id];
-    try {
-      await runRevert(id, confirmation.requestId, confirmation.cause);
-    } catch (e) {
-      if (![ 400, 404, 409 ].includes(e.status)) {
-        report(e);
-      }
-    }
-    await loadChats();
-    await loadChat(id);
+    await runRevert(id, confirmation.requestId, confirmation.cause);
   }
 
   function cancelRevert(id) {
@@ -1028,15 +1362,18 @@ export const useAssistantStore = defineStore('assistant', () => {
   }
 
   async function runRevert(id, requestId, cause) {
-    const { revert } = await apos.http.post(`${getAction()}/chat/${id}/revert`, {
-      body: {
-        requestId,
-        tabId: getTabId(),
-        screen: getScreen(),
-        ...(cause && { cause })
-      }
+    await act('revert', id, {
+      post: () => apos.http.post(`${getAction()}/chat/${id}/revert`, {
+        body: {
+          requestId,
+          tabId: getTabId(),
+          screen: getScreen(),
+          ...(cause && { cause })
+        }
+      }),
+      taken: ({ revert }) => returning.add(revert._id),
+      refused: ignoreRevertStale
     });
-    returning.add(revert._id);
   }
 
   /**
@@ -1051,37 +1388,39 @@ export const useAssistantStore = defineStore('assistant', () => {
     // Its message returns only if its requests haven't left the thread yet
     const rewinds = (reverts.value[id]?.find(revert => revert._id === revertId)?.status === 'failed') &&
       !requests.value[id]?.some(request => request.revertId === revertId);
-    try {
-      await apos.http.post(`${getAction()}/chat/${id}/revert-retry`, {
+    await act('retryRevert', id, {
+      key: revertId,
+      post: () => apos.http.post(`${getAction()}/chat/${id}/revert-retry`, {
         body: {
           revertId,
           tabId: getTabId(),
           screen: getScreen()
         }
-      });
-      if (rewinds) {
-        returning.add(revertId);
-      }
-    } catch (e) {
-      if (![ 400, 404, 409 ].includes(e.status)) {
-        report(e);
-      }
-    }
-    await loadChats();
-    await loadChat(id);
+      }),
+      taken() {
+        if (rewinds) {
+          returning.add(revertId);
+        }
+      },
+      refused: ignoreRevertStale
+    });
   }
 
   async function dismissRevert(id, revertId) {
-    try {
-      await apos.http.post(`${getAction()}/chat/${id}/revert-dismiss`, {
+    const { taken } = await act('dismissRevert', id, {
+      key: revertId,
+      post: () => apos.http.post(`${getAction()}/chat/${id}/revert-dismiss`, {
         body: { revertId }
-      });
-    } catch (e) {
-      if (e.status !== 404) {
-        report(e);
+      }),
+      refused(e) {
+        if (e.status !== 404) {
+          report(e);
+        }
       }
+    });
+    if (taken) {
+      await loadChat(id);
     }
-    await loadChat(id);
   }
 
   /**
@@ -1092,19 +1431,9 @@ export const useAssistantStore = defineStore('assistant', () => {
    * @param {string} requestId
    */
   async function cancelPlan(id, requestId) {
-    try {
-      await apos.http.post(`${getAction()}/chat/${id}/stop`, {
-        body: { planCancel: true }
-      });
-    } catch (e) {
-      if (![ 404, 409 ].includes(e.status)) {
-        report(e);
-      }
-    }
-    await loadChats();
-    await loadChat(id);
+    await stop(id, { planCancel: true });
     await new Promise((resolve) => {
-      const open = () => getChat(id)?.openRequest?._id === requestId;
+      const open = () => getChatRecord(id)?.openRequest?._id === requestId;
       if (!open()) {
         resolve();
         return;
@@ -1116,8 +1445,22 @@ export const useAssistantStore = defineStore('assistant', () => {
         }
       });
     });
-    if (getChat(id)) {
+    if (getChatRecord(id)) {
       await startRevert(id, requestId, { cause: 'planCancel' });
+    }
+  }
+
+  // A refusal that only says the view was stale: the records, read again,
+  // say the rest
+  function ignoreStale(e) {
+    if (![ 404, 409 ].includes(e.status)) {
+      report(e);
+    }
+  }
+
+  function ignoreRevertStale(e) {
+    if (![ 400, 404, 409 ].includes(e.status)) {
+      report(e);
     }
   }
 
@@ -1178,6 +1521,12 @@ export const useAssistantStore = defineStore('assistant', () => {
     delete refusals.value[id];
   }
 
+  // A message back in the composer, in front of anything typed since
+  function prependDraft(id, message) {
+    const draft = drafts.value[id] || '';
+    setDraft(id, draft.trim() ? `${message}\n\n${draft}` : message);
+  }
+
   function restoreTabs() {
     let stored = null;
     try {
@@ -1226,6 +1575,10 @@ export const useAssistantStore = defineStore('assistant', () => {
     checking,
     browserSteps,
     getChat,
+    getChats,
+    getRequests,
+    getReverts,
+    isPending,
     getOwner,
     getBrowserStep,
     start,

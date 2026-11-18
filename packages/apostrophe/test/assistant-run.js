@@ -211,6 +211,89 @@ describe('Assistant: chats and the run', function () {
       await apos.harness.changes.deleteOne({ _id: 'foreign-entry' });
     });
 
+    it('takes the ids the browser names: a first send creates its chat, a second send of a request answers with it', async function () {
+      const req = userReq(editor);
+      const chat = { _id: 'named-chat' };
+      const gate = holdModel();
+      const request = await apos.assistant.send(req, chat._id, {
+        message: 'Hello',
+        screen: { tabId: 'tab-1' },
+        requestId: 'named-request',
+        create: true
+      });
+      assert.equal(request._id, 'named-request');
+      const created = await apos.assistant.getChat(req, chat._id);
+      assert.equal(created.openRequest._id, 'named-request');
+
+      // Sent again, as after an answer that never arrived: nothing new runs
+      const again = await apos.assistant.send(req, chat._id, {
+        message: 'Hello',
+        screen: { tabId: 'tab-1' },
+        requestId: 'named-request',
+        create: true
+      });
+      assert.equal(again._id, 'named-request');
+      assert.equal(await apos.assistant.requests.countDocuments({ chatId: chat._id }), 1);
+      assert.equal(await apos.assistant.chats.countDocuments({ _id: chat._id }), 1);
+      gate.release();
+      await waitForEnd(req, chat);
+
+      // Someone else's ids are not found, and change nothing of theirs
+      const otherReq = userReq(other);
+      await assert.rejects(apos.assistant.send(otherReq, chat._id, {
+        message: 'Mine now',
+        screen: { tabId: 'tab-2' },
+        create: true
+      }), { name: 'notfound' });
+      await apos.assistant.createChat(otherReq, { _id: 'other-chat' });
+      await assert.rejects(apos.assistant.send(otherReq, 'other-chat', {
+        message: 'Hello',
+        screen: { tabId: 'tab-2' },
+        requestId: 'named-request'
+      }), { name: 'notfound' });
+      // An id of another chat's request is not this chat's
+      await apos.assistant.createChat(req, { _id: 'second-chat' });
+      await assert.rejects(apos.assistant.send(req, 'second-chat', {
+        message: 'Hello',
+        screen: { tabId: 'tab-1' },
+        requestId: 'named-request'
+      }), { name: 'notfound' });
+      assert.equal((await apos.assistant.getChat(req, 'second-chat')).openRequest, null);
+      await assert.rejects(apos.assistant.send(req, chat._id, {
+        message: 'Hello',
+        screen: { tabId: 'tab-1' },
+        requestId: 'not a valid id'
+      }), { name: 'invalid' });
+      assert.equal((await apos.assistant.getRequest(req, 'named-request')).ownerId, editor._id);
+    });
+
+    it('frees the chat when a send stores nothing: a request id taken by someone else', async function () {
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      // Stored by someone else since the check, as in a race
+      await apos.assistant.requests.insertOne({
+        _id: 'raced-request',
+        ownerId: other._id,
+        chatId: 'elsewhere',
+        sequence: 0
+      });
+      const findSentRequest = apos.assistant.findSentRequest;
+      apos.assistant.findSentRequest = async () => null;
+      try {
+        await assert.rejects(apos.assistant.send(req, chat._id, {
+          message: 'Hello',
+          screen: { tabId: 'tab-1' },
+          requestId: 'raced-request'
+        }), { name: 'notfound' });
+      } finally {
+        apos.assistant.findSentRequest = findSentRequest;
+        await apos.assistant.requests.deleteOne({ _id: 'raced-request' });
+      }
+      assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest, null);
+      const request = await runToEnd(req, chat, 'tab-1', 'Hello again');
+      assert.equal(request.status, 'completed');
+    });
+
     it('refuses to delete a chat whose request runs, not one waiting for an answer', async function () {
       const req = userReq(editor);
       const chat = await apos.assistant.createChat(req);
@@ -546,7 +629,7 @@ describe('Assistant: chats and the run', function () {
         script = null;
         calls.length = 0;
         await apos.assistant.retry(req, chat._id, {
-          requestId: failed._id,
+          retryOf: failed._id,
           screen: { tabId: 'tab-1' }
         });
         assert.equal((await waitForEnd(req, chat)).status, 'completed');
@@ -708,7 +791,7 @@ describe('Assistant: chats and the run', function () {
       assert.deepEqual(mentions, []);
     });
 
-    it('renders a message as Markdown, its mentions as chips that no text can make', async function () {
+    it('renders Markdown with its mentions as chips that no text can make', async function () {
       const req = userReq(editor);
       const home = await apos.page.find(req, { slug: '/' }).toObject();
       const typed = `**Bold** @[x](page:${home._id}), @[y](piece:${pricing._id}) and ` +
@@ -726,14 +809,14 @@ describe('Assistant: chats and the run', function () {
       assert(html.includes('and Ghost'));
       assert.equal(html.match(/apos-assistant-chip--action/g).length, 2);
       assert(!/[\uE000\uE001]/.test(html));
-      assert.equal(
-        apos.assistant.renderRequest({
-          message,
-          mentions,
-          messages: []
-        }).messageHtml,
-        html
-      );
+      // The editor's message stays as typed: the panel shows it
+      const rendered = apos.assistant.renderRequest({
+        message,
+        mentions,
+        messages: []
+      });
+      assert.equal(rendered.message, message);
+      assert.equal(rendered.messageHtml, undefined);
     });
 
     it('renders a reply\'s documents as chips, any other token as its title, and tells the model how', async function () {
@@ -917,18 +1000,19 @@ describe('Assistant: chats and the run', function () {
       // The CSRF cookie a write needs
       await apos.http.get('/', { jar });
       const base = '/api/v1/@apostrophecms/assistant/chat';
-      const { chat } = await apos.http.post(base, {
-        jar,
-        body: {}
-      });
+      // A new chat is created by its first send, named by the browser
+      const chat = { _id: 'route-chat' };
       const gate = holdModel();
       const { request } = await apos.http.post(`${base}/${chat._id}/send`, {
         jar,
         body: {
           message: 'Hello',
-          screen: { tabId: 'tab-1' }
+          screen: { tabId: 'tab-1' },
+          requestId: 'route-request',
+          create: true
         }
       });
+      assert.equal(request._id, 'route-request');
       assert.equal(request.status, 'running');
 
       const read = await apos.http.get(`${base}/${chat._id}`, { jar });

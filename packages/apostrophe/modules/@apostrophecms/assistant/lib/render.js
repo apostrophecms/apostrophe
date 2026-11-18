@@ -11,10 +11,10 @@ const STEP_TEXT_MAX = 2000;
 module.exports = (self) => {
   return {
     /**
-     * A request as the panel reads it. Its message gets its rendered
-     * `messageHtml`, its mentions chips, and each assistant message with text
-     * its rendered `html` beside the raw content, the reply's checked
-     * documents chips; `steps` lists the
+     * A request as the panel reads it. Its message stays as typed, which
+     * the panel shows with its checked `mentions` as chips; each assistant
+     * message with text gets its rendered `html` beside the raw content, the
+     * reply's checked documents chips; `steps` lists the
      * tool calls in order, `{ id, name, label, input, output?, error? }`,
      * the arguments and result as capped JSON text; `locked` lists the
      * documents a write was refused for a lock and no later write of the
@@ -37,9 +37,6 @@ module.exports = (self) => {
         // A result an ask keeps for the model is not the panel's
         ...(rest.asks && {
           asks: rest.asks.map(({ result, ...ask }) => ask)
-        }),
-        messageHtml: self.renderMarkdown(request.message, {
-          mentions: request.mentions
         }),
         ...(self.options.modelDisplay && {
           provider,

@@ -160,7 +160,7 @@ const confirmingId = ref(null);
 const refusedId = ref(null);
 const controls = new Map();
 
-const rows = computed(() => store.chats.map(chat => ({
+const rows = computed(() => store.getChats().map(chat => ({
   _id: chat._id,
   title: chat.title || '',
   active: chat._id === store.activeId,

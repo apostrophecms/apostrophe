@@ -18,14 +18,11 @@
         class="apos-assistant-request__message"
         data-apos-test="assistant-request-message"
       >
-        <!-- eslint-disable vue/no-v-html -- sanitized on the server -->
-        <div
-          ref="text"
+        <AposAssistantMessage
           class="apos-assistant-request__text"
-          @click="onChipClick"
-          v-html="request.messageHtml"
+          :text="request.message"
+          :mentions="request.pending ? null : (request.mentions || [])"
         />
-        <!-- eslint-enable vue/no-v-html -->
         <button
           v-if="running"
           type="button"
@@ -186,6 +183,7 @@ import {
 } from 'vue';
 import { useAssistantStore } from '../stores/assistant.js';
 import { createChipIcon } from '../lib/chip.js';
+import AposAssistantMessage from './AposAssistantMessage.vue';
 import {
   formatNames, getConfirmLines, getRevertFailure, getRevertStatus, splitCount
 } from '../lib/revert.js';
@@ -261,13 +259,14 @@ const ERROR = {
 const $t = inject('i18n');
 const store = useAssistantStore();
 const { usageDisplay, modelDisplay } = apos.modules['@apostrophecms/assistant'];
-const retrying = ref(false);
-const answering = ref(false);
-const text = ref(null);
 const replyText = ref(null);
 const revertButton = ref(null);
 
 const chat = computed(() => store.getChat(props.request.chatId));
+// An action of the editor's on its way
+const retrying = computed(() => [ 'retry', 'send', 'retryRevert' ]
+  .some(kind => store.isPending(props.request.chatId, kind)));
+const answering = computed(() => store.isPending(props.request.chatId, 'answer'));
 // A browser step this browser tab serves for it: the request works on, on
 // the editor's screen
 const browserStep = computed(() => ((chat.value?.openRequest?._id === props.request._id)
@@ -591,64 +590,40 @@ async function onAction(name) {
     return;
   }
   if (name === 'retryRevert') {
-    if (!retrying.value) {
-      retrying.value = true;
-      try {
-        await store.retryRevert(props.request.chatId, props.revert._id);
-      } finally {
-        retrying.value = false;
-      }
-    }
+    store.retryRevert(props.request.chatId, props.revert._id);
     return;
   }
   if ([ 'continue', 'notNow' ].includes(name)) {
-    if (answering.value) {
-      return;
-    }
-    answering.value = true;
-    const taken = await store.answer(props.request.chatId, confirmAsk.value.callId, {
+    store.answer(props.request.chatId, confirmAsk.value.callId, {
       approved: name === 'continue'
     });
-    if (!taken) {
-      answering.value = false;
-    }
     return;
   }
-  if (![ 'retry', 'retryLocked' ].includes(name) || retrying.value) {
-    return;
-  }
-  retrying.value = true;
-  try {
-    // The model is asked again for what it couldn't write, in a message of
-    // the editor's own
-    if (name === 'retryLocked') {
-      await store.send(props.request.chatId, {
-        message: $t('apostrophe:assistantLockedRetryMessage', {
-          titles: lockedTitles.value
-        })
-      });
-    } else {
-      await store.retry(props.request.chatId, props.request._id);
-    }
-  } finally {
-    retrying.value = false;
+  // The model is asked again for what it couldn't write, in a message of
+  // the editor's own
+  if (name === 'retryLocked') {
+    store.send(props.request.chatId, {
+      message: $t('apostrophe:assistantLockedRetryMessage', {
+        titles: lockedTitles.value
+      })
+    });
+  } else if (name === 'retry') {
+    store.retry(props.request.chatId, props.request._id);
   }
 }
 
 // The server's chips get their icons once the message or the reply is in
 // the page
 onMounted(addChipIcons);
-watch([ () => props.request.messageHtml, reply ], async () => {
+watch(reply, async () => {
   await nextTick();
   addChipIcons();
 });
 
 function addChipIcons() {
-  for (const container of [ text.value, replyText.value ]) {
-    for (const chip of container?.querySelectorAll('.apos-assistant-chip') || []) {
-      if (!chip.querySelector('.apos-assistant-chip__icon')) {
-        chip.prepend(createChipIcon(chip.dataset.kind));
-      }
+  for (const chip of replyText.value?.querySelectorAll('.apos-assistant-chip') || []) {
+    if (!chip.querySelector('.apos-assistant-chip__icon')) {
+      chip.prepend(createChipIcon(chip.dataset.kind));
     }
   }
 }

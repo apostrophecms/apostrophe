@@ -199,16 +199,17 @@ module.exports = {
         }))
       },
       post: {
-        chat: route(async (req) => ({
-          chat: await self.createChat(req)
-        })),
-        'chat/:_id/send': route(async (req) => ({
+        // A new chat is created by its first send, under the id the
+        // browser named it by
+        'chat/:_id/send': route(async (req) => withChat(req, {
           request: self.renderRequest(await self.send(req, req.params._id, {
             message: req.body.message,
-            screen: req.body.screen
+            screen: req.body.screen,
+            requestId: req.body.requestId,
+            create: req.body.create === true
           }))
         })),
-        'chat/:_id/answer': route(async (req) => ({
+        'chat/:_id/answer': route(async (req) => withChat(req, {
           request: self.renderRequest(await self.answer(req, req.params._id, {
             tabId: req.body.tabId,
             callId: req.body.callId,
@@ -221,24 +222,25 @@ module.exports = {
           callId: req.body.callId,
           root: req.body.root
         })),
-        'chat/:_id/skip': route(async (req) => ({
+        'chat/:_id/skip': route(async (req) => withChat(req, {
           request: self.renderRequest(await self.skip(req, req.params._id, {
             tabId: req.body.tabId
           }))
         })),
-        'chat/:_id/continue-here': route(async (req) => ({
+        'chat/:_id/continue-here': route(async (req) => withChat(req, {
           request: self.renderRequest(await self.continueHere(req, req.params._id, {
             tabId: req.body.tabId,
             screen: req.body.screen
           }))
         })),
-        'chat/:_id/stop': route(async (req) => ({
+        'chat/:_id/stop': route(async (req) => withChat(req, {
           request: self.renderRequest(await self.stop(req, req.params._id, {
             planCancel: req.body.planCancel === true
           }))
         })),
-        'chat/:_id/retry': route(async (req) => ({
+        'chat/:_id/retry': route(async (req) => withChat(req, {
           request: self.renderRequest(await self.retry(req, req.params._id, {
+            retryOf: req.body.retryOf,
             requestId: req.body.requestId,
             screen: req.body.screen
           }))
@@ -254,7 +256,7 @@ module.exports = {
             documents: self.renderRevert({ documents }).documents
           };
         }),
-        'chat/:_id/revert': route(async (req) => ({
+        'chat/:_id/revert': route(async (req) => withChat(req, {
           revert: self.renderRevert(await self.revert(req, req.params._id, {
             requestId: req.body.requestId,
             tabId: req.body.tabId,
@@ -262,7 +264,7 @@ module.exports = {
             screen: req.body.screen
           }))
         })),
-        'chat/:_id/revert-retry': route(async (req) => ({
+        'chat/:_id/revert-retry': route(async (req) => withChat(req, {
           revert: self.renderRevert(await self.retryRevert(req, req.params._id, {
             revertId: req.body.revertId,
             tabId: req.body.tabId,
@@ -302,6 +304,16 @@ module.exports = {
         })
       }
     };
+
+    // An action's answer carries its chat as it is now, so the browser
+    // shows the action's effect without reading again
+    async function withChat(req, answer) {
+      const { seen, ...chat } = await self.getChat(req, req.params._id);
+      return {
+        ...answer,
+        chat
+      };
+    }
 
     // Routes are declared before the AI engine activates; with no engine
     // they answer as if they did not exist

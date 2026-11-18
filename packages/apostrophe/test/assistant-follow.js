@@ -954,19 +954,20 @@ describe('Assistant: following a request', function () {
       assert.equal(failed.error.name, 'aiRefusal');
       assert(failed.endedAt);
       await assert.rejects(apos.assistant.retry(req, chat._id, {
-        requestId: 'no-such-request',
+        retryOf: 'no-such-request',
         screen: { tabId: 'tab-1' }
       }), { name: 'notfound' });
 
       script = null;
       const retried = await apos.assistant.retry(req, chat._id, {
-        requestId: failed._id,
+        retryOf: failed._id,
+        requestId: 'retry-request',
         screen: {
           tabId: 'tab-2',
           url: '/now'
         }
       });
-      assert.notEqual(retried._id, failed._id);
+      assert.equal(retried._id, 'retry-request');
       assert.equal(retried.retryOf, failed._id);
       assert.equal(retried.message, 'Hello');
       assert.equal(retried.tabId, 'tab-2');
@@ -974,9 +975,17 @@ describe('Assistant: following a request', function () {
       const completed = await waitForEnd(req, chat);
       assert.equal(completed._id, retried._id);
       assert.equal(completed.status, 'completed');
+      // Sent again: answered with the retry, though it is no longer failed
+      const again = await apos.assistant.retry(req, chat._id, {
+        retryOf: failed._id,
+        requestId: 'retry-request',
+        screen: { tabId: 'tab-2' }
+      });
+      assert.equal(again._id, 'retry-request');
+      assert.equal(again.status, 'completed');
       // Only a failed request is retried
       await assert.rejects(apos.assistant.retry(req, chat._id, {
-        requestId: completed._id,
+        retryOf: completed._id,
         screen: { tabId: 'tab-1' }
       }), { name: 'invalid' });
       assert.equal((await apos.assistant.getRequest(req, failed._id)).status, 'failed');
@@ -994,7 +1003,7 @@ describe('Assistant: following a request', function () {
       await runToEnd(req, chat, 'tab-1', 'Something else');
 
       await assert.rejects(apos.assistant.retry(req, chat._id, {
-        requestId: failed._id,
+        retryOf: failed._id,
         screen: { tabId: 'tab-1' }
       }), { name: 'invalid' });
       assert.equal((await apos.assistant.getChatRequests(req, chat._id)).length, 2);

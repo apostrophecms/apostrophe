@@ -1,10 +1,12 @@
 // Mentions: documents the editor names in a message with `@`, and the model
 // in a reply. Both carry each as a `@[title](kind:_id)` token, the grammar of
-// the panel's `ui/apos/lib/draft.js`. The server keeps a token only for a
-// document the editor and the AI may read, with its own title and kind; any
-// other token is left as its title.
+// `ui/apos/universal/message.js`, which the panel shares. The server keeps a
+// token only for a document the editor and the AI may read, with its own
+// title and kind; any other token is left as its title.
 
-const TOKEN = /@\[((?:\\.|[^\]\\])*)\]\(([a-z-]+):([^)\s]+)\)/g;
+const {
+  parseMentions, replaceMentions, mentionToken, getPlainMessage
+} = require('../ui/apos/universal/message.js');
 const MAX_MENTIONS = 20;
 const MAX_RESULTS = 8;
 const IMAGE = '@apostrophecms/image';
@@ -57,20 +59,24 @@ module.exports = (self) => {
      */
     async verifyMentions(req, message) {
       const found = new Map();
-      for (const [ , , , _id ] of message.matchAll(TOKEN)) {
-        if (!found.has(_id) && (found.size < MAX_MENTIONS)) {
-          found.set(_id, await findMention(_id));
+      for (const { mention } of parseMentions(message)) {
+        if (mention && !found.has(mention.id) && (found.size < MAX_MENTIONS)) {
+          found.set(mention.id, await findMention(mention.id));
         }
       }
       const mentions = [ ...new Map(
         [ ...found.values() ].filter(Boolean).map(doc => [ doc._id, doc ])
       ).values() ];
       return {
-        message: message.replace(TOKEN, (token, title, kind, _id) => {
-          const doc = found.get(_id);
+        message: replaceMentions(message, ({ title, id }) => {
+          const doc = found.get(id);
           return doc
-            ? `@[${escapeTitle(doc.title)}](${getKind(doc)}:${doc._id})`
-            : unescapeTitle(title);
+            ? mentionToken({
+              id: doc._id,
+              title: doc.title,
+              kind: getKind(doc)
+            })
+            : title;
         }),
         mentions: mentions.map(doc => ({
           _id: doc._id,
@@ -97,7 +103,7 @@ module.exports = (self) => {
 
     // A message as plain text, each token its title after an `@`
     getPlainMessage(message) {
-      return message.replace(TOKEN, (token, title) => `@${unescapeTitle(title)}`);
+      return getPlainMessage(message);
     }
   };
 
@@ -130,11 +136,4 @@ module.exports = (self) => {
     return locale ? { locale } : {};
   }
 
-  function escapeTitle(title) {
-    return (title || '').replace(/[\]\\]/g, '\\$&');
-  }
-
-  function unescapeTitle(title) {
-    return title.replace(/\\(.)/g, '$1');
-  }
 };

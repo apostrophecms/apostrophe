@@ -137,7 +137,6 @@ const props = defineProps({
 
 const store = useAssistantStore();
 const input = ref(null);
-const sending = ref(false);
 const listId = `apos-assistant-mention-${createId()}`;
 const query = ref(null);
 const closed = ref(false);
@@ -167,8 +166,7 @@ const chat = computed(() => store.getChat(props.chatId));
 const owner = computed(() => store.getOwner(chat.value));
 // A revert running or waiting on its confirmation is about to rewind the
 // thread: the composer takes a draft, Send waits
-const canSend = computed(() => !sending.value &&
-  !!draft.value.trim() &&
+const canSend = computed(() => !!draft.value.trim() &&
   (owner.value === 'none') &&
   !chat.value?.openRevert &&
   !store.confirmations[props.chatId]);
@@ -208,7 +206,7 @@ const dock = computed(() => {
   return null;
 });
 
-const latest = computed(() => store.requests[props.chatId]?.at(-1) || null);
+const latest = computed(() => store.getRequests(props.chatId).at(-1) || null);
 // The questions the chat's request waits on, when this browser tab answers
 // them
 const question = computed(() => {
@@ -338,15 +336,9 @@ function pick(item) {
   });
 }
 
-async function send() {
-  if (!canSend.value) {
-    return;
-  }
-  sending.value = true;
-  try {
-    await store.send(props.chatId);
-  } finally {
-    sending.value = false;
+function send() {
+  if (canSend.value) {
+    store.send(props.chatId);
   }
 }
 

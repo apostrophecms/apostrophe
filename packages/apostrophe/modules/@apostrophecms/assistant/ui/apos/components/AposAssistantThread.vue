@@ -75,9 +75,9 @@ let resizing = null;
 const known = new Set();
 
 // Every request of the chat, reverted ones included
-const all = computed(() => store.requests[props.chatId] || []);
+const all = computed(() => store.getRequests(props.chatId));
 const requests = computed(() => all.value.filter(request => !request.revertId));
-const reverts = computed(() => store.reverts[props.chatId] || []);
+const reverts = computed(() => store.getReverts(props.chatId));
 const confirmation = computed(() => store.confirmations[props.chatId] || null);
 
 // A retry runs under the message it repeats: each message shows its latest

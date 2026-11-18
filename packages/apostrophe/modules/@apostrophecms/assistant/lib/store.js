@@ -13,6 +13,8 @@
 // Raised when a record's shape changes; a migration upgrades older records
 const SCHEMA_VERSION = 1;
 const TITLE_MAX = 60;
+
+const { getFirstTitle } = require('../ui/apos/universal/message.js');
 const USAGE_BATCH = 100;
 
 module.exports = (self) => {
@@ -48,10 +50,24 @@ module.exports = (self) => {
       return req.user._id;
     },
 
-    async createChat(req) {
+    /**
+     * Creates a chat, under the id the browser named it by when given. An
+     * id the owner's chat already has answers with that chat; one that is
+     * someone else's is not found.
+     *
+     * @param {object} req
+     * @param {object} [options]
+     * @param {string} [options._id]
+     * @returns {Promise<object>} The chat record.
+     */
+    async createChat(req, { _id = null } = {}) {
+      const named = _id && self.apos.launder.id(_id);
+      if (_id && !named) {
+        throw self.apos.error('invalid', 'the chat id is not valid');
+      }
       const now = new Date();
       const chat = {
-        _id: self.apos.util.generateId(),
+        _id: named || self.apos.util.generateId(),
         schemaVersion: SCHEMA_VERSION,
         ownerId: self.getOwnerId(req),
         title: null,
@@ -61,7 +77,14 @@ module.exports = (self) => {
         createdAt: now,
         updatedAt: now
       };
-      await self.chats.insertOne(chat);
+      try {
+        await self.chats.insertOne(chat);
+      } catch (e) {
+        if (!named || !self.apos.doc.isUniqueError(e)) {
+          throw e;
+        }
+        return self.getChat(req, named);
+      }
       await self.publish(req, chat._id, 'chat');
       return chat;
     },
@@ -97,6 +120,32 @@ module.exports = (self) => {
         })
         .sort({ sequence: 1 })
         .toArray();
+    },
+
+    /**
+     * The request already stored under the id the browser named a new one
+     * by, or `null`: a send that arrives twice is answered, never run twice.
+     * An id of another chat's request, or of someone else's, is not found.
+     *
+     * @param {object} req
+     * @param {string} chatId
+     * @param {string} requestId
+     * @returns {Promise<object|null>}
+     */
+    async findSentRequest(req, chatId, requestId) {
+      const sent = await self.requests.findOne({ _id: requestId }, {
+        projection: {
+          ownerId: 1,
+          chatId: 1
+        }
+      });
+      if (!sent) {
+        return null;
+      }
+      if ((sent.ownerId !== self.getOwnerId(req)) || (sent.chatId !== chatId)) {
+        throw self.apos.error('notfound');
+      }
+      return self.getRequest(req, requestId);
     },
 
     async getRequest(req, _id) {
@@ -173,8 +222,8 @@ module.exports = (self) => {
     },
 
     /**
-     * A chat's title from the text of its first message: the text cut to 60
-     * characters at a word boundary, or `#N`, the chat's number among its
+     * A chat's title from the text of its first message, by the rule the
+     * panel shares (`getFirstTitle`), or `#N`, the chat's number among its
      * owner's chats, when there is no text.
      *
      * @param {object} chat
@@ -182,20 +231,15 @@ module.exports = (self) => {
      * @returns {Promise<string>}
      */
     async getMessageTitle(chat, text) {
-      const clean = (text || '').replace(/\s+/g, ' ').trim();
-      if (!clean) {
-        const number = await self.chats.countDocuments({
-          ownerId: chat.ownerId,
-          createdAt: { $lte: chat.createdAt }
-        });
-        return `#${number}`;
+      const title = getFirstTitle(text);
+      if (title) {
+        return title;
       }
-      if (clean.length <= TITLE_MAX) {
-        return clean;
-      }
-      const cut = clean.slice(0, TITLE_MAX - 1);
-      const space = cut.lastIndexOf(' ');
-      return `${space > 0 ? cut.slice(0, space) : cut}…`;
+      const number = await self.chats.countDocuments({
+        ownerId: chat.ownerId,
+        createdAt: { $lte: chat.createdAt }
+      });
+      return `#${number}`;
     },
 
     /**

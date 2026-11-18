@@ -232,13 +232,13 @@ const current = ref(0);
 // Per question: `{ choice }`, `{ text: true }` or `{ youDecide: true }`
 const picks = ref([]);
 const texts = ref([]);
-const sending = ref(false);
+const sending = computed(() => store.isPending(props.chatId, 'answer') ||
+  store.isPending(props.chatId, 'skip'));
 
 watch(() => props.ask.callId, () => {
   picks.value = questions.value.map(() => null);
   texts.value = questions.value.map(() => '');
   current.value = 0;
-  sending.value = false;
 }, { immediate: true });
 
 const answers = computed(() => questions.value.map((entry, index) => {
@@ -327,22 +327,16 @@ async function step(offset) {
   }
 }
 
-async function submit() {
-  if (sending.value || !complete.value) {
-    return;
-  }
-  sending.value = true;
-  const taken = await store.answer(props.chatId, props.ask.callId, {
-    answers: answers.value
-  });
-  if (!taken) {
-    sending.value = false;
+function submit() {
+  if (complete.value) {
+    store.answer(props.chatId, props.ask.callId, {
+      answers: answers.value
+    });
   }
 }
 
-async function skip() {
-  sending.value = true;
-  await store.skip(props.chatId);
+function skip() {
+  store.skip(props.chatId);
 }
 </script>
 

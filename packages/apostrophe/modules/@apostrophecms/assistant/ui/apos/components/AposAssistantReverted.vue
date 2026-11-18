@@ -85,7 +85,7 @@
 
 <script setup>
 import {
-  computed, inject, ref
+  computed, inject
 } from 'vue';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useAssistantStore } from '../stores/assistant.js';
@@ -106,7 +106,7 @@ const props = defineProps({
 const $t = inject('i18n');
 const store = useAssistantStore();
 const modalStore = useModalStore();
-const busy = ref(false);
+const busy = computed(() => store.isPending(props.revert.chatId, 'retryRevert'));
 
 const running = computed(() => props.revert.status === 'running');
 const count = computed(() => props.revert.requestIds.length);
@@ -132,16 +132,8 @@ const listTitle = computed(() => $t(listed.value.some(doc => doc.partly)
   ? 'apostrophe:assistantRevertNotFully'
   : 'apostrophe:assistantRevertNotReverted', { count: listed.value.length }));
 
-async function retry() {
-  if (busy.value) {
-    return;
-  }
-  busy.value = true;
-  try {
-    await store.retryRevert(props.revert.chatId, props.revert._id);
-  } finally {
-    busy.value = false;
-  }
+function retry() {
+  store.retryRevert(props.revert.chatId, props.revert._id);
 }
 
 function dismiss() {
