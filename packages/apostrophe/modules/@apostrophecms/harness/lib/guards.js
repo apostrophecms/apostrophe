@@ -65,8 +65,10 @@ module.exports = (self) => {
      *
      * Given what the field `held`, an array item the model sends with the
      * `_id` of an item the array holds once is that item still: it keeps its
-     * `_id` and the fields kept away from AI, and its own arrays the same.
-     * Any other `_id` is replaced, so none can repeat one the document holds.
+     * `_id` and the fields kept away from AI, and its own arrays the same. So
+     * does a widget of an area it holds, of the type the area holds, and the
+     * area keeps its `_id`. Any other `_id` is replaced, so none can repeat
+     * one the document holds.
      *
      * @param {object} req In the locale of the document written.
      * @param {object} field A schema field.
@@ -258,12 +260,26 @@ function newContent(self, req) {
 
   function value(field, given, held) {
     if (field.type === 'area') {
-      // As reads show an area, or as a plain list of widgets
+      // As reads show an area, or as a plain list of widgets. A widget sent
+      // with the `_id` of one the area holds once, of its type, is that
+      // widget still, as an array's item is
       const items = Array.isArray(given) ? given : given?.items;
+      const area = (held && (typeof held === 'object') && !Array.isArray(held))
+        ? held
+        : null;
+      const kept = heldOnce(area?.items);
       return {
-        _id: self.apos.util.generateId(),
+        _id: area?._id || self.apos.util.generateId(),
         metaType: 'area',
-        items: Array.isArray(items) ? items.map(entry => widget(entry)) : []
+        items: Array.isArray(items)
+          ? items.map(entry => {
+            const same = kept.get(entry?._id);
+            kept.delete(entry?._id);
+            return (same && (same.type === entry.type))
+              ? widget(entry, same._id, same)
+              : widget(entry);
+          })
+          : []
       };
     }
     if ((field.type === 'array') && Array.isArray(given)) {

@@ -113,7 +113,16 @@ describe('Harness: content in an open editor', function () {
                 fields: {
                   add: {
                     caption: { type: 'string' },
-                    internal: { type: 'string' }
+                    internal: { type: 'string' },
+                    text: {
+                      type: 'area',
+                      options: {
+                        widgets: {
+                          '@apostrophecms/rich-text': {},
+                          'open-card': {}
+                        }
+                      }
+                    }
                   }
                 }
               },
@@ -816,6 +825,78 @@ describe('Harness: content in an open editor', function () {
       assert.equal(values.slides[1].internal, 'Kept');
       assert(![ slides[0]._id, slides[1]._id ].includes(values.slides[2]._id));
       assert.equal(values.slides[2].internal, '');
+    });
+
+    it('should keep the widgets of an item it holds by their ids and type', async function () {
+      const text = richText('Old');
+      const held = card();
+      const other = richText('Other');
+      const slides = [ {
+        ...slide('First'),
+        text: area([ text, held, other ])
+      } ];
+      held.secret = 'Kept';
+
+      const { values } = await apos.harness.editContent(
+        userReq(),
+        arrayRoot(slides),
+        {
+          action: 'update_document',
+          values: {
+            slides: [ {
+              _id: slides[0]._id,
+              caption: 'First',
+              text: {
+                items: [
+                  {
+                    _id: text._id,
+                    type: '@apostrophecms/rich-text',
+                    content: '<p>New</p>'
+                  },
+                  {
+                    _id: held._id,
+                    type: 'open-card',
+                    heading: 'Rewritten',
+                    body: {
+                      items: [ {
+                        _id: held.body.items[0]._id,
+                        type: '@apostrophecms/rich-text',
+                        content: '<p>Inside, rewritten</p>'
+                      } ]
+                    }
+                  },
+                  // Its id, another type
+                  {
+                    _id: other._id,
+                    type: 'open-card',
+                    heading: 'Not the rich text'
+                  },
+                  {
+                    type: '@apostrophecms/rich-text',
+                    content: '<p>Added</p>'
+                  }
+                ]
+              }
+            } ]
+          }
+        }
+      );
+      const written = values.slides[0].text;
+      const [ first, second, third, fourth ] = written.items;
+      assert.equal(written._id, slides[0].text._id);
+      assert.equal(first._id, text._id);
+      assert.equal(first.content, '<p>New</p>');
+      assert.equal(second._id, held._id);
+      assert.equal(second.heading, 'Rewritten');
+      // What AI doesn't read stays with the widget, its own areas the same
+      assert.equal(second.secret, 'Kept');
+      assert.equal(second.body._id, held.body._id);
+      assert.equal(second.body.items[0]._id, held.body.items[0]._id);
+      assert.equal(second.body.items[0].content, '<p>Inside, rewritten</p>');
+      const heldIds = [ text._id, held._id, other._id ];
+      assert(!heldIds.includes(third._id));
+      assert(!heldIds.includes(fourth._id));
+      assert.notEqual(third._id, fourth._id);
     });
 
     it('should make new ids for an id sent twice or held twice', async function () {

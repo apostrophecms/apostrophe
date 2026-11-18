@@ -94,19 +94,21 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
           { label: 'Two columns' }
         ]
       },
+      // One option is a choice beside Other
       {
         question: 'Which tone?',
-        options: [ { label: 'Warm' }, { label: 'Formal' } ],
+        options: [ { label: 'Warm' } ],
         other: true
       },
       { question: 'What should the headline say?' },
       {
         question: 'Which image?',
-        options: [ { label: 'The beach' }, { label: 'The city' } ]
+        options: [ { label: 'The beach' }, { label: 'The city' } ],
+        youDecide: true
       }
     ];
 
-    it('asks up to four questions in one ask, and refuses a fifth or bare options', async function () {
+    it('asks up to four questions in one ask, and refuses a fifth, bare options or a lone one', async function () {
       const req = userReq(editor);
       const chat = await apos.assistant.createChat(req);
       script = sequence([
@@ -117,12 +119,20 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
             options: [ 'Warm', 'Formal' ]
           } ]
         }, 'bare'),
+        // One option with nothing beside it is no choice
+        toolTurn('ask_editor', {
+          questions: [ questions[0], {
+            question: 'Which tone?',
+            options: [ { label: 'Warm' } ]
+          } ]
+        }, 'lone'),
         toolTurn('ask_editor', { questions }, 'four')
       ]);
       const waiting = await runToEnd(req, chat, 'Redo the hero');
       assert.equal(waiting.status, 'waiting');
       assert.match(resultOf(waiting, 'call-five').error, /invalid arguments/);
       assert.match(resultOf(waiting, 'call-bare').error, /invalid arguments/);
+      assert.match(resultOf(waiting, 'call-lone').error, /question 2 has one option/);
       assert.deepEqual(waiting.asks, [ {
         callId: 'call-four',
         name: 'ask_editor',
@@ -139,18 +149,24 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
                 },
                 { label: 'Two columns' }
               ],
-              other: false
+              other: false,
+              youDecide: false
             },
             {
               question: 'Which tone?',
-              options: [ { label: 'Warm' }, { label: 'Formal' } ],
-              other: true
+              options: [ { label: 'Warm' } ],
+              other: true,
+              youDecide: false
             },
-            { question: 'What should the headline say?' },
+            {
+              question: 'What should the headline say?',
+              youDecide: false
+            },
             {
               question: 'Which image?',
               options: [ { label: 'The beach' }, { label: 'The city' } ],
-              other: false
+              other: false,
+              youDecide: true
             }
           ]
         }
@@ -215,7 +231,9 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
         [ { text: 'Three columns' }, ...good.slice(1) ],
         // No words
         [ good[0], good[1], { text: '  ' }, good[3] ],
-        [ good[0], good[1], {}, good[3] ]
+        [ good[0], good[1], {}, good[3] ],
+        // Left to the assistant where it didn't offer that
+        [ { youDecide: true }, ...good.slice(1) ]
       ];
       for (const answers of refused) {
         await assert.rejects(apos.assistant.answer(req, chat._id, {

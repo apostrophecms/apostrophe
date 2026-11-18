@@ -51,7 +51,7 @@
         </p>
         <div
           class="apos-assistant-ask__options"
-          role="radiogroup"
+          :role="(entry.options || entry.youDecide) ? 'radiogroup' : 'group'"
           :aria-labelledby="single ? `${id}-label` : `${id}-${index}`"
         >
           <button
@@ -89,6 +89,7 @@
             </span>
           </button>
           <button
+            v-if="entry.youDecide"
             type="button"
             class="apos-assistant-ask__option apos-assistant-ask__option--decide"
             :class="{ 'apos-assistant-ask__option--picked': picks[index]?.youDecide }"
