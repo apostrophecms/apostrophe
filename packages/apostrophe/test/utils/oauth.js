@@ -1,6 +1,7 @@
 // Shared by the test/oauth-*.js files: a site whose OAuth server is on
 // because a test module protects one route with it, as the MCP module will.
 
+const crypto = require('node:crypto');
 const t = require('../../test-lib/test.js');
 
 const BASE_URL = 'https://cms.example.com';
@@ -54,10 +55,66 @@ function getUrl(apos, path) {
   return path.startsWith(BASE_URL) ? local + path.slice(BASE_URL.length) : local + path;
 }
 
+// Connects `client` as the user whose session cookie is `cookie`: the
+// authorize step, Approve, and the code exchange, by hand. Returns the token
+// response
+async function connect(apos, { client, cookie }) {
+  const redirectUri = client.redirect_uris[0];
+  const verifier = crypto.randomBytes(32).toString('base64url');
+  const search = new URLSearchParams({
+    response_type: 'code',
+    client_id: client.client_id,
+    redirect_uri: redirectUri,
+    code_challenge: crypto.createHash('sha256').update(verifier).digest('base64url'),
+    code_challenge_method: 'S256',
+    state: 'the-state',
+    resource: `${BASE_URL}${RESOURCE}`
+  });
+  const page = await fetch(getUrl(apos, `${ACTION}/authorize?${search}`), {
+    redirect: 'manual',
+    headers: { cookie }
+  });
+  const html = await page.text();
+  const matches = html.match(/name="approval" value="([^"]+)"/);
+  if (!matches) {
+    throw new Error(`No approval page: ${page.status} ${html}`);
+  }
+  const decision = await fetch(getUrl(apos, `${ACTION}/authorize`), {
+    method: 'POST',
+    redirect: 'manual',
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      cookie
+    },
+    body: new URLSearchParams({
+      approval: matches[1],
+      decision: 'approve'
+    }).toString()
+  });
+  const code = new URL(decision.headers.get('location')).searchParams.get('code');
+  const response = await fetch(getUrl(apos, `${ACTION}/token`), {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      client_id: client.client_id,
+      code,
+      code_verifier: verifier,
+      resource: `${BASE_URL}${RESOURCE}`
+    }).toString()
+  });
+  const tokens = await response.json();
+  if (response.status !== 200) {
+    throw new Error(`No tokens: ${JSON.stringify(tokens)}`);
+  }
+  return tokens;
+}
+
 module.exports = {
   ACTION,
   BASE_URL,
   RESOURCE,
+  connect,
   createOauthApos,
   getUrl
 };
