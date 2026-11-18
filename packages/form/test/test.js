@@ -1179,4 +1179,90 @@ describe('Forms module', function () {
       assert.match(doc.data.constructor[0], /^\/uploads\/attachments\/\w+-upload-test\.txt$/);
     });
   });
+
+  describe('confirmation email', function () {
+    let _id;
+
+    before(async function () {
+      _id = 'confirmation-email-form:en:published';
+      await apos.doc.db.insertOne({
+        _id,
+        aposDocId: 'confirmation-email-form',
+        aposLocale: 'en:published',
+        aposMode: 'published',
+        archived: false,
+        visibility: 'public',
+        type: '@apostrophecms/form',
+        title: 'Confirmation email form',
+        slug: 'confirmation-email-form',
+        sendConfirmationEmail: true,
+        emailConfirmationField: 'email',
+        contents: {
+          _id: 'confirmationEmailContents',
+          metaType: 'area',
+          items: [
+            {
+              _id: 'confirmationEmailName',
+              type: '@apostrophecms/form-text-field',
+              fieldLabel: 'Name',
+              fieldName: 'name'
+            },
+            {
+              _id: 'confirmationEmailAddress',
+              type: '@apostrophecms/form-text-field',
+              fieldLabel: 'Email',
+              fieldName: 'email'
+            }
+          ]
+        }
+      });
+    });
+
+    it('accepts a submission from a visitor who enters an invalid confirmation address', async function () {
+      const jar = apos.http.jar();
+      // Pick up the CSRF cookie as an anonymous visitor
+      await apos.http.get('/', { jar });
+      await apos.http.post('/api/v1/@apostrophecms/form/submit', {
+        body: {
+          data: JSON.stringify({
+            _id,
+            name: 'Invalid confirmation address',
+            email: 'not an email address'
+          })
+        },
+        jar
+      });
+      const doc = await apos.db.collection('aposFormSubmissions').findOne({
+        'data.name': 'Invalid confirmation address'
+      });
+      assert(doc);
+      assert.equal(doc.data.email, 'not an email address');
+    });
+
+    it('notifies a logged-in user who enters an invalid confirmation address', async function () {
+      const notifications = [];
+      const notify = apos.notify;
+      apos.notify = async (req, message, options) => {
+        notifications.push({
+          message,
+          options
+        });
+      };
+      try {
+        await apos.http.post('/api/v1/@apostrophecms/form/submit?apikey=skeleton_key', {
+          body: {
+            data: JSON.stringify({
+              _id,
+              name: 'Invalid confirmation address, logged in',
+              email: 'still not an email address'
+            })
+          }
+        });
+      } finally {
+        apos.notify = notify;
+      }
+      assert.equal(notifications.length, 1);
+      assert.equal(notifications[0].message, 'aposForm:errorEmailConfirm');
+    });
+  });
 });
