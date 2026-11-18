@@ -119,7 +119,7 @@ module.exports = (self) => {
         await self.publishRequest(req, request);
         const title = await self.setFirstTitle(claimed, self.getPlainMessage(text));
         if (title) {
-          await self.publish(req, claimed._id, 'chat');
+          await self.publishChat(req, claimed._id);
         }
         const transcript = await self.getTranscript(claimed, request);
         await self.startRun(req, claimed, request, {
@@ -681,7 +681,7 @@ module.exports = (self) => {
           $set: { title }
         });
         if (matchedCount) {
-          await self.publish(req, chat._id, 'chat');
+          await self.publishChat(req, chat._id);
         }
       } catch (e) {
         self.logError(req, 'chat-title', e.message, {

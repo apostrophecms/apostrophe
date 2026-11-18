@@ -34,7 +34,7 @@
           type="button"
           class="apos-assistant-steps__step-trigger"
           :aria-expanded="opened[step.id] ? 'true' : 'false'"
-          @click="opened[step.id] = !opened[step.id]"
+          @click="toggle(step)"
         >
           <span class="apos-assistant-steps__label">
             {{ step.label ? $t(step.label) : step.name }}
@@ -50,6 +50,31 @@
           v-if="opened[step.id]"
           class="apos-assistant-steps__details"
         >
+          <p
+            v-if="details[step.id] === 'loading'"
+            class="apos-assistant-steps__note"
+            role="status"
+            data-apos-test="assistant-step-loading"
+          >
+            <AposAssistantThinking />
+            <span>{{ $t('apostrophe:assistantLoading') }}</span>
+          </p>
+          <p
+            v-else-if="details[step.id] === 'failed'"
+            class="apos-assistant-steps__note"
+            role="status"
+            data-apos-test="assistant-step-failed"
+          >
+            <span>{{ $t('apostrophe:assistantStepLoadFailed') }}</span>
+            <button
+              type="button"
+              class="apos-assistant-steps__retry"
+              data-apos-test="assistant-step-retry"
+              @click="load(step)"
+            >
+              {{ $t('apostrophe:assistantRetry') }}
+            </button>
+          </p>
           <!-- The model's arguments and a tool's result are text here,
             never markup -->
           <div
@@ -91,9 +116,11 @@ import {
   computed, inject, reactive, ref
 } from 'vue';
 import { createId } from 'apostrophe/lib/beneath.js';
+import { useAssistantStore } from '../stores/assistant.js';
 
 // The steps a request took, listed once it ends: each tool call, which the
-// editor can open to see what it was given and what came back
+// editor can open to see what it was given and what came back, read from
+// the server as it opens
 const props = defineProps({
   request: {
     type: Object,
@@ -104,9 +131,13 @@ const props = defineProps({
 const COPIED_FOR = 1500;
 
 const $t = inject('i18n');
+const store = useAssistantStore();
 const listId = `apos-assistant-steps-${createId()}`;
 const open = ref(true);
 const opened = reactive({});
+// Each opened step's arguments and result: 'loading', 'failed', or
+// `{ input, output, error }`
+const details = reactive({});
 const copied = ref(null);
 let copiedTimer = null;
 
@@ -131,22 +162,48 @@ const summary = computed(() => {
   return $t('apostrophe:assistantThoughtFor', { duration });
 });
 
+// A step read with its result or error stays as read; one read before it
+// had either is read again when it opens
+function toggle(step) {
+  opened[step.id] = !opened[step.id];
+  const detail = details[step.id];
+  const settled = (typeof detail === 'object') &&
+    ((detail.output !== null) || (detail.error !== null));
+  if (opened[step.id] && (detail !== 'loading') && !settled) {
+    load(step);
+  }
+}
+
+async function load(step) {
+  details[step.id] = 'loading';
+  try {
+    details[step.id] = await store.loadStep(props.request.chatId, props.request._id,
+      step.id);
+  } catch (e) {
+    details[step.id] = 'failed';
+  }
+}
+
 function getBlocks(step) {
+  const detail = details[step.id];
+  if (typeof detail !== 'object') {
+    return [];
+  }
   return [
-    step.input && {
+    detail.input && {
       name: 'input',
       title: 'apostrophe:assistantStepArguments',
-      text: step.input
+      text: detail.input
     },
-    step.error && {
+    detail.error && {
       name: 'error',
       title: 'apostrophe:assistantStepError',
-      text: step.error
+      text: detail.error
     },
-    step.output && {
+    detail.output && {
       name: 'output',
       title: 'apostrophe:assistantStepResult',
-      text: step.output
+      text: detail.output
     }
   ].filter(Boolean);
 }
@@ -240,6 +297,32 @@ async function copy(stepId, block) {
     flex-direction: column;
     gap: 10px;
     padding: 4px 0 10px;
+  }
+
+  .apos-assistant-steps__note {
+    @include type-small;
+
+    & {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      color: var(--a-base-2);
+    }
+  }
+
+  .apos-assistant-steps__retry {
+    @include apos-button-reset();
+
+    & {
+      color: var(--a-primary);
+      text-decoration: underline;
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--a-primary);
+      outline-offset: 2px;
+    }
   }
 
   .apos-assistant-steps__block {

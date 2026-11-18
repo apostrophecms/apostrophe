@@ -85,7 +85,7 @@ module.exports = (self) => {
         }
         return self.getChat(req, named);
       }
-      await self.publish(req, chat._id, 'chat');
+      await self.publishChat(req, chat._id);
       return chat;
     },
 
@@ -120,6 +120,27 @@ module.exports = (self) => {
         })
         .sort({ sequence: 1 })
         .toArray();
+    },
+
+    /**
+     * One request of a chat, or a `notfound` error.
+     *
+     * @param {object} req
+     * @param {string} chatId
+     * @param {string} requestId
+     * @returns {Promise<object>}
+     */
+    async getChatRequest(req, chatId, requestId) {
+      const chat = await self.getChat(req, chatId);
+      const request = await self.requests.findOne({
+        _id: self.apos.launder.id(requestId),
+        chatId: chat._id,
+        ownerId: chat.ownerId
+      });
+      if (!request) {
+        throw self.apos.error('notfound');
+      }
+      return request;
     },
 
     /**
@@ -174,7 +195,7 @@ module.exports = (self) => {
           updatedAt: new Date()
         }
       });
-      await self.publish(req, chat._id, 'chat');
+      await self.publishChat(req, chat._id);
       return self.getChat(req, chat._id);
     },
 

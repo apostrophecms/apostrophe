@@ -834,7 +834,7 @@ describe('Assistant: chats and the run', function () {
         request.replyMentions.map(each => [ each._id, each.kind, each.title ]),
         [ [ pricing._id, 'piece', 'Pricing notes' ], [ home._id, 'page', 'Home' ] ]
       );
-      const { html } = apos.assistant.renderRequest(request).messages.at(-1);
+      const { reply: html } = apos.assistant.renderRequest(request);
       assert(html.includes(`data-kind="piece" title="Pricing notes" data-id="${pricing._id}"`));
       assert(html.includes(`data-kind="page" title="Home" href="${home._url}"`));
       assert.equal(html.match(/apos-assistant-chip--action/g).length, 2);
@@ -1017,7 +1017,17 @@ describe('Assistant: chats and the run', function () {
 
       const read = await apos.http.get(`${base}/${chat._id}`, { jar });
       assert.equal(read.chat.openRequest.tabId, 'tab-1');
+      assert.equal(read.chat.seen, undefined);
       assert.equal(read.requests[0].tabId, 'tab-1');
+      // One request, with its chat: what a request event changed
+      const one = await apos.http.get(`${base}/${chat._id}/request/${request._id}`, { jar });
+      assert.equal(one.request._id, request._id);
+      assert.equal(one.chat.openRequest._id, request._id);
+      assert.equal(one.chat.seen, undefined);
+      await assert.rejects(apos.http.get(`${base}/${chat._id}/request/nope`, { jar }),
+        { status: 404 });
+      await assert.rejects(apos.http.get(`${base}/nope/request/${request._id}`, { jar }),
+        { status: 404 });
       await assert.rejects(apos.http.post(`${base}/${chat._id}/send`, {
         jar,
         body: {
@@ -1048,6 +1058,143 @@ describe('Assistant: chats and the run', function () {
       await assert.rejects(apos.http.get(`${base}/${chat._id}`, { jar }), { status: 404 });
 
       await assert.rejects(apos.http.get(base), { status: 403 });
+    });
+
+    it('answers not found to every route given someone else\'s ids, and changes nothing of theirs', async function () {
+      const base = '/api/v1/@apostrophecms/assistant/chat';
+      const req = userReq(editor);
+      const chat = { _id: 'forged-chat' };
+      // Waiting on a question: every action below would be taken from its
+      // owner
+      script = askScript('t_test_question');
+      await apos.assistant.send(req, chat._id, {
+        message: 'Ask me',
+        screen: { tabId: 'tab-1' },
+        requestId: 'forged-request',
+        create: true
+      });
+      const waiting = await waitForEnd(req, chat);
+      assert.equal(waiting.status, 'waiting');
+      const before = await apos.assistant.getChat(req, chat._id);
+      await apos.assistant.reverts.insertOne({
+        _id: 'forged-revert',
+        ownerId: editor._id,
+        chatId: chat._id,
+        requestIds: [ waiting._id ],
+        status: 'failed',
+        documents: []
+      });
+
+      const jar = await t.loginAs(apos, 'other');
+      await apos.http.get('/', { jar });
+      const own = { _id: 'forger-chat' };
+      await apos.http.post(`${base}/${own._id}/send`, {
+        jar,
+        body: {
+          message: 'Mine',
+          screen: { tabId: 'tab-2' },
+          create: true
+        }
+      });
+      await waitForEnd(userReq(other), own);
+      const screen = { tabId: 'tab-2' };
+      const forged = (id = chat._id) => ({
+        'GET chat': [ 'get', `${base}/${id}` ],
+        'GET request': [ 'get', `${base}/${id}/request/${waiting._id}` ],
+        'GET step': [ 'get', `${base}/${id}/request/${waiting._id}/step/call-t_test_question` ],
+        send: [ 'post', `${base}/${id}/send`, {
+          message: 'Taken',
+          screen,
+          requestId: 'forger-request'
+        } ],
+        'send, creating': [ 'post', `${base}/${id}/send`, {
+          message: 'Taken',
+          screen,
+          create: true
+        } ],
+        answer: [ 'post', `${base}/${id}/answer`, {
+          tabId: 'tab-1',
+          callId: 'call-t_test_question',
+          answer: 'Forged',
+          screen: { tabId: 'tab-1' }
+        } ],
+        skip: [ 'post', `${base}/${id}/skip`, { tabId: 'tab-1' } ],
+        'continue-here': [ 'post', `${base}/${id}/continue-here`, {
+          tabId: 'tab-2',
+          screen
+        } ],
+        'open-editor': [ 'post', `${base}/${id}/open-editor`, {
+          tabId: 'tab-1',
+          callId: 'call-t_test_question',
+          root: {}
+        } ],
+        stop: [ 'post', `${base}/${id}/stop`, {} ],
+        retry: [ 'post', `${base}/${id}/retry`, {
+          retryOf: waiting._id,
+          screen
+        } ],
+        'revert-check': [ 'post', `${base}/${id}/revert-check`, {
+          requestId: waiting._id,
+          tabId: 'tab-2',
+          screen
+        } ],
+        revert: [ 'post', `${base}/${id}/revert`, {
+          requestId: waiting._id,
+          tabId: 'tab-2',
+          screen
+        } ],
+        'revert-retry': [ 'post', `${base}/${id}/revert-retry`, {
+          revertId: 'forged-revert',
+          tabId: 'tab-2',
+          screen
+        } ],
+        'revert-dismiss': [ 'post', `${base}/${id}/revert-dismiss`, {
+          revertId: 'forged-revert'
+        } ],
+        rename: [ 'patch', `${base}/${id}`, { title: 'Taken' } ],
+        delete: [ 'delete', `${base}/${id}` ]
+      });
+      // Their chat by its id, then their request and revert by their ids
+      // through a chat of the forger's own
+      for (const id of [ chat._id, own._id ]) {
+        for (const [ name, [ method, url, body ] ] of Object.entries(forged(id))) {
+          if ((id === own._id) && [ 'send', 'send, creating', 'skip', 'continue-here',
+            'stop', 'rename', 'delete', 'GET chat', 'answer', 'open-editor' ].includes(name)) {
+            // Actions on the forger's own chat that name none of their ids
+            continue;
+          }
+          await assert.rejects(apos.http[method](url, {
+            jar,
+            ...(body && { body })
+          }), (e) => {
+            assert.equal(e.status, 404, `${name} on ${id}: ${e.status}`);
+            return true;
+          });
+        }
+      }
+      const { chats } = await apos.http.get(base, { jar });
+      assert(chats.some(each => each._id === own._id));
+      assert(!chats.some(each => each._id === chat._id));
+
+      // Theirs as they left it
+      const after = await apos.assistant.getChat(req, chat._id);
+      assert.equal(after.openRequest._id, waiting._id);
+      assert.equal(after.openRequest.status, 'waiting');
+      assert.equal(after.openRequest.tabId, 'tab-1');
+      assert.equal(after.title, before.title);
+      const requests = await apos.assistant.getChatRequests(req, chat._id);
+      assert.deepEqual(requests.map(each => [ each._id, each.status, each.tabId ]),
+        [ [ waiting._id, 'waiting', 'tab-1' ] ]);
+      assert.equal(requests[0].messages.length, waiting.messages.length);
+      const reverts = await apos.assistant.getChatReverts(req, chat._id);
+      assert.deepEqual(reverts.map(each => [ each._id, each.status, each.dismissed ]),
+        [ [ 'forged-revert', 'failed', undefined ] ]);
+      assert.equal(await apos.assistant.requests.countDocuments({
+        ownerId: other._id,
+        chatId: chat._id
+      }), 0);
+      await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+      await apos.assistant.reverts.deleteOne({ _id: 'forged-revert' });
     });
   });
 

@@ -234,6 +234,7 @@
   "assistantStepCount": "{{ count }} step",
   "assistantStepCount_plural": "{{ count }} steps",
   "assistantStepError": "Error",
+  "assistantStepLoadFailed": "This step couldn't be loaded.",
   "assistantStepResult": "Result",
   "assistantStillRetrying": "Still working, retrying...",
   "assistantStillReverting": "This chat is reverting changes.",

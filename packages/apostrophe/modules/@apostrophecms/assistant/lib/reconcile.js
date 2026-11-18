@@ -46,7 +46,7 @@ module.exports = (self) => {
       if (!request) {
         if (left(chat.updatedAt)) {
           await self.closeRequest(req, chat, { _id: open._id });
-          await self.publish(req, chat._id, 'chat');
+          await self.publishChat(req, chat._id);
         }
       } else if (![ 'running', 'stopping', 'waiting' ].includes(request.status)) {
         if (left(request.updatedAt)) {

@@ -1102,13 +1102,14 @@ describe('Assistant: following a request', function () {
       const chat = await apos.assistant.createChat(req);
       await apos.assistant.renameChat(req, chat._id, 'Renamed');
       await apos.assistant.deleteChat(req, chat._id);
+      // Each carries the title as stored
       assert.deepEqual(events.map(({
-        chatId, stage, deleted, stored
+        chatId, stage, deleted, title
       }) => ({
         chatId,
         stage,
         deleted,
-        title: stored.chat?.title
+        title
       })), [
         {
           chatId: chat._id,
@@ -1372,20 +1373,21 @@ describe('Assistant: following a request', function () {
 
       const jar = await t.loginAs(apos, 'editor');
       const { requests } = await apos.http.get(`/api/v1/@apostrophecms/assistant/chat/${chat._id}`, { jar });
-      const reply = requests[0].messages.at(-1);
-      assert.equal(reply.content[0].text, text);
-      assert(reply.html.includes('<strong>Done.</strong>'));
-      assert(reply.html.includes('<a href="/about" target="_blank" rel="noopener noreferrer">the page</a>'));
-      assert(reply.html.includes('<table>'));
+      const { reply } = requests[0];
+      assert(reply.includes('<strong>Done.</strong>'));
+      assert(reply.includes('<a href="/about" target="_blank" rel="noopener noreferrer">the page</a>'));
+      assert(reply.includes('<table>'));
       for (const banned of [ '<script', 'onerror', 'javascript:', '<img' ]) {
-        assert(!reply.html.includes(banned), banned);
+        assert(!reply.includes(banned), banned);
       }
-      // Never stored
+      // The transcript stays on the server, as the model wrote it
+      assert.equal(requests[0].messages, undefined);
       const stored = await apos.assistant.getRequest(req, requests[0]._id);
+      assert.equal(stored.messages.at(-1).content[0].text, text);
       assert(!stored.messages.some(message => message.html));
     });
 
-    it('lists the steps with their labels, and the documents a lock kept', async function () {
+    it('lists the steps with their labels, reads each step on its own, and lists the documents a lock kept', async function () {
       const req = userReq(editor);
       const chat = await apos.assistant.createChat(req);
       const other = await t.createAdmin(apos, { username: 'other' });
@@ -1416,19 +1418,37 @@ describe('Assistant: following a request', function () {
       }
 
       const jar = await t.loginAs(apos, 'editor');
-      const { requests } = await apos.http.get(`/api/v1/@apostrophecms/assistant/chat/${chat._id}`, { jar });
+      const base = `/api/v1/@apostrophecms/assistant/chat/${chat._id}`;
+      const { requests } = await apos.http.get(base, { jar });
       const [ request ] = requests;
-      assert.deepEqual(request.steps.map(step => [ step.name, step.label ]), [
-        [ 't_look', 'Looking around' ],
-        [ 't_where', 'T Where' ],
-        [ 'update_document', 'apostrophe:aiToolUpdateDocument' ]
+      assert.deepEqual(request.steps, [
+        {
+          id: 'call-t_look',
+          name: 't_look',
+          label: 'Looking around'
+        },
+        {
+          id: 'call-t_where',
+          name: 't_where',
+          label: 'T Where'
+        },
+        {
+          id: 'call-update_document',
+          name: 'update_document',
+          label: 'apostrophe:aiToolUpdateDocument'
+        }
       ]);
-      const [ look, where, update ] = request.steps;
+      const step = id => apos.http.get(`${base}/request/${request._id}/step/${id}`, { jar });
+      const look = await step('call-t_look');
+      assert.deepEqual(JSON.parse(look.input), {});
       assert.deepEqual(JSON.parse(look.output), { ok: true });
-      assert.deepEqual(JSON.parse(where.output), { locale: 'en' });
+      assert.equal(look.error, null);
+      assert.deepEqual(JSON.parse((await step('call-t_where')).output), { locale: 'en' });
       // A trail, not a reader: long arguments are cut
+      const update = await step('call-update_document');
       assert(update.input.length < 2100);
       assert(update.input.endsWith('…'));
+      await assert.rejects(step('nope'), { status: 404 });
       assert.deepEqual(request.locked, [ {
         _id: draft._id,
         title: 'A note',

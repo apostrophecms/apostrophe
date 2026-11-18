@@ -11,7 +11,10 @@
 // belongs to no browser tab.
 //
 // The records are the truth: the browser reads them, and hears of every
-// change through the `assistant-chat` bus event (see lib/events.js).
+// change through the `assistant-chat` bus event (see lib/events.js). An
+// action's route answers with what it changed, a request event is followed
+// by a read of that request alone, and a step's arguments and result are
+// read when the editor opens the step.
 
 module.exports = {
   options: {
@@ -184,8 +187,7 @@ module.exports = {
           return { chats };
         }),
         'chat/:_id': route(async (req) => {
-          const found = await self.getChat(req, req.params._id);
-          const chat = await self.reconcileChat(req, found);
+          const chat = await getReconciledChat(req);
           const requests = await self.getChatRequests(req, chat._id);
           const reverts = await self.getChatReverts(req, chat._id);
           return {
@@ -193,6 +195,26 @@ module.exports = {
             requests: requests.map(self.renderRequest),
             reverts: reverts.map(self.renderRevert)
           };
+        }),
+        // What a request event changed: the request, and its chat's slot
+        'chat/:_id/request/:requestId': route(async (req) => {
+          const chat = await getReconciledChat(req);
+          const request = await self.getChatRequest(req, chat._id,
+            req.params.requestId);
+          return {
+            chat,
+            request: self.renderRequest(request)
+          };
+        }),
+        // A step's arguments and result, once the editor opens it
+        'chat/:_id/request/:requestId/step/:stepId': route(async (req) => {
+          const request = await self.getChatRequest(req, req.params._id,
+            req.params.requestId);
+          const step = self.renderStep(request, self.apos.launder.string(req.params.stepId));
+          if (!step) {
+            throw self.apos.error('notfound');
+          }
+          return step;
         }),
         mention: route(async (req) => ({
           results: await self.findMentions(req, req.query.q)
@@ -303,6 +325,13 @@ module.exports = {
         })
       }
     };
+
+    // A chat as the panel reads it, without what it saw of each document
+    async function getReconciledChat(req) {
+      const found = await self.getChat(req, req.params._id);
+      const { seen, ...chat } = await self.reconcileChat(req, found);
+      return chat;
+    }
 
     // An action's answer carries its chat as it is now, so the browser
     // shows the action's effect without reading again

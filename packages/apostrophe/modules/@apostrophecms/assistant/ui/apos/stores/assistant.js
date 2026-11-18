@@ -10,8 +10,12 @@ import { browserTools, releaseAhead } from '../lib/browser-tools.js';
 /**
  * The assistant's chats as this browser tab sees them. The records on the
  * server are the truth: they are read from the routes, and the
- * `assistant-chat` bus event only says what to read again. A missed event
- * costs speed, never truth: coming back to the browser tab reads it all.
+ * `assistant-chat` bus event says what changed. A request event sets its
+ * chat's slot at once and reads that request alone; a chat event carries
+ * the title. The whole chat is read when its chat tab opens, on catch-up
+ * and after a revert; a step's arguments and result when the editor opens
+ * the step. A missed event costs speed, never truth: coming back to the
+ * browser tab reads it all.
  *
  * What the panel shows is the records with the editor's pending actions
  * folded over them (`getChat`, `getChats`, `getRequests`, `getReverts`):
@@ -109,18 +113,24 @@ export const useAssistantStore = defineStore('assistant', () => {
   const modalOwners = ref(new Map());
 
   let started = false;
-  // Reads are numbered: an answer to any but the latest is dropped. An
-  // action starting or settling moves the number on, so a read in flight
-  // then is dropped too, and requested again
-  let chatsSequence = 0;
-  let chatsStarted = 0;
-  const chatSequences = new Map();
-  const chatStarted = new Map();
+  // Reads, actions and events take turns on one clock. A read is used only
+  // if it is the latest of its target ('chats', a chat id, or `chat/request`
+  // ids) and no action of its chat started or settled since it started: one
+  // an action overtook is read again. Each record remembers when what last
+  // set it happened, by key (`chat:id`, `request:id`, `revert:id`): a read
+  // never replaces a record that an event, an answer or a later read set
+  let clock = 0;
+  const latest = new Map();
+  const acted = new Map();
+  let actedAny = 0;
+  const stamps = new Map();
   // Each chat's actions on the wire, one at a time: the latest one's run
   const queues = new Map();
-  // The chats an event was heard for while an action of theirs was on the
-  // wire: its answer may be older than a read that landed meanwhile
-  const heard = new Set();
+  // What events said while an action of their chat was on the wire, by
+  // chat id: its answer may be older than what they said, so what it
+  // disagrees with is read again once it settles. `{ requests, title,
+  // whole }`, `requests` the last status heard by request id
+  const heard = new Map();
   const pending = new Set();
   let timer = null;
   // The browser asks taken on this page, call id to request id: each runs
@@ -443,7 +453,6 @@ export const useAssistantStore = defineStore('assistant', () => {
           ...(data.retryOf && { retryOf: data.retryOf }),
           status: 'running',
           sequence: PENDING_SEQUENCE,
-          messages: [],
           asks: null,
           pending: true
         }
@@ -576,22 +585,26 @@ export const useAssistantStore = defineStore('assistant', () => {
     if (!chatId) {
       return;
     }
-    if (actions.value[chatId]) {
-      heard.add(chatId);
-    }
     if ((stage === 'chat') && event.deleted) {
       forget(chatId);
       return;
     }
-    if ([ 'chat', 'request', 'revert' ].includes(stage)) {
-      if (stage === 'request') {
-        delete progress.value[requestId];
-      }
-      if (stage === 'revert') {
-        delete revertProgress.value[event.revertId];
-      }
-      schedule('chats');
-      if (requests.value[chatId] || tabs.value.includes(chatId)) {
+    if (actions.value[chatId] && [ 'chat', 'request', 'revert' ].includes(stage)) {
+      hear(chatId, event);
+    }
+    if (stage === 'chat') {
+      applyTitle(chatId, event.title ?? null);
+      return;
+    }
+    if (stage === 'request') {
+      delete progress.value[requestId];
+      applyRequest(event);
+      return;
+    }
+    if (stage === 'revert') {
+      // A revert changes the chat's slot and several of its requests
+      delete revertProgress.value[event.revertId];
+      if (requests.value[chatId]) {
         schedule(chatId);
       }
       return;
@@ -612,6 +625,78 @@ export const useAssistantStore = defineStore('assistant', () => {
     }
   }
 
+  function hear(id, {
+    stage, requestId, status, title
+  }) {
+    const missed = heard.get(id) || {
+      requests: new Map(),
+      title: undefined,
+      whole: false
+    };
+    if (stage === 'request') {
+      missed.requests.set(requestId, status);
+    } else if (stage === 'chat') {
+      missed.title = title ?? null;
+    } else {
+      missed.whole = true;
+    }
+    heard.set(id, missed);
+  }
+
+  // A chat event's title, set at once. A chat not known here is read with
+  // the chat list
+  function applyTitle(id, title) {
+    const chat = getChatRecord(id);
+    if (!chat) {
+      if (!actions.value[id]) {
+        schedule('chats');
+      }
+      return;
+    }
+    stamps.set(`chat:${id}`, ++clock);
+    setChat({
+      ...chat,
+      title
+    });
+  }
+
+  // A request event's status, set at once on its chat's slot while the
+  // request is open. An ended one keeps its running look until its read
+  // lands, so the thread never shows it ended without its reply; a chat
+  // whose thread isn't read only frees its slot. The request is read where
+  // its thread is, and read whole where this browser tab answers its asks
+  function applyRequest({
+    chatId: id, requestId, status, tabId
+  }) {
+    const chat = getChatRecord(id);
+    const loaded = Boolean(requests.value[id]);
+    const open = [ 'running', 'waiting', 'stopping' ].includes(status);
+    const same = chat?.openRequest?._id === requestId;
+    if (chat && (open || (!loaded && same))) {
+      stamps.set(`chat:${id}`, ++clock);
+      setChat({
+        ...chat,
+        openRequest: open
+          ? {
+            ...(same && chat.openRequest),
+            _id: requestId,
+            status,
+            tabId
+          }
+          : null
+      });
+    }
+    if (loaded) {
+      schedule(`${id}/${requestId}`);
+    } else if (!chat) {
+      if (!actions.value[id]) {
+        schedule('chats');
+      }
+    } else if ((status === 'waiting') && (tabId === getTabId())) {
+      schedule(id);
+    }
+  }
+
   function schedule(target) {
     pending.add(target);
     if (timer) {
@@ -624,6 +709,9 @@ export const useAssistantStore = defineStore('assistant', () => {
       for (const target of targets) {
         if (target === 'chats') {
           loadChats();
+        } else if (target.includes('/')) {
+          const [ id, requestId ] = target.split('/');
+          loadRequest(id, requestId);
         } else {
           loadChat(target);
         }
@@ -631,26 +719,66 @@ export const useAssistantStore = defineStore('assistant', () => {
     }, LOAD_DELAY);
   }
 
+  // A read of `target` starts: its tick
+  function startRead(target) {
+    const tick = ++clock;
+    latest.set(target, tick);
+    return tick;
+  }
+
+  // Whether a read's answer may be used: the latest of its target, and no
+  // action of its chat (of any chat for the list) since it started. One an
+  // action overtook is read again
+  function isCurrent(target, id, tick) {
+    if (latest.get(target) !== tick) {
+      return false;
+    }
+    if (((id ? acted.get(id) : actedAny) || 0) > tick) {
+      schedule(target);
+      return false;
+    }
+    return true;
+  }
+
+  // Whether a read started at `tick` may set the record `key`: nothing set
+  // it later. If so, the record is now the read's
+  function take(key, tick) {
+    if ((stamps.get(key) || 0) > tick) {
+      return false;
+    }
+    stamps.set(key, tick);
+    return true;
+  }
+
+  // A thread's records as a read brings them, but for any record something
+  // later set, which stays as it is, listed or not
+  function merge(kind, current = [], read, tick) {
+    const byId = new Map(current.map(each => [ each._id, each ]));
+    const listed = new Set(read.map(each => each._id));
+    return [
+      ...read.map(each => (take(`${kind}:${each._id}`, tick) ? each : (byId.get(each._id) || each))),
+      ...current.filter(each => !listed.has(each._id) &&
+        ((stamps.get(`${kind}:${each._id}`) || 0) > tick))
+    ];
+  }
+
   async function loadChats() {
-    const sequence = ++chatsSequence;
-    chatsStarted = sequence;
+    const tick = startRead('chats');
     let result;
     chatsFailed.value = false;
     try {
       result = await apos.http.get(`${getAction()}/chat`, {});
     } catch (e) {
       report(e);
-      chatsFailed.value = !loaded.value && (sequence === chatsSequence);
+      chatsFailed.value = !loaded.value && (latest.get('chats') === tick);
       return;
     }
-    if (sequence !== chatsSequence) {
-      // Dropped for an action, not for a later read: read again
-      if (sequence === chatsStarted) {
-        schedule('chats');
-      }
+    if (!isCurrent('chats', null, tick)) {
       return;
     }
-    chats.value = result.chats;
+    // Newest first, as the server lists them
+    chats.value = merge('chat', chats.value, result.chats, tick)
+      .sort((one, two) => String(two.createdAt).localeCompare(String(one.createdAt)));
     loaded.value = true;
     rememberTabs();
     const open = new Set(chats.value.map(chat => chat.openRequest?._id));
@@ -673,9 +801,7 @@ export const useAssistantStore = defineStore('assistant', () => {
   }
 
   async function loadChat(id) {
-    const sequence = (chatSequences.get(id) || 0) + 1;
-    chatSequences.set(id, sequence);
-    chatStarted.set(id, sequence);
+    const tick = startRead(id);
     delete loadFailed.value[id];
     let result;
     try {
@@ -686,28 +812,81 @@ export const useAssistantStore = defineStore('assistant', () => {
         forget(id);
       } else if (e.status !== 404) {
         report(e);
-        if (chatSequences.get(id) === sequence) {
+        if (latest.get(id) === tick) {
           loadFailed.value[id] = true;
         }
       }
       return;
     }
-    if (chatSequences.get(id) !== sequence) {
-      if (sequence === chatStarted.get(id)) {
-        schedule(id);
-      }
+    if (!isCurrent(id, id, tick)) {
       return;
     }
-    setChat(result.chat);
-    requests.value[id] = result.requests;
-    for (const request of result.requests) {
+    if (take(`chat:${id}`, tick)) {
+      setChat(result.chat);
+    }
+    requests.value[id] = merge('request', requests.value[id], result.requests, tick)
+      .sort((one, two) => one.sequence - two.sequence);
+    for (const request of requests.value[id]) {
       if (![ 'running', 'waiting', 'stopping' ].includes(request.status)) {
         releaseAhead(request._id);
       }
     }
-    reverts.value[id] = result.reverts;
+    reverts.value[id] = merge('revert', reverts.value[id], result.reverts, tick);
     returnMessages(id);
     serveAsks(id);
+  }
+
+  // A request and its chat, after a request event. A thread not read yet is
+  // read whole
+  async function loadRequest(id, requestId) {
+    if (!requests.value[id]) {
+      return loadChat(id);
+    }
+    const target = `${id}/${requestId}`;
+    const tick = startRead(target);
+    let result;
+    try {
+      result = await getRequest(id, requestId);
+    } catch (e) {
+      // Gone with its chat: the chat's read says so
+      if (e.status === 404) {
+        schedule(id);
+      } else {
+        report(e);
+      }
+      return;
+    }
+    if (!isCurrent(target, id, tick)) {
+      return;
+    }
+    if (take(`chat:${id}`, tick)) {
+      setChat(result.chat);
+    }
+    // Its chat tab may have closed meanwhile
+    if (requests.value[id] && take(`request:${requestId}`, tick)) {
+      setRequest(result.request);
+    }
+    serveAsks(id);
+  }
+
+  function getRequest(id, requestId) {
+    return apos.http.get(`${getAction()}/chat/${id}/request/${requestId}`, {});
+  }
+
+  /**
+   * A step's arguments and result, or error, read when the editor opens it:
+   * `{ input, output, error }`, each text or `null`.
+   *
+   * @param {string} id
+   * @param {string} requestId
+   * @param {string} stepId
+   * @returns {Promise<object>}
+   */
+  function loadStep(id, requestId, stepId) {
+    return apos.http.get(
+      `${getAction()}/chat/${id}/request/${requestId}/step/${encodeURIComponent(stepId)}`,
+      {}
+    );
   }
 
   // The message of each revert this page started returns to the composer
@@ -1060,23 +1239,23 @@ export const useAssistantStore = defineStore('assistant', () => {
     }
   }
 
-  // An empty new chat in front gives way to the chat opened
+  // A chat tab opened comes first; an empty new chat in front gives way to
+  // it. One already open stays where it is
   function openChat(id) {
     if (!tabs.value.includes(id)) {
       const blank = (activeId.value === NEW_CHAT) && !drafts.value[NEW_CHAT]?.trim();
       if (blank) {
-        tabs.value.splice(tabs.value.indexOf(NEW_CHAT), 1, id);
+        tabs.value.splice(tabs.value.indexOf(NEW_CHAT), 1);
         delete refusals.value[NEW_CHAT];
-      } else {
-        tabs.value.push(id);
       }
+      tabs.value.unshift(id);
     }
     activate(id);
   }
 
   function newChat() {
     if (!tabs.value.includes(NEW_CHAT)) {
-      tabs.value.push(NEW_CHAT);
+      tabs.value.unshift(NEW_CHAT);
     }
     activate(NEW_CHAT);
   }
@@ -1175,7 +1354,6 @@ export const useAssistantStore = defineStore('assistant', () => {
         if (!answer) {
           drop(id, action);
           refused(error);
-          schedule('chats');
           schedule(id);
           return {
             taken: false,
@@ -1204,8 +1382,9 @@ export const useAssistantStore = defineStore('assistant', () => {
   // An action started or settled: reads in flight are dropped, and read
   // again
   function bump(id) {
-    chatsSequence++;
-    chatSequences.set(id, (chatSequences.get(id) || 0) + 1);
+    const tick = ++clock;
+    acted.set(id, tick);
+    actedAny = tick;
   }
 
   // By its id: what the ref gives back is a reactive copy, never the action
@@ -1219,26 +1398,43 @@ export const useAssistantStore = defineStore('assistant', () => {
       }
       : others;
     bump(id);
-    // The server changed the chat meanwhile: its answer may be older than a
-    // read that landed while it was on the wire
-    if (heard.delete(id)) {
-      schedule('chats');
+    // The server changed the chat meanwhile: its answer may be older than
+    // what the events said. What the answer agrees with needs no read
+    const missed = heard.get(id);
+    heard.delete(id);
+    if (!missed) {
+      return;
+    }
+    const title = (missed.title !== undefined) &&
+      ((getChatRecord(id)?.title ?? null) !== missed.title);
+    if (missed.whole || title) {
       schedule(id);
+      return;
+    }
+    for (const [ requestId, status ] of missed.requests) {
+      const record = requests.value[id]?.find(request => request._id === requestId);
+      if (requests.value[id] && (record?.status !== status)) {
+        schedule(`${id}/${requestId}`);
+      }
     }
   }
 
   // A route's answer into the records: the chat, the request or the revert
-  // as the action left them
+  // as the action left them, newer than any read in flight
   function applyAnswer({
     chat, request, revert
   } = {}) {
+    const tick = ++clock;
     if (chat) {
+      stamps.set(`chat:${chat._id}`, tick);
       setChat(chat);
     }
     if (request) {
+      stamps.set(`request:${request._id}`, tick);
       setRequest(request);
     }
     if (revert) {
+      stamps.set(`revert:${revert._id}`, tick);
       setRevert(revert);
     }
     const chatId = chat?._id || request?.chatId;
@@ -1269,14 +1465,14 @@ export const useAssistantStore = defineStore('assistant', () => {
   // The request the browser named, if the server stored it: an answer that
   // never arrived may still have been taken
   async function findSent(id, requestId) {
-    const { chat, requests: list } = await apos.http.get(`${getAction()}/chat/${id}`, {});
-    const request = list.find(each => each._id === requestId);
-    return request
-      ? {
-        chat,
-        request
+    try {
+      return await getRequest(id, requestId);
+    } catch (e) {
+      if (e.status === 404) {
+        return null;
       }
-      : null;
+      throw e;
+    }
   }
 
   /**
@@ -1855,6 +2051,7 @@ export const useAssistantStore = defineStore('assistant', () => {
     resume,
     catchUp,
     loadChat,
+    loadStep,
     openChat,
     newChat,
     activate,

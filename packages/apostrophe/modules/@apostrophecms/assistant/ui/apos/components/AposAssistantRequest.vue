@@ -364,8 +364,7 @@ const reply = computed(() => {
   if (running.value) {
     return null;
   }
-  return (props.request.messages || [])
-    .findLast(message => (message.role === 'assistant') && message.html)?.html || null;
+  return props.request.reply || null;
 });
 
 // The confirmation the request waits on, when this browser tab answers it
