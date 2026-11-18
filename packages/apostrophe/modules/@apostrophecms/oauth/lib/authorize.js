@@ -168,13 +168,11 @@ module.exports = (self) => {
       }
       const approvalId = req.body && req.body.approval;
       // One use only, and only by the user who saw the page
-      const approval = (typeof approvalId === 'string') && await self.pendingApprovals.findOneAndDelete({
+      const request = (typeof approvalId === 'string') && await self.claimOnce(self.pendingApprovals, {
         _id: approvalId,
         userId: req.user._id,
         expiresAt: { $gt: new Date() }
       });
-      // The driver returns the document, or `{ value }` in older versions
-      const request = approval && (('value' in approval) ? approval.value : approval);
       if (!request) {
         // Also what a replayed or stolen form looks like
         self.logInfo(req, 'approval-expired-or-reused', {
@@ -286,6 +284,19 @@ module.exports = (self) => {
         expiresAt: new Date(Date.now() + LIFETIME_MS)
       });
       return code;
+    },
+
+    // The document matching `filter`, deleted so that no other request can
+    // have it, or null. Two requests may both find it, but only one can
+    // delete it. Not `findOneAndDelete`, which the Postgres and SQLite
+    // adapters don't have
+    async claimOnce(collection, filter) {
+      const doc = await collection.findOne(filter);
+      if (!doc) {
+        return null;
+      }
+      const { deletedCount } = await collection.deleteOne(filter);
+      return (deletedCount === 1) ? doc : null;
     },
 
     hashSecret(secret) {

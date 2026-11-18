@@ -148,6 +148,7 @@
   },
   "devDependencies": {
     "@aws/bedrock-token-generator": "^1.1.0",
+    "@modelcontextprotocol/client": "^2.4.0",
     "chai": "^4.5.0",
     "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^",
