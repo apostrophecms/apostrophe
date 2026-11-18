@@ -307,8 +307,8 @@ module.exports = (self) => {
       payload.result = {
         ...result,
         openEditor: `${title} is open in an editor on the user's screen, which may hold ` +
-          `changes not saved yet: this is the saved draft. ${TOOL} reads what the editor ` +
-          'holds while it is on top.'
+          'changes not saved yet: this is the saved draft. While it is on top, read and ' +
+          `change it with ${TOOL}.`
       };
     },
 
