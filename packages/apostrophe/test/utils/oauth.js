@@ -31,16 +31,18 @@ const resourceModule = {
   }
 };
 
-// `root` is the test file's `module`. `oauth` is the OAuth module's options
+// `root` is the test file's `module`. `oauth` is the OAuth module's options.
+// `modules` are more modules for the site
 function createOauthApos(root, {
-  oauth, resource = true, baseUrl = BASE_URL
+  oauth, resource = true, baseUrl = BASE_URL, modules = {}
 } = {}) {
   return t.create({
     root,
     ...(baseUrl && { baseUrl }),
     modules: {
       ...(oauth && { '@apostrophecms/oauth': { options: oauth } }),
-      ...(resource && { 'oauth-test-resource': resourceModule })
+      ...(resource && { 'oauth-test-resource': resourceModule }),
+      ...modules
     }
   });
 }
