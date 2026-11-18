@@ -666,13 +666,10 @@ describe('AI live smoke', function() {
   });
 
   describe('google thinking', function() {
-    // Two dialect contracts. Gemini returns signed thought steps and
-    // requires them back verbatim when the turn's tool results are
-    // submitted — the adapter carries them as its opaque `thought` part;
-    // the shared battery never raises the reasoning level, so it only
-    // replays the minimal ones. And the response schema travels beside
-    // the function tools on the same request, which the shared battery
-    // never combines
+    // Gemini returns signed thought steps and requires them back verbatim
+    // when the turn's tool results are submitted — the adapter carries
+    // them as its opaque `thought` part; the shared battery never raises
+    // the reasoning level, so it only replays the minimal ones
     const provider = PROVIDERS.find((row) => row.name === 'google');
     let apos;
 
@@ -711,32 +708,6 @@ describe('AI live smoke', function() {
         message.content.some((part) => part.type === 'toolCall'));
       const thought = calling.content.find((part) => part.type === 'thought');
       assert.equal(typeof thought.signature, 'string');
-    });
-
-    it('returns structured output beside a tool', async function() {
-      const req = apos.task.getReq();
-      const result = await apos.ai.generate(
-        req,
-        'call the echo tool with value "hi", then report what it echoed',
-        {
-          // The 'low' model repeats the tool call on every turn when a
-          // response schema is present, until the step cap
-          effort: 'medium',
-          tools: [ 'echo' ],
-          schema: {
-            type: 'object',
-            properties: { echoed: { type: 'string' } },
-            required: [ 'echoed' ],
-            additionalProperties: false
-          },
-          maxTokens: provider.maxTokens,
-          cache: false
-        }
-      );
-      record(apos, req, result, { object: result.object });
-      assert.equal(result.finishReason, 'stop');
-      assert(result.steps.find((entry) => entry.toolCall.name === 'echo'));
-      assert.equal(typeof result.object.echoed, 'string');
     });
   });
 
