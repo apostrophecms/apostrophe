@@ -75,6 +75,29 @@ describe('OAuth: clients', function () {
       assert.deepEqual(client.metadata, metadata);
     });
 
+    it('records a registration', async function () {
+      const logInfo = apos.oauth.logInfo;
+      const entries = [];
+      apos.oauth.logInfo = (...args) => entries.push(args);
+      let body;
+      try {
+        body = await (await register(apos, {
+          client_name: 'Logged tool',
+          redirect_uris: [ 'https://tool.example.com/callback' ]
+        })).json();
+      } finally {
+        apos.oauth.logInfo = logInfo;
+      }
+      const entry = entries.find(args => args[1] === 'client-registered');
+      assert.ok(entry, JSON.stringify(entries.map(args => args.slice(1))));
+      assert.equal(typeof entry[0].t, 'function');
+      assert.deepEqual(entry[2], {
+        clientId: body.client_id,
+        clientName: 'Logged tool',
+        redirectUris: [ 'https://tool.example.com/callback' ]
+      });
+    });
+
     it('takes loopback and private-use scheme redirect URIs', async function () {
       const redirectUris = [
         'http://127.0.0.1/callback',
@@ -326,11 +349,24 @@ describe('OAuth: clients', function () {
 
     it('refuses a document it could not fetch', async function () {
       answer = () => {
-        throw new Error('the response status was 404');
+        throw Object.assign(new Error('the response status was 404'), { aboutDocument: true });
       };
       await assert.rejects(apos.oauth.getClient(DOCUMENT_URL), (e) => {
         assert.equal(e.oauth.error, 'invalid_client');
         assert.match(e.message, /could not be fetched .* status was 404/);
+        return true;
+      });
+    });
+
+    it('says nothing about the address when it could not fetch, but keeps the cause', async function () {
+      answer = () => {
+        throw new Error('intranet.example resolves to 10.1.2.3, which is not a public address');
+      };
+      await assert.rejects(apos.oauth.getClient(DOCUMENT_URL), (e) => {
+        assert.equal(e.oauth.error, 'invalid_client');
+        assert.match(e.oauth.error_description, /could not be fetched .*: its address could not be reached$/);
+        assert.doesNotMatch(e.oauth.error_description, /10\.1\.2\.3|resolves/);
+        assert.match(e.cause.message, /resolves to 10\.1\.2\.3/);
         return true;
       });
     });
@@ -398,7 +434,12 @@ describe('OAuth: clients', function () {
     it('refuses a name that resolves to a private address', async function () {
       await assert.rejects(
         apos.oauth.fetchClientMetadataDocument('https://localhost/client.json'),
-        /localhost resolves to .*, which is not a public address/
+        (e) => {
+          assert.match(e.message, /localhost resolves to .*, which is not a public address/);
+          // About this server's network, so not for the page
+          assert.notEqual(e.aboutDocument, true);
+          return true;
+        }
       );
     });
 
@@ -453,7 +494,12 @@ describe('OAuth: clients', function () {
           res.writeHead(302, { location: 'http://169.254.169.254/' });
           res.end();
         };
-        await assert.rejects(fetchLocal('/client.json'), /status was 302/);
+        await assert.rejects(fetchLocal('/client.json'), (e) => {
+          assert.match(e.message, /status was 302/);
+          // About the document, so the page may show it
+          assert.equal(e.aboutDocument, true);
+          return true;
+        });
       });
 
       it('refuses a response that is not JSON', async function () {

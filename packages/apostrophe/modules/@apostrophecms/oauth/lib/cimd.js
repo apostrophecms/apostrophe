@@ -30,6 +30,12 @@ const DEFAULT_CACHE_SECONDS = 60 * 60;
 
 const blockList = createBlockList();
 
+function documentError(message) {
+  const e = new Error(message);
+  e.aboutDocument = true;
+  return e;
+}
+
 module.exports = (self) => {
   return {
     // Whether `clientId` is meant as a CIMD URL. Any https URL is: one
@@ -57,7 +63,13 @@ module.exports = (self) => {
       try {
         ({ document, maxAge } = await self.fetchClientMetadataDocument(clientId));
       } catch (e) {
-        throw self.oauthError('invalid_client', `The client's metadata document could not be fetched from ${clientId}: ${e.message}`);
+        // Only a cause about the document itself is passed on: one about
+        // the address, such as what a name resolves to, would tell anyone
+        // who asks about this server's network. The whole cause is logged
+        const shown = e.aboutDocument ? e.message : 'its address could not be reached';
+        const error = self.oauthError('invalid_client', `The client's metadata document could not be fetched from ${clientId}: ${shown}`);
+        error.cause = e;
+        throw error;
       }
       if (document.client_id !== clientId) {
         throw self.oauthError('invalid_client', `The client's metadata document at ${clientId} names a different client_id.`);
@@ -107,6 +119,11 @@ module.exports = (self) => {
     // Fetches the JSON document at `url`. Resolves to `{ document, maxAge }`,
     // `maxAge` being the Cache-Control max-age in seconds, if any.
     //
+    // An error that's only about the document, which the tool's developer
+    // can see from anywhere (the status, the type, the size, the time it
+    // took), has `aboutDocument: true`. Any other error, about the address or
+    // the connection, could describe this server's network.
+    //
     // `transport` and `timeout` are for tests, which can't serve https from
     // a public address
     fetchClientMetadataDocument(url, { transport = https, timeout = TIMEOUT_MS } = {}) {
@@ -114,7 +131,8 @@ module.exports = (self) => {
       // An IP address in the URL isn't looked up, so it's checked here
       const literal = hostname.replace(/^\[(.*)\]$/, '$1');
       if (net.isIP(literal) && !self.isPublicAddress(literal)) {
-        return Promise.reject(new Error(`${literal} is not a public address`));
+        // The address is in the URL already, so it says nothing new
+        return Promise.reject(documentError(`${literal} is not a public address`));
       }
       return new Promise((resolve, reject) => {
         // Only the first outcome counts: aborting a response mid-stream can
@@ -137,23 +155,23 @@ module.exports = (self) => {
         }, (response) => {
           if (response.statusCode !== 200) {
             response.resume();
-            return reject(new Error(`the response status was ${response.statusCode}`));
+            return reject(documentError(`the response status was ${response.statusCode}`));
           }
           if (!/\bjson\b/i.test(response.headers['content-type'] || '')) {
             response.resume();
-            return reject(new Error('the response is not JSON'));
+            return reject(documentError('the response is not JSON'));
           }
           const length = Number(response.headers['content-length']);
           if (length > MAX_DOCUMENT_BYTES) {
             response.resume();
-            return reject(new Error(`the document is larger than ${MAX_DOCUMENT_BYTES} bytes`));
+            return reject(documentError(`the document is larger than ${MAX_DOCUMENT_BYTES} bytes`));
           }
           const chunks = [];
           let size = 0;
           response.on('data', (chunk) => {
             size += chunk.length;
             if (size > MAX_DOCUMENT_BYTES) {
-              reject(new Error(`the document is larger than ${MAX_DOCUMENT_BYTES} bytes`));
+              reject(documentError(`the document is larger than ${MAX_DOCUMENT_BYTES} bytes`));
               request.destroy();
               return;
             }
@@ -164,10 +182,10 @@ module.exports = (self) => {
             try {
               document = JSON.parse(Buffer.concat(chunks).toString('utf8'));
             } catch (e) {
-              return reject(new Error('the document is not valid JSON'));
+              return reject(documentError('the document is not valid JSON'));
             }
             if (!document || (typeof document !== 'object') || Array.isArray(document)) {
-              return reject(new Error('the document is not a JSON object'));
+              return reject(documentError('the document is not a JSON object'));
             }
             resolve({
               document,
@@ -178,7 +196,7 @@ module.exports = (self) => {
         });
         request.on('error', (e) => {
           reject((e.name === 'AbortError') || (e.name === 'TimeoutError')
-            ? new Error(`no response within ${timeout / 1000} seconds`)
+            ? documentError(`no response within ${timeout / 1000} seconds`)
             : e);
         });
       });
