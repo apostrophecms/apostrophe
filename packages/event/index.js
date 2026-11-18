@@ -114,6 +114,18 @@ module.exports = {
         type: 'string',
         label: 'aposEvent:description',
         textarea: true
+      },
+      // Set by the module and never edited. They are schema fields because
+      // only schema fields are copied when a document is published.
+      eventGroupId: {
+        type: 'string',
+        hidden: true,
+        readOnly: true
+      },
+      isClone: {
+        type: 'boolean',
+        hidden: true,
+        readOnly: true
       }
     },
     group: {
@@ -132,7 +144,9 @@ module.exports = {
           'dateType',
           'endDate',
           'repeatInterval',
-          'repeatCount'
+          'repeatCount',
+          'eventGroupId',
+          'isClone'
         ]
       }
     }
