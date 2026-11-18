@@ -808,7 +808,7 @@ describe('Assistant: working in open editors', function () {
       assert.equal(read.error, undefined);
       assert.match(
         read.output.openEditor,
-        /"Open note" is open in an editor on the user's screen, which may hold changes not saved yet: this is the saved draft\. While it is on top, read and change it with edit_open_document\.$/
+        /"Open note" is open in an editor on the user's screen, which may hold changes not saved yet: this read is what is saved\. While it is on top, read and change it with edit_open_document\.$/
       );
       const draft = await apos.doc.db.findOne({ _id: other._id });
       assert.equal(draft.subtitle, 'Written');

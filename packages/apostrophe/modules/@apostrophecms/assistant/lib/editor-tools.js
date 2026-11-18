@@ -149,7 +149,9 @@ module.exports = (self) => {
         description: 'Ask the user before you go on, and wait for the answer. Use it ' +
           'before anything they might not expect: removing content, changing many ' +
           'documents, a step that takes over their screen. Go on only when "approved" ' +
-          'is true.',
+          'is true. When the user wants to approve a plan, show it with write_plan ' +
+          'first, every step pending, then ask here whether to go ahead with it; ' +
+          'never put the plan in "details".',
         kind: 'action',
         tags: [ 'assistant' ],
         input: {
@@ -203,7 +205,9 @@ module.exports = (self) => {
         name: 'write_plan',
         label: 'apostrophe:aiToolWritePlan',
         description: 'Show the user your plan for this request while you work. For a ' +
-          'task of several steps; not for one done in a call or two. Each call replaces ' +
+          'task of several steps; not for one done in a call or two. A plan the user ' +
+          'wants to approve is sent here before you start, then confirmed with ' +
+          'confirm. Each call replaces ' +
           'the plan, so send every step each time, in order: one "active" while you work ' +
           'on it, "done" once finished. Send an empty list to drop the plan.',
         kind: 'action',

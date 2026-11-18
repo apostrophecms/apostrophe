@@ -107,7 +107,7 @@ module.exports = {
         }
       },
       '@apostrophecms/ai:afterToolCall': {
-        // A read of a document open in an editor is the saved draft
+        // A read of a document open in an editor is what is saved, not what it holds
         async noteHeldDocument(req, payload) {
           await self.noteHeldDocument(req, payload);
         },
