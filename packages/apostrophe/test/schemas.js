@@ -336,6 +336,27 @@ describe('Schemas', function() {
             };
           }
         },
+        'builder-conflict': {
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              author: {
+                label: 'Author Name',
+                type: 'string'
+              },
+              _author: {
+                label: 'Author',
+                type: 'relationship',
+                withType: 'article'
+              },
+              _editor: {
+                label: 'Editor',
+                type: 'relationship',
+                withType: 'article'
+              }
+            }
+          }
+        },
         topic: {
           extend: '@apostrophecms/piece-type',
           options: {
@@ -404,6 +425,15 @@ describe('Schemas', function() {
   /// ///
   // EXISTENCE
   /// ///
+
+  it('should warn at startup when a relationship\'s slug query builder name is taken by another field', function() {
+    const warnings = warnMessages.filter(message => (typeof message === 'string') &&
+      message.includes('query builder'));
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /"builder-conflict"/);
+    assert.match(warnings[0], /"_author"/);
+    assert.match(warnings[0], /"author"/);
+  });
 
   it('should be a property of the apos object', function() {
     assert(apos.schema);
