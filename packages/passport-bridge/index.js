@@ -150,6 +150,28 @@ module.exports = {
         return (absolute ? (self.apos.baseUrl + self.apos.prefix) : '') + '/auth/' + spec.name + '/callback';
       },
 
+      // The `returnTo` query parameter, when it's a path on this site, as
+      // the login page takes it, or null. Needs an Apostrophe version with
+      // `apos.login.getReturnTo`
+      getReturnTo(req) {
+        return (self.apos.login.getReturnTo && self.apos.login.getReturnTo(req)) || null;
+      },
+
+      // Where to send someone who must log in, when the regular login page
+      // is turned off (`localLogin: false`): the project's own login page if
+      // the `loginUrl` option of `@apostrophecms/login` names one, otherwise
+      // the login URL of the only strategy. With several strategies and no
+      // login page there's no one place, so null. Used by
+      // `apos.login.getLoginUrl`, for instance by the OAuth server's
+      // approval page
+      getSiteLoginUrl() {
+        if (self.apos.login.options.loginUrl) {
+          return self.apos.login.options.loginUrl;
+        }
+        const specs = Object.values(self.specs || {});
+        return (specs.length === 1) ? self.getLoginUrl(specs[0]) : null;
+      },
+
       // Returns the URL you should link users to in order for them
       // to log in. If `absolute` is true then `baseUrl` and `apos.prefix`
       // are prepended, otherwise not (because `app.get` automatically prepends a prefix).
@@ -172,6 +194,14 @@ module.exports = {
       // to start the process of logging them in via each strategy
       addLoginRoute(spec) {
         self.apos.app.get(self.getLoginUrl(spec), (req, res, next) => {
+          // Where to go after logging in, as for the login page: a path on
+          // this site only
+          const returnTo = self.getReturnTo(req);
+          if (returnTo) {
+            req.session.passportReturnTo = returnTo;
+          } else {
+            delete req.session.passportReturnTo;
+          }
           if (req.query.newLocale) {
             req.session.passportLocale = {
               oldLocale: req.query.oldLocale,
@@ -240,7 +270,16 @@ module.exports = {
       // certain others redirect here to complete the login handshake
       addCallbackRoute(spec) {
         self.apos.app.get(self.getCallbackUrl(spec, false),
-          // middleware
+          // Passport starts a new session at login, against session
+          // fixation, so what the login route kept in the old one is held
+          // on the request until then (see restoreLoginState)
+          (req, res, next) => {
+            req.passportBridgeLogin = {
+              returnTo: req.session.passportReturnTo,
+              locale: req.session.passportLocale
+            };
+            return next();
+          },
           self.apos.login.passport.authenticate(
             spec.name,
             {
@@ -249,11 +288,15 @@ module.exports = {
             }
           ),
           // The actual route reached after authentication redirects
-          // appropriately, either to an explicitly requested location
-          // or the home page
+          // appropriately: to the locale the user switched to, or the path
+          // the login route was given, or the home page
           (req, res) => {
-            const redirect = req.session.passportRedirect || '/';
+            const returnTo = req.passportBridgeLogin && req.passportBridgeLogin.returnTo;
+            const redirect = req.session.passportRedirect ||
+              (returnTo && `${self.apos.prefix}${returnTo}`) ||
+              '/';
             delete req.session.passportRedirect;
+            delete req.session.passportReturnTo;
             return res.rawRedirect(redirect);
           }
         );
@@ -558,6 +601,13 @@ module.exports = {
           }
           req.res.clearCookie('apos-connect');
         },
+        // Before redirectToNewLocale, which needs what the login route kept
+        restoreLoginState(req) {
+          const state = req.passportBridgeLogin;
+          if (state && state.locale && !req.session.passportLocale) {
+            req.session.passportLocale = state.locale;
+          }
+        },
         async redirectToNewLocale(req) {
           if (!req.session.passportLocale) {
             return;
@@ -646,6 +696,11 @@ module.exports = {
         return {
           links: Object.values(self.specs).map(spec => {
             let href = self.getLoginUrl(spec, true);
+            // On a login page that was given a path to return to
+            const returnTo = self.getReturnTo(req);
+            if (returnTo) {
+              href = self.apos.url.build(href, { returnTo });
+            }
             if (Object.keys(self.apos.i18n.locales).length > 1) {
               const context = req.data.piece || req.data.page;
               href = self.apos.url.build(href, {
