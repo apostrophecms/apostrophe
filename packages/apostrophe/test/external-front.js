@@ -840,6 +840,35 @@ describe('External Front', function() {
     assert(data.includes('Home Page Template'));
   });
 
+  it('does not share a response between simultaneous external front and ordinary requests', async function() {
+    // Keep each request in flight long enough for the others to arrive
+    const serveGetPage = apos.page.serveGetPage;
+    apos.page.serveGetPage = async (req) => {
+      await new Promise(resolve => setTimeout(resolve, 250));
+      return serveGetPage(req);
+    };
+    let responses;
+    try {
+      responses = await Promise.all([
+        apos.http.get('/'),
+        apos.http.get('/', { headers: externalFrontHeaders() }),
+        apos.http.get('/', { headers: externalFrontHeaders() }),
+        apos.http.get('/')
+      ]);
+    } finally {
+      apos.page.serveGetPage = serveGetPage;
+    }
+    const [ first, second, third, fourth ] = responses;
+    assert.strictEqual(typeof first, 'string');
+    assert(first.includes('Home Page Template'));
+    assert.strictEqual(typeof fourth, 'string');
+    assert(fourth.includes('Home Page Template'));
+    assert.strictEqual(typeof second, 'object');
+    assert.strictEqual(second.page.slug, '/');
+    assert.strictEqual(typeof third, 'object');
+    assert.strictEqual(third.page.slug, '/');
+  });
+
   function externalFrontHeaders() {
     return {
       'x-requested-with': 'AposExternalFront',
