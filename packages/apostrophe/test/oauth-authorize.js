@@ -107,6 +107,7 @@ describe('OAuth: authorize', function () {
     };
   }
 
+  // Checks the error page and returns its HTML
   async function assertErrorPage(response, status, pattern) {
     assert.equal(response.status, status);
     assert.equal(response.headers.get('location'), null);
@@ -115,11 +116,33 @@ describe('OAuth: authorize', function () {
     if (pattern) {
       assert.match(html, pattern);
     }
+    return html;
+  }
+
+  // The page's parts, as text
+  function getErrorParts(html) {
+    const get = (pattern) => {
+      const matches = html.match(pattern);
+      return matches && matches[1].replace(/\s+/g, ' ').trim();
+    };
+    return {
+      heading: get(/<h1>([\s\S]*?)<\/h1>/),
+      reason: get(/data-oauth-error>([\s\S]*?)<\/p>/),
+      nothingShared: /data-oauth-nothing-shared/.test(html),
+      details: get(/<details data-oauth-error-details>([\s\S]*?)<\/details>/)
+    };
   }
 
   describe('errors shown, not sent', function () {
     it('stops at an unknown client', async function () {
-      await assertErrorPage(await authorize({ client_id: 'unknown' }), 400, /isn&#39;t registered|isn't registered/);
+      const html = await assertErrorPage(await authorize({ client_id: 'unknown' }), 400);
+      const parts = getErrorParts(html);
+      assert.equal(parts.heading, 'A tool&#39;s request was blocked');
+      assert.match(parts.reason, /doesn&#39;t recognize the tool/);
+      assert.ok(parts.nothingShared);
+      assert.match(html, /contact the tool&#39;s developer/);
+      assert.match(parts.details, /<code>invalid_client<\/code>/);
+      assert.match(parts.details, /&quot;unknown&quot;/);
       await assertErrorPage(await authorize({ client_id: undefined }), 400);
     });
 
@@ -129,22 +152,64 @@ describe('OAuth: authorize', function () {
         'https://tool.example.com/callback/more',
         undefined
       ]) {
-        await assertErrorPage(await authorize({ redirect_uri: uri }), 400, /didn&#39;t register|didn't register/);
+        const html = await assertErrorPage(await authorize({ redirect_uri: uri }), 400);
+        const parts = getErrorParts(html);
+        // The client is known, so the heading names it, escaped
+        assert.equal(parts.heading, 'Couldn&#39;t connect Test &lt;script&gt;alert(1)&lt;/script&gt; tool');
+        assert.doesNotMatch(html, /<script>alert/);
+        assert.match(parts.reason, /hasn&#39;t registered/);
+        assert.match(parts.reason, /protect your account/);
+        assert.ok(parts.nothingShared);
+        assert.match(parts.details, /<code>invalid_request<\/code>/);
+        if (uri) {
+          assert.ok(parts.details.includes(uri), parts.details);
+        }
       }
     });
 
-    it('stops at a client metadata document it can\'t use', async function () {
+    it('stops at a client metadata document it can\'t use, and keeps the cause for developers', async function () {
       const fetchDocument = apos.oauth.fetchClientMetadataDocument;
       apos.oauth.fetchClientMetadataDocument = async () => {
-        throw new Error('the response status was 404');
+        throw Object.assign(new Error('the response status was 404'), { aboutDocument: true });
       };
       try {
-        await assertErrorPage(await authorize({
+        const html = await assertErrorPage(await authorize({
           client_id: 'https://tool.example.com/client.json'
-        }), 400, /status was 404/);
+        }), 400);
+        const parts = getErrorParts(html);
+        assert.equal(parts.heading, 'A tool&#39;s request was blocked');
+        assert.match(parts.reason, /couldn&#39;t read the information the tool published/);
+        // The developer's message is only in the details
+        assert.doesNotMatch(parts.reason, /status was 404/);
+        assert.match(parts.details, /<code>invalid_client<\/code>/);
+        assert.match(parts.details, /status was 404/);
       } finally {
         apos.oauth.fetchClientMetadataDocument = fetchDocument;
       }
+    });
+
+    it('shows an unexpected error as the site\'s, promising nothing', async function () {
+      const getClient = apos.oauth.getClient;
+      apos.oauth.getClient = async () => {
+        throw new Error('the database is down');
+      };
+      try {
+        const html = await assertErrorPage(await authorize(), 500, /Something went wrong on this site/);
+        const parts = getErrorParts(html);
+        assert.equal(parts.heading, 'Couldn&#39;t connect the tool');
+        assert.equal(parts.nothingShared, false);
+        assert.match(html, /contact this site&#39;s administrator/);
+        assert.equal(parts.details, null);
+        assert.doesNotMatch(html, /database is down/);
+      } finally {
+        apos.oauth.getClient = getClient;
+      }
+    });
+
+    it('escapes what the request sent in the details', async function () {
+      const html = await assertErrorPage(await authorize({ client_id: '<img src=x onerror=alert(1)>' }), 400);
+      assert.doesNotMatch(html, /<img/);
+      assert.match(getErrorParts(html).details, /&lt;img src=x onerror=alert\(1\)&gt;/);
     });
   });
 
@@ -217,6 +282,31 @@ describe('OAuth: authorize', function () {
       assert.match(html, /cms\.example\.com/);
       assert.match(html, /Ed &lt;b&gt;Itor&lt;\/b&gt; \(editor\)/);
       assert.match(html, /tool\.example\.com/);
+    });
+
+    it('has the login page\'s project header, as does the error page, escaped', async function () {
+      const getProjectHeader = apos.login.getProjectHeader;
+      apos.login.getProjectHeader = () => ({
+        env: 'staging',
+        name: 'My <i>project</i>'
+      });
+      try {
+        for (const response of [
+          await authorize(),
+          await authorize({ client_id: 'unknown' })
+        ]) {
+          const html = await response.text();
+          assert.match(html, /<span class="env env--staging" data-oauth-env>staging<\/span>/);
+          assert.match(html, /My &lt;i&gt;project&lt;\/i&gt;/);
+        }
+      } finally {
+        apos.login.getProjectHeader = getProjectHeader;
+      }
+      // The same as the login page's context
+      const html = await (await authorize()).text();
+      const { env, name } = apos.login.getProjectHeader();
+      assert.ok(html.includes(`data-oauth-env>${env}<`), env);
+      assert.ok(html.includes(name), name);
     });
 
     it('says the tool acts within the user\'s permissions', async function () {
@@ -334,10 +424,15 @@ describe('OAuth: authorize', function () {
 
     it('takes no decision from a user who is not logged in', async function () {
       const approval = await getApprovalId(await authorize());
-      await assertErrorPage(await decide({
+      const html = await assertErrorPage(await decide({
         approval,
         decision: 'approve'
-      }, null), 401);
+      }, null), 401, /no longer logged in/);
+      const parts = getErrorParts(html);
+      assert.equal(parts.heading, 'Couldn&#39;t connect the tool');
+      assert.ok(parts.nothingShared);
+      assert.match(html, /Go back to the tool and start again/);
+      assert.equal(parts.details, null);
     });
 
     it('takes no approval id that is not a string', async function () {
@@ -351,6 +446,188 @@ describe('OAuth: authorize', function () {
         body: 'approval=a&approval=b&decision=approve'
       });
       await assertErrorPage(response, 400);
+    });
+  });
+
+  describe('the log', function () {
+    // Records the module's log entries while `fn` runs, as
+    // `{ severity, req, type, data }`
+    async function captureLog(fn) {
+      const entries = [];
+      const originals = {};
+      for (const severity of [ 'Info', 'Warn', 'Error' ]) {
+        const name = `log${severity}`;
+        originals[name] = apos.oauth[name];
+        apos.oauth[name] = (...args) => {
+          const req = (args[0] && (typeof args[0].t === 'function')) ? args.shift() : null;
+          const [ type, ...rest ] = args;
+          entries.push({
+            severity: severity.toLowerCase(),
+            req,
+            type,
+            data: rest.find(arg => arg && (typeof arg === 'object')) || {}
+          });
+        };
+      }
+      try {
+        await fn();
+      } finally {
+        Object.assign(apos.oauth, originals);
+      }
+      return entries;
+    }
+
+    // Keys the logger keeps for itself (lib/logger/render.js): a field with
+    // one of these names is left out of the line, or overwritten. `stack` is
+    // allowed, since it's meant for the logger
+    const RESERVED_KEYS = [ 'site', 'module', 'scope', 'severity', 'type', 'msg' ];
+
+    function findEntry(entries, type) {
+      const entry = entries.find(entry => entry.type === type);
+      assert.ok(entry, `no ${type} entry in ${JSON.stringify(entries.map(entry => entry.type))}`);
+      for (const key of Object.keys(entry.data)) {
+        assert.ok(!RESERVED_KEYS.includes(key), `${type} uses the logger's reserved key "${key}"`);
+      }
+      return entry;
+    }
+
+    it('warns of an unknown client', async function () {
+      const entries = await captureLog(async () => {
+        await authorize({ client_id: 'unknown' });
+      });
+      const entry = findEntry(entries, 'unknown-client');
+      assert.equal(entry.severity, 'warn');
+      assert.ok(entry.req);
+      assert.equal(entry.data.clientId, 'unknown');
+    });
+
+    it('warns of a redirect URI the client did not register', async function () {
+      const entries = await captureLog(async () => {
+        await authorize({ redirect_uri: 'https://evil.example.com/callback' });
+      });
+      const entry = findEntry(entries, 'redirect-uri-mismatch');
+      assert.equal(entry.severity, 'warn');
+      assert.equal(entry.data.clientId, client.client_id);
+      assert.equal(entry.data.clientName, client.client_name);
+      assert.equal(entry.data.redirectUri, 'https://evil.example.com/callback');
+    });
+
+    it('cuts a long value from the request', async function () {
+      const entries = await captureLog(async () => {
+        await authorize({ redirect_uri: `https://evil.example.com/${'a'.repeat(5000)}` });
+      });
+      assert.equal(findEntry(entries, 'redirect-uri-mismatch').data.redirectUri.length, 2000);
+    });
+
+    it('keeps the whole cause of a document it couldn\'t fetch, which the page leaves out', async function () {
+      const fetchDocument = apos.oauth.fetchClientMetadataDocument;
+      apos.oauth.fetchClientMetadataDocument = async () => {
+        throw new Error('intranet.example resolves to 10.1.2.3, which is not a public address');
+      };
+      let html;
+      try {
+        const entries = await captureLog(async () => {
+          html = await (await authorize({
+            client_id: 'https://tool.example.com/client.json'
+          })).text();
+        });
+        const entry = findEntry(entries, 'client-document-failed');
+        assert.equal(entry.severity, 'warn');
+        assert.equal(entry.data.clientId, 'https://tool.example.com/client.json');
+        assert.match(entry.data.cause, /resolves to 10\.1\.2\.3/);
+      } finally {
+        apos.oauth.fetchClientMetadataDocument = fetchDocument;
+      }
+      assert.doesNotMatch(html, /10\.1\.2\.3|resolves/);
+      assert.match(getErrorParts(html).details, /its address could not be reached/);
+    });
+
+    it('records an approval, without the code', async function () {
+      const approval = await getApprovalId(await authorize());
+      let redirect;
+      const entries = await captureLog(async () => {
+        redirect = getRedirect(await decide({
+          approval,
+          decision: 'approve'
+        }));
+      });
+      const entry = findEntry(entries, 'approved');
+      assert.equal(entry.severity, 'info');
+      assert.deepEqual(entry.data, {
+        username: 'editor',
+        clientId: client.client_id,
+        clientName: client.client_name,
+        resource: `${BASE_URL}${RESOURCE}`,
+        scopes: 'content'
+      });
+      const logged = JSON.stringify(entries.map(entry => entry.data));
+      assert.ok(!logged.includes(redirect.params.code));
+      assert.ok(!logged.includes(approval));
+    });
+
+    it('records a refusal', async function () {
+      const approval = await getApprovalId(await authorize());
+      const entries = await captureLog(async () => {
+        await decide({
+          approval,
+          decision: 'deny'
+        });
+      });
+      const entry = findEntry(entries, 'declined');
+      assert.equal(entry.severity, 'info');
+      assert.equal(entry.data.username, 'editor');
+      assert.equal(entry.data.clientId, client.client_id);
+    });
+
+    it('records an approval taken twice', async function () {
+      const approval = await getApprovalId(await authorize());
+      await decide({
+        approval,
+        decision: 'approve'
+      });
+      const entries = await captureLog(async () => {
+        await decide({
+          approval,
+          decision: 'approve'
+        });
+      });
+      const entry = findEntry(entries, 'approval-expired-or-reused');
+      assert.equal(entry.severity, 'info');
+      assert.equal(entry.data.username, 'editor');
+    });
+
+    it('logs an unexpected error with its request', async function () {
+      const getClient = apos.oauth.getClient;
+      apos.oauth.getClient = async () => {
+        throw new Error('the database is down');
+      };
+      try {
+        const entries = await captureLog(async () => {
+          await authorize();
+        });
+        const entry = findEntry(entries, 'oauth-page-error');
+        assert.equal(entry.severity, 'error');
+        assert.ok(entry.req);
+        assert.match(entry.data.stack, /database is down/);
+      } finally {
+        apos.oauth.getClient = getClient;
+      }
+    });
+  });
+
+  describe('a form it can\'t read', function () {
+    it('shows the error page for a form that is too large', async function () {
+      const response = await fetch(getUrl(apos, AUTHORIZE), {
+        method: 'POST',
+        redirect: 'manual',
+        headers: {
+          'content-type': 'application/x-www-form-urlencoded',
+          cookie: editorCookie
+        },
+        body: `approval=${'a'.repeat(20000)}&decision=approve`
+      });
+      const html = await assertErrorPage(response, 413, /approval form couldn&#39;t be read/);
+      assert.match(html, /Go back to the tool and start again/);
     });
   });
 });

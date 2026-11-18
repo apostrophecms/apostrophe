@@ -58,6 +58,44 @@
     p { margin: 0 0 12px; }
     .muted { color: var(--oauth-muted); font-size: 0.875rem; }
     .error { color: var(--oauth-error); }
+    .project {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--oauth-border);
+    }
+    /* The login page's environment colors */
+    .env {
+      flex: none;
+      padding: 2px 10px;
+      border-radius: 5px;
+      background: #006650;
+      color: #ffffff;
+      font-size: 0.8125rem;
+      text-transform: capitalize;
+    }
+    .env--development { background: #c00717; }
+    .env--staging { background: #a75c07; }
+    .project-name {
+      min-width: 0;
+      font-weight: 600;
+      text-transform: capitalize;
+      overflow-wrap: anywhere;
+    }
+    details {
+      margin-top: 20px;
+      padding-top: 12px;
+      border-top: 1px solid var(--oauth-border);
+      font-size: 0.875rem;
+    }
+    summary { cursor: pointer; color: var(--oauth-muted); }
+    details[open] summary { margin-bottom: 8px; }
+    code, .technical {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-wrap: anywhere;
+    }
     dl { margin: 16px 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; }
     dt { color: var(--oauth-muted); }
     dd { margin: 0; overflow-wrap: anywhere; }
@@ -81,10 +119,52 @@
 </head>
 <body>
   <main>
+    {# The login page's header: the environment, then the project #}
+    <header class="project" data-oauth-project>
+      {% if data.project.env == 'development' %}
+        {% set envClass = 'env env--development' %}
+      {% elif data.project.env == 'staging' or data.project.env == 'success' %}
+        {% set envClass = 'env env--staging' %}
+      {% else %}
+        {% set envClass = 'env' %}
+      {% endif %}
+      <span class="{{ envClass }}" data-oauth-env>{{ data.project.env }}</span>
+      <span class="project-name">{{ data.project.name }}</span>
+    </header>
     {% if data.error %}
-      <h1>{{ __t('apostrophe:oauthErrorHeading') }}</h1>
-      <p class="error" data-oauth-error>{{ data.error }}</p>
-      <p class="muted">{{ __t('apostrophe:oauthErrorAdvice') }}</p>
+      {% set error = data.error %}
+      <h1>
+        {% if error.clientName %}
+          {{ __t('apostrophe:oauthErrorHeading', { client: error.clientName }) }}
+        {% elif error.blocked %}
+          {{ __t('apostrophe:oauthErrorHeadingBlocked') }}
+        {% else %}
+          {{ __t('apostrophe:oauthErrorHeadingUnnamed') }}
+        {% endif %}
+      </h1>
+      <p class="error" data-oauth-error>{{ error.reason }}</p>
+      {% if error.nothingShared %}
+        <p data-oauth-nothing-shared>{{ __t('apostrophe:oauthErrorNothingShared') }}</p>
+      {% endif %}
+      <p class="muted">
+        {% if error.advice == 'tool' %}
+          {{ __t('apostrophe:oauthErrorAdviceTool') }}
+        {% elif error.advice == 'site' %}
+          {{ __t('apostrophe:oauthErrorAdviceSite') }}
+        {% else %}
+          {{ __t('apostrophe:oauthErrorAdviceRetry') }}
+        {% endif %}
+      </p>
+      {% if error.details %}
+        <details data-oauth-error-details>
+          <summary>{{ __t('apostrophe:oauthErrorDetails') }}</summary>
+          <p class="muted">{{ __t('apostrophe:oauthErrorDetailsHelp') }}</p>
+          <p><code>{{ error.details.error }}</code></p>
+          {% if error.details.error_description %}
+            <p class="technical">{{ error.details.error_description }}</p>
+          {% endif %}
+        </details>
+      {% endif %}
     {% else %}
       <h1>
         {% if data.clientName %}

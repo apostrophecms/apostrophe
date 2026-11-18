@@ -80,7 +80,7 @@ module.exports = {
             req.csrfExempt = true;
             return self.jsonBodyParser(req, res, (err) => {
               if (err) {
-                return self.sendOauthError(res, self.oauthError(
+                return self.sendOauthError(req, res, self.oauthError(
                   'invalid_client_metadata',
                   (err.type === 'entity.too.large')
                     ? `The client metadata is larger than ${BODY_LIMIT}.`
@@ -95,7 +95,11 @@ module.exports = {
             req.csrfExempt = true;
             return self.formBodyParser(req, res, (err) => {
               if (err) {
-                return res.status(err.status || 400).send({ name: 'invalid' });
+                // The route shows the error page, which needs the
+                // middleware that comes after this. The body counts as
+                // parsed already, so the express module's parser skips it
+                req.body = {};
+                req.oauthFormError = err;
               }
               return next();
             });
@@ -140,10 +144,15 @@ module.exports = {
         register: self.whenEnabled(async (req, res) => {
           try {
             const registration = await self.registerClient(req.body);
+            self.logInfo(req, 'client-registered', {
+              clientId: registration.client_id,
+              clientName: registration.client_name,
+              redirectUris: registration.redirect_uris
+            });
             res.set('Cache-Control', 'no-store');
             return res.status(201).send(registration);
           } catch (e) {
-            return self.sendOauthError(res, e);
+            return self.sendOauthError(req, res, e);
           }
         }),
         // The approval page's form
@@ -190,10 +199,10 @@ module.exports = {
         return e;
       },
 
-      sendOauthError(res, e) {
+      sendOauthError(req, res, e) {
         res.set('Cache-Control', 'no-store');
         if (!e.oauth) {
-          self.logError('oauth-error', e.message, { stack: e.stack });
+          self.logError(req, 'oauth-error', e.message, { stack: e.stack });
           return res.status(500).send({ error: 'server_error' });
         }
         return res.status(e.status).send(e.oauth);
@@ -239,18 +248,27 @@ module.exports = {
       },
 
       // Wraps a route that answers with a page: an unexpected error is
-      // logged, and the user sees a plain error page
+      // logged, and the user sees the error page
       withPageErrors(route) {
         return async (req, res) => {
           try {
             return await route(req, res);
           } catch (e) {
-            self.logError('oauth-page-error', e.message, { stack: e.stack });
-            return self.sendAuthorizePage(req, res, 500, {
-              error: req.t('apostrophe:oauthServerError')
+            self.logError(req, 'oauth-page-error', e.message, { stack: e.stack });
+            return self.sendErrorPage(req, res, 500, {
+              reason: req.t('apostrophe:oauthServerError'),
+              advice: 'site',
+              // Unexpected, so it can't be promised
+              nothingShared: false
             });
           }
         };
+      },
+
+      // A value from the request, for a log entry: a string is cut to a
+      // length a URL may have, so a request can't fill the log
+      clipForLog(value) {
+        return (typeof value === 'string') ? value.slice(0, 2000) : value;
       },
 
       // Wraps a route so it answers 404 while the server is off
