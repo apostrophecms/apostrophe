@@ -428,8 +428,8 @@ export default {
     // Refreshes the list as it shows, search included, after writes from
     // outside. Quietly: the list stays readable, its rows show the writes.
     // The documents written come first, a small read, so their rows show
-    // the write at once; the page follows
-    async refreshOutside() {
+    // the write at once (`shown`); the page follows
+    async refreshOutside({ shown } = {}) {
       if (this.holdQueries) {
         return;
       }
@@ -457,6 +457,7 @@ export default {
           results: this.items,
           choices: this.filterChoices
         }));
+        shown?.();
         const pieces = await this.requestPieces(this.currentPage, search, quiet);
         this.setPieces(putWritten(pieces));
       } finally {

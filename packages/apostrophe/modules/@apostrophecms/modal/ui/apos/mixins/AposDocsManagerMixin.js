@@ -275,11 +275,14 @@ export default {
       apos.bus.$off('content-change-settled', this.docsManagerOnChangeSettled);
     },
     // A write from outside the manager, such as the assistant's, starts:
-    // its row is busy until it settles
+    // its row is busy until the manager shows what it wrote. Both events of
+    // a write can come in one poll, so its settling alone shows nothing
     docsManagerOnChangeStarting({ docId, type } = {}) {
       if (!this.isOutsideChange(docId, type)) {
         return;
       }
+      this.outsideWriting = this.outsideWriting || new Set();
+      this.outsideWriting.add(docId);
       this.outsideBusyTimers = this.outsideBusyTimers || {};
       clearTimeout(this.outsideBusyTimers[docId]);
       // A settled event that never comes leaves no row busy for good
@@ -300,21 +303,38 @@ export default {
         return;
       }
       clearTimeout(this.outsideBusyTimers?.[docId]);
-      this.outsideBusy = this.outsideBusy.filter(_id => _id !== docId);
+      this.outsideWriting?.delete(docId);
       if (!written) {
+        this.clearOutsideBusy([ docId ]);
         return;
       }
       this.outsideEdited = [
         docId,
         ...this.outsideEdited.filter(_id => _id !== docId)
       ];
+      this.outsideShowing = this.outsideShowing || new Set();
+      this.outsideShowing.add(docId);
       clearTimeout(this.outsideRefreshTimer);
       this.outsideRefreshTimer = setTimeout(() => {
         this.outsideRefresh = (this.outsideRefresh || Promise.resolve())
-          .then(() => this.refreshOutside())
+          .then(() => {
+            // Busy until this refresh shows them, or ends
+            const ids = [ ...this.outsideShowing ];
+            this.outsideShowing.clear();
+            const shown = () => this.clearOutsideBusy(ids);
+            return this.refreshOutside({ shown }).finally(shown);
+          })
           // eslint-disable-next-line no-console
           .catch(console.error);
       }, 300);
+    },
+    // Rows no longer busy, but for a document written again meanwhile
+    clearOutsideBusy(ids) {
+      const done = this.outsideBusy
+        .filter(_id => ids.includes(_id) && !this.outsideWriting?.has(_id));
+      if (done.length) {
+        this.outsideBusy = this.outsideBusy.filter(_id => !done.includes(_id));
+      }
     },
     // Whether a write from outside is one of this manager's documents, in
     // the locale it shows
@@ -331,8 +351,9 @@ export default {
       return type === this.moduleName;
     },
     // Shows what was written from outside, the documents written on top
-    // when the manager can put them there. Each manager has its own
-    async refreshOutside() {},
+    // when the manager can put them there. Each manager has its own; one
+    // that shows the documents written before it ends calls `shown` then
+    async refreshOutside({ shown } = {}) {},
     docsManagerOnContentChanged({
       doc, select, action
     }) {
