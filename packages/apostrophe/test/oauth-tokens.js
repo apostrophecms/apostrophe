@@ -154,6 +154,29 @@ describe('OAuth: tokens', function () {
     return apos.oauth.verifyAccessToken(token, { resource });
   }
 
+  // After two requests raced with the same code or refresh token: at most
+  // one got tokens, and none of them works
+  async function assertRaceEnded(results) {
+    const won = results.filter(result => result.status === 200);
+    assert.ok(won.length <= 1, JSON.stringify(results.map(result => result.body)));
+    for (const result of results.filter(result => result.status !== 200)) {
+      assert.equal(result.body.error, 'invalid_grant');
+    }
+    for (const { body } of won) {
+      assert.equal(await verify(body.access_token), null);
+      const refreshed = await post(TOKEN, {
+        grant_type: 'refresh_token',
+        client_id: client.client_id,
+        refresh_token: body.refresh_token
+      });
+      assert.equal(refreshed.body.error, 'invalid_grant');
+      const stored = await apos.oauth.tokens.findOne({
+        _id: apos.oauth.hashSecret(body.access_token)
+      });
+      assert.equal(stored, null);
+    }
+  }
+
   async function assertRejects(promise, error) {
     await assert.rejects(promise, (e) => {
       assert.equal(e.code || e.error, error, e.stack);
@@ -240,16 +263,20 @@ describe('OAuth: tokens', function () {
       assert.equal(refreshed.body.error, 'invalid_grant');
     });
 
-    it('takes a code once when two requests race for it', async function () {
-      const { code, codeVerifier } = await getCode();
-      const params = {
-        grant_type: 'authorization_code',
-        client_id: client.client_id,
-        code,
-        code_verifier: codeVerifier
-      };
-      const results = await Promise.all([ post(TOKEN, params), post(TOKEN, params) ]);
-      assert.equal(results.filter(result => result.status === 200).length, 1);
+    it('takes a code once when two requests race for it, and ends what it started', async function () {
+      // A second use ends the connection, whichever request comes first,
+      // and however the two interleave
+      for (let i = 0; i < 10; i++) {
+        const { code, codeVerifier } = await getCode();
+        const params = {
+          grant_type: 'authorization_code',
+          client_id: client.client_id,
+          code,
+          code_verifier: codeVerifier
+        };
+        const results = await Promise.all([ post(TOKEN, params), post(TOKEN, params) ]);
+        await assertRaceEnded(results);
+      }
     });
 
     it('refuses a wrong code verifier, and uses the code up', async function () {
@@ -448,15 +475,18 @@ describe('OAuth: tokens', function () {
       await assertRejects(refresh(second.refresh_token), 'invalid_grant');
     });
 
-    it('replaces a refresh token once when two requests race for it', async function () {
-      const { refresh_token: refreshToken } = await getTokens();
-      const params = {
-        grant_type: 'refresh_token',
-        client_id: client.client_id,
-        refresh_token: refreshToken
-      };
-      const results = await Promise.all([ post(TOKEN, params), post(TOKEN, params) ]);
-      assert.equal(results.filter(result => result.status === 200).length, 1);
+    it('replaces a refresh token once when two requests race for it, and ends the connection', async function () {
+      for (let i = 0; i < 10; i++) {
+        const first = await getTokens();
+        const params = {
+          grant_type: 'refresh_token',
+          client_id: client.client_id,
+          refresh_token: first.refresh_token
+        };
+        const results = await Promise.all([ post(TOKEN, params), post(TOKEN, params) ]);
+        await assertRaceEnded(results);
+        assert.equal(await verify(first.access_token), null);
+      }
     });
 
     it('leaves other connections alone', async function () {
@@ -522,6 +552,142 @@ describe('OAuth: tokens', function () {
       }
       // Revoked, not just refused while the user was disabled
       assert.equal(await verify(tokens.access_token), null);
+    });
+  });
+
+  describe('lifetimes', function () {
+    const DAY = 24 * 60 * 60 * 1000;
+
+    // Runs `fn` with the module's options changed, then puts them back
+    async function withOptions(options, fn) {
+      const originals = {};
+      for (const name of Object.keys(options)) {
+        originals[name] = apos.oauth.options[name];
+      }
+      Object.assign(apos.oauth.options, options);
+      try {
+        return await fn();
+      } finally {
+        Object.assign(apos.oauth.options, originals);
+      }
+    }
+
+    function getToken(token) {
+      return apos.oauth.tokens.findOne({ _id: apos.oauth.hashSecret(token) });
+    }
+
+    it('defaults to an hour for access tokens and 30 days for the connection', async function () {
+      const tokens = await getTokens();
+      assert.equal(tokens.expires_in, 3600);
+      const access = await getToken(tokens.access_token);
+      const refresh = await getToken(tokens.refresh_token);
+      const hours = (access.expiresAt - access.createdAt) / (60 * 60 * 1000);
+      assert.ok(Math.abs(hours - 1) < 0.01, String(hours));
+      const days = (refresh.expiresAt - refresh.createdAt) / DAY;
+      assert.ok(Math.abs(days - 30) < 0.01, String(days));
+    });
+
+    it('takes the lifetimes from the options', async function () {
+      await withOptions({
+        accessTokenLifetime: 120,
+        connectionLifetime: 7 * 24 * 60 * 60
+      }, async () => {
+        const tokens = await getTokens();
+        assert.equal(tokens.expires_in, 120);
+        const refresh = await getToken(tokens.refresh_token);
+        const days = (refresh.expiresAt - refresh.createdAt) / DAY;
+        assert.ok(Math.abs(days - 7) < 0.01, String(days));
+      });
+    });
+
+    it('counts the connection from the approval, however often it is refreshed', async function () {
+      const first = await getTokens();
+      const end = (await getToken(first.refresh_token)).expiresAt.getTime();
+      const second = await refresh(first.refresh_token);
+      const third = await refresh(second.refresh_token);
+      for (const tokens of [ second, third ]) {
+        const doc = await getToken(tokens.refresh_token);
+        assert.equal(doc.expiresAt.getTime(), end);
+        assert.equal(doc.connectionExpiresAt.getTime(), end);
+      }
+    });
+
+    it('cuts an access token off at the end of the connection', async function () {
+      const first = await getTokens();
+      const end = new Date(Date.now() + (10 * 60 * 1000));
+      await apos.oauth.tokens.updateOne(
+        { _id: apos.oauth.hashSecret(first.refresh_token) },
+        {
+          $set: {
+            expiresAt: end,
+            connectionExpiresAt: end
+          }
+        }
+      );
+      const second = await refresh(first.refresh_token);
+      const seconds = second.expires_in;
+      assert.ok((seconds <= 600) && (seconds > 590), String(seconds));
+      const access = await getToken(second.access_token);
+      assert.equal(access.expiresAt.getTime(), end.getTime());
+    });
+
+    it('sends the user back to approve again once the connection ends', async function () {
+      const first = await getTokens();
+      const past = new Date(Date.now() - 1000);
+      await apos.oauth.tokens.updateMany(
+        { _id: apos.oauth.hashSecret(first.refresh_token) },
+        {
+          $set: {
+            expiresAt: past,
+            connectionExpiresAt: past
+          }
+        }
+      );
+      await assertRejects(refresh(first.refresh_token), 'invalid_grant');
+    });
+
+    it('refuses a code that outlived a connection shorter than a code', async function () {
+      await withOptions({
+        accessTokenLifetime: 60,
+        connectionLifetime: 60
+      }, async () => {
+        const { code, codeVerifier } = await getCode();
+        await apos.oauth.codes.updateOne(
+          { _id: apos.oauth.hashSecret(code) },
+          { $set: { createdAt: new Date(Date.now() - (2 * 60 * 1000)) } }
+        );
+        const response = await post(TOKEN, {
+          grant_type: 'authorization_code',
+          client_id: client.client_id,
+          code,
+          code_verifier: codeVerifier
+        });
+        assert.equal(response.body.error, 'invalid_grant');
+        assert.match(response.body.error_description, /approve again/);
+      });
+    });
+
+    it('refuses lifetimes that are not a positive whole number of seconds', async function () {
+      for (const name of [ 'accessTokenLifetime', 'connectionLifetime' ]) {
+        for (const value of [ 0, -1, 1.5, '3600', null ]) {
+          await withOptions({ [name]: value }, () => {
+            assert.throws(
+              () => apos.oauth.validateOptions(),
+              new RegExp(`${name} option must be a whole number`),
+              `${name}: ${value}`
+            );
+          });
+        }
+      }
+    });
+
+    it('refuses an access token lifetime longer than the connection', async function () {
+      await withOptions({
+        accessTokenLifetime: 7200,
+        connectionLifetime: 3600
+      }, () => {
+        assert.throws(() => apos.oauth.validateOptions(), /must not be longer than its connectionLifetime/);
+      });
     });
   });
 

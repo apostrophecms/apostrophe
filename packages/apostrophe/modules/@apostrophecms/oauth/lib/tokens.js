@@ -2,8 +2,12 @@
 // revocation endpoint (RFC 7009).
 //
 // A connection starts when a code is exchanged: it's a "grant", with its own
-// id, and every token issued for it carries that id. An access token lasts an
-// hour. A refresh token lasts 30 days and is replaced each time it's used.
+// id, and every token issued for it carries that id. An access token lasts
+// `accessTokenLifetime` (an hour by default). The connection lasts
+// `connectionLifetime` (30 days by default) from the moment the user
+// approved it, however often it's used: its refresh token is replaced each
+// time it's used, but never outlasts the connection, and nor does an access
+// token. Then the user must approve again.
 // A code, or a refresh token, used a second time means someone else has a
 // copy: the whole connection is revoked, whichever copy was used first
 // (OAuth 2.1 sections 4.1.3 and 4.3.1).
@@ -22,8 +26,6 @@
 
 const crypto = require('node:crypto');
 
-const ACCESS_TOKEN_SECONDS = 60 * 60;
-const REFRESH_TOKEN_MS = 30 * 24 * 60 * 60 * 1000;
 // RFC 7636 section 4.1: 43 to 128 unreserved characters
 const CODE_VERIFIER = /^[A-Za-z0-9\-._~]{43,128}$/;
 
@@ -92,6 +94,14 @@ module.exports = (self) => {
       if (!doc || (doc.resource !== resource)) {
         return null;
       }
+      // Ended, even if deleting its tokens failed partway
+      const connection = await self.connections.findOne({
+        _id: doc.grantId,
+        expiresAt: { $gt: new Date() }
+      });
+      if (!connection) {
+        return null;
+      }
       const user = await self.apos.login.deserializeUser(doc.userId);
       if (!user) {
         return null;
@@ -129,6 +139,12 @@ module.exports = (self) => {
       const code = await self.codes.findOne({ _id: codeHash });
       if (matchedCount !== 1) {
         if (code && code.usedAt) {
+          // For the request that used it first, which may still be issuing
+          // its tokens (see checkStillConnected)
+          await self.codes.updateOne(
+            { _id: codeHash },
+            { $set: { reusedAt: new Date() } }
+          );
           await self.revokeGrant(code.grantId);
           self.logWarn(req, 'code-reused', {
             userId: code.userId,
@@ -153,12 +169,32 @@ module.exports = (self) => {
       if (!user) {
         throw self.oauthError('invalid_grant', 'The user who approved can no longer log in.');
       }
+      // Counted from the approval, when the code was issued
+      const connectionExpiresAt = new Date(
+        code.createdAt.getTime() + (self.options.connectionLifetime * 1000)
+      );
+      // Only with a connectionLifetime shorter than a code's
+      if (connectionExpiresAt <= new Date()) {
+        throw self.oauthError('invalid_grant', 'The connection has expired: the user must approve again.');
+      }
+      // Before the tokens, so that no token exists for a connection the
+      // user can't see
+      await self.createConnection({
+        grantId,
+        code,
+        connectionExpiresAt
+      });
       const tokens = await self.issueTokens({
         grantId,
         userId: code.userId,
         clientId: code.clientId,
         resource: code.resource,
-        scope: code.scope
+        scope: code.scope,
+        connectionExpiresAt
+      });
+      await self.checkStillConnected(grantId, async () => {
+        const latest = await self.codes.findOne({ _id: codeHash });
+        return !latest || !latest.reusedAt;
       });
       self.logInfo(req, 'token-issued', {
         username: user.username,
@@ -217,13 +253,21 @@ module.exports = (self) => {
         await self.revokeGrant(old.grantId);
         throw self.oauthError('invalid_grant', 'The user who approved can no longer log in.');
       }
+      // The user disconnected it, or its record is gone: either way the
+      // user can't see it, so it can't go on
+      if (!await self.useConnection(old.grantId)) {
+        await self.revokeGrant(old.grantId);
+        throw self.oauthError('invalid_grant', 'The connection has ended: the user must approve again.');
+      }
       const tokens = await self.issueTokens({
         grantId: old.grantId,
         userId: old.userId,
         clientId: old.clientId,
         resource: old.resource,
-        scope
+        scope,
+        connectionExpiresAt: old.connectionExpiresAt
       });
+      await self.checkStillConnected(old.grantId);
       self.logInfo(req, 'token-refreshed', {
         username: user.username,
         clientId: old.clientId
@@ -232,19 +276,26 @@ module.exports = (self) => {
     },
 
     // An access token and a refresh token for the connection, and the
-    // response that carries them (RFC 6749 section 5.1)
+    // response that carries them (RFC 6749 section 5.1). Neither outlasts
+    // the connection
     async issueTokens({
-      grantId, userId, clientId, resource, scope
+      grantId, userId, clientId, resource, scope, connectionExpiresAt
     }) {
       const accessToken = crypto.randomBytes(32).toString('base64url');
       const refreshToken = crypto.randomBytes(32).toString('base64url');
       const now = Date.now();
+      const end = connectionExpiresAt.getTime();
+      const accessExpiresAt = Math.min(
+        now + (self.options.accessTokenLifetime * 1000),
+        end
+      );
       const common = {
         grantId,
         userId,
         clientId,
         resource,
         scope,
+        connectionExpiresAt,
         createdAt: new Date(now)
       };
       await self.tokens.insertMany([
@@ -252,29 +303,51 @@ module.exports = (self) => {
           _id: self.hashSecret(accessToken),
           type: 'access',
           ...common,
-          expiresAt: new Date(now + (ACCESS_TOKEN_SECONDS * 1000))
+          expiresAt: new Date(accessExpiresAt)
         },
         {
           _id: self.hashSecret(refreshToken),
           type: 'refresh',
           ...common,
           replacedAt: null,
-          expiresAt: new Date(now + REFRESH_TOKEN_MS)
+          expiresAt: connectionExpiresAt
         }
       ]);
       return {
         access_token: accessToken,
         token_type: 'Bearer',
-        expires_in: ACCESS_TOKEN_SECONDS,
+        expires_in: Math.max(0, Math.floor((accessExpiresAt - now) / 1000)),
         refresh_token: refreshToken,
         scope
       };
     },
 
-    // Every token of the connection, access and refresh alike
+    // Ends the connection: its record, then every token of it, access and
+    // refresh alike.
+    //
+    // The record goes first, because a request may be issuing tokens for
+    // the connection at this very moment: it checks for the record once
+    // its tokens are stored (see checkStillConnected), so either it sees
+    // the record gone, or its tokens are stored before they're deleted
+    // here. If this fails partway, the tokens left don't work: none does
+    // without the record
     async revokeGrant(grantId) {
       if (grantId) {
+        await self.connections.deleteOne({ _id: grantId });
         await self.tokens.deleteMany({ grantId });
+      }
+    },
+
+    // Called once a request has stored new tokens: if the connection was
+    // ended meanwhile (a code or refresh token used twice, a disconnect),
+    // the new tokens are deleted too. `stillValid` may add a check of its
+    // own, made before the record's
+    async checkStillConnected(grantId, stillValid) {
+      const valid = (!stillValid || await stillValid()) &&
+        await self.connections.findOne({ _id: grantId });
+      if (!valid) {
+        await self.revokeGrant(grantId);
+        throw self.oauthError('invalid_grant', 'The connection was ended while the tokens were issued: the user must approve again.');
       }
     },
 
