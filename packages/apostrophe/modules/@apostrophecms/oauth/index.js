@@ -14,14 +14,14 @@
 // fall back to whatever else they accept. While it's on, the site's
 // `baseUrl` is required, since the issuer must be one stable URL.
 //
-// So far it serves the two metadata documents (S1), registers clients (S2,
-// see lib/clients.js), and asks the user's approval at the authorize
-// endpoint (S3, see lib/authorize.js). The token and revoke endpoints come
-// in later slices (PRO-10455).
+// It serves the two metadata documents, registers clients (see
+// lib/clients.js), asks the user's approval at the authorize endpoint (see
+// lib/authorize.js), and issues and revokes tokens (see lib/tokens.js).
+// Resources check a token with `verifyAccessToken`.
 
 const bodyParser = require('body-parser');
 
-// Client metadata and the approval form are small. The site's own limits
+// Client metadata, the approval form and token requests are small. The site's own limits
 // are far larger, and the register endpoint is open to anyone
 const BODY_LIMIT = '16kb';
 
@@ -50,6 +50,7 @@ module.exports = {
           if (self.isEnabled()) {
             await self.ensureClientsCollection();
             await self.ensureAuthorizeCollections();
+            await self.ensureTokensCollection();
           }
         }
       }
@@ -67,7 +68,9 @@ module.exports = {
       //   identity from a session, so there is nothing for a cross-site
       //   request to borrow. The approval form does, and is protected by its
       //   own token instead (see lib/authorize.js): a plain form post can't
-      //   send the header Apostrophe's check wants.
+      //   send the header Apostrophe's check wants. The token and revoke
+      //   endpoints take no session either: a client proves itself with the
+      //   code or the token it sends.
       // - The body is parsed with a small limit first. The express module's
       //   parsers then leave it alone.
       ownEndpoints: {
@@ -85,6 +88,24 @@ module.exports = {
                   (err.type === 'entity.too.large')
                     ? `The client metadata is larger than ${BODY_LIMIT}.`
                     : 'The client metadata is not valid JSON.',
+                  err.status || 400
+                ));
+              }
+              return next();
+            });
+          }
+          if (
+            (req.path === self.getEndpointPath('token')) ||
+            (req.path === self.getEndpointPath('revoke'))
+          ) {
+            req.csrfExempt = true;
+            return self.formBodyParser(req, res, (err) => {
+              if (err) {
+                return self.sendOauthError(req, res, self.oauthError(
+                  'invalid_request',
+                  (err.type === 'entity.too.large')
+                    ? `The request is larger than ${BODY_LIMIT}.`
+                    : 'The request body is not valid.',
                   err.status || 400
                 ));
               }
@@ -156,7 +177,10 @@ module.exports = {
           }
         }),
         // The approval page's form
-        authorize: self.whenEnabled(self.withPageErrors(self.decide))
+        authorize: self.whenEnabled(self.withPageErrors(self.decide)),
+        token: self.whenEnabled(self.withOauthErrors(self.token)),
+        // RFC 7009
+        revoke: self.whenEnabled(self.withOauthErrors(self.revoke))
       }
     };
   },
@@ -167,6 +191,7 @@ module.exports = {
       ...require('./lib/clients')(self),
       ...require('./lib/cimd')(self),
       ...require('./lib/authorize')(self),
+      ...require('./lib/tokens')(self),
 
       validateOptions() {
         const { enabled, clientMetadataDocuments } = self.options;
@@ -261,6 +286,18 @@ module.exports = {
               // Unexpected, so it can't be promised
               nothingShared: false
             });
+          }
+        };
+      },
+
+      // Wraps a route that answers a client with JSON: an error goes back
+      // as `{ error, error_description }`
+      withOauthErrors(route) {
+        return async (req, res) => {
+          try {
+            return await route(req, res);
+          } catch (e) {
+            return self.sendOauthError(req, res, e);
           }
         };
       },
