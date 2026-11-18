@@ -275,6 +275,12 @@ module.exports = (self) => {
       };
     },
 
+    // Where a redirect URI sends the user, as `{ host, local }`, for the
+    // approval page and the list of connections
+    describeRedirect(uri) {
+      return describeRedirect(uri);
+    },
+
     // Issues a one-time code for an approved request. Only its hash is
     // stored. Returns the code
     async createCode(user, request) {
@@ -283,6 +289,8 @@ module.exports = (self) => {
         _id: self.hashSecret(code),
         userId: user._id,
         clientId: request.clientId,
+        // For the connection's record
+        clientName: request.clientName || null,
         redirectUri: request.redirectUri,
         scope: request.scope,
         resource: request.resource,

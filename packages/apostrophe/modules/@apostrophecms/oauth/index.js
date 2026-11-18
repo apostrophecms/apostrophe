@@ -17,7 +17,8 @@
 // It serves the two metadata documents, registers clients (see
 // lib/clients.js), asks the user's approval at the authorize endpoint (see
 // lib/authorize.js), and issues and revokes tokens (see lib/tokens.js).
-// Resources check a token with `verifyAccessToken`.
+// Resources check a token with `verifyAccessToken`. Users see and end their
+// connections through the connections API (see lib/connections.js).
 
 const bodyParser = require('body-parser');
 
@@ -33,7 +34,15 @@ module.exports = {
     //
     // false for hosts that allow no outbound requests: clients then
     // register with DCR (see lib/cimd.js)
-    clientMetadataDocuments: true
+    clientMetadataDocuments: true,
+    // In seconds. How long an access token lasts. The tool gets a new one
+    // without asking the user, so this only limits how long a token that
+    // leaked unnoticed can be used. Keep it short
+    accessTokenLifetime: 60 * 60,
+    // In seconds. How long a connection lasts from the moment the user
+    // approves it, however often the tool is used. After that the user must
+    // approve again. This is the refresh token's lifetime
+    connectionLifetime: 30 * 24 * 60 * 60
   },
   init(self) {
     self.validateOptions();
@@ -48,9 +57,21 @@ module.exports = {
           self.validateBaseUrl();
           self.validatePrefix();
           if (self.isEnabled()) {
+            self.addConnectionsMenu();
             await self.ensureClientsCollection();
             await self.ensureAuthorizeCollections();
             await self.ensureTokensCollection();
+            await self.ensureConnectionsCollection();
+          }
+        }
+      },
+      '@apostrophecms/user:afterDelete': {
+        // Their tokens stop working anyway, since the user is gone. This
+        // clears them, and the user's connections, without waiting for
+        // them to expire
+        async removeDeletedUserConnections(req, doc) {
+          if (self.isEnabled()) {
+            await self.removeUserConnections(doc._id);
           }
         }
       }
@@ -184,6 +205,34 @@ module.exports = {
       }
     };
   },
+  apiRoutes(self) {
+    if (self.options.enabled === false) {
+      return {};
+    }
+    // The logged-in user's own connections, for their personal settings.
+    // Ordinary API routes: a session and Apostrophe's CSRF check
+    return {
+      get: {
+        async connections(req) {
+          self.checkConnectionsRequest(req);
+          return {
+            connections: await self.getConnections(req.user._id)
+          };
+        }
+      },
+      delete: {
+        async 'connections/:id'(req) {
+          self.checkConnectionsRequest(req);
+          // Another user's connection is "not found" too, so that nothing
+          // is learned from trying
+          if (!await self.disconnect(req, self.apos.launder.string(req.params.id))) {
+            throw self.apos.error('notfound');
+          }
+          return {};
+        }
+      }
+    };
+  },
   methods(self) {
     return {
       ...require('./lib/metadata')(self),
@@ -192,6 +241,7 @@ module.exports = {
       ...require('./lib/cimd')(self),
       ...require('./lib/authorize')(self),
       ...require('./lib/tokens')(self),
+      ...require('./lib/connections')(self),
 
       validateOptions() {
         const { enabled, clientMetadataDocuments } = self.options;
@@ -200,6 +250,18 @@ module.exports = {
         }
         if (typeof clientMetadataDocuments !== 'boolean') {
           throw new Error('The "@apostrophecms/oauth" module\'s clientMetadataDocuments option must be a boolean.');
+        }
+        for (const name of [ 'accessTokenLifetime', 'connectionLifetime' ]) {
+          const value = self.options[name];
+          if (!Number.isInteger(value) || (value <= 0)) {
+            throw new Error(`The "@apostrophecms/oauth" module's ${name} option must be a whole number of seconds, greater than 0.`);
+          }
+        }
+        if (self.options.accessTokenLifetime > self.options.connectionLifetime) {
+          throw new Error(
+            'The "@apostrophecms/oauth" module\'s accessTokenLifetime option must not be longer ' +
+            'than its connectionLifetime option.'
+          );
         }
         self.jsonBodyParser = bodyParser.json({
           limit: BODY_LIMIT,
@@ -288,6 +350,35 @@ module.exports = {
             });
           }
         };
+      },
+
+      // "Connected tools" in the user's own menu, beside Log Out, where they
+      // see and end their connections. Not in the Settings modal, which
+      // exists only on projects that configure it and edits user fields
+      addConnectionsMenu() {
+        self.apos.adminBar.add(
+          `${self.__meta.name}:connections`,
+          'apostrophe:oauthConnections',
+          false,
+          { user: true }
+        );
+        self.apos.modal.add(
+          `${self.__meta.name}:connections`,
+          self.getComponentName('connectionsModal', 'AposOauthConnections'),
+          // The module sends no browser data, so the API's path comes here
+          { action: `${self.action}/connections` }
+        );
+      },
+
+      // For the connections API: only while the server is on, and only
+      // for a logged-in user, who sees their own connections only
+      checkConnectionsRequest(req) {
+        if (!self.isEnabled()) {
+          throw self.apos.error('notfound');
+        }
+        if (!req.user) {
+          throw self.apos.error('forbidden');
+        }
       },
 
       // Wraps a route that answers a client with JSON: an error goes back
