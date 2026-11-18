@@ -18,14 +18,11 @@
         class="apos-assistant-request__message"
         data-apos-test="assistant-request-message"
       >
-        <!-- eslint-disable vue/no-v-html -- sanitized on the server -->
-        <div
-          ref="text"
+        <AposAssistantMessage
           class="apos-assistant-request__text"
-          @click="onChipClick"
-          v-html="request.messageHtml"
+          :text="request.message"
+          :mentions="request.pending ? null : (request.mentions || [])"
         />
-        <!-- eslint-enable vue/no-v-html -->
         <button
           v-if="running"
           type="button"
@@ -53,7 +50,9 @@
           data-apos-test="assistant-request-revert"
           @click="startRevert"
         >
+          <AposAssistantThinking v-if="checking" />
           <svg
+            v-else
             viewBox="0 0 24 24"
             fill="currentColor"
             aria-hidden="true"
@@ -186,6 +185,7 @@ import {
 } from 'vue';
 import { useAssistantStore } from '../stores/assistant.js';
 import { createChipIcon } from '../lib/chip.js';
+import AposAssistantMessage from './AposAssistantMessage.vue';
 import {
   formatNames, getConfirmLines, getRevertFailure, getRevertStatus, splitCount
 } from '../lib/revert.js';
@@ -261,13 +261,14 @@ const ERROR = {
 const $t = inject('i18n');
 const store = useAssistantStore();
 const { usageDisplay, modelDisplay } = apos.modules['@apostrophecms/assistant'];
-const retrying = ref(false);
-const answering = ref(false);
-const text = ref(null);
 const replyText = ref(null);
 const revertButton = ref(null);
 
 const chat = computed(() => store.getChat(props.request.chatId));
+// An action of the editor's on its way
+const retrying = computed(() => [ 'retry', 'send', 'retryRevert' ]
+  .some(kind => store.isPending(props.request.chatId, kind)));
+const answering = computed(() => store.isPending(props.request.chatId, 'answer'));
 // A browser step this browser tab serves for it: the request works on, on
 // the editor's screen
 const browserStep = computed(() => ((chat.value?.openRequest?._id === props.request._id)
@@ -280,7 +281,9 @@ const stopping = computed(() => props.request.status === 'stopping');
 // they may have written
 const finished = computed(() => !running.value && props.revertFrom &&
   ![ 'running', 'stopping', 'waiting' ].includes(props.request.status));
-const checking = computed(() => Boolean(store.checking[props.request.chatId]));
+// Its dry run is under way
+const checking = computed(() => store.isPending(props.request.chatId, 'revertCheck',
+  props.revertFrom));
 // Revert waits for the chat's open request or revert to end
 const revertBlocked = computed(() => Boolean(chat.value?.openRequest ||
   chat.value?.openRevert));
@@ -361,8 +364,7 @@ const reply = computed(() => {
   if (running.value) {
     return null;
   }
-  return (props.request.messages || [])
-    .findLast(message => (message.role === 'assistant') && message.html)?.html || null;
+  return props.request.reply || null;
 });
 
 // The confirmation the request waits on, when this browser tab answers it
@@ -372,6 +374,18 @@ const confirmAsk = computed(() => {
     return null;
   }
   return request.asks?.find(ask => ask.kind === 'confirm') || null;
+});
+
+// The documents the request left because someone was editing them, as one
+// list of titles
+const lockedTitles = computed(() => {
+  const locked = props.request.locked || [];
+  if (!locked.length) {
+    return null;
+  }
+  return new Intl.ListFormat(apos.i18n.adminLocale, {
+    type: 'conjunction'
+  }).format(locked.map(doc => doc.title || $t('apostrophe:assistantUntitled')));
 });
 
 const activities = computed(() => {
@@ -406,10 +420,10 @@ const activities = computed(() => {
       text: $t('apostrophe:assistantQuestionSkippedText')
     });
   }
+  // Retry is a send: only on the latest request of an idle chat
+  const canRetry = props.latest && (store.getOwner(chat.value) === 'none');
   if (request.status === 'failed') {
     const error = ERRORS[request.error?.name] || ERROR;
-    // Retry is a send: only on the latest request of an idle chat
-    const canRetry = props.latest && (store.getOwner(chat.value) === 'none');
     list.push({
       name: 'failed',
       tone: 'error',
@@ -440,26 +454,34 @@ const activities = computed(() => {
       text: $t('apostrophe:assistantOutOfStepsText')
     });
   }
-  const locked = request.locked || [];
-  if (locked.length) {
-    const titles = locked.map(doc => doc.title || $t('apostrophe:assistantUntitled'));
-    list.push((titles.length === 1)
-      ? {
-        name: 'locked',
-        tone: 'error',
-        title: $t('apostrophe:assistantLocked', { title: titles[0] }),
-        text: $t('apostrophe:assistantLockedText')
-      }
-      : {
-        name: 'locked',
-        tone: 'error',
-        title: $t('apostrophe:assistantLockedMany', { count: titles.length }),
-        text: $t('apostrophe:assistantLockedManyText', {
-          titles: new Intl.ListFormat(apos.i18n.adminLocale, {
-            type: 'conjunction'
-          }).format(titles)
-        })
-      });
+  if (lockedTitles.value) {
+    const { length } = request.locked;
+    // Named only when every document has the same named holder
+    const holders = [ ...new Set(request.locked.map(doc => doc.lockedBy)) ];
+    const name = (holders.length === 1) ? holders[0] : null;
+    const values = {
+      name,
+      title: lockedTitles.value,
+      titles: lockedTitles.value
+    };
+    const text = (length === 1)
+      ? (name ? 'apostrophe:assistantLockedBy' : 'apostrophe:assistantLockedText')
+      : (name ? 'apostrophe:assistantLockedManyBy' : 'apostrophe:assistantLockedManyText');
+    list.push({
+      name: 'locked',
+      tone: 'error',
+      title: (length === 1)
+        ? $t('apostrophe:assistantLocked', values)
+        : $t('apostrophe:assistantLockedMany', { count: length }),
+      text: $t(text, values),
+      actions: canRetry
+        ? [ {
+          name: 'retryLocked',
+          label: $t('apostrophe:assistantRetry'),
+          disabled: retrying.value
+        } ]
+        : []
+    });
   }
   return list;
 });
@@ -571,54 +593,40 @@ async function onAction(name) {
     return;
   }
   if (name === 'retryRevert') {
-    if (!retrying.value) {
-      retrying.value = true;
-      try {
-        await store.retryRevert(props.request.chatId, props.revert._id);
-      } finally {
-        retrying.value = false;
-      }
-    }
+    store.retryRevert(props.request.chatId, props.revert._id);
     return;
   }
   if ([ 'continue', 'notNow' ].includes(name)) {
-    if (answering.value) {
-      return;
-    }
-    answering.value = true;
-    const taken = await store.answer(props.request.chatId, confirmAsk.value.callId, {
+    store.answer(props.request.chatId, confirmAsk.value.callId, {
       approved: name === 'continue'
     });
-    if (!taken) {
-      answering.value = false;
-    }
     return;
   }
-  if ((name !== 'retry') || retrying.value) {
-    return;
-  }
-  retrying.value = true;
-  try {
-    await store.retry(props.request.chatId, props.request._id);
-  } finally {
-    retrying.value = false;
+  // The model is asked again for what it couldn't write, in a message of
+  // the editor's own
+  if (name === 'retryLocked') {
+    store.send(props.request.chatId, {
+      message: $t('apostrophe:assistantLockedRetryMessage', {
+        titles: lockedTitles.value
+      })
+    });
+  } else if (name === 'retry') {
+    store.retry(props.request.chatId, props.request._id);
   }
 }
 
 // The server's chips get their icons once the message or the reply is in
 // the page
 onMounted(addChipIcons);
-watch([ () => props.request.messageHtml, reply ], async () => {
+watch(reply, async () => {
   await nextTick();
   addChipIcons();
 });
 
 function addChipIcons() {
-  for (const container of [ text.value, replyText.value ]) {
-    for (const chip of container?.querySelectorAll('.apos-assistant-chip') || []) {
-      if (!chip.querySelector('.apos-assistant-chip__icon')) {
-        chip.prepend(createChipIcon(chip.dataset.kind));
-      }
+  for (const chip of replyText.value?.querySelectorAll('.apos-assistant-chip') || []) {
+    if (!chip.querySelector('.apos-assistant-chip__icon')) {
+      chip.prepend(createChipIcon(chip.dataset.kind));
     }
   }
 }
@@ -781,8 +789,11 @@ function onChipClick(event) {
       cursor: default;
     }
 
+    // Shown while its dry run is under way, hovered or not
     &[aria-busy] {
+      opacity: 1;
       cursor: progress;
+      pointer-events: auto;
     }
   }
 

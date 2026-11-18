@@ -30,6 +30,19 @@ function asAttachmentDoc(version) {
   };
 }
 
+// Whether AI had a part in a version: saved with AI, or listing the fields
+// AI wrote in a person's save
+function isMadeWithAi(version) {
+  return Boolean(version.ai || version.aiFields?.length);
+}
+
+// A version or list item as the browser reads it: `ai` when AI had a part in
+// it, without the fields
+function setMadeWithAi(item) {
+  item.ai = isMadeWithAi(item);
+  delete item.aiFields;
+}
+
 // The versions `criteria` names that are older than `date`
 function olderThan(criteria, date) {
   return {
@@ -675,13 +688,23 @@ module.exports = {
         }
       },
       // Insert a new version of `doc` at the head of its timeline. A
-      // restore is a baseline and counts no changes
+      // restore is a baseline and counts no changes. The version lists the
+      // fields AI wrote in the save as `aiFields` (see `getVersionAiFields`)
       async insertVersion(req, doc) {
         const version = await self.newVersion(req, doc);
         const previous = !version.restoredFrom &&
           await self.findOne(req, self.getTimelineCriteria(doc));
+        const aiFields = version.restoredFrom
+          ? []
+          : await self.getVersionAiFields(
+            req,
+            doc,
+            previous?.doc,
+            self.apos.doc.getAiFields(req, doc)
+          );
         const instance = {
           ...version,
+          ...(aiFields.length && { aiFields }),
           changeCount: previous
             ? self.getChangeCount(req, doc, previous.doc)
             : 0
@@ -692,6 +715,8 @@ module.exports = {
       // Replace the content of the version `versionId` with `doc`; the record
       // keeps its `_id` and author. A draft that becomes a publication point
       // takes the publish time as `createdAt`. The change count is recomputed.
+      // The version's `aiFields` are carried: a field the save changed leaves
+      // them, being the user's from then on, the save's own join them.
       // Inserts a new version when that one is gone
       async replaceVersion(req, doc, versionId) {
         const version = await self.findOne(req, { _id: versionId }, { raw: true });
@@ -701,18 +726,62 @@ module.exports = {
         const before = await self.getPreviousVersion(req, version);
         const mode = self.getMode(doc);
         const promoted = mode !== version.mode;
+        const aiFields = await getCarriedAiFields();
+        const unset = {
+          ...(promoted && { updatedAt: 1 }),
+          ...(!aiFields.length && version.aiFields && { aiFields: 1 })
+        };
         await self.db.updateOne({ _id: version._id }, {
           $set: {
             doc: await self.pack(self.apos.util.clonePermanent(doc)),
             mode,
             ...(promoted ? { createdAt: new Date() } : { updatedAt: new Date() }),
+            ...(aiFields.length && { aiFields }),
             changeCount: before
               ? self.getChangeCount(req, doc, before.doc)
               : 0
           },
-          ...(promoted && { $unset: { updatedAt: 1 } })
+          ...(Object.keys(unset).length && { $unset: unset })
         });
         return self.updateReferencesFor(req, version._id);
+
+        async function getCarriedAiFields() {
+          const carried = version.aiFields || [];
+          const fields = self.apos.doc.getAiFields(req, doc) || [];
+          if (!carried.length && !fields.length) {
+            return [];
+          }
+          const replaced = carried.length
+            ? self.getChangeRows(
+              req,
+              await self.unpack(version.doc),
+              self.apos.util.clonePermanent(doc)
+            )
+            : [];
+          const kept = carried.filter(field => {
+            return !replaced.some(row => self.isWithinFields(row, [ field ]));
+          });
+          return self.getVersionAiFields(req, doc, before?.doc, [
+            ...new Set([ ...kept, ...fields ])
+          ]);
+        }
+      },
+      // The paths of the fields AI wrote that a version of `doc` lists (see
+      // `getAiFields` of the doc module): those of `fields` with a change
+      // from `older`, the version before it, or a new document of its type
+      // for a first version. A version lists them exactly when AI had a part
+      // in a save a person made. None for a save with `req.aposAi`, whose
+      // version is AI's whole
+      async getVersionAiFields(req, doc, older, fields) {
+        if (req.aposAi || !fields?.length) {
+          return [];
+        }
+        const rows = self.getChangeRows(
+          req,
+          older || await self.getEmptyDoc(req, doc.type),
+          self.apos.util.clonePermanent(doc)
+        );
+        return diff.getChangedFields(rows, fields);
       },
       // A new version record of `doc` as saved by `req`. `docId`, `mode`
       // and `locale` identify the document at top level, `author`,
@@ -976,7 +1045,10 @@ module.exports = {
         forbidden
       } = {}) {
         const limit = self.defaultLimit;
-        const project = self.getRestProjection();
+        const project = {
+          ...self.getRestProjection(),
+          aiFields: 1
+        };
         const found = await self.find(
           req,
           before ? olderThan(criteria, before) : criteria,
@@ -1022,6 +1094,9 @@ module.exports = {
         }
         if (forbidden?.size) {
           await recountChanges(results.filter(item => !item.versionIds));
+        }
+        for (const item of results) {
+          setMadeWithAi(item);
         }
 
         return {
@@ -1149,6 +1224,7 @@ module.exports = {
 
         delete version.docId;
         delete version.locale;
+        setMadeWithAi(version);
 
         return version;
 
@@ -1186,7 +1262,8 @@ module.exports = {
               ...self.getRestProjection(),
               docId: 1,
               locale: 1,
-              doc: 1
+              doc: 1,
+              aiFields: 1
             }
           }
         );
@@ -1256,7 +1333,8 @@ module.exports = {
           .map((version, i) => ({
             older: i ? versions[i - 1].doc : previous?.doc,
             newer: version.doc,
-            ai: version.ai
+            ai: version.ai,
+            aiFields: version.aiFields
           }))
           .filter(pair => pair.older);
         return {
@@ -1271,13 +1349,14 @@ module.exports = {
       // out. The list item before is read as the list shows it, consolidated,
       // whether `item` is a consolidated version or not. A first version
       // saved with AI changed every path it holds, and its change list is
-      // empty: those paths are its rows
+      // empty: those paths are its rows; those at or below its `aiFields`
+      // for one that lists the fields AI wrote
       async getAiRowsBefore(req, { versions, previous }) {
         if (!previous) {
           return getCreatedRows(versions[0]);
         }
         const item = await self.getVersionPairs(req, previous, { consolidate: true });
-        if (!item.versions.some(version => version.ai)) {
+        if (!item.versions.some(isMadeWithAi)) {
           return [];
         }
         const created = item.previous ? [] : await getCreatedRows(item.versions[0]);
@@ -1287,14 +1366,21 @@ module.exports = {
         return self.getConsolidatedRows(req, item.pairs, { before: created })
           .filter(row => row.ai);
 
-        // Every path of `version` when it was saved with AI: its changes
+        // The paths of `version` AI wrote when it was the first: its changes
         // from a new document of its type
         async function getCreatedRows(version) {
           const { type } = version.doc;
-          if (!version.ai || !self.getManager(type)) {
+          if (!isMadeWithAi(version) || !self.getManager(type)) {
             return [];
           }
-          return self.getChangeRows(req, await self.getEmptyDoc(req, type), version.doc);
+          const rows = self.getChangeRows(
+            req,
+            await self.getEmptyDoc(req, type),
+            version.doc
+          );
+          return version.ai
+            ? rows
+            : rows.filter(row => self.isWithinFields(row, version.aiFields));
         }
       },
       // The change list of a version (see `getChangeList`) and the versions it
@@ -1379,6 +1465,7 @@ module.exports = {
             older: contents[i],
             newer,
             ai: Boolean(record?.ai),
+            aiFields: record?.aiFields,
             ...(record && {
               author: {
                 _id: record.authorId ?? null,
@@ -1674,6 +1761,12 @@ module.exports = {
           ...empty,
           ...after
         }, self.getDiffContext(docReq, after));
+      },
+      // Whether a change row is AI's in a save a person made: at or below one
+      // of `fields`, the paths AI wrote (see `isWithinFields` in
+      // `lib/diff.js`). The change log and a version's AI rows both decide by it
+      isWithinFields(row, fields) {
+        return diff.isWithinFields(row, fields);
       },
       // The parts of a document a change from `before` to `after`, two of its
       // stored states, made, each to be written whole by a PATCH of the

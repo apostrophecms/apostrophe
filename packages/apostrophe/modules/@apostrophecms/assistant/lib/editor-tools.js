@@ -36,8 +36,10 @@ module.exports = (self) => {
           'enumerable, each a short label with a one-sentence description when the ' +
           'label alone doesn\'t say what choosing it means, and "other": true when ' +
           'they may answer in their own words besides; omit "options" for a ' +
-          'free-text answer. They may leave a question to you ("youDecide"), and may ' +
-          'skip the whole set, which ends the request.',
+          'free-text answer. Set "youDecide": true when any answer would do and you ' +
+          'have a fair default, so they may leave that question to you; one option ' +
+          'needs "other" or "youDecide" beside it. They may skip the whole set, which ' +
+          'ends the request.',
         kind: 'action',
         tags: [ 'assistant' ],
         input: {
@@ -58,7 +60,7 @@ module.exports = (self) => {
                   },
                   options: {
                     type: 'array',
-                    minItems: 2,
+                    minItems: 1,
                     maxItems: 6,
                     items: {
                       type: 'object',
@@ -84,6 +86,10 @@ module.exports = (self) => {
                   other: {
                     type: 'boolean',
                     description: 'With "options": the user may also answer in their own words'
+                  },
+                  youDecide: {
+                    type: 'boolean',
+                    description: 'The user may leave this question to you'
                   }
                 },
                 required: [ 'question' ],
@@ -126,10 +132,18 @@ module.exports = (self) => {
           if (_context.input !== undefined) {
             return _context.input;
           }
+          const lone = questions.findIndex(question => {
+            return (question.options?.length === 1) && !question.other &&
+              !question.youDecide;
+          });
+          if (lone !== -1) {
+            throw self.apos.error('aiToolError', `question ${lone + 1} has one option and ` +
+              'nothing beside it: add an option, "other" or "youDecide"');
+          }
           throw self.apos.error('aiInput', 'waiting for the user to answer', {
             kind: 'question',
             questions: questions.map(({
-              question, options, other
+              question, options, other, youDecide
             }) => ({
               question,
               ...(options && {
@@ -138,7 +152,8 @@ module.exports = (self) => {
                   ...(description && { description })
                 })),
                 other: Boolean(other)
-              })
+              }),
+              youDecide: Boolean(youDecide)
             }))
           });
         }
@@ -149,7 +164,9 @@ module.exports = (self) => {
         description: 'Ask the user before you go on, and wait for the answer. Use it ' +
           'before anything they might not expect: removing content, changing many ' +
           'documents, a step that takes over their screen. Go on only when "approved" ' +
-          'is true.',
+          'is true. When the user wants to approve a plan, show it with write_plan ' +
+          'first, every step pending, then ask here whether to go ahead with it; ' +
+          'never put the plan in "details".',
         kind: 'action',
         tags: [ 'assistant' ],
         input: {
@@ -203,7 +220,9 @@ module.exports = (self) => {
         name: 'write_plan',
         label: 'apostrophe:aiToolWritePlan',
         description: 'Show the user your plan for this request while you work. For a ' +
-          'task of several steps; not for one done in a call or two. Each call replaces ' +
+          'task of several steps; not for one done in a call or two. A plan the user ' +
+          'wants to approve is sent here before you start, then confirmed with ' +
+          'confirm. Each call replaces ' +
           'the plan, so send every step each time, in order: one "active" while you work ' +
           'on it, "done" once finished. Send an empty list to drop the plan.',
         kind: 'action',
@@ -273,8 +292,8 @@ module.exports = (self) => {
      * Turns the editor's answers to a `question` ask into the tool's result.
      * One answer per question, in order: `{ choice }` (an option's index),
      * `{ text }` (the editor's words, for a question without options or one
-     * that takes other answers) or `{ youDecide: true }`. Anything else is
-     * `invalid`, and the ask keeps waiting.
+     * that takes other answers) or `{ youDecide: true }` (a question offered
+     * to the model). Anything else is `invalid`, and the ask keeps waiting.
      *
      * @param {object} req
      * @param {object} ask The stored ask.
@@ -290,10 +309,13 @@ module.exports = (self) => {
       return {
         answered: true,
         answers: questions.map(({
-          question, options, other
+          question, options, other, youDecide
         }, index) => {
           const given = answers[index] || {};
           if (given.youDecide === true) {
+            if (!youDecide) {
+              throw self.apos.error('invalid', `question ${index + 1} is not left to the assistant`);
+            }
             return {
               question,
               youDecide: true

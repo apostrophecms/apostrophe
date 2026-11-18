@@ -12,6 +12,7 @@
     :editor-id="modelValue._id"
     history="context"
     :history-target="`@${modelValue._id}.content`"
+    :generation="outsideGeneration"
     empty-label="apostrophe:emptyRichTextWidget"
     @update:model-value="onEditorUpdate"
     @blur="onEditorBlur"
@@ -87,7 +88,10 @@ export default {
         hasErrors: false
       },
       suppressWidgetControls: false,
-      suppressAddContentButtons: false
+      suppressAddContentButtons: false,
+      // Bumped for content that came from outside, which the editor shows
+      // whatever its history
+      outsideGeneration: 0
     };
   },
   computed: {
@@ -111,8 +115,11 @@ export default {
         // Just the echo of our own typing, nothing else changed
         return;
       }
-      // The content can also change from outside, e.g. on undo, in which
-      // case the editor picks it up on its own
+      // The content can also change from outside, e.g. on undo or from the
+      // assistant
+      if (newVal.content !== this.docFields.data.content) {
+        this.outsideGeneration++;
+      }
       this.docFields.data.content = newVal.content;
       // Accept any changes that were made to regular schema fields (like styles)
       // so that we don't blow them away later when we emit changes to the rich text

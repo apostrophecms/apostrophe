@@ -4,6 +4,7 @@
     :modal="modal"
     :modal-title="modalTitle"
     :screen="screen"
+    :outside="sideOutside"
     class="apos-media-manager"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
@@ -95,6 +96,7 @@
             :is-last-page="isLastPage"
             :relationship-field="relationshipField"
             :is-scroll-loading="isScrollLoading"
+            :outside-states="outsideRows"
             @edit="updateEditing"
             @select="select"
             @select-series="selectSeries"
@@ -119,6 +121,7 @@
             :module-labels="moduleLabels"
             @back="updateEditing(null)"
             @modified="editorModified"
+            @outside="sideOutside = $event"
           />
           <AposMediaManagerSelections
             v-show="!editing"
@@ -169,6 +172,8 @@ export default {
         showModal: false
       },
       editing: undefined,
+      // The handle of the image editor beside the list (see `AposEditorMixin`)
+      sideOutside: null,
       modified: false,
       lastSelected: null,
       emptyDisplay: {
@@ -707,6 +712,22 @@ export default {
       }
     },
 
+    // After writes from outside: the images written, those still matching
+    // the filters and search, move to the top, the latest first. The image
+    // open beside the list stays as it is
+    async refreshOutside() {
+      const { items: written } = await this.getMedia({ _ids: this.outsideEdited });
+      written.forEach(this.updateStateDoc);
+      const ids = new Set(written.map(({ _id }) => _id));
+      const gone = new Set(this.outsideEdited.filter(_id => !ids.has(_id)));
+      this.items = [
+        ...written,
+        ...this.items.filter(({ _id }) => !ids.has(_id) && !gone.has(_id))
+      ];
+      // Out of the server's order, as after an upload: the pages loaded
+      // next skip what the list already shows
+      this.uploaded = true;
+    },
     updateStateDoc(doc) {
       const index = this.items.findIndex(item => item._id === doc._id);
       const checkedIndex = this.checkedDocs

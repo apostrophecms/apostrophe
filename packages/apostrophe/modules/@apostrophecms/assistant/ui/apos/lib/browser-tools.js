@@ -2,9 +2,11 @@
 // assistant's own (see the server's lib/standard-browser-tools.js, which
 // checks each call and hands its arguments here).
 //
-// An executor is `async (args, { screen, request, ask, release }) => result`:
-// `args` as the server's tool prepared them, `screen` as the editor sees it
-// now, `request` and `ask` the records being answered. It acts on the live
+// An executor is `async (args, { screen, request, ask, release, stopped })
+// => result`: `args` as the server's tool prepared them, `screen` as the
+// editor sees it now, `request` and `ask` the records being answered, and
+// `stopped()` whether the editor stopped the request since: an executor
+// that waits checks it before it acts again. It acts on the live
 // page and returns `{ executed, reason?, ...its own fields }`; `null` leaves
 // the ask to the page that loads next. Executors act one at a time: one that
 // is done acting and only waits on the editor (to close an editor it
@@ -14,6 +16,8 @@
 
 import { watch } from 'vue';
 import { pinia } from 'Modules/@apostrophecms/ui/lib/vue';
+import { getTabId } from 'Modules/@apostrophecms/ui/utils';
+import { isWindow } from 'Modules/@apostrophecms/ui/composables/useScreen.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { liftToCommonParent } from 'Modules/@apostrophecms/area/lib/widget-selection.js';
@@ -26,9 +30,16 @@ import {
 
 // How long the page may take to show what an executor waits for
 const WAIT_LIMIT = 10000;
+const STOPPED = {
+  executed: false,
+  reason: 'the user stopped the request'
+};
 // The navigation in flight, in this browser tab: the page that loads next
 // answers it
 const NAVIGATION_KEY = 'aposAssistantNavigation';
+// The keys an `edit_open_document` call left busy for the later calls of its
+// turn: `{ requestId, outside, keys }`
+let held = null;
 
 // The executors by browser tool name, the assistant's own in it from the
 // moment this module is evaluated: nothing here depends on the order
@@ -37,7 +48,8 @@ const executors = new Map([
   [ 'read_screen', readScreen ],
   [ 'navigate', navigate ],
   [ 'open_editor', openEditor ],
-  [ 'show_widgets', showWidgets ]
+  [ 'show_widgets', showWidgets ],
+  [ 'edit_open_document', editOpenDocument ]
 ]);
 
 export const browserTools = {
@@ -164,6 +176,133 @@ async function showWidgets({ _id, widgetIds }) {
     executed: true,
     selected
   };
+}
+
+// What the editor on top holds, read or changed: the server reads it or
+// builds the change on it, and the change lands through the editor's
+// `outside` handle, the keys it names busy meanwhile, then marked. The keys
+// of the turn's later calls (`ahead` on the ask) go busy with them and stay
+// busy for those calls
+async function editOpenDocument(args, {
+  request, ask, stopped
+}) {
+  const entry = useModalStore(pinia).stack.filter(entry => !isWindow(entry)).at(-1);
+  const outside = entry?.outside;
+  if (!outside) {
+    releaseAhead();
+    return {
+      executed: false,
+      reason: 'no editor is on top of the screen'
+    };
+  }
+  const root = outside.read();
+  if (!root) {
+    releaseAhead();
+    return {
+      executed: false,
+      reason: 'the editor is still loading'
+    };
+  }
+  const keys = getArgumentKeys(args);
+  const ahead = (ask.payload.ahead || []).filter(key => !keys.includes(key));
+  if ((held?.outside !== outside) || (held.requestId !== request._id)) {
+    releaseAhead();
+  } else {
+    outside.release(held.keys.filter(key => !keys.includes(key) && !ahead.includes(key)));
+  }
+  if (stopped()) {
+    releaseAhead();
+    return STOPPED;
+  }
+  const busy = outside.busy([ ...keys, ...ahead ]);
+  try {
+    const change = await apos.http.post(
+      `${apos.modules['@apostrophecms/assistant'].action}/chat/${request.chatId}/open-editor`,
+      {
+        body: {
+          tabId: getTabId(),
+          callId: ask.callId,
+          root
+        }
+      }
+    );
+    const names = Object.keys(change.values || {});
+    if (!change.executed || !names.length) {
+      return change.executed
+        ? { executed: true }
+        : change;
+    }
+    // A change computed before the stop is not applied
+    if (stopped()) {
+      return STOPPED;
+    }
+    // Every field the change reaches takes it, or none does
+    const taken = outside.busy(names);
+    if (taken.length < names.length) {
+      return {
+        executed: false,
+        reason: `the editor can't take ${
+          names.filter(name => !taken.includes(name)).join(', ')
+        } now`
+      };
+    }
+    const { refused } = await outside.apply(change.values, {
+      marker: { requestId: request._id },
+      touched: change.touched,
+      removed: change.removed
+    });
+    return refused.length
+      ? {
+        executed: false,
+        reason: `the editor did not take ${refused.map(({ name }) => name).join(', ')}`
+      }
+      : { executed: true };
+  } catch (e) {
+    report(e);
+    return {
+      executed: false,
+      reason: e.body?.message || 'the editor\'s content could not be read'
+    };
+  } finally {
+    outside.release(busy.filter(key => !ahead.includes(key)));
+    // Applying frees what was busy in the fields it wrote
+    const kept = outside.busy(busy.filter(key => ahead.includes(key)));
+    held = kept.length
+      ? {
+        requestId: request._id,
+        outside,
+        keys: kept
+      }
+      : null;
+  }
+}
+
+// The keys a call names, relative to the editor's root: the keys of its
+// values, its area, the widgets it names by id. A read names none
+function getArgumentKeys({
+  values, area, widgets
+}) {
+  return [
+    ...Object.keys(values || {}),
+    ...(area ? [ area ] : []),
+    ...(widgets || [])
+      .filter(widget => typeof widget === 'string')
+      .map(_id => `@${_id}`)
+  ];
+}
+
+/**
+ * Frees the keys kept busy for the later calls of a request's turn, those
+ * of any request when `requestId` is not given. The request that ends
+ * frees what its calls did not reach.
+ *
+ * @param {string} [requestId]
+ */
+export function releaseAhead(requestId) {
+  if (held && (!requestId || (held.requestId === requestId))) {
+    held.outside.release(held.keys);
+    held = null;
+  }
 }
 
 /**

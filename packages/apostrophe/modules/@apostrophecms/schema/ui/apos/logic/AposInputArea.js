@@ -91,6 +91,17 @@ export default {
       }
       return false;
     },
+    // A value from outside the editor, taken by the area editor in place so
+    // the widgets that kept their value stay as rendered. `false` when it
+    // can't: the value is another area, or the editor takes no such value
+    applyOutsideInPlace(value) {
+      const editor = this.$refs.editor;
+      if (!editor?.applyOutsideItems || (value?._id !== this.next._id)) {
+        return false;
+      }
+      editor.applyOutsideItems(value.items || []);
+      return true;
+    },
     changed($event) {
       this.next = {
         ...this.next,

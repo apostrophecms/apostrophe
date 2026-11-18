@@ -9,8 +9,10 @@
       'apos-is-selected': selected,
       'apos-is-disabled': disabled,
       'apos-is-not-draggable': !draggable,
+      'apos-is-busy': outsideState?.busy
     }"
     :aria-current="engaged"
+    :aria-busy="outsideState?.busy ? 'true' : null"
     role="listitem"
     :aria-labelledby="parent"
     @keydown.space="toggleEngage"
@@ -88,6 +90,12 @@
           {{ item.extension }}
         </span>
       </div>
+      <transition name="apos-slat__ai-mark">
+        <AposAiMark
+          v-if="outsideState?.edited"
+          class="apos-slat__ai-mark"
+        />
+      </transition>
       <div class="apos-slat__label">
         {{ item.title }}
       </div>
@@ -99,17 +107,28 @@
       >
         {{ itemSize }}
       </div>
-      <AposButton
-        v-if="removable"
-        class="apos-slat__control apos-slat__control--remove"
-        icon="close-icon"
-        :icon-only="true"
-        :modifiers="['inline']"
-        label="apostrophe:removeItem"
-        :disabled="disabled"
-        @click="remove($event)"
-        @keydown.prevent.space="remove($event)"
-      />
+      <transition
+        name="apos-slat__control"
+        mode="out-in"
+      >
+        <span
+          v-if="outsideState?.busy"
+          class="apos-slat__busy"
+        >
+          <AposAiMark busy />
+        </span>
+        <AposButton
+          v-else-if="removable"
+          class="apos-slat__control apos-slat__control--remove"
+          icon="close-icon"
+          :icon-only="true"
+          :modifiers="['inline']"
+          label="apostrophe:removeItem"
+          :disabled="disabled"
+          @click="remove($event)"
+          @keydown.prevent.space="remove($event)"
+        />
+      </transition>
     </div>
   </li>
 </template>
@@ -163,6 +182,11 @@ export default {
     draggable: {
       type: Boolean,
       default: true
+    },
+    // Written from outside, such as by the assistant: `{ busy, edited }`
+    outsideState: {
+      type: Object,
+      default: null
     }
   },
   emits: [ 'engage', 'disengage', 'move', 'remove', 'item-clicked', 'select' ],
@@ -246,6 +270,50 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  // Written from outside: "Edited by AI" before the label, busy in place
+  // of the remove button
+  .apos-slat__ai-mark {
+    margin-right: 5px;
+  }
+
+  .apos-slat__ai-mark-enter-active,
+  .apos-slat__ai-mark-leave-active,
+  .apos-slat__control-enter-active,
+  .apos-slat__control-leave-active {
+    transition: opacity 220ms ease-out, transform 220ms ease-out;
+  }
+
+  .apos-slat__ai-mark-enter-from,
+  .apos-slat__ai-mark-leave-to,
+  .apos-slat__control-enter-from,
+  .apos-slat__control-leave-to {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+
+  .apos-slat__busy {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+  }
+
+  .apos-slat.apos-is-busy:not(.apos-is-selected) {
+    border-color: color-mix(in srgb, var(--a-primary) 40%, var(--a-base-5));
+    background-color: color-mix(in srgb, var(--a-primary) 10%, var(--a-base-9));
+  }
+
+  .apos-slat.apos-is-selected {
+    :deep(.apos-ai-mark__edited) {
+      color: var(--a-white);
+    }
+
+    :deep(.apos-thinking-mark span) {
+      background-color: var(--a-white);
+    }
+  }
+
   .apos-slat {
     @include apos-transition();
 

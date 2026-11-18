@@ -29,6 +29,13 @@ describe('Harness: the change log', function () {
             }
           }
         },
+        'log-restricted': {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            editRole: 'admin',
+            publishRole: 'admin'
+          }
+        },
         'log-notice': {
           extend: '@apostrophecms/piece-type',
           options: {
@@ -223,7 +230,10 @@ describe('Harness: the change log', function () {
     });
     draft.title = 'Edited by Ann';
     await apos.modules['log-article'].update(userReq(), draft);
-    await write(req, article._id, { body: 'AI second' });
+    // Read again: a write over the editor's save is refused until then
+    await write(door({ requestId: apos.harness.getDoor(req).requestId }), article._id, {
+      body: 'AI second'
+    });
     await apos.harness.endRequest(req);
 
     const entries = await entriesOf(req);
@@ -367,6 +377,7 @@ describe('Harness: the change log', function () {
       const [ starting, settled, , settledAgain ] = events.map(event => event.event.data);
       assert.deepEqual(starting, {
         docId: article._id,
+        type: 'log-article',
         ids: [],
         fields: [ 'body' ],
         requestId: apos.harness.getDoor(req).requestId
@@ -395,6 +406,61 @@ describe('Harness: the change log', function () {
       await apos.harness.endRequest(req);
     });
 
+    it('should send each document of a write over several its own pair, naming its type, and nothing for one the user may not edit', async function () {
+      const [ first, second ] = await insertArticles(2);
+      const notice = await apos.modules['log-notice'].insert(userReq(), {
+        title: 'Notice'
+      });
+      const restricted = await apos.modules['log-restricted'].insert(userReq(), {
+        title: 'Restricted'
+      });
+      const req = door();
+      // An editor, who may edit the articles and the notice only
+      req.user.role = 'editor';
+      const { written, refused } = await apos.harness.writeDocuments(req, [
+        first,
+        restricted,
+        notice,
+        second
+      ].map(({ _id }) => ({
+        _id,
+        patch: { title: 'Retitled' }
+      })));
+      assert.deepEqual(
+        written.map(({ _id }) => _id),
+        [ first._id, notice._id, second._id ]
+      );
+      assert.deepEqual(refused.map(({
+        _id, title, reason
+      }) => ({
+        _id,
+        title,
+        reason
+      })), [ {
+        _id: restricted._id,
+        title: 'Restricted',
+        reason: 'forbidden'
+      } ]);
+      const events = await eventsOf(req);
+      assert(events.every(event => (event.tab === 'tab-1') && event.bus));
+      assert.deepEqual(events.map(({ event }) => [
+        event.name,
+        event.data.docId,
+        event.data.type
+      ]), [
+        [ 'content-change-starting', first._id, 'log-article' ],
+        [ 'content-change-settled', first._id, 'log-article' ],
+        [ 'content-change-starting', notice._id, 'log-notice' ],
+        [ 'content-change-settled', notice._id, 'log-notice' ],
+        [ 'content-change-starting', second._id, 'log-article' ],
+        [ 'content-change-settled', second._id, 'log-article' ]
+      ]);
+      assert(events
+        .filter(({ event }) => event.name === 'content-change-settled')
+        .every(({ event }) => event.data.written));
+      await apos.harness.endRequest(req);
+    });
+
     it('should say a write was refused after it started, and send nothing without a family', async function () {
       const [ article ] = await insertArticles(1);
       const req = door();
@@ -410,6 +476,7 @@ describe('Harness: the change log', function () {
       ]);
       assert.deepEqual(events[1].data, {
         docId: article._id,
+        type: 'log-article',
         written: false,
         requestId: apos.harness.getDoor(req).requestId
       });

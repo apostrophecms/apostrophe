@@ -92,6 +92,84 @@ describe('Assistant: module and options', function () {
     });
   });
 
+  it('sends a request as the thread shows it: the reply and steps, never the transcript', async function () {
+    process.env.APOS_AI_MOCK = '1';
+    const request = {
+      _id: 'r1',
+      ownerId: 'u1',
+      schemaVersion: 1,
+      chatId: 'c1',
+      message: 'Hello',
+      status: 'completed',
+      screen: { url: '/' },
+      screenChanged: true,
+      prior: 2,
+      jobId: 'j1',
+      replyMentions: [],
+      messages: [
+        {
+          role: 'user',
+          content: [ {
+            type: 'text',
+            text: 'Hello'
+          } ]
+        },
+        {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: 'Let me look.'
+            },
+            {
+              type: 'toolCall',
+              id: 'call-1',
+              name: 'list_types',
+              input: { all: true }
+            }
+          ]
+        },
+        {
+          role: 'tool',
+          content: [ {
+            type: 'toolResult',
+            toolCallId: 'call-1',
+            output: { types: [ 'page' ] }
+          } ]
+        },
+        {
+          role: 'assistant',
+          content: [ {
+            type: 'text',
+            text: 'There are **pages**.'
+          } ]
+        }
+      ]
+    };
+    await withApos({ enabled: true }, (apos) => {
+      const rendered = apos.assistant.renderRequest(request);
+      for (const name of [ 'messages', 'screen', 'screenChanged', 'prior', 'jobId',
+        'replyMentions', 'ownerId', 'schemaVersion' ]) {
+        assert.equal(name in rendered, false, name);
+      }
+      assert.equal(rendered.message, 'Hello');
+      assert(rendered.reply.includes('<strong>pages</strong>'));
+      assert(!rendered.reply.includes('Let me look'));
+      assert.deepEqual(rendered.steps, [ {
+        id: 'call-1',
+        name: 'list_types',
+        label: 'apostrophe:aiToolListTypes'
+      } ]);
+      assert.deepEqual(apos.assistant.renderStep(request, 'call-1'), {
+        input: JSON.stringify({ all: true }, null, 2),
+        output: JSON.stringify({ types: [ 'page' ] }, null, 2),
+        error: null
+      });
+      assert.equal(apos.assistant.renderStep(request, 'call-2'), null);
+      assert.equal(apos.assistant.renderRequest({ messages: [] }).reply, null);
+    });
+  });
+
   it('refuses an effort option naming no effort level at startup', async function () {
     process.env.APOS_AI_MOCK = '1';
     for (const name of [ 'effort', 'titleEffort', 'delegationEffort', 'summaryEffort' ]) {

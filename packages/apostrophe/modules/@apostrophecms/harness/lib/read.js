@@ -119,91 +119,21 @@ module.exports = (self) => {
           ...await getVersions()
         };
       }
-      const projected = self.projectDocument(draftReq, doc);
-      if (view === 'properties') {
-        if (!paths) {
-          throw self.apos.error('aiToolError', 'Name the "paths" to read; the outline lists the fields and areas.');
-        }
-        return {
-          ...header,
-          properties: paths.map(path => {
-            const value = get(path);
-            if (value !== undefined) {
-              return {
-                path,
-                value
-              };
-            }
-            const fields = getFieldsAt(path);
-            return {
-              path,
-              missing: true,
-              ...(fields && { fields })
-            };
-          })
-        };
-      }
-      // A widget named by path lists its own fields too
-      const widgetIds = (paths || [])
-        .filter(path => /^@[^.]+$/.test(path))
-        .map(path => path.slice(1));
-      const outline = self.getOutline(draftReq, manager, projected, widgetIds);
-      if (!paths) {
-        return {
-          ...header,
-          ...outline
-        };
-      }
+      checkPaths(view, paths);
+      // A write of the door to a document saved since is refused
+      await self.rememberSeen(draftReq, doc, { read: true });
       return {
         ...header,
-        parts: paths.map(path => findPart(outline.areas, path) || {
-          path,
-          missing: true
-        })
+        ...readView(
+          draftReq,
+          self.getAiSchemaOf(draftReq, manager),
+          self.projectDocument(draftReq, doc),
+          {
+            view,
+            paths
+          }
+        )
       };
-
-      function get(path) {
-        return self.apos.util.get(projected, path, {
-          ignoreDynamicProperties: true
-        });
-      }
-
-      // The names of the fields where a missing path was looked for: the
-      // document's, a widget's, an item's or an object's, never an area's
-      // or an array's
-      function getFieldsAt(path) {
-        const dot = path.lastIndexOf('.');
-        const parent = (dot === -1) ? projected : get(path.slice(0, dot));
-        if (!parent || (typeof parent !== 'object') || Array.isArray(parent)) {
-          return null;
-        }
-        const names = Object.keys(parent).filter(name => ![ '_id', 'type' ].includes(name));
-        const area = (names.length === 1) && (names[0] === 'items') &&
-          Array.isArray(parent.items);
-        return area ? null : names;
-      }
-
-      // The area at `path`, or the widget `@<_id>` with the areas below it
-      function findPart(areas, path) {
-        for (const area of areas) {
-          if (area.path === path) {
-            return area;
-          }
-          for (const widget of area.widgets) {
-            if (`@${widget._id}` === path) {
-              return {
-                path,
-                widget
-              };
-            }
-            const found = findPart(widget.areas || [], path);
-            if (found) {
-              return found;
-            }
-          }
-        }
-        return null;
-      }
 
       async function getVersions() {
         const versions = self.apos.docVersions;
@@ -245,6 +175,45 @@ module.exports = (self) => {
     },
 
     /**
+     * Reads what an open editor holds, as `get_document` reads a document:
+     * its `outline` or its `properties` at `paths`, unsaved changes
+     * included. Paths are relative to the root; a widget root's own fields
+     * are also read as `@<root id>.<field>`, an array root's items as
+     * `@<item id>`. The caller checks that
+     * AI may read the root's document.
+     *
+     * @param {object} req
+     * @param {object} root See `getContentRoot`.
+     * @param {object} [options]
+     * @param {string} [options.view] `outline` (the default) or
+     *   `properties`.
+     * @param {string[]} [options.paths]
+     * @returns {object} The root's header (`locale`, a document's `_id`,
+     *   `type` and `title`, a widget's `_id` and `type`, an array's
+     *   `field`), then the read as `get_document` gives it.
+     */
+    readContent(req, root, { view = 'outline', paths } = {}) {
+      checkPaths(view, paths);
+      const opened = self.getContentRoot(req, root);
+      const projected = {
+        ...((opened.kind !== 'array') && {
+          _id: opened.value._id,
+          type: opened.value.type
+        }),
+        ...self.projectFields(opened.req, opened.schema, opened.value)
+      };
+      const rootId = (opened.kind === 'widget') && opened.value._id;
+      return {
+        ...opened.header,
+        ...readView(opened.req, opened.schema, projected, {
+          view,
+          paths,
+          rootId
+        })
+      };
+    },
+
+    /**
      * The outline of a projected document (see `projectDocument`): the
      * size of every field that is not an area, with its value when it is a
      * short string, number or boolean, and every area with its widgets,
@@ -255,13 +224,12 @@ module.exports = (self) => {
      * nearest item with an `_id`.
      *
      * @param {object} req
-     * @param {object} manager The document's type manager.
+     * @param {object[]} schema The AI-facing schema of its fields.
      * @param {object} projected
      * @param {string[]} [widgetIds]
      * @returns {{ chars: number, fields: object[], areas: object[] }}
      */
-    getOutline(req, manager, projected, widgetIds = []) {
-      const schema = self.getAiSchemaOf(req, manager);
+    getOutline(req, schema, projected, widgetIds = []) {
       const areas = [];
       collectAreas(schema, projected, '', areas);
       return {
@@ -670,6 +638,111 @@ module.exports = (self) => {
       });
     }
   };
+
+  // Refuses a properties read that names nothing
+  function checkPaths(view, paths) {
+    if ((view === 'properties') && !paths) {
+      throw self.apos.error('aiToolError', 'Name the "paths" to read; the outline lists the fields and areas.');
+    }
+  }
+
+  // The `outline` or `properties` read of a projected root, its fields
+  // those of `schema`. With `rootId`, paths through the root by
+  // `@<rootId>` name its own fields
+  function readView(req, schema, projected, {
+    view, paths, rootId = null
+  }) {
+    if (view === 'properties') {
+      return {
+        properties: paths.map(path => {
+          const value = get(relative(path));
+          if (value !== undefined) {
+            return {
+              path,
+              value
+            };
+          }
+          const fields = getFieldsAt(relative(path));
+          return {
+            path,
+            missing: true,
+            ...(fields && { fields })
+          };
+        })
+      };
+    }
+    // A widget named by path lists its own fields too
+    const widgetIds = (paths || [])
+      .filter(path => /^@[^.]+$/.test(path))
+      .map(path => path.slice(1));
+    const outline = self.getOutline(req, schema, projected, widgetIds);
+    if (!paths) {
+      return outline;
+    }
+    return {
+      parts: paths.map(path => findPart(outline.areas, relative(path)) || {
+        path,
+        missing: true
+      })
+    };
+
+    function relative(path) {
+      if (!rootId || !path.startsWith(`@${rootId}`)) {
+        return path;
+      }
+      const rest = path.slice(rootId.length + 1);
+      if (!rest) {
+        return '';
+      }
+      return rest.startsWith('.') ? rest.slice(1) : path;
+    }
+
+    function get(path) {
+      if (!path) {
+        return projected;
+      }
+      return self.apos.util.get(projected, path, {
+        ignoreDynamicProperties: true
+      });
+    }
+
+    // The names of the fields where a missing path was looked for: the
+    // root's, a widget's, an item's or an object's, never an area's or an
+    // array's
+    function getFieldsAt(path) {
+      const dot = path.lastIndexOf('.');
+      const parent = (dot === -1) ? projected : get(path.slice(0, dot));
+      if (!parent || (typeof parent !== 'object') || Array.isArray(parent)) {
+        return null;
+      }
+      const names = Object.keys(parent).filter(name => ![ '_id', 'type' ].includes(name));
+      const area = (names.length === 1) && (names[0] === 'items') &&
+        Array.isArray(parent.items);
+      return area ? null : names;
+    }
+
+    // The area at `path`, or the widget `@<_id>` with the areas below it
+    function findPart(areas, path) {
+      for (const area of areas) {
+        if (area.path === path) {
+          return area;
+        }
+        for (const widget of area.widgets) {
+          if (`@${widget._id}` === path) {
+            return {
+              path,
+              widget
+            };
+          }
+          const found = findPart(widget.areas || [], path);
+          if (found) {
+            return found;
+          }
+        }
+      }
+      return null;
+    }
+  }
 };
 
 // The size of a value as the model reads it, in characters

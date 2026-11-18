@@ -22,10 +22,8 @@ module.exports = (self) => {
   return {
     /**
      * The instructions a door sends the model on every request, in a fixed
-     * order: the base instructions, the site's `guidance` option, the site
-     * rules kept in the CMS (none yet), every type's `aiWhen`, then the
-     * door's own sections. A type's `aiHow` is only marked; the model reads
-     * it with `get_guidance`.
+     * order: the base instructions, what the site provides
+     * (`getSiteInstructions`), then the door's own sections.
      *
      * @param {object} req
      * @param {string[]} [sections] The door's own sections, in order.
@@ -34,9 +32,7 @@ module.exports = (self) => {
     getInstructions(req, sections = []) {
       return [
         [ ...BASE, getLanguageLine() ].join('\n'),
-        self.options.guidance,
-        // Site rules kept in the CMS go here once they exist
-        getTypeLines(),
+        self.getSiteInstructions(req),
         ...sections
       ]
         .map(slot => slot?.trim())
@@ -51,6 +47,27 @@ module.exports = (self) => {
           `only quoted text) gets a reply in ${getLanguageName(locale)}, ` +
           'without remarking on it.';
       }
+    },
+
+    /**
+     * What the site tells the model, in order: the `guidance` option, the
+     * site rules kept in the CMS (none yet), every type's `aiWhen`. A type's
+     * `aiHow` is only marked; the model reads it with `get_guidance`. Part
+     * of `getInstructions`, and on its own for a run that needs the site's
+     * knowledge without a door's base instructions, such as a subagent.
+     *
+     * @param {object} req
+     * @returns {string|null}
+     */
+    getSiteInstructions(req) {
+      const slots = [
+        self.options.guidance,
+        // Site rules kept in the CMS go here once they exist
+        getTypeLines()
+      ]
+        .map(slot => slot?.trim())
+        .filter(Boolean);
+      return slots.length ? slots.join('\n\n') : null;
 
       // One line per type with guidance: `type: aiWhen`, marked `(aiHow)`
       // when it has one

@@ -1,4 +1,11 @@
 import { getTabId } from './tab-id.js';
+import {
+  getOutsidePlace,
+  getOutsideSave,
+  getOutsideValue,
+  hasOutsideId,
+  isSameOutsideValue
+} from './outside.js';
 
 export {
   debounceAsync,
@@ -6,7 +13,12 @@ export {
   debounceAsync as debounce,
   throttle,
   asyncTaskQueue,
-  getTabId
+  getTabId,
+  getOutsidePlace,
+  getOutsideSave,
+  getOutsideValue,
+  hasOutsideId,
+  isSameOutsideValue
 };
 
 // Debounce the async function "fn". For synchronous functions, use

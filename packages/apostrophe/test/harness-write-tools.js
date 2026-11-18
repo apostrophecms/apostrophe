@@ -611,11 +611,55 @@ describe('Harness: write tools and get_changes', function () {
       assert.equal(saved._id, widget._id);
       assert.equal(saved.type, 'tools-card');
       assert.equal(saved.heading, 'Whole');
-      // Omitted fields are at their default, the model's ids replaced
+      // Omitted fields are at their default; an item the widget held keeps
+      // its id
       assert.equal(saved.kicker, 'News');
       assert.deepEqual(saved.body.items, []);
       assert.equal(saved.links[0].label, 'Again');
-      assert.notEqual(saved.links[0]._id, widget.links[0]._id);
+      assert.equal(saved.links[0]._id, widget.links[0]._id);
+    });
+
+    it('should keep the items an array holds by the ids the model sends, new ids otherwise', async function () {
+      const article = await insertArticle({
+        slides: [
+          {
+            _id: 'slide-1',
+            caption: 'One'
+          },
+          {
+            _id: 'slide-2',
+            caption: 'Two'
+          }
+        ]
+      });
+
+      await run('update_document', {
+        targets: [ {
+          _id: article._id,
+          values: {
+            slides: [
+              {
+                _id: 'slide-2',
+                caption: 'Two, first'
+              },
+              {
+                _id: 'slide-2',
+                caption: 'Two, again'
+              },
+              {
+                _id: 'elsewhere',
+                caption: 'New'
+              }
+            ]
+          }
+        } ]
+      });
+
+      const { slides } = await findDraft(article._id);
+      assert.deepEqual(slides.map(slide => slide.caption), [ 'Two, first', 'Two, again', 'New' ]);
+      assert.equal(slides[0]._id, 'slide-2');
+      assert.equal(new Set(slides.map(slide => slide._id)).size, 3);
+      assert(!slides.slice(1).some(slide => [ 'slide-1', 'slide-2', 'elsewhere' ].includes(slide._id)));
     });
 
     it('should refuse areas, the document and keys outside the AI-facing schema', async function () {
@@ -1039,6 +1083,186 @@ describe('Harness: write tools and get_changes', function () {
         }
       ]);
       assert.equal((await findDraft(article._id)).main.items.length, 1);
+    });
+  });
+
+  describe('documents saved since the read', function () {
+    // A colleague's save of the draft, through the type's own update
+    async function editAs(username, _id, change) {
+      const req = userReq(username);
+      const draft = await apos.doc.find(req, { _id }).toObject();
+      change(draft);
+      await apos.doc.getManager(draft.type).update(req, draft);
+    }
+
+    function read(_id, req) {
+      return run('get_document', { _id }, req);
+    }
+
+    function update(_id, values, req) {
+      return run('update_document', {
+        targets: [ {
+          _id,
+          values
+        } ]
+      }, req);
+    }
+
+    it('should refuse a document saved since the read, write the others, and write it once read again', async function () {
+      const article = await insertArticle({ body: 'Original' });
+      const other = await insertArticle({ body: 'Other' });
+      const req = door(userReq());
+      await read(article._id, req);
+      await read(other._id, req);
+      await editAs('bob', article._id, draft => {
+        draft.title = 'Retitled by Bob';
+      });
+
+      const { written, refused } = await run('update_document', {
+        targets: [ article, other ].map(({ _id }) => ({
+          _id,
+          values: { body: 'From the model' }
+        }))
+      }, req);
+
+      assert.deepEqual(written.map(item => item._id), [ other._id ]);
+      assert.equal(refused[0].reason, 'changed');
+      assert.match(refused[0].message, /Read it again/);
+      assert.equal((await findDraft(article._id)).body, 'Original');
+
+      await read(article._id, req);
+      const again = await update(article._id, { body: 'From the model' }, req);
+      assert.equal(again.written.length, 1);
+      assert.equal((await findDraft(article._id)).title, 'Retitled by Bob');
+    });
+
+    it('should take its own writes as seen, and refuse after someone else\'s save', async function () {
+      const widget = card();
+      const article = await insertArticle({
+        body: 'Original',
+        main: area([ widget ])
+      });
+      const req = door(userReq());
+      await read(article._id, req);
+      // Two patches in one save: checked once
+      const moved = await run('move_widgets', {
+        _id: article._id,
+        widgets: [ widget._id ],
+        area: 'aside'
+      }, req);
+      assert.equal(moved.written.length, 1);
+      const second = await update(article._id, { body: 'Second' }, req);
+      assert.equal(second.written.length, 1);
+
+      await editAs('bob', article._id, draft => {
+        draft.title = 'Retitled by Bob';
+      });
+      const third = await update(article._id, { body: 'Third' }, req);
+      assert.equal(third.refused[0].reason, 'changed');
+    });
+
+    it('should check a page it created, through the page\'s own save', async function () {
+      const req = door(userReq());
+      const home = await apos.page.find(userReq(), { slug: '/' }).toObject();
+      const { written: [ created ] } = await run('create_page', {
+        type: 'tools-page',
+        title: 'Created',
+        target: home._id
+      }, req);
+      await editAs('bob', created._id, draft => {
+        draft.summary = 'Bob\'s summary';
+      });
+
+      const { refused } = await update(created._id, { summary: 'Model summary' }, req);
+
+      assert.equal(refused[0].reason, 'changed');
+      assert.equal((await findDraft(created._id)).summary, 'Bob\'s summary');
+    });
+
+    it('should not check a document the request never read or wrote, nor a write without a door', async function () {
+      const article = await insertArticle({ body: 'Original' });
+      await read(article._id, door(userReq(), {
+        lockId: 'chat-2',
+        chat: 'chat-2'
+      }));
+      await read(article._id);
+      await editAs('bob', article._id, draft => {
+        draft.body = 'Typed by Bob';
+      });
+
+      const chat = await update(article._id, { body: 'Chat one' }, door(userReq()));
+      const plain = await update(article._id, { body: 'Plain' });
+
+      assert.equal(chat.written.length, 1);
+      assert.equal(plain.written.length, 1);
+    });
+
+    it('should not check what has no updatedAt, nor fail on it', async function () {
+      const article = await insertArticle({ body: 'Original' });
+      const req = door(userReq());
+      // A projection without the date is not remembered
+      await apos.harness.rememberSeen(req, { _id: article._id });
+      assert.equal(apos.harness.getDoor(req).seen.has(article._id), false);
+
+      await read(article._id, req);
+      // Stored without it since the read: written, nothing to compare
+      await apos.doc.db.updateOne({ _id: article._id }, { $unset: { updatedAt: 1 } });
+      const { written } = await update(article._id, { body: 'From the model' }, req);
+
+      assert.equal(written.length, 1);
+      assert.equal((await findDraft(article._id)).body, 'From the model');
+    });
+
+    it('should count another chat\'s write as a save since the read', async function () {
+      const article = await insertArticle({ body: 'Original' });
+      const one = door(userReq());
+      const two = door(userReq(), {
+        lockId: 'chat-2',
+        chat: 'chat-2',
+        requestId: 'request-2'
+      });
+      await read(article._id, one);
+      await update(article._id, { body: 'Chat two' }, two);
+
+      const { refused } = await update(article._id, { body: 'Chat one' }, one);
+
+      assert.equal(refused[0].reason, 'changed');
+      assert.equal((await findDraft(article._id)).body, 'Chat two');
+    });
+
+    it('should refuse in a later request what the door was handed as seen, and tell the door', async function () {
+      const [ readOne, writtenOne, untouched ] = await Promise.all([
+        insertArticle({ title: 'Read' }),
+        insertArticle({ title: 'Written' }),
+        insertArticle({ title: 'Untouched' })
+      ]);
+      const told = [];
+      const listen = (req, _id) => told.push(_id);
+      apos.harness.on('documentSeen', 'testListenSeen', listen);
+      const first = door(userReq());
+      await read(readOne._id, first);
+      await update(writtenOne._id, { body: 'Written' }, first);
+      const { seen } = apos.harness.getDoor(first);
+      assert.deepEqual(told, [ readOne._id, writtenOne._id ]);
+      assert.deepEqual([ ...seen.keys() ], [ readOne._id, writtenOne._id ]);
+
+      for (const doc of [ readOne, writtenOne, untouched ]) {
+        await editAs('bob', doc._id, draft => {
+          draft.body = 'Typed by Bob';
+        });
+      }
+      const next = door(userReq(), {
+        requestId: 'request-2',
+        seen
+      });
+      const { written, refused } = await run('update_document', {
+        targets: [ readOne, writtenOne, untouched ].map(({ _id }) => ({
+          _id,
+          values: { body: 'Next request' }
+        }))
+      }, next);
+      assert.deepEqual(refused.map(item => item.title).sort(), [ 'Read', 'Written' ]);
+      assert.deepEqual(written.map(item => item.title), [ 'Untouched' ]);
     });
   });
 

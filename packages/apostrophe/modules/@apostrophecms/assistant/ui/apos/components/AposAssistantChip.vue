@@ -1,10 +1,14 @@
 <template>
-  <span
+  <component
+    :is="tag"
     class="apos-assistant-chip"
-    :class="{ 'apos-assistant-chip--action': actionLabel }"
+    :class="{ 'apos-assistant-chip--action': actionLabel || href || button }"
     :title="title"
+    :href="href"
+    :type="button ? 'button' : null"
     data-apos-test="assistant-chip"
     :data-kind="kind"
+    @click="button && emit('action', $event)"
   >
     <svg
       class="apos-assistant-chip__icon"
@@ -49,13 +53,13 @@
       v-else
       class="apos-assistant-chip__title"
     >{{ title }}</span>
-  </span>
+  </component>
 </template>
 
 <script setup>
 // A chip: a document mentioned or a widget selected. The composer's editing
 // area builds the same markup as plain DOM (`lib/chip.js`) and the server
-// renders it in sent messages, which is why the styles below are not scoped
+// renders it in replies, which is why the styles below are not scoped
 import { computed } from 'vue';
 import { getChipIcon } from '../lib/chip.js';
 
@@ -78,11 +82,27 @@ const props = defineProps({
   actionLabel: {
     type: String,
     default: null
+  },
+  // The whole chip is a link to this URL
+  href: {
+    type: String,
+    default: null
+  },
+  // The whole chip is a button, `action` on a click
+  button: {
+    type: Boolean,
+    default: false
   }
 });
 const emit = defineEmits([ 'remove', 'action' ]);
 
 const icon = computed(() => getChipIcon(props.kind));
+const tag = computed(() => {
+  if (props.href) {
+    return 'a';
+  }
+  return props.button ? 'button' : 'span';
+});
 </script>
 
 <style lang="scss">

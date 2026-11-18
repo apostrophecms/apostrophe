@@ -1,40 +1,13 @@
 // A composer draft is a string: text with a `@[title](kind:id)` token for
-// each chip, which is what the store keeps per chat tab
+// each chip, which is what the store keeps per chat tab. The grammar is the
+// server's too (`ui/apos/universal/message.js`)
+import {
+  parseMentions, mentionToken
+} from 'Modules/@apostrophecms/assistant/universal/message.js';
 
-const TOKEN = /@\[((?:\\.|[^\]\\])*)\]\(([a-z-]+):([^)\s]+)\)/g;
-
-/**
- * @param {string} draft
- * @returns {Array<{ text: string } | { mention: object }>} A mention has
- *   `id`, `title` and `kind`.
- */
-export function parseDraft(draft) {
-  const parts = [];
-  let last = 0;
-  for (const match of (draft || '').matchAll(TOKEN)) {
-    if (match.index > last) {
-      parts.push({ text: draft.slice(last, match.index) });
-    }
-    parts.push({
-      mention: {
-        title: match[1].replace(/\\(.)/g, '$1'),
-        kind: match[2],
-        id: match[3]
-      }
-    });
-    last = match.index + match[0].length;
-  }
-  if (last < (draft || '').length) {
-    parts.push({ text: draft.slice(last) });
-  }
-  return parts;
-}
-
-export function mentionToken({
-  id, title, kind
-}) {
-  return `@[${title.replace(/[\]\\]/g, '\\$&')}](${kind}:${id})`;
-}
+export {
+  parseMentions as parseDraft, mentionToken
+};
 
 export function serializeDraft(parts) {
   return parts

@@ -47,7 +47,8 @@ import { ref, onMounted } from 'vue';
 import { useAssistantStore } from '../stores/assistant.js';
 
 // The assistant's window: above the page and every modal, never taking
-// focus from them. Everything it shows is read from the stored records
+// focus from them. Everything it shows is the stored records with the
+// editor's actions not answered yet shown over them (the store)
 defineProps({
   modalData: {
     type: Object,

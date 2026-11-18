@@ -21,6 +21,7 @@
       :request="plan.request"
       :failed="plan.failed"
       :cancellable="plan.cancellable"
+      :cancelling="plan.cancelling"
       @cancel="cancelPlan"
     />
     <div class="apos-assistant-composer__shell">
@@ -29,7 +30,7 @@
         class="apos-assistant-mention"
       >
         <div
-          v-if="results.length"
+          v-if="results?.length"
           :id="listId"
           class="apos-assistant-mention__list"
           role="listbox"
@@ -54,12 +55,20 @@
           </div>
         </div>
         <p
-          v-else
+          v-else-if="results"
           class="apos-assistant-mention__empty"
           role="status"
           data-apos-test="assistant-mention-empty"
         >
           {{ $t('apostrophe:assistantNoResults') }}
+        </p>
+        <p
+          v-else
+          class="apos-assistant-mention__empty"
+          role="status"
+          data-apos-test="assistant-mention-searching"
+        >
+          {{ $t('apostrophe:assistantSearching') }}
         </p>
       </div>
       <AposAssistantSelection @empty="input.focus()" />
@@ -137,22 +146,23 @@ const props = defineProps({
 
 const store = useAssistantStore();
 const input = ref(null);
-const sending = ref(false);
 const listId = `apos-assistant-mention-${createId()}`;
 const query = ref(null);
 const closed = ref(false);
 const active = ref(0);
 let escaped = false;
-// The latest search's results; `null` until the first one answers
+// The latest search's results; `null` while it searches. A search that
+// failed closes the list until the next letters
 const results = ref(null);
+const searchFailed = ref(false);
 let searches = 0;
 let searchTimer = null;
 const listOpen = computed(() => (query.value !== null) && !closed.value &&
-  (results.value !== null));
+  !searchFailed.value);
 const aria = computed(() => ({
   'aria-autocomplete': 'list',
-  'aria-controls': (listOpen.value && results.value.length) ? listId : null,
-  'aria-activedescendant': (listOpen.value && results.value.length)
+  'aria-controls': (listOpen.value && results.value?.length) ? listId : null,
+  'aria-activedescendant': (listOpen.value && results.value?.length)
     ? `${listId}-${active.value}`
     : null
 }));
@@ -167,8 +177,7 @@ const chat = computed(() => store.getChat(props.chatId));
 const owner = computed(() => store.getOwner(chat.value));
 // A revert running or waiting on its confirmation is about to rewind the
 // thread: the composer takes a draft, Send waits
-const canSend = computed(() => !sending.value &&
-  !!draft.value.trim() &&
+const canSend = computed(() => !!draft.value.trim() &&
   (owner.value === 'none') &&
   !chat.value?.openRevert &&
   !store.confirmations[props.chatId]);
@@ -208,7 +217,7 @@ const dock = computed(() => {
   return null;
 });
 
-const latest = computed(() => store.requests[props.chatId]?.at(-1) || null);
+const latest = computed(() => store.getRequests(props.chatId).at(-1) || null);
 // The questions the chat's request waits on, when this browser tab answers
 // them
 const question = computed(() => {
@@ -220,26 +229,30 @@ const question = computed(() => {
   return request.asks?.find(ask => ask.kind === 'question') || null;
 });
 // The plan of the chat's latest request while it is open, folded once it
-// failed. Cancel reverts what it did, so not once a cancel is under way
+// failed. Cancel reverts what it did, so not once a cancel is under way,
+// which the plan reads as cancelling until the revert takes over
 const plan = computed(() => {
   const request = latest.value;
   if (!request?.plan?.length || request.revertId) {
     return null;
   }
-  const cancellable = !request.planCancelled && !store.checking[props.chatId] &&
-    !chat.value?.openRevert;
+  const cancelling = Boolean(request.planCancelled) ||
+    store.isPending(props.chatId, 'revertCheck', request._id);
+  const cancellable = !cancelling && !chat.value?.openRevert;
   if ([ 'running', 'stopping', 'waiting' ].includes(request.status)) {
     return {
       request,
       failed: false,
-      cancellable: cancellable && (request.status !== 'stopping')
+      cancellable: cancellable && (request.status !== 'stopping'),
+      cancelling
     };
   }
   return (request.status === 'failed')
     ? {
       request,
       failed: true,
-      cancellable
+      cancellable,
+      cancelling
     }
     : null;
 });
@@ -276,11 +289,13 @@ function onQuery(value) {
   search(value);
 }
 
-// A search a moment after the letters stop; an answer to an older one is
-// dropped
+// A search a moment after the letters stop, the list searching from the
+// first one; an answer to an older one is dropped. The results shown stay
+// until the next answer
 function search(value) {
   clearTimeout(searchTimer);
   const id = ++searches;
+  searchFailed.value = false;
   if (value === null) {
     results.value = null;
     return;
@@ -294,7 +309,8 @@ function search(value) {
       }
     } catch (e) {
       if (id === searches) {
-        results.value = [];
+        results.value = null;
+        searchFailed.value = true;
       }
     }
   }, 120);
@@ -305,7 +321,7 @@ function onKey(event) {
   if (!listOpen.value) {
     return;
   }
-  const count = results.value.length;
+  const count = results.value?.length || 0;
   if ((event.key === 'ArrowDown') && count) {
     active.value = (active.value + 1) % count;
   } else if ((event.key === 'ArrowUp') && count) {
@@ -338,15 +354,9 @@ function pick(item) {
   });
 }
 
-async function send() {
-  if (!canSend.value) {
-    return;
-  }
-  sending.value = true;
-  try {
-    await store.send(props.chatId);
-  } finally {
-    sending.value = false;
+function send() {
+  if (canSend.value) {
+    store.send(props.chatId);
   }
 }
 

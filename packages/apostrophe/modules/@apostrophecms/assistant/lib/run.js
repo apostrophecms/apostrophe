@@ -37,18 +37,36 @@ module.exports = (self) => {
      * it). The browser tab named by the screen owns the request; the
      * screen is verified and stored on the request.
      *
+     * The browser may name the request, and a new chat by its first send:
+     * a request id already stored answers with that request and starts
+     * nothing.
+     *
      * @param {object} req
      * @param {string} chatId
      * @param {object} input
      * @param {string} input.message
      * @param {object} input.screen The screen contract; `tabId` is
      *   required.
+     * @param {string} [input.requestId] The new request's id.
+     * @param {boolean} [input.create] Create the chat under `chatId`
+     *   first.
      * @param {string} [input.retryOf] The failed request this one retries.
      * @returns {Promise<object>} The request record.
      */
     async send(req, chatId, {
-      message, screen, retryOf
+      message, screen, requestId: given, create = false, retryOf
     } = {}) {
+      const _id = self.apos.launder.id(chatId);
+      const requestId = given
+        ? self.apos.launder.id(given)
+        : self.apos.util.generateId();
+      if (!requestId) {
+        throw self.apos.error('invalid', 'the request id is not valid');
+      }
+      const sent = given && await self.findSentRequest(req, _id, requestId);
+      if (sent) {
+        return sent;
+      }
       const typed = self.apos.launder.string(message).trim();
       if (!typed) {
         throw self.apos.error('invalid', 'the message is empty');
@@ -56,8 +74,9 @@ module.exports = (self) => {
       const { message: text, mentions } = await self.verifyMentions(req, typed);
       const verified = await self.verifyScreen(req, screen);
       const { tabId } = verified;
-      const _id = self.apos.launder.id(chatId);
-      const requestId = self.apos.util.generateId();
+      if (create) {
+        await self.createChat(req, { _id: chatId });
+      }
       const claimed = await claim();
       const request = self.newRequest(claimed, {
         _id: requestId,
@@ -68,6 +87,7 @@ module.exports = (self) => {
         screen: verified,
         retryOf
       });
+      let stored = false;
       try {
         const screenChanges = await self.getScreenChanges(
           claimed,
@@ -89,11 +109,17 @@ module.exports = (self) => {
         if (pageRows) {
           request.pageRows = pageRows;
         }
-        await self.requests.insertOne(request);
+        try {
+          await self.requests.insertOne(request);
+        } catch (e) {
+          // Taken meanwhile, by a send of the same id or by someone else
+          throw self.apos.doc.isUniqueError(e) ? self.apos.error('notfound') : e;
+        }
+        stored = true;
         await self.publishRequest(req, request);
         const title = await self.setFirstTitle(claimed, self.getPlainMessage(text));
         if (title) {
-          await self.publish(req, claimed._id, 'chat');
+          await self.publishChat(req, claimed._id);
         }
         const transcript = await self.getTranscript(claimed, request);
         await self.startRun(req, claimed, request, {
@@ -102,7 +128,20 @@ module.exports = (self) => {
           title
         });
       } catch (e) {
-        await self.endRun(req, claimed, request, { error: e });
+        if (stored) {
+          await self.endRun(req, claimed, request, { error: e });
+        } else {
+          // Nothing stored: the chat is free again
+          await self.chats.updateOne({
+            _id: claimed._id,
+            'openRequest._id': request._id
+          }, {
+            $set: {
+              openRequest: null,
+              updatedAt: new Date()
+            }
+          });
+        }
         throw e;
       }
       return self.getRequest(req, request._id);
@@ -150,13 +189,22 @@ module.exports = (self) => {
      * @param {object} req
      * @param {string} chatId
      * @param {object} input
-     * @param {string} input.requestId The failed request.
+     * @param {string} input.retryOf The failed request.
+     * @param {string} [input.requestId] The new request's id, as `send`
+     *   takes it.
      * @param {object} input.screen
      * @returns {Promise<object>} The new request record.
      */
-    async retry(req, chatId, { requestId, screen } = {}) {
+    async retry(req, chatId, {
+      retryOf, requestId, screen
+    } = {}) {
       const chat = await self.getChat(req, chatId);
-      const failed = await self.getRequest(req, self.apos.launder.id(requestId));
+      const given = requestId && self.apos.launder.id(requestId);
+      const sent = given && await self.findSentRequest(req, chat._id, given);
+      if (sent) {
+        return sent;
+      }
+      const failed = await self.getRequest(req, self.apos.launder.id(retryOf));
       const [ latest ] = await self.requests
         .find({
           chatId: chat._id,
@@ -173,6 +221,7 @@ module.exports = (self) => {
       return self.send(req, chat._id, {
         message: failed.message,
         screen,
+        requestId,
         retryOf: failed._id
       });
     },
@@ -378,6 +427,12 @@ module.exports = (self) => {
         family: request.tabId,
         chat: chat._id,
         requestId: request._id,
+        // A write to a document saved since the chat last read or wrote it
+        // is refused, across requests
+        seen: new Map((chat.seen || []).map(({ _id, updatedAt }) => [ _id, updatedAt ])),
+        // A read counts from the end of its step: a write of the same step
+        // came from what the model read before
+        deferSeen: true,
         ...(model && { model })
       });
       const tools = self.apos.harness.getDoorTools(DOOR);
@@ -398,6 +453,7 @@ module.exports = (self) => {
         }),
         notify: false,
         ...self.getProgressHooks(doorReq, request, tools),
+        betweenSteps: () => self.apos.harness.commitSeen(doorReq),
         onEnd: async (error, result) => {
           await self.endRun(doorReq, chat, request, {
             error,
@@ -506,7 +562,7 @@ module.exports = (self) => {
               callId,
               name,
               kind: payload?.kind,
-              payload
+              payload: self.addOpenEditorAhead(name, callId, payload, result.toolCalls)
             }))
             : null
         });
@@ -625,7 +681,7 @@ module.exports = (self) => {
           $set: { title }
         });
         if (matchedCount) {
-          await self.publish(req, chat._id, 'chat');
+          await self.publishChat(req, chat._id);
         }
       } catch (e) {
         self.logError(req, 'chat-title', e.message, {

@@ -31,6 +31,12 @@
       @action="retry"
     />
     <AposAssistantActivity
+      v-if="!running && unsaved"
+      tone="warning"
+      :text="$t('apostrophe:assistantRevertUnsaved')"
+      data-apos-test="assistant-revert-unsaved"
+    />
+    <AposAssistantActivity
       v-if="!running && listed.length && !revert.dismissed"
       tone="warning"
       :title="listTitle"
@@ -79,8 +85,9 @@
 
 <script setup>
 import {
-  computed, inject, ref
+  computed, inject
 } from 'vue';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useAssistantStore } from '../stores/assistant.js';
 import {
   getNotReverted, getReason, getRevertFailure, getRevertStatus, getTitle, showDocument
@@ -98,7 +105,9 @@ const props = defineProps({
 
 const $t = inject('i18n');
 const store = useAssistantStore();
-const busy = ref(false);
+const modalStore = useModalStore();
+const busy = computed(() => store.isPending(props.revert.chatId, 'retryRevert',
+  props.revert._id));
 
 const running = computed(() => props.revert.status === 'running');
 const count = computed(() => props.revert.requestIds.length);
@@ -113,21 +122,19 @@ const status = computed(() => getRevertStatus(props.revert, store.revertProgress
 const failed = computed(() => ((props.revert.status === 'failed')
   ? getRevertFailure(props.revert, $t)
   : null));
+// What its requests wrote into an editor open in this browser tab is
+// unsaved: the revert can't reach it, the editor's cancel does
+const unsaved = computed(() => modalStore.stack.some(entry => {
+  return Object.values(entry.outside?.edited() || {})
+    .some(state => props.revert.requestIds.includes(state.marker?.requestId));
+}));
 const listed = computed(() => getNotReverted(props.revert));
 const listTitle = computed(() => $t(listed.value.some(doc => doc.partly)
   ? 'apostrophe:assistantRevertNotFully'
   : 'apostrophe:assistantRevertNotReverted', { count: listed.value.length }));
 
-async function retry() {
-  if (busy.value) {
-    return;
-  }
-  busy.value = true;
-  try {
-    await store.retryRevert(props.revert.chatId, props.revert._id);
-  } finally {
-    busy.value = false;
-  }
+function retry() {
+  store.retryRevert(props.revert.chatId, props.revert._id);
 }
 
 function dismiss() {

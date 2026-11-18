@@ -17,6 +17,8 @@ const DOORS = {
 const readTools = require('./read-tools');
 const writeTools = require('./write-tools');
 
+const { BUDGETS } = readTools;
+
 module.exports = (self) => {
   return {
     // Registers the harness's tools on the engine, each tagged `content`
@@ -27,6 +29,17 @@ module.exports = (self) => {
           tags: [ 'content', ...(tool.tags || []) ]
         });
       }
+    },
+
+    /**
+     * A read's budget, in characters of the serialized result: `document`
+     * for a document read, whoever serves it.
+     *
+     * @param {string} name
+     * @returns {number}
+     */
+    getReadBudget(name) {
+      return BUDGETS[name];
     },
 
     // The names of the doors the harness knows

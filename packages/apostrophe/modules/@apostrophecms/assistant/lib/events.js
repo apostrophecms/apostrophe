@@ -1,15 +1,16 @@
 // What the browser hears about chats: one bus event, `assistant-chat`, for
 // every browser tab of the chat's owner, since the others show the chat
-// read-only. A change is published only once it is stored, so a browser tab
-// that reloads the records on it reads the change. Progress (a tool call,
+// read-only. A change is published only once it is stored, with what the
+// browser shows at once (a request's status, a chat's title), so a browser
+// tab that reads the record on it reads the change. Progress (a tool call,
 // a model turn, a provider retry) is published as it happens and is never
 // stored. A missed event costs speed, never truth: a browser tab that wakes
 // up reloads the records.
 //
 // `{ chatId, stage, ... }`, stage one of:
-//   'chat': the chat record changed (created, renamed, titled), or was
-//     deleted (`deleted: true`)
-//   'request': a request record changed (`requestId`, `status`)
+//   'chat': the chat record changed (created, renamed, titled; `title`), or
+//     was deleted (`deleted: true`)
+//   'request': a request record changed (`requestId`, `status`, `tabId`)
 //   'tool': a tool call started or ended (`requestId`, `phase`, `name`,
 //     `label`, `step`, `error` on a failed call)
 //   'message': the model took a step with text before its tool calls
@@ -56,6 +57,18 @@ module.exports = (self) => {
           chatId,
           stage,
           stack: e.stack
+        });
+      }
+    },
+
+    // A chat record changed: its title as stored now
+    async publishChat(req, chatId) {
+      const stored = await self.chats.findOne({ _id: chatId }, {
+        projection: { title: 1 }
+      });
+      if (stored) {
+        await self.publish(req, chatId, 'chat', {
+          title: stored.title || null
         });
       }
     },

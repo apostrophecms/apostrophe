@@ -34,6 +34,7 @@
             :relationship-schema="relationshipSchema"
             :editor-label="editorLabel"
             :editor-icon="editorIcon"
+            :outside-state="outsideStates?.[item._id] || null"
             @remove="remove"
             @engage="engage"
             @disengage="disengage"
@@ -71,6 +72,12 @@ export default {
     },
     selected: {
       type: String,
+      default: null
+    },
+    // Written from outside, such as by the assistant, by item `_id`:
+    // `{ busy, edited }`
+    outsideStates: {
+      type: Object,
       default: null
     },
     relationshipSchema: {

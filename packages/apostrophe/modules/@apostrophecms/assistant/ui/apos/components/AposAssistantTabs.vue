@@ -1,6 +1,7 @@
 <template>
   <div class="apos-assistant-tabs">
     <div
+      ref="strip"
       class="apos-assistant-tabs__scroll"
       role="group"
       :aria-label="$t('apostrophe:assistantChatTabs')"
@@ -103,7 +104,7 @@
 
 <script setup>
 import {
-  computed, inject, ref
+  computed, inject, nextTick, ref, watch
 } from 'vue';
 import { useAssistantStore, NEW_CHAT } from '../stores/assistant.js';
 
@@ -112,6 +113,17 @@ const $t = inject('i18n');
 const store = useAssistantStore();
 const menuOpen = ref(false);
 const menuButton = ref(null);
+const strip = ref(null);
+
+// The active chat tab in view, wherever the strip is scrolled
+watch(() => store.activeId, async () => {
+  await nextTick();
+  strip.value?.querySelector('.apos-assistant-tabs__tab--active')
+    ?.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest'
+    });
+});
 
 const tabs = computed(() => store.tabs.map(id => {
   const chat = store.getChat(id);
@@ -147,10 +159,12 @@ function closeMenu({ focus }) {
 }
 
 function getTitle(id, chat) {
-  if ((id === NEW_CHAT) || !chat?.title) {
+  if (id === NEW_CHAT) {
     return $t('apostrophe:assistantNewChat');
   }
-  return chat.title;
+  // A chat not read yet keeps the title it last showed
+  return store.getTabTitle(id) ||
+    $t(chat ? 'apostrophe:assistantNewChat' : 'apostrophe:assistantLoading');
 }
 </script>
 

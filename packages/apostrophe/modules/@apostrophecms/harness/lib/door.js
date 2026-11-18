@@ -6,7 +6,9 @@
 // anything in the tool arguments. A write without a door context, from a
 // plain `generate` call, is not recorded in the change log.
 
-const DOOR_KEYS = [ 'door', 'lockId', 'family', 'chat', 'requestId', 'model', 'revert' ];
+const DOOR_KEYS = [
+  'door', 'lockId', 'family', 'chat', 'requestId', 'model', 'revert', 'seen', 'deferSeen'
+];
 
 module.exports = (self) => {
   return {
@@ -28,6 +30,13 @@ module.exports = (self) => {
      *   the request runs on.
      * @param {boolean} [context.revert] The request reverts earlier changes:
      *   its saves are the user's own, not AI's.
+     * @param {Map<string, string>} [context.seen] The `updatedAt` of each
+     *   document the door's earlier requests read or wrote, by `_id`. A
+     *   write to a document saved since is refused; the request's own reads
+     *   and writes are added as they happen (see `rememberSeen`).
+     * @param {boolean} [context.deferSeen] Reads are added only by
+     *   `commitSeen`, for a door whose model calls tools in steps: a write
+     *   of a read's own step was written from what the model read before.
      * @returns {object} The `req` clone.
      */
     withDoor(req, context) {
@@ -37,7 +46,7 @@ module.exports = (self) => {
         throw self.apos.error('invalid', `unknown door context keys: ${unknown.join(', ')}`);
       }
       const {
-        door, lockId, family, chat, requestId, model, revert
+        door, lockId, family, chat, requestId, model, revert, seen, deferSeen
       } = context;
       for (const [ name, value ] of Object.entries({
         door,
@@ -66,11 +75,19 @@ module.exports = (self) => {
       if ((revert !== undefined) && (typeof revert !== 'boolean')) {
         throw self.apos.error('invalid', '"revert" must be a boolean');
       }
+      if ((deferSeen !== undefined) && (typeof deferSeen !== 'boolean')) {
+        throw self.apos.error('invalid', '"deferSeen" must be a boolean');
+      }
+      if ((seen !== undefined) && !(seen instanceof Map)) {
+        throw self.apos.error('invalid', '"seen" must be a Map');
+      }
       return req.clone({
         aposHarnessDoor: Object.freeze({
           door,
           lockId,
           requestId,
+          seen: new Map(seen),
+          ...(deferSeen && { pendingSeen: new Map() }),
           ...(family && { family }),
           ...(chat && { chat }),
           ...(revert && { revert }),
@@ -87,6 +104,42 @@ module.exports = (self) => {
     // The door context `withDoor` set on `req`, `null` for a plain call
     getDoor(req) {
       return req.aposHarnessDoor || null;
+    },
+
+    // Remembers, for the door of `req`, the `updatedAt` of a document it
+    // read or wrote, and tells the door (`documentSeen`), which may keep
+    // the door's `seen` for its next requests. A document without one (a
+    // projection) is not remembered: its next write is not checked. A
+    // `read` of a door with `deferSeen` waits for `commitSeen`
+    async rememberSeen(req, doc, { read = false } = {}) {
+      const door = self.getDoor(req);
+      const time = new Date(doc.updatedAt ?? NaN).getTime();
+      if (!door || isNaN(time)) {
+        return;
+      }
+      const updatedAt = new Date(time).toISOString();
+      if (read && door.pendingSeen) {
+        door.pendingSeen.set(doc._id, updatedAt);
+        return;
+      }
+      // An older read of the same step never replaces a write's stamp
+      door.pendingSeen?.delete(doc._id);
+      door.seen.set(doc._id, updatedAt);
+      await self.emit('documentSeen', req, doc._id);
+    },
+
+    // Adds the reads `rememberSeen` kept aside to the door's `seen`
+    async commitSeen(req) {
+      const door = self.getDoor(req);
+      if (!door?.pendingSeen?.size) {
+        return;
+      }
+      const pending = [ ...door.pendingSeen ];
+      door.pendingSeen.clear();
+      for (const [ _id, updatedAt ] of pending) {
+        door.seen.set(_id, updatedAt);
+        await self.emit('documentSeen', req, _id);
+      }
     }
   };
 };

@@ -11,7 +11,10 @@
 // belongs to no browser tab.
 //
 // The records are the truth: the browser reads them, and hears of every
-// change through the `assistant-chat` bus event (see lib/events.js).
+// change through the `assistant-chat` bus event (see lib/events.js). An
+// action's route answers with what it changed, a request event is followed
+// by a read of that request alone, and a step's arguments and result are
+// read when the editor opens the step.
 
 module.exports = {
   options: {
@@ -21,8 +24,11 @@ module.exports = {
     //   unset
     // The effort route of the chat-title call; 'none' makes no model call
     titleEffort: 'low',
-    // The effort route a delegated read runs on when the model names none
+    // The effort route a delegated read and image descriptions run on when
+    // the model names none
     delegationEffort: 'low',
+    // Model steps per delegated read
+    delegationMaxSteps: 15,
     // summaryEffort: the effort route long-chat summaries run on; the
     //   chat's own when unset
     // Model steps per request
@@ -52,6 +58,8 @@ module.exports = {
     // Set once the AI engine is active too
     self.active = false;
     self.askKinds = {};
+    // Browser tools that turn the answer into their result, by name
+    self.browserToolAccepts = {};
     // Gates added by name, and the tools whose gates were all taken off
     self.gates = {};
     self.ungated = new Set();
@@ -61,11 +69,17 @@ module.exports = {
       self.addBrowserTool(tool);
     }
     self.addEditorTools();
+    self.addAgentTools();
     self.enableBrowserData();
   },
   handlers(self) {
     return {
       '@apostrophecms/ai:beforeToolCall': {
+        // A document open in an editor is written through that editor; a
+        // refused call never asks for approval
+        async checkHeldDocuments(req, payload) {
+          await self.checkHeldDocuments(req, payload);
+        },
         async checkGates(req, payload) {
           await self.checkGates(req, payload);
         },
@@ -75,13 +89,36 @@ module.exports = {
           await self.checkEditMode(req, payload);
         }
       },
+      '@apostrophecms/harness:documentSeen': {
+        // The chat keeps what it saw of each document for its next requests
+        async storeSeen(req) {
+          const door = self.apos.harness.getDoor(req);
+          if (!self.active || (door?.door !== 'assistant')) {
+            return;
+          }
+          await self.chats.updateOne({ _id: door.chat }, {
+            $set: {
+              seen: [ ...door.seen ].map(([ _id, updatedAt ]) => ({
+                _id,
+                updatedAt
+              }))
+            }
+          });
+        }
+      },
       '@apostrophecms/ai:afterToolCall': {
+        // A read of a document open in an editor is what is saved, not what it holds
+        async noteHeldDocument(req, payload) {
+          await self.noteHeldDocument(req, payload);
+        },
         // A screen another request of the browser tab changed comes with
         // this run's next tool result; a browser tool's carries its own
         async addChangedScreen(req, payload) {
           const { result } = payload;
+          // Not to a subagent's result (its `generate` runs inside a tool),
+          // which the run's model never sees
           if (!self.active || (self.apos.harness.getDoor(req)?.door !== 'assistant') ||
-            payload.tool.tags?.includes('browser') ||
+            req.aposAiDepth || payload.tool.tags?.includes('browser') ||
             !result || (typeof result !== 'object') || Array.isArray(result)) {
             return;
           }
@@ -114,6 +151,28 @@ module.exports = {
       }
     };
   },
+  middleware(self) {
+    if (!self.options.enabled) {
+      return {};
+    }
+    return {
+      // Before the route reads it: an editor's save of fields the
+      // assistant wrote into it (see lib/outside.js)
+      async markOutsideSave(req, res, next) {
+        if (!self.active || !req.body?._outside) {
+          return next();
+        }
+        try {
+          await self.markOutsideSave(req);
+        } catch (e) {
+          self.logError(req, 'outside-save', e.message, {
+            stack: e.stack
+          });
+        }
+        return next();
+      }
+    };
+  },
   apiRoutes(self) {
     if (!self.options.enabled) {
       return {};
@@ -128,8 +187,7 @@ module.exports = {
           return { chats };
         }),
         'chat/:_id': route(async (req) => {
-          const found = await self.getChat(req, req.params._id);
-          const chat = await self.reconcileChat(req, found);
+          const chat = await getReconciledChat(req);
           const requests = await self.getChatRequests(req, chat._id);
           const reverts = await self.getChatReverts(req, chat._id);
           return {
@@ -138,21 +196,42 @@ module.exports = {
             reverts: reverts.map(self.renderRevert)
           };
         }),
+        // What a request event changed: the request, and its chat's slot
+        'chat/:_id/request/:requestId': route(async (req) => {
+          const chat = await getReconciledChat(req);
+          const request = await self.getChatRequest(req, chat._id,
+            req.params.requestId);
+          return {
+            chat,
+            request: self.renderRequest(request)
+          };
+        }),
+        // A step's arguments and result, once the editor opens it
+        'chat/:_id/request/:requestId/step/:stepId': route(async (req) => {
+          const request = await self.getChatRequest(req, req.params._id,
+            req.params.requestId);
+          const step = self.renderStep(request, self.apos.launder.string(req.params.stepId));
+          if (!step) {
+            throw self.apos.error('notfound');
+          }
+          return step;
+        }),
         mention: route(async (req) => ({
           results: await self.findMentions(req, req.query.q)
         }))
       },
       post: {
-        chat: route(async (req) => ({
-          chat: await self.createChat(req)
-        })),
-        'chat/:_id/send': route(async (req) => ({
+        // A new chat is created by its first send, under the id the
+        // browser named it by
+        'chat/:_id/send': route(async (req) => withChat(req, {
           request: self.renderRequest(await self.send(req, req.params._id, {
             message: req.body.message,
-            screen: req.body.screen
+            screen: req.body.screen,
+            requestId: req.body.requestId,
+            create: req.body.create === true
           }))
         })),
-        'chat/:_id/answer': route(async (req) => ({
+        'chat/:_id/answer': route(async (req) => withChat(req, {
           request: self.renderRequest(await self.answer(req, req.params._id, {
             tabId: req.body.tabId,
             callId: req.body.callId,
@@ -160,24 +239,30 @@ module.exports = {
             screen: req.body.screen
           }))
         })),
-        'chat/:_id/skip': route(async (req) => ({
+        'chat/:_id/open-editor': route(async (req) => self.serveOpenEditor(req, req.params._id, {
+          tabId: req.body.tabId,
+          callId: req.body.callId,
+          root: req.body.root
+        })),
+        'chat/:_id/skip': route(async (req) => withChat(req, {
           request: self.renderRequest(await self.skip(req, req.params._id, {
             tabId: req.body.tabId
           }))
         })),
-        'chat/:_id/continue-here': route(async (req) => ({
+        'chat/:_id/continue-here': route(async (req) => withChat(req, {
           request: self.renderRequest(await self.continueHere(req, req.params._id, {
             tabId: req.body.tabId,
             screen: req.body.screen
           }))
         })),
-        'chat/:_id/stop': route(async (req) => ({
+        'chat/:_id/stop': route(async (req) => withChat(req, {
           request: self.renderRequest(await self.stop(req, req.params._id, {
             planCancel: req.body.planCancel === true
           }))
         })),
-        'chat/:_id/retry': route(async (req) => ({
+        'chat/:_id/retry': route(async (req) => withChat(req, {
           request: self.renderRequest(await self.retry(req, req.params._id, {
+            retryOf: req.body.retryOf,
             requestId: req.body.requestId,
             screen: req.body.screen
           }))
@@ -185,29 +270,38 @@ module.exports = {
         'chat/:_id/revert-check': route(async (req) => {
           const { requestIds, documents } = await self.checkRevert(req, req.params._id, {
             requestId: req.body.requestId,
-            tabId: req.body.tabId
+            tabId: req.body.tabId,
+            screen: req.body.screen
           });
           return {
             requestIds,
             documents: self.renderRevert({ documents }).documents
           };
         }),
-        'chat/:_id/revert': route(async (req) => ({
+        'chat/:_id/revert': route(async (req) => withChat(req, {
           revert: self.renderRevert(await self.revert(req, req.params._id, {
             requestId: req.body.requestId,
             tabId: req.body.tabId,
-            cause: req.body.cause
+            cause: req.body.cause,
+            screen: req.body.screen
           }))
         })),
-        'chat/:_id/revert-retry': route(async (req) => ({
+        'chat/:_id/revert-retry': route(async (req) => withChat(req, {
           revert: self.renderRevert(await self.retryRevert(req, req.params._id, {
             revertId: req.body.revertId,
-            tabId: req.body.tabId
+            tabId: req.body.tabId,
+            screen: req.body.screen
           }))
         })),
-        'chat/:_id/revert-dismiss': route(async (req) => {
-          await self.dismissRevert(req, req.params._id, {
+        'chat/:_id/revert-dismiss': route(async (req) => withChat(req, {
+          revert: self.renderRevert(await self.dismissRevert(req, req.params._id, {
             revertId: req.body.revertId
+          }))
+        })),
+        screen: route(async (req) => {
+          await self.postScreen(req, {
+            tabId: req.body.tabId,
+            screen: req.body.screen
           });
           return {};
         }),
@@ -232,6 +326,23 @@ module.exports = {
       }
     };
 
+    // A chat as the panel reads it, without what it saw of each document
+    async function getReconciledChat(req) {
+      const found = await self.getChat(req, req.params._id);
+      const { seen, ...chat } = await self.reconcileChat(req, found);
+      return chat;
+    }
+
+    // An action's answer carries its chat as it is now, so the browser
+    // shows the action's effect without reading again
+    async function withChat(req, answer) {
+      const { seen, ...chat } = await self.getChat(req, req.params._id);
+      return {
+        ...answer,
+        chat
+      };
+    }
+
     // Routes are declared before the AI engine activates; with no engine
     // they answer as if they did not exist
     function route(handler) {
@@ -255,8 +366,11 @@ module.exports = {
       ...require('./lib/asks')(self),
       ...require('./lib/browser-tools')(self),
       ...require('./lib/editor-tools')(self),
+      ...require('./lib/agent-tools')(self),
       ...require('./lib/gates')(self),
       ...require('./lib/edit-mode')(self),
+      ...require('./lib/open-editor')(self),
+      ...require('./lib/outside')(self),
       ...require('./lib/screen')(self),
       ...require('./lib/reconcile')(self),
       ...require('./lib/revert')(self),

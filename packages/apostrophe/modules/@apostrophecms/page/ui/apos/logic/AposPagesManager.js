@@ -37,6 +37,8 @@ export default {
       pagesFlat: [],
       updateQueue: asyncTaskQueue(),
       updateQueueIndex: 0,
+      // A reload after writes from outside is on its way: no drag meanwhile
+      outsideReloading: false,
       options: {
         columns: [
           {
@@ -105,9 +107,10 @@ export default {
     treeOptions() {
       return {
         bulkSelect: true,
-        draggable: !this.filterValues.archived,
+        draggable: !this.filterValues.archived && !this.outsideReloading,
         ghostUnpublished: true,
-        max: this.relationshipField.max || null
+        max: this.relationshipField.max || null,
+        outsideStates: this.outsideRows
       };
     },
     moduleOptions() {
@@ -365,7 +368,8 @@ export default {
       }
     },
 
-    async request (mergeOptions) {
+    // `busy: false` keeps the global busy overlay off
+    async request (mergeOptions, { busy = true } = {}) {
       const options = {
         ...this.filterValues,
         ...this.queryExtras,
@@ -386,14 +390,20 @@ export default {
         this.moduleOptions.action,
         {
           qs,
-          busy: true,
+          busy,
           draft: true
         }
       );
     },
-    async getPages () {
+    // `quiet`: no global busy overlay, and the tree shows until the new one
+    // replaces it. Resolves once the tree is replaced
+    async getPages ({ quiet = false } = {}) {
       if (this.holdQueries) {
         // Avoid race conditions by trying again later if already in progress
+        if (quiet) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          return this.getPages({ quiet });
+        }
         setTimeout(this.getPages, 100);
         return;
       }
@@ -401,13 +411,25 @@ export default {
       this.holdQueries = true;
 
       const self = this;
+      const flat = [];
+      // A drop while a quiet read is on its way makes the read stale
+      const drops = this.updateQueueIndex;
       try {
-        this.pages = [];
-        this.pagesFlat = [];
+        if (!quiet) {
+          this.pages = [];
+          this.pagesFlat = [];
+        }
 
         let pageTree = await this.request({
           page: this.currentPage
-        });
+        }, { busy: !quiet });
+
+        if (quiet && (drops !== this.updateQueueIndex)) {
+          // Read again once the drops are saved, holding queries until then
+          await this.updateQueue.add(async () => {});
+          this.holdQueries = false;
+          return await this.getPages({ quiet });
+        }
 
         // If editor is looking at the archive tree, trim the normal page tree
         // response
@@ -423,8 +445,17 @@ export default {
           pageTree = [ pageTree ];
         }
 
+        if (quiet) {
+          // The rows remount, as after the reset above: a drag moves rows in
+          // the DOM only, so rows patched in place would no longer match it
+          this.pages = [];
+          this.pagesFlat = [];
+          await this.$nextTick();
+        }
+
         this.currentPage = 1;
         this.totalPages = 1;
+        this.pagesFlat = flat;
         this.pages = [ ...pageTree ];
       } finally {
         this.holdQueries = false;
@@ -439,7 +470,7 @@ export default {
           return;
         }
 
-        self.pagesFlat.push(klona(page));
+        flat.push(klona(page));
 
         if (Array.isArray(page._children)) {
           page._children.forEach(formatPage);
@@ -606,6 +637,25 @@ export default {
           this.setCheckedDocs(newDocs.slice(0, limit));
         }
       }
+    },
+    isOutsideType(type) {
+      return this.moduleOptions.validPageTypes.includes(type);
+    },
+    // The tree keeps its order, the site's: the first page written from
+    // outside is scrolled into view when it shows. Drops already made are
+    // saved first, so the read has them
+    async refreshOutside() {
+      this.outsideReloading = true;
+      try {
+        await this.updateQueue.add(async () => {});
+        await this.getPages({ quiet: true });
+      } finally {
+        this.outsideReloading = false;
+      }
+      await this.$nextTick();
+      const marked = [ ...this.$el.querySelectorAll('[data-apos-outside]') ]
+        .find(row => row.offsetParent && !row.closest('.apos-is-collapsed'));
+      marked?.scrollIntoView({ block: 'nearest' });
     },
     async switchLocale({ locale }) {
       this.updateModalData(this.modalData.id, { locale: locale.name });

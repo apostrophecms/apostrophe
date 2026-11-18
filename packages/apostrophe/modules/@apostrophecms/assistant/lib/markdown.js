@@ -1,13 +1,16 @@
-// Messages and replies are Markdown. They are rendered on the server and
-// sanitized against an allow list before the panel shows them, since model
-// text is untrusted: it can repeat anything a document it read contains.
-// The stored transcript keeps the raw text, which is what the next request
-// replays.
+// Replies are Markdown. They are rendered on the server and sanitized
+// against an allow list before the panel shows them, since model text is
+// untrusted: it can repeat anything a document it read contains. The stored
+// transcript keeps the raw text, which is what the next request replays.
+// The editor's own messages are not Markdown: the panel shows them as
+// typed (`ui/apos/universal/message.js`).
 //
 // A mention token, `@[title](kind:_id)`, becomes a chip after sanitizing,
 // so no text can make one: each token is set aside as a placeholder of
 // private-use characters, which the input can't carry, and comes back as a
 // chip only for a document the server checked.
+
+const { replaceMentions } = require('../ui/apos/universal/message.js');
 
 const ALLOWED_TAGS = [
   'p', 'br', 'hr', 'strong', 'em', 'del', 'code', 'pre', 'blockquote',
@@ -25,7 +28,6 @@ const REPLY_SECTION = [
     'as a chip that opens the document: the one way an id goes in a reply.'
 ].join('\n');
 
-const TOKEN = /@\[((?:\\.|[^\]\\])*)\]\(([a-z-]+):([^)\s]+)\)/g;
 const PLACEHOLDER = /\uE000(\d+)\uE001/g;
 const PRIVATE = /[\uE000\uE001]/g;
 
@@ -94,10 +96,10 @@ module.exports = (self) => {
         }
       }
       const tokens = [];
-      const marked = text.replace(PRIVATE, '').replace(TOKEN, (token, title, kind, _id) => {
+      const marked = replaceMentions(text.replace(PRIVATE, ''), ({ title, id }) => {
         tokens.push({
-          title: title.replace(/\\(.)/g, '$1'),
-          mention: byId.get(getKey(_id))
+          title,
+          mention: byId.get(getKey(id))
         });
         return `\uE000${tokens.length - 1}\uE001`;
       });

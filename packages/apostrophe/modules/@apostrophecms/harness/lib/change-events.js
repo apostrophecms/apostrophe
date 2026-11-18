@@ -1,16 +1,17 @@
 // Change events: a door's write to a document tells the browser tab that
 // owns its request, the lock family, as the save starts and once it has
 // settled, so the page can show what is being written as busy and take the
-// write as a step of its own undo history. Two bus events over the
-// notification poll, for that browser tab alone:
+// write as a step of its own undo history, and managers listing it mark and
+// refresh its row. Two bus events over the notification poll, for that
+// browser tab alone:
 //
-//   'content-change-starting': `{ docId, requestId, ids, fields }`, the
-//     `_id`s of the widgets and items the write sets or removes, and the
+//   'content-change-starting': `{ docId, type, requestId, ids, fields }`,
+//     the `_id`s of the widgets and items the write sets or removes, and the
 //     top-level fields it sets
-//   'content-change-settled': `{ docId, requestId, written }`; once written,
-//     with `entryId`, the change log entry the save landed in, and `parts`,
-//     what it changed as `[{ key, before, after }]` (see `getChangeParts` in
-//     the versions module)
+//   'content-change-settled': `{ docId, type, requestId, written }`; once
+//     written, with `entryId`, the change log entry the save landed in, and
+//     `parts`, what it changed as `[{ key, before, after }]` (see
+//     `getChangeParts` in the versions module)
 //
 // A door without a browser tab sends nothing. A missed event costs the page
 // its busy marks and the undo step; the save stands either way.
@@ -63,6 +64,7 @@ module.exports = (self) => {
       }
       await publish(req, STARTING, {
         docId: doc._id,
+        type: doc.type,
         ids: [ ...ids ],
         fields: [ ...fields ]
       });
@@ -90,6 +92,7 @@ module.exports = (self) => {
       if (!settled) {
         await publish(req, SETTLED, {
           docId: doc._id,
+          type: doc.type,
           written: false
         });
         return;
@@ -114,6 +117,7 @@ module.exports = (self) => {
       }
       await publish(req, SETTLED, {
         docId: doc._id,
+        type: doc.type,
         written: true,
         entryId: settled.entryId,
         ...(parts && { parts })

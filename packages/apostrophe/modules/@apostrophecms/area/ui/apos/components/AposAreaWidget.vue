@@ -242,6 +242,14 @@
         />
       </div>
     </div>
+    <transition name="apos-area-widget__ai-mark">
+      <AposAiMark
+        v-if="outsideState"
+        class="apos-area-widget__ai-mark"
+        :busy="isBusy"
+        labelled
+      />
+    </transition>
   </div>
 </template>
 
@@ -422,6 +430,7 @@ export default {
       'hoveredNonForeignWidget',
       'emphasizedWidgets',
       'busyWidgets',
+      'outsideWidgets',
       'labeled',
       'selectedWidgetIds',
       'selectionAnchorId',
@@ -576,9 +585,14 @@ export default {
     isEmphasized() {
       return this.emphasizedWidgets.has(this.widget._id);
     },
-    // Written from outside the page right now, by the assistant
+    // Written from outside the page or the editor right now, by the
+    // assistant
     isBusy() {
-      return this.busyWidgets.has(this.widget._id);
+      return this.busyWidgets.has(this.widget._id) || Boolean(this.outsideState?.busy);
+    },
+    // Written from outside the editor holding it: busy, then edited
+    outsideState() {
+      return this.outsideWidgets[this.widget._id] || null;
     },
     nonForeignHovered() {
       return this.nonForeignWidgetHovered === this.widget._id;
@@ -1233,6 +1247,31 @@ export default {
     background-color: color-mix(in srgb, var(--a-primary) 14%, transparent);
     pointer-events: none;
   }
+}
+
+// Busy, then "AI edited", on a widget written from outside its editor. On
+// the widget's top edge, where it covers no content and stays clear of the
+// widget's label; its background cuts the edge's line
+.apos-area-widget__ai-mark {
+  z-index: $z-index-widget-label;
+  position: absolute;
+  top: 0;
+  right: 12px;
+  translate: 0 -50%;
+  padding: 2px 8px 2px 6px;
+  border-radius: var(--a-border-radius);
+  background-color: var(--a-background-primary);
+}
+
+.apos-area-widget__ai-mark-enter-active,
+.apos-area-widget__ai-mark-leave-active {
+  transition: opacity 220ms ease-out, transform 220ms ease-out;
+}
+
+.apos-area-widget__ai-mark-enter-from,
+.apos-area-widget__ai-mark-leave-to {
+  opacity: 0;
+  transform: scale(0.5);
 }
 
 // A widget a document version added, modified or deleted. The frame holds

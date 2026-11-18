@@ -430,15 +430,23 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
  * `assisted` when that version was saved without AI but an earlier one, or
  * a row of `before`, changed a related path with AI; `false` otherwise. The
  * order of an array or area is apart from its items: its row is related to
- * the versions that changed the order, and to no other row. With one pair
- * and no `before`, every row takes that pair's flag.
+ * the versions that changed the order, and to no other row. A version saved
+ * without AI that lists the fields AI wrote in it (`aiFields`) is two
+ * edits: its rows within them (see `isWithinFields`) saved with AI, then
+ * the rest. With one pair, no list and no `before`, every row takes that
+ * pair's flag.
  *
  * @param {object[]} schema The schema of the documents.
- * @param {Array<{ older: object, newer: object, ai?: boolean }>} pairs
+ * @param {Array<{
+ *   older: object,
+ *   newer: object,
+ *   ai?: boolean,
+ *   aiFields?: string[]
+ * }>} pairs
  *   The versions, oldest first, at least one: each version's document as
  *   `newer`, the document it changed as `older` (the previous version's
- *   `newer`, or for the first one the version before them) and whether the
- *   version was saved with AI.
+ *   `newer`, or for the first one the version before them), whether the
+ *   version was saved with AI and the fields AI wrote in it.
  * @param {DiffContext} ctx
  * @param {object} [options]
  * @param {ChangeRow[]} [options.before] Rows AI changed before the versions,
@@ -447,23 +455,30 @@ function annotate(schema, older, newer, ctx, { rows } = {}) {
  */
 function consolidate(schema, pairs, ctx, { before = [] } = {}) {
   const rows = walk(schema, pairs[0].older, pairs.at(-1).newer, ctx);
+  const isSplit = pair => !pair.ai && Boolean(pair.aiFields?.length);
   const withAi = pairs.filter(pair => pair.ai).length;
-  if ((withAi === pairs.length) || (!withAi && !before.length)) {
+  if (
+    !pairs.some(isSplit) &&
+    ((withAi === pairs.length) || (!withAi && !before.length))
+  ) {
     for (const row of rows) {
       row.ai = withAi ? 'changed' : false;
     }
     return rows;
   }
   // Every version's own rows, oldest first
-  const edits = pairs.map(pair => {
+  const edits = pairs.flatMap(pair => {
     const editRows = (pairs.length === 1)
       ? rows
       : walk(schema, pair.older, pair.newer, ctx);
-    return {
-      ai: Boolean(pair.ai),
-      rows: editRows,
-      keys: editRows.map(keyOf)
-    };
+    if (!isSplit(pair)) {
+      return [ edit(Boolean(pair.ai), editRows) ];
+    }
+    const aiRows = editRows.filter(row => isWithinFields(row, pair.aiFields));
+    return [
+      edit(true, aiRows),
+      edit(false, editRows.filter(row => !aiRows.includes(row)))
+    ];
   });
   const earlier = before.map(keyOf);
   for (const row of rows) {
@@ -478,6 +493,14 @@ function consolidate(schema, pairs, ctx, { before = [] } = {}) {
     }
   }
   return rows;
+
+  function edit(ai, editRows) {
+    return {
+      ai,
+      rows: editRows,
+      keys: editRows.map(keyOf)
+    };
+  }
 }
 
 /**
@@ -1956,6 +1979,65 @@ function findHolder(value, id) {
   return null;
 }
 
+/**
+ * Whether a row is at or below one of `fields`, the paths of what AI wrote
+ * in a save a person made: a top-level field's name, dotted for a field
+ * below it, `@<_id>` for a widget or array item written whole wherever it
+ * is, `@<_id>.<path>` for a field below it, `@<_id>.content` for the markup
+ * of a rich text widget. The order of an area or array is within them when
+ * it is itself, or when the items written whole explain it: without them,
+ * both orders are the same.
+ *
+ * @param {ChangeRow} row A row of `walk` or `record`.
+ * @param {string[]} fields
+ * @returns {boolean}
+ */
+function isWithinFields(row, fields) {
+  const names = row.path.map(segment => segment.name);
+  // A rich text widget's markup is written by its `content`
+  if ((row.kind === 'richText') && row.path.at(-1).widgetType) {
+    names.push('content');
+  }
+  if (fields.some(field => isAtOrBelow(names, field))) {
+    return true;
+  }
+  if (!isOrder(row)) {
+    return false;
+  }
+  const whole = new Set(fields.map(wholeId).filter(Boolean));
+  return row.new.some(id => whole.has(id)) && _.isEqual(
+    row.old.filter(id => !whole.has(id)),
+    row.new.filter(id => !whole.has(id))
+  );
+}
+
+/**
+ * Those of `fields` (see `isWithinFields`) that a row of `rows` is within:
+ * at or below the field, or for an item written whole, an order that
+ * `fields` explain only with it.
+ *
+ * @param {ChangeRow[]} rows
+ * @param {string[]} fields
+ * @returns {string[]}
+ */
+function getChangedFields(rows, fields) {
+  const moved = new Set(rows
+    .filter(row => isOrder(row) && isWithinFields(row, fields))
+    .flatMap(row => {
+      // An item the order is explained without did not move
+      const needed = fields.filter(field => row.new.includes(wholeId(field)));
+      for (const field of [ ...needed ]) {
+        const without = needed.filter(other => other !== field);
+        if (isWithinFields(row, without)) {
+          needed.splice(needed.indexOf(field), 1);
+        }
+      }
+      return needed;
+    }));
+  return fields.filter(field => moved.has(field) ||
+    rows.some(row => isWithinFields(row, [ field ])));
+}
+
 module.exports = {
   walk,
   annotate,
@@ -1969,7 +2051,9 @@ module.exports = {
   check,
   getRowRelatedIds,
   parts,
-  isAsPatched
+  isAsPatched,
+  isWithinFields,
+  getChangedFields
 };
 
 // Walks the fields of `schema`, a widget type's own when `widget` is true.
@@ -2654,6 +2738,25 @@ function insertAt(list, item, place = {}) {
     index = Math.min(Math.max(place.$position, 0), list.length);
   }
   return [ ...list.slice(0, index), item, ...list.slice(index) ];
+}
+
+// Whether the names of a row's path are at or below `field`, a path of
+// `isWithinFields`. Row paths name fields and the `_id`s of widgets and items
+function isAtOrBelow(names, field) {
+  const segments = field.split('.');
+  const id = segments[0].startsWith('@') && segments[0].slice(1);
+  const start = id ? names.indexOf(id) : 0;
+  if (start === -1) {
+    return false;
+  }
+  const wanted = id ? [ id, ...segments.slice(1) ] : segments;
+  return wanted.every((name, i) => names[start + i] === name);
+}
+
+// The `_id` of a path of `isWithinFields` that names an item written whole,
+// else `null`
+function wholeId(field) {
+  return (field.startsWith('@') && !field.includes('.')) ? field.slice(1) : null;
 }
 
 // Whether `path` is `outer` or below it

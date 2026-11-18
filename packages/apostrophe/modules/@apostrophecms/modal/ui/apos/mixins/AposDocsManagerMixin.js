@@ -21,7 +21,12 @@ export default {
         .filter(doc => doc._fields)
         .map(doc => [ doc._id, doc._fields ])
       ),
-      selectPending: new Set()
+      selectPending: new Set(),
+      // Documents written from outside, such as by the assistant, by `_id`:
+      // those being written, and those written since the manager opened,
+      // the latest first
+      outsideBusy: [],
+      outsideEdited: []
     };
   },
   props: {
@@ -107,6 +112,20 @@ export default {
       return Object.keys(window.apos.i18n.locales).length > 1 &&
         this.moduleOptions.localized !== false &&
         !this.modalData.hasContextLocale;
+    },
+    // What was written from outside, by `_id`: `{ busy, edited }`
+    outsideRows() {
+      const states = {};
+      for (const _id of this.outsideEdited) {
+        states[_id] = { edited: true };
+      }
+      for (const _id of this.outsideBusy) {
+        states[_id] = {
+          ...states[_id],
+          busy: true
+        };
+      }
+      return states;
     }
   },
   mounted() {
@@ -114,6 +133,10 @@ export default {
   },
   unmounted() {
     this.docsManagerRemoveEventHandlers();
+    clearTimeout(this.outsideRefreshTimer);
+    for (const timer of Object.values(this.outsideBusyTimers || {})) {
+      clearTimeout(timer);
+    }
   },
   watch: {
     items: function(newValue) {
@@ -243,10 +266,94 @@ export default {
     },
     docsManagerAddEventHandlers() {
       apos.bus.$on('content-changed', this.docsManagerOnContentChanged);
+      apos.bus.$on('content-change-starting', this.docsManagerOnChangeStarting);
+      apos.bus.$on('content-change-settled', this.docsManagerOnChangeSettled);
     },
     docsManagerRemoveEventHandlers() {
       apos.bus.$off('content-changed', this.docsManagerOnContentChanged);
+      apos.bus.$off('content-change-starting', this.docsManagerOnChangeStarting);
+      apos.bus.$off('content-change-settled', this.docsManagerOnChangeSettled);
     },
+    // A write from outside the manager, such as the assistant's, starts:
+    // its row is busy until the manager shows what it wrote. Both events of
+    // a write can come in one poll, so its settling alone shows nothing
+    docsManagerOnChangeStarting({ docId, type } = {}) {
+      if (!this.isOutsideChange(docId, type)) {
+        return;
+      }
+      this.outsideWriting = this.outsideWriting || new Set();
+      this.outsideWriting.add(docId);
+      this.outsideBusyTimers = this.outsideBusyTimers || {};
+      clearTimeout(this.outsideBusyTimers[docId]);
+      // A settled event that never comes leaves no row busy for good
+      this.outsideBusyTimers[docId] = setTimeout(() => {
+        this.outsideBusy = this.outsideBusy.filter(_id => _id !== docId);
+      }, 30000);
+      if (!this.outsideBusy.includes(docId)) {
+        this.outsideBusy = [ ...this.outsideBusy, docId ];
+      }
+    },
+    // A write from outside the manager has settled. Once written, the
+    // document is marked until the manager closes, and the manager refreshes
+    // once the writes in a row are all in, the documents written on top
+    docsManagerOnChangeSettled({
+      docId, type, written
+    } = {}) {
+      if (!this.isOutsideChange(docId, type)) {
+        return;
+      }
+      clearTimeout(this.outsideBusyTimers?.[docId]);
+      this.outsideWriting?.delete(docId);
+      if (!written) {
+        this.clearOutsideBusy([ docId ]);
+        return;
+      }
+      this.outsideEdited = [
+        docId,
+        ...this.outsideEdited.filter(_id => _id !== docId)
+      ];
+      this.outsideShowing = this.outsideShowing || new Set();
+      this.outsideShowing.add(docId);
+      clearTimeout(this.outsideRefreshTimer);
+      this.outsideRefreshTimer = setTimeout(() => {
+        this.outsideRefresh = (this.outsideRefresh || Promise.resolve())
+          .then(() => {
+            // Busy until this refresh shows them, or ends
+            const ids = [ ...this.outsideShowing ];
+            this.outsideShowing.clear();
+            const shown = () => this.clearOutsideBusy(ids);
+            return this.refreshOutside({ shown }).finally(shown);
+          })
+          // eslint-disable-next-line no-console
+          .catch(console.error);
+      }, 300);
+    },
+    // Rows no longer busy, but for a document written again meanwhile
+    clearOutsideBusy(ids) {
+      const done = this.outsideBusy
+        .filter(_id => ids.includes(_id) && !this.outsideWriting?.has(_id));
+      if (done.length) {
+        this.outsideBusy = this.outsideBusy.filter(_id => !done.includes(_id));
+      }
+    },
+    // Whether a write from outside is one of this manager's documents, in
+    // the locale it shows
+    isOutsideChange(docId, type) {
+      if (!docId || !this.isOutsideType(type)) {
+        return false;
+      }
+      const [ , locale ] = docId.split(':');
+      const shown = this.modalData?.locale || this.$attrs.modalData?.locale ||
+        apos.i18n.locale;
+      return !locale || (locale === shown);
+    },
+    isOutsideType(type) {
+      return type === this.moduleName;
+    },
+    // Shows what was written from outside, the documents written on top
+    // when the manager can put them there. Each manager has its own; one
+    // that shows the documents written before it ends calls `shown` then
+    async refreshOutside({ shown } = {}) {},
     docsManagerOnContentChanged({
       doc, select, action
     }) {

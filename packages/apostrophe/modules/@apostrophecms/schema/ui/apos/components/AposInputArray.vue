@@ -98,7 +98,9 @@
             <template #item="{ element: item, index }">
               <AposSchema
                 :key="item._id"
+                :ref="schema => setItemSchema(item._id, schema)"
                 v-model="item.schemaInput"
+                :outside-scope="getItemOutsideScope(item._id)"
                 :data-id="item._id"
                 :tabindex="isDraggable ? '0' : '-1'"
                 class="apos-input-array-inline-table-row"
@@ -221,8 +223,10 @@
               :data-id="item._id"
               tabindex="0"
               :aria-pressed="item.engaged"
+              :aria-busy="getItemOutsideState(item._id)?.busy ? 'true' : null"
               role="listitem"
               :class="{
+                'apos-input-array-inline-item--busy': getItemOutsideState(item._id)?.busy,
                 'apos-input-array-inline-item--open': item.open,
                 'apos-input-array-inline-item--engaged': item.engaged,
                 'apos-input-array-inline-item--drag-disabled': !isDraggable,
@@ -245,6 +249,7 @@
             >
               <div
                 class="apos-input-array-inline-header"
+                data-apos-input-array-inline-header
                 @dblclick="toggleOpenInlineItem($event)"
               >
                 <div
@@ -258,6 +263,12 @@
                     icon="drag-icon"
                     class="apos-input-array-inline-header-ui-element"
                   />
+                  <transition name="apos-input-array-inline-ai-mark">
+                    <AposAiMark
+                      v-if="getItemOutsideState(item._id)?.edited"
+                      class="apos-input-array-inline-ai-mark"
+                    />
+                  </transition>
                   <div class="apos-input-array-inline-label">
                     {{ getLabel(item._id, index) }}
                   </div>
@@ -288,25 +299,37 @@
                     @keydown.space="$event.stopImmediatePropagation()"
                     @keydown.enter="$event.stopImmediatePropagation()"
                   />
-                  <AposContextMenu
-                    ref="menu"
-                    class="apos-input-array-inline-header-ui-element"
-                    data-apos-input-array-inline-item-menu
-                    :button="{
-                      label: 'apostrophe:moreOperations',
-                      iconOnly: true,
-                      icon: 'dots-vertical-icon',
-                      type: 'subtle',
-                      modifiers: ['small', 'no-motion'],
-                    }"
-                    :menu="getInlineMenuItems(index)"
-                    menu-placement="bottom-end"
-                    @keydown.space="$event.stopImmediatePropagation()"
-                    @keydown.enter="$event.stopImmediatePropagation()"
-                    @item-clicked="
-                      inlineMenuHandler($event, { index, id: item._id })
-                    "
-                  />
+                  <transition
+                    name="apos-input-array-inline-control"
+                    mode="out-in"
+                  >
+                    <span
+                      v-if="getItemOutsideState(item._id)?.busy"
+                      class="apos-input-array-inline-busy"
+                    >
+                      <AposAiMark busy />
+                    </span>
+                    <AposContextMenu
+                      v-else
+                      ref="menu"
+                      class="apos-input-array-inline-header-ui-element"
+                      data-apos-input-array-inline-item-menu
+                      :button="{
+                        label: 'apostrophe:moreOperations',
+                        iconOnly: true,
+                        icon: 'dots-vertical-icon',
+                        type: 'subtle',
+                        modifiers: ['small', 'no-motion'],
+                      }"
+                      :menu="getInlineMenuItems(index)"
+                      menu-placement="bottom-end"
+                      @keydown.space="$event.stopImmediatePropagation()"
+                      @keydown.enter="$event.stopImmediatePropagation()"
+                      @item-clicked="
+                        inlineMenuHandler($event, { index, id: item._id })
+                      "
+                    />
+                  </transition>
                 </div>
               </div>
               <transition
@@ -319,7 +342,9 @@
                 >
                   <AposSchema
                     :key="item._id"
+                    :ref="schema => setItemSchema(item._id, schema)"
                     v-model="item.schemaInput"
+                    :outside-scope="getItemOutsideScope(item._id)"
                     :data-apos-id="item._id"
                     class="apos-input-array-inline-schema"
                     :meta="arrayMeta[item._id]?.aposMeta"

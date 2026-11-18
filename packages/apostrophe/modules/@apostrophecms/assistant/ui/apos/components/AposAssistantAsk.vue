@@ -51,7 +51,7 @@
         </p>
         <div
           class="apos-assistant-ask__options"
-          role="radiogroup"
+          :role="(entry.options || entry.youDecide) ? 'radiogroup' : 'group'"
           :aria-labelledby="single ? `${id}-label` : `${id}-${index}`"
         >
           <button
@@ -89,6 +89,7 @@
             </span>
           </button>
           <button
+            v-if="entry.youDecide"
             type="button"
             class="apos-assistant-ask__option apos-assistant-ask__option--decide"
             :class="{ 'apos-assistant-ask__option--picked': picks[index]?.youDecide }"
@@ -232,13 +233,18 @@ const current = ref(0);
 // Per question: `{ choice }`, `{ text: true }` or `{ youDecide: true }`
 const picks = ref([]);
 const texts = ref([]);
-const sending = ref(false);
+const sending = computed(() => store.isPending(props.chatId, 'answer') ||
+  store.isPending(props.chatId, 'skip'));
 
-watch(() => props.ask.callId, () => {
-  picks.value = questions.value.map(() => null);
-  texts.value = questions.value.map(() => '');
+// The answers given return with an ask whose answer the server refused
+watch(() => props.ask.callId, (callId) => {
+  const given = store.takeRefusedAnswer(callId)?.answers || [];
+  picks.value = questions.value.map((entry, index) => {
+    const answer = given[index];
+    return answer?.text ? { text: true } : (answer || null);
+  });
+  texts.value = questions.value.map((entry, index) => given[index]?.text || '');
   current.value = 0;
-  sending.value = false;
 }, { immediate: true });
 
 const answers = computed(() => questions.value.map((entry, index) => {
@@ -327,22 +333,16 @@ async function step(offset) {
   }
 }
 
-async function submit() {
-  if (sending.value || !complete.value) {
-    return;
-  }
-  sending.value = true;
-  const taken = await store.answer(props.chatId, props.ask.callId, {
-    answers: answers.value
-  });
-  if (!taken) {
-    sending.value = false;
+function submit() {
+  if (complete.value) {
+    store.answer(props.chatId, props.ask.callId, {
+      answers: answers.value
+    });
   }
 }
 
-async function skip() {
-  sending.value = true;
-  await store.skip(props.chatId);
+function skip() {
+  store.skip(props.chatId);
 }
 </script>
 

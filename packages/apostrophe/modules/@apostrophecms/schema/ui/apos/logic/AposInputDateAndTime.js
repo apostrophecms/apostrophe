@@ -47,6 +47,23 @@ export default {
         return 'required';
       }
     },
+    // A new value from the parent that is not the echo of the inputs, such
+    // as one written from outside the editor: the inputs show it
+    watchValue() {
+      this.error = this.modelValue.error;
+      const value = this.modelValue.data || null;
+      if (value === this.next) {
+        return;
+      }
+      this.next = value;
+      if (value) {
+        this.initDateAndTime();
+      } else {
+        this.date = '';
+        this.time = '';
+        this.disabled = !this.field.required;
+      }
+    },
     initDateAndTime() {
       if (this.next) {
         this.date = dayjs(this.next).format('YYYY-MM-DD');

@@ -357,6 +357,53 @@ describe('Assistant: revert', function () {
     await assert.rejects(retry(chat, done._id), { name: 'invalid' });
   });
 
+  it('should leave a document an editor of its browser tab holds, and put it back on retry once closed', async function () {
+    const chat = await apos.assistant.createChat(userReq());
+    const ids = [ await insertNote('Free'), await insertNote('Open') ];
+    const request = await rename(chat, ids[0], 'Free, renamed');
+    await rename(chat, ids[1], 'Open, renamed');
+    const screen = {
+      tabId: 'tab-1',
+      modals: [ {
+        kind: 'editor',
+        docId: ids[1]
+      } ]
+    };
+
+    const checked = await apos.assistant.checkRevert(userReq(), chat._id, {
+      requestId: request._id,
+      tabId: 'tab-1',
+      screen
+    });
+    const planned = checked.documents.find(document => document.docId === ids[1]);
+    assert.equal(planned.outcome, 'locked');
+    assert.equal(planned.reason, 'editor');
+
+    const done = await revert(chat, request, { screen });
+
+    assert.equal(done.status, 'done');
+    const outcome = _id => done.documents.find(document => document.docId === _id);
+    assert.equal(outcome(ids[0]).outcome, 'putBack');
+    assert.equal(outcome(ids[1]).outcome, 'locked');
+    assert.equal(outcome(ids[1]).reason, 'editor');
+    assert.equal(outcome(ids[1]).lockedBy, null);
+    assert.equal((await find(ids[1])).title, 'Open, renamed');
+
+    const again = await apos.assistant.retryRevert(userReq(), chat._id, {
+      revertId: done._id,
+      tabId: 'tab-1',
+      screen
+    });
+    const still = await waitForRevert(again);
+    assert.equal(still.documents.find(document => document.docId === ids[1]).reason, 'editor');
+
+    const retried = await waitForRevert(await retry(chat, done._id));
+
+    assert.equal(retried.status, 'done');
+    assert.equal(retried.documents.find(document => document.docId === ids[1]).outcome, 'putBack');
+    assert.equal((await find(ids[1])).title, 'Open');
+  });
+
   it('should fail a revert left behind by a process that died, and run it whole on retry', async function () {
     const chat = await apos.assistant.createChat(userReq());
     const _id = await insertNote('Original');
@@ -489,7 +536,11 @@ describe('Assistant: revert', function () {
     const unknown = await revert(chat, await rename(chat, lockedId, 'Again'), { cause: 'other' });
     assert.equal(unknown.cause, undefined);
 
-    await apos.assistant.dismissRevert(userReq(), chat._id, { revertId: done._id });
+    const dismissed = await apos.assistant.dismissRevert(userReq(), chat._id, {
+      revertId: done._id
+    });
+    assert.equal(dismissed._id, done._id);
+    assert.equal(dismissed.dismissed, true);
     assert.equal((await apos.assistant.getRevert(userReq(), done._id)).dismissed, true);
     const elsewhere = await apos.assistant.createChat(userReq());
     await assert.rejects(

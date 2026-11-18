@@ -1,3 +1,4 @@
+import { unref } from 'vue';
 
 import { klona } from 'klona';
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
@@ -8,6 +9,11 @@ import { hasParentConditionalField } from 'Modules/@apostrophecms/schema/lib/con
 export default {
   name: 'AposInputObject',
   emits: [ 'validate' ],
+  inject: {
+    aposOutsideScope: {
+      default: null
+    }
+  },
   mixins: [
     AposInputMixin,
     AposInputFollowingMixin,
@@ -41,6 +47,15 @@ export default {
   computed: {
     options() {
       return this.field?.options || {};
+    },
+    // The scope of the subfields in what came from outside the editor (see
+    // `getOutsidePlace`)
+    outsideScope() {
+      const scope = unref(this.aposOutsideScope);
+      if (scope === null) {
+        return null;
+      }
+      return scope ? `${scope}.${this.field.name}` : this.field.name;
     },
     finalizedField() {
       const field = { ...this.field };
@@ -142,6 +157,15 @@ export default {
       if (this.schemaInput.hasErrors) {
         return 'invalid';
       }
+    },
+    // A value from outside the editor, handed to the subfields it changes
+    applyOutsideInPlace(value) {
+      const schema = this.$refs.schema;
+      if (!schema || !value || (typeof value !== 'object')) {
+        return false;
+      }
+      schema.applyOutsideData(value);
+      return true;
     },
     // Return next at mount or when generation changes
     getNext() {

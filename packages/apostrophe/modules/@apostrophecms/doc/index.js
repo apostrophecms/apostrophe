@@ -188,6 +188,11 @@ module.exports = {
             doc.archived = false;
           }
         },
+        // Once the document has its `aposDocId`, before other handlers can
+        // save anything else (see `getAiFields`)
+        claimAiFields(req, doc) {
+          claimAiFields(req, doc);
+        },
         // Makes using our model APIs directly less tedious
         ensureAreaAndWidgetIds(req, doc, options) {
           self.apos.area.walk(doc, area => {
@@ -305,6 +310,9 @@ module.exports = {
         }
       },
       '@apostrophecms/doc-type:beforeUpdate': {
+        claimAiFields(req, doc) {
+          claimAiFields(req, doc);
+        },
         async checkPermissionsBeforeUpdate(req, doc, options) {
           if (options.permissions !== false) {
             if (!self.apos.permission.can(req, 'edit', doc)) {
@@ -1530,6 +1538,9 @@ module.exports = {
         delete input._explicitSave;
         delete input._restoreVersion;
         delete input._ai;
+        // Read before the route by whoever wrote the fields (see
+        // `launderOutside`), never saved
+        delete input._outside;
         if (explicitSave) {
           req.aposExplicitSave = true;
         }
@@ -1538,6 +1549,60 @@ module.exports = {
         }
         if (ai) {
           req.aposAi = true;
+        }
+      },
+      // The paths of the fields AI wrote in a save a person makes, when
+      // `doc` is the document that save is of, else `null`. Code that
+      // checked them sets `req.aposAiFields` (such as the assistant, from
+      // `_outside`), never from a body as is: `title`, `seo.title`,
+      // `@<widget or item _id>.<field>`, `@<_id>` for one written whole. They
+      // belong to the first document whose save begins on `req`, in any mode,
+      // not to another one its handlers save
+      getAiFields(req, doc) {
+        return (req.aposAiFields && (req.aposAiFieldsDocId === doc.aposDocId))
+          ? req.aposAiFields
+          : null;
+      },
+      // The virtual `_outside` of a REST write body: which fields an editor
+      // saves were written into it from outside, such as by the assistant,
+      // as the browser sends it: `{ tabId, parts: [{ marker, fields }] }`,
+      // one part per `marker` the writer gave, `fields` their paths in the
+      // document (`title`, `@<widget or item _id>.<field>`). Only the shape is
+      // checked: a module that marks the save from it checks the markers are
+      // its own. `null` when there is nothing usable
+      launderOutside(outside) {
+        if (!outside || (typeof outside !== 'object') || !Array.isArray(outside.parts)) {
+          return null;
+        }
+        const parts = outside.parts
+          .filter(part => part && (typeof part === 'object'))
+          .map(part => ({
+            marker: launderMarker(part.marker),
+            fields: Array.isArray(part.fields)
+              ? [
+                ...new Set(part.fields
+                  .map(field => self.apos.launder.string(field))
+                  .filter(Boolean))
+              ]
+              : []
+          }))
+          .filter(part => part.marker && part.fields.length);
+        return parts.length
+          ? {
+            tabId: self.apos.launder.string(outside.tabId),
+            parts
+          }
+          : null;
+
+        // A writer's marker: an object of strings
+        function launderMarker(marker) {
+          if (!marker || (typeof marker !== 'object') || Array.isArray(marker)) {
+            return null;
+          }
+          const entries = Object.entries(marker)
+            .filter(([ , value ]) => typeof value === 'string')
+            .map(([ key, value ]) => [ key, self.apos.launder.string(value) ]);
+          return entries.length ? Object.fromEntries(entries) : null;
         }
       },
       // Lock the given doc to a given `tabId`, such
@@ -2423,3 +2488,11 @@ module.exports = {
     };
   }
 };
+
+// `req.aposAiFields` belong to the first document whose save begins on `req`
+// (see `getAiFields`)
+function claimAiFields(req, doc) {
+  if (req.aposAiFields && !req.aposAiFieldsDocId) {
+    req.aposAiFieldsDocId = doc.aposDocId;
+  }
+}
