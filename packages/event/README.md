@@ -66,6 +66,20 @@ module.exports = {
 
 **Note:** The index page template (`index.html`), filters template partial (`filters.html`), and show page template (`show.html`) are primarily meant as a starting point for a project. They demonstrate much of the available template data, but developers will almost always want to override them to implement proper styles and layout.
 
+### Limiting repetitions of recurring events
+
+When an editor creates a recurring event, a separate event is created for each repetition. The `maxRepeatCount` option of `@apostrophecms/event` sets the largest number of repetitions allowed. It defaults to `366`. The "How many times does it repeat?" field does not accept a larger number, and a larger number submitted to the server is reduced to this limit.
+
+```javascript
+// modules/@apostrophecms/event/index.js
+module.exports = {
+  options: {
+    // Allow up to two years of weekly events
+    maxRepeatCount: 104
+  }
+};
+```
+
 ### Filtering by year, month, and day
 
 The event page module, `@apostrophecms/event-page`, provides query filters to refine event results by year, month, and day. These are primarily used for index page filters (see the `filters.html` file), but can also be used in REST API requests and server-side queries. Events that span multiple consecutive days are included in results if the query is at least partially included in their date span.
