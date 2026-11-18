@@ -47,22 +47,58 @@ module.exports = (self) => {
         if (!e.oauth) {
           throw e;
         }
-        return self.sendAuthorizePage(req, res, 400, { error: e.message });
+        self.logWarn(req, 'client-document-failed', {
+          clientId: self.clipForLog(query.client_id),
+          error: e.oauth.error_description,
+          // The whole cause, which the page leaves out
+          cause: e.cause && e.cause.message
+        });
+        return self.sendErrorPage(req, res, 400, {
+          reason: req.t('apostrophe:oauthBadClientMetadata'),
+          advice: 'tool',
+          blocked: true,
+          details: e.oauth
+        });
       }
       if (!client) {
-        return self.sendAuthorizePage(req, res, 400, {
-          error: req.t('apostrophe:oauthUnknownClient')
+        self.logWarn(req, 'unknown-client', {
+          clientId: self.clipForLog(query.client_id)
+        });
+        return self.sendErrorPage(req, res, 400, {
+          reason: req.t('apostrophe:oauthUnknownClient'),
+          advice: 'tool',
+          blocked: true,
+          details: {
+            error: 'invalid_client',
+            error_description: `No client with this client_id is known to this site: ${JSON.stringify(query.client_id ?? null)}.`
+          }
         });
       }
       if (!self.matchesRedirectUri(client, query.redirect_uri)) {
-        return self.sendAuthorizePage(req, res, 400, {
-          error: req.t('apostrophe:oauthBadRedirectUri')
+        // Typical of a phishing attempt: a known tool's id, with an address
+        // to send the user's code to
+        self.logWarn(req, 'redirect-uri-mismatch', {
+          clientId: client.clientId,
+          clientName: client.metadata.client_name,
+          redirectUri: self.clipForLog(query.redirect_uri)
+        });
+        return self.sendErrorPage(req, res, 400, {
+          reason: req.t('apostrophe:oauthBadRedirectUri'),
+          advice: 'tool',
+          blocked: true,
+          clientName: client.metadata.client_name,
+          details: {
+            error: 'invalid_request',
+            error_description: `The redirect_uri is not one the client registered: ${JSON.stringify(query.redirect_uri ?? null)}.`
+          }
         });
       }
 
       // Errors sent back to the client
       const request = {
         clientId: client.clientId,
+        // For the log, when the user decides
+        clientName: client.metadata.client_name || null,
         redirectUri: query.redirect_uri,
         state: query.state
       };
@@ -80,8 +116,9 @@ module.exports = (self) => {
       if (!req.user) {
         const loginUrl = self.apos.login.getLoginUrl();
         if (!loginUrl) {
-          return self.sendAuthorizePage(req, res, 400, {
-            error: req.t('apostrophe:oauthNoLogin')
+          return self.sendErrorPage(req, res, 400, {
+            reason: req.t('apostrophe:oauthNoLogin'),
+            advice: 'site'
           });
         }
         return res.redirect(`${loginUrl}?returnTo=${encodeURIComponent(req.url)}`);
@@ -115,9 +152,18 @@ module.exports = (self) => {
     // POST: the user's decision on the approval page
     async decide(req, res) {
       self.setPageHeaders(res);
+      // Too large, or not a form
+      if (req.oauthFormError) {
+        const status = (req.oauthFormError.status === 413) ? 413 : 400;
+        return self.sendErrorPage(req, res, status, {
+          reason: req.t('apostrophe:oauthBadForm'),
+          advice: 'retry'
+        });
+      }
       if (!req.user) {
-        return self.sendAuthorizePage(req, res, 401, {
-          error: req.t('apostrophe:oauthLoggedOut')
+        return self.sendErrorPage(req, res, 401, {
+          reason: req.t('apostrophe:oauthLoggedOut'),
+          advice: 'retry'
         });
       }
       const approvalId = req.body && req.body.approval;
@@ -130,17 +176,33 @@ module.exports = (self) => {
       // The driver returns the document, or `{ value }` in older versions
       const request = approval && (('value' in approval) ? approval.value : approval);
       if (!request) {
-        return self.sendAuthorizePage(req, res, 400, {
-          error: req.t('apostrophe:oauthExpired')
+        // Also what a replayed or stolen form looks like
+        self.logInfo(req, 'approval-expired-or-reused', {
+          username: req.user.username
+        });
+        return self.sendErrorPage(req, res, 400, {
+          reason: req.t('apostrophe:oauthExpired'),
+          advice: 'retry'
         });
       }
+      // `scopes`, not `scope`: the logger keeps `scope` for where an entry
+      // came from, and leaves it out of the entry's data
+      const decision = {
+        username: req.user.username,
+        clientId: request.clientId,
+        clientName: request.clientName,
+        resource: request.resource,
+        scopes: request.scope
+      };
       if (req.body.decision !== 'approve') {
+        self.logInfo(req, 'declined', decision);
         return self.redirectToClient(res, request, {
           error: 'access_denied',
           error_description: 'The user declined.'
         });
       }
       const code = await self.createCode(req.user, request);
+      self.logInfo(req, 'approved', decision);
       return self.redirectToClient(res, request, { code });
     },
 
@@ -244,10 +306,41 @@ module.exports = (self) => {
       return res.redirect(303, url.href);
     },
 
+    // The page shown in place of the approval page when the request can't go
+    // on. `reason` is one plain sentence on what happened. `advice` is what
+    // to do next: 'tool' (the tool got the request wrong: try again, then
+    // contact its developer), 'retry' (start again from the tool) or 'site'
+    // (this site's problem: contact its administrator). `blocked` is for a
+    // request stopped before anything was sent back to the tool. `details`
+    // is the OAuth error, `{ error, error_description }`, for the tool's
+    // developer: it's kept apart from the rest of the page, never shown as
+    // the reason. `nothingShared` says nothing was connected or shared,
+    // which is true unless the error is unexpected
+    async sendErrorPage(req, res, status, {
+      reason,
+      advice,
+      blocked = false,
+      clientName = null,
+      details = null,
+      nothingShared = true
+    }) {
+      return self.sendAuthorizePage(req, res, status, {
+        error: {
+          reason,
+          advice,
+          blocked,
+          clientName: clientName || null,
+          details,
+          nothingShared
+        }
+      });
+    },
+
     // The approval page, or an error in its place
     async sendAuthorizePage(req, res, status, data) {
       const html = await self.render(req, 'authorize', {
         ...data,
+        project: self.apos.login.getProjectHeader(),
         locale: req.locale,
         action: self.getEndpointPath('authorize')
       });

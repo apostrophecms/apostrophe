@@ -458,10 +458,19 @@ module.exports = {
         }
 
         return {
-          env: process.env.APOS_ENV_LABEL || self.options.environmentLabel || process.env.NODE_ENV || 'development',
-          name: (process.env.npm_package_name && process.env.npm_package_name.replace(/-/g, ' ')) || 'Apostrophe',
-          version: aposPackage.version || '3',
+          ...self.getProjectHeader(),
+          version: aposPackage.version || '4',
           requirementProps
+        };
+      },
+
+      // The project's name and environment label, as the login page's
+      // header shows them: `{ env, name }`. Other pages a user reaches
+      // while logging in, such as OAuth's approval page, show the same
+      getProjectHeader() {
+        return {
+          env: process.env.APOS_ENV_LABEL || self.options.environmentLabel || process.env.NODE_ENV || 'development',
+          name: (process.env.npm_package_name && process.env.npm_package_name.replace(/-/g, ' ')) || 'Apostrophe'
         };
       },
 
