@@ -95,7 +95,7 @@ module.exports = (self) => {
         })),
         locked: getLocked(),
         // What the agent tools spent counts with the run's own
-        ...(agentUsage && { usage: getUsage() })
+        ...(Object.keys(agentUsage || {}).length && { usage: getUsage() })
       };
 
       function getReply() {

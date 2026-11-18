@@ -342,6 +342,9 @@ module.exports = (self) => {
         status: 'running',
         messages: [],
         asks: null,
+        // Present from the start: the SQL backends `$inc` a nested field
+        // only under an existing parent
+        agentUsage: {},
         createdAt: now,
         updatedAt: now
       };

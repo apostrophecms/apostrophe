@@ -213,13 +213,15 @@ module.exports = (self) => {
         removed: change?.removed || []
       };
 
+      // By index, not the positional operator, which the SQL backends lack
       function keep(kept) {
+        const index = request.asks.indexOf(ask);
         return self.requests.updateOne({
           _id: request._id,
           ownerId: request.ownerId,
-          'asks.callId': callId
+          [`asks.${index}.callId`]: callId
         }, {
-          $set: { 'asks.$.result': kept }
+          $set: { [`asks.${index}.result`]: kept }
         });
       }
     },
