@@ -106,7 +106,8 @@ const props = defineProps({
 const $t = inject('i18n');
 const store = useAssistantStore();
 const modalStore = useModalStore();
-const busy = computed(() => store.isPending(props.revert.chatId, 'retryRevert'));
+const busy = computed(() => store.isPending(props.revert.chatId, 'retryRevert',
+  props.revert._id));
 
 const running = computed(() => props.revert.status === 'running');
 const count = computed(() => props.revert.requestIds.length);

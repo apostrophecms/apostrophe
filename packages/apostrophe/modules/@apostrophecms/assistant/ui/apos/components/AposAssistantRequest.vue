@@ -50,7 +50,9 @@
           data-apos-test="assistant-request-revert"
           @click="startRevert"
         >
+          <AposAssistantThinking v-if="checking" />
           <svg
+            v-else
             viewBox="0 0 24 24"
             fill="currentColor"
             aria-hidden="true"
@@ -279,7 +281,9 @@ const stopping = computed(() => props.request.status === 'stopping');
 // they may have written
 const finished = computed(() => !running.value && props.revertFrom &&
   ![ 'running', 'stopping', 'waiting' ].includes(props.request.status));
-const checking = computed(() => Boolean(store.checking[props.request.chatId]));
+// Its dry run is under way
+const checking = computed(() => store.isPending(props.request.chatId, 'revertCheck',
+  props.revertFrom));
 // Revert waits for the chat's open request or revert to end
 const revertBlocked = computed(() => Boolean(chat.value?.openRequest ||
   chat.value?.openRevert));
@@ -786,8 +790,11 @@ function onChipClick(event) {
       cursor: default;
     }
 
+    // Shown while its dry run is under way, hovered or not
     &[aria-busy] {
+      opacity: 1;
       cursor: progress;
+      pointer-events: auto;
     }
   }
 

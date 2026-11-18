@@ -271,12 +271,11 @@ module.exports = {
             screen: req.body.screen
           }))
         })),
-        'chat/:_id/revert-dismiss': route(async (req) => {
-          await self.dismissRevert(req, req.params._id, {
+        'chat/:_id/revert-dismiss': route(async (req) => withChat(req, {
+          revert: self.renderRevert(await self.dismissRevert(req, req.params._id, {
             revertId: req.body.revertId
-          });
-          return {};
-        }),
+          }))
+        })),
         screen: route(async (req) => {
           await self.postScreen(req, {
             tabId: req.body.tabId,

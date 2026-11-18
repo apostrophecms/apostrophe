@@ -96,6 +96,14 @@
       >
         {{ $t('apostrophe:cancel') }}
       </button>
+      <p
+        v-else-if="cancelling"
+        class="apos-assistant-plan__cancelling"
+        role="status"
+        data-apos-test="assistant-plan-cancelling"
+      >
+        {{ $t('apostrophe:assistantPlanCancelling') }}
+      </p>
     </template>
     <ol
       v-show="!collapsed"
@@ -141,7 +149,8 @@ import { createId } from 'apostrophe/lib/beneath.js';
 // folds to its toolbar, marked failed there only while folded (the open
 // list marks the step). The steps are the model's words, never translated.
 // Cancel, on the toolbar's hover or focus, asks before it emits `cancel`:
-// the request stops and its work is reverted
+// the request stops and its work is reverted. Until the revert takes over,
+// the plan reads cancelling
 const props = defineProps({
   request: {
     type: Object,
@@ -152,6 +161,10 @@ const props = defineProps({
     default: false
   },
   cancellable: {
+    type: Boolean,
+    default: false
+  },
+  cancelling: {
     type: Boolean,
     default: false
   }
@@ -272,6 +285,18 @@ function stateOf(step, index) {
   :deep(.apos-assistant-dock__toolbar:focus-within) .apos-assistant-plan__cancel {
     opacity: 1;
     pointer-events: auto;
+  }
+
+  .apos-assistant-plan__cancelling {
+    @include type-base;
+
+    & {
+      flex-shrink: 0;
+      margin: 0 10px 0 0;
+      padding: 2px 0;
+      color: var(--a-base-2);
+      line-height: var(--a-line-tall);
+    }
   }
 
   .apos-assistant-plan__confirm {

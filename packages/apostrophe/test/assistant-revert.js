@@ -536,7 +536,11 @@ describe('Assistant: revert', function () {
     const unknown = await revert(chat, await rename(chat, lockedId, 'Again'), { cause: 'other' });
     assert.equal(unknown.cause, undefined);
 
-    await apos.assistant.dismissRevert(userReq(), chat._id, { revertId: done._id });
+    const dismissed = await apos.assistant.dismissRevert(userReq(), chat._id, {
+      revertId: done._id
+    });
+    assert.equal(dismissed._id, done._id);
+    assert.equal(dismissed.dismissed, true);
     assert.equal((await apos.assistant.getRevert(userReq(), done._id)).dismissed, true);
     const elsewhere = await apos.assistant.createChat(userReq());
     await assert.rejects(

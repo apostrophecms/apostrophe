@@ -10,7 +10,31 @@
       v-if="!items.length"
       class="apos-assistant-thread__empty"
     >
-      <p class="apos-assistant-thread__greeting">
+      <p
+        v-if="state === 'loading'"
+        class="apos-assistant-thread__loading"
+        role="status"
+        data-apos-test="assistant-thread-loading"
+      >
+        <AposAssistantThinking />
+        <span>{{ $t('apostrophe:assistantLoadingChat') }}</span>
+      </p>
+      <AposAssistantActivity
+        v-else-if="state === 'failed'"
+        class="apos-assistant-thread__failed"
+        tone="error"
+        :title="$t('apostrophe:assistantLoadFailed')"
+        :actions="[ {
+          name: 'reload',
+          label: $t('apostrophe:assistantRetry')
+        } ]"
+        data-apos-test="assistant-thread-failed"
+        @action="store.loadChat(chatId)"
+      />
+      <p
+        v-else
+        class="apos-assistant-thread__greeting"
+      >
         {{ $t('apostrophe:assistantGreeting') }}
       </p>
     </div>
@@ -74,6 +98,9 @@ let frame = null;
 let resizing = null;
 const known = new Set();
 
+// Read, being read, or not read: a chat opened shows its loading thread,
+// never the greeting
+const state = computed(() => store.getThreadState(props.chatId));
 // Every request of the chat, reverted ones included
 const all = computed(() => store.getRequests(props.chatId));
 const requests = computed(() => all.value.filter(request => !request.revertId));
@@ -259,6 +286,23 @@ function markPinned() {
     align-items: center;
     width: 100%;
     padding: 20px 0;
+  }
+
+  .apos-assistant-thread__loading {
+    @include type-base;
+
+    & {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      color: var(--a-base-2);
+      line-height: var(--a-line-tall);
+    }
+  }
+
+  .apos-assistant-thread__failed {
+    align-self: stretch;
   }
 
   .apos-assistant-thread__greeting {

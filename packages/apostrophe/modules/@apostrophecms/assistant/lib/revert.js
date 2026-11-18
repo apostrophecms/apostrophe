@@ -213,6 +213,7 @@ module.exports = (self) => {
      * @param {string} chatId
      * @param {object} input
      * @param {string} input.revertId
+     * @returns {Promise<object>} The revert record.
      */
     async dismissRevert(req, chatId, { revertId } = {}) {
       const found = await self.getRevert(req, self.apos.launder.id(revertId));
@@ -229,6 +230,7 @@ module.exports = (self) => {
         }
       });
       await self.publish(req, found.chatId, 'revert', { revertId: found._id });
+      return self.getRevert(req, found._id);
     },
 
     /**

@@ -114,15 +114,40 @@
           </span>
         </template>
         <p
-          v-if="refusedId === row._id"
+          v-if="refusal?.id === row._id"
           class="apos-assistant-menu__refusal"
           role="status"
-          data-apos-test="assistant-delete-refused"
+          data-apos-test="assistant-menu-refused"
         >
-          {{ $t('apostrophe:assistantDeleteRunning') }}
+          {{ $t(refusal.text) }}
         </p>
       </li>
     </ul>
+    <p
+      v-else-if="store.chatsFailed"
+      class="apos-assistant-menu__status"
+      role="status"
+      data-apos-test="assistant-menu-failed"
+    >
+      <span>{{ $t('apostrophe:assistantChatsFailed') }}</span>
+      <button
+        type="button"
+        class="apos-assistant-menu__text-button"
+        data-apos-test="assistant-menu-reload"
+        @click="store.catchUp()"
+      >
+        {{ $t('apostrophe:assistantRetry') }}
+      </button>
+    </p>
+    <p
+      v-else-if="!store.loaded"
+      class="apos-assistant-menu__status"
+      role="status"
+      data-apos-test="assistant-menu-loading"
+    >
+      <AposAssistantThinking />
+      <span>{{ $t('apostrophe:assistantLoadingChats') }}</span>
+    </p>
     <button
       type="button"
       class="apos-assistant-menu__new"
@@ -157,7 +182,8 @@ const noButton = ref(null);
 const editingId = ref(null);
 const title = ref('');
 const confirmingId = ref(null);
-const refusedId = ref(null);
+// Why the row's last rename or delete didn't go through: `{ id, text }`
+const refusal = ref(null);
 const controls = new Map();
 
 const rows = computed(() => store.getChats().map(chat => ({
@@ -209,7 +235,7 @@ function newChat() {
 
 async function startRename(row) {
   confirmingId.value = null;
-  refusedId.value = null;
+  refusal.value = null;
   editingId.value = row._id;
   title.value = row.title;
   await nextTick();
@@ -218,7 +244,9 @@ async function startRename(row) {
   input?.select();
 }
 
-// Leaving the field saves, as Enter does; an empty field keeps the title
+// Leaving the field saves, as Enter does; an empty field keeps the title.
+// The new title shows at once; one the server didn't take gives way to the
+// old one
 async function saveRename({ focus = false } = {}) {
   const id = editingId.value;
   if (!id) {
@@ -227,16 +255,11 @@ async function saveRename({ focus = false } = {}) {
   editingId.value = null;
   const clean = title.value.replace(/\s+/g, ' ').trim();
   const chat = store.getChat(id);
-  if (clean && chat && (clean !== chat.title)) {
-    try {
-      await store.rename(id, clean);
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error(e);
-    }
-  }
   if (focus) {
     focusControl(id, 'rename');
+  }
+  if (clean && chat && (clean !== chat.title)) {
+    refuse(id, await store.rename(id, clean));
   }
 }
 
@@ -249,10 +272,10 @@ function cancelRename() {
 async function startDelete(row) {
   editingId.value = null;
   if (row.running) {
-    refusedId.value = row._id;
+    refuse(row._id, 'running');
     return;
   }
-  refusedId.value = null;
+  refusal.value = null;
   confirmingId.value = row._id;
   await nextTick();
   const [ button ] = noButton.value || [];
@@ -264,17 +287,28 @@ function cancelDelete(row) {
   focusControl(row._id, 'delete');
 }
 
+// The row leaves at once, and returns where it was if the server doesn't
+// take it
 async function confirmDelete(row) {
   confirmingId.value = null;
-  try {
-    if (!await store.remove(row._id)) {
-      refusedId.value = row._id;
-      focusControl(row._id, 'delete');
-    }
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error(e);
+  const reason = await store.remove(row._id);
+  if (reason) {
+    refuse(row._id, reason);
+    focusControl(row._id, 'delete');
   }
+}
+
+function refuse(id, reason) {
+  const texts = {
+    running: 'apostrophe:assistantDeleteRunning',
+    noAnswer: 'apostrophe:assistantNotDoneNoAnswer'
+  };
+  refusal.value = texts[reason]
+    ? {
+      id,
+      text: texts[reason]
+    }
+    : null;
 }
 </script>
 
@@ -294,6 +328,20 @@ async function confirmDelete(row) {
     border-radius: var(--a-border-radius-large);
     background-color: var(--a-background-primary);
     box-shadow: var(--a-box-shadow);
+  }
+
+  .apos-assistant-menu__status {
+    @include type-base;
+
+    & {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      padding: 8px 10px;
+      color: var(--a-base-2);
+      line-height: var(--a-line-tall);
+    }
   }
 
   .apos-assistant-menu__list {

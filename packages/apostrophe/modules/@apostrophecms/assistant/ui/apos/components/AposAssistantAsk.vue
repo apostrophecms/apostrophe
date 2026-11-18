@@ -235,9 +235,14 @@ const texts = ref([]);
 const sending = computed(() => store.isPending(props.chatId, 'answer') ||
   store.isPending(props.chatId, 'skip'));
 
-watch(() => props.ask.callId, () => {
-  picks.value = questions.value.map(() => null);
-  texts.value = questions.value.map(() => '');
+// The answers given return with an ask whose answer the server refused
+watch(() => props.ask.callId, (callId) => {
+  const given = store.takeRefusedAnswer(callId)?.answers || [];
+  picks.value = questions.value.map((entry, index) => {
+    const answer = given[index];
+    return answer?.text ? { text: true } : (answer || null);
+  });
+  texts.value = questions.value.map((entry, index) => given[index]?.text || '');
   current.value = 0;
 }, { immediate: true });
 

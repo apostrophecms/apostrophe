@@ -147,10 +147,12 @@ function closeMenu({ focus }) {
 }
 
 function getTitle(id, chat) {
-  if ((id === NEW_CHAT) || !chat?.title) {
+  if (id === NEW_CHAT) {
     return $t('apostrophe:assistantNewChat');
   }
-  return chat.title;
+  // A chat not read yet keeps the title it last showed
+  return store.getTabTitle(id) ||
+    $t(chat ? 'apostrophe:assistantNewChat' : 'apostrophe:assistantLoading');
 }
 </script>
 

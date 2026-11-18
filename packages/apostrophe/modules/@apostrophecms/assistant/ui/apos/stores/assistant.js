@@ -58,6 +58,8 @@ export const useAssistantStore = defineStore('assistant', () => {
   // The editor's chats, newest first
   const chats = ref([]);
   const loaded = ref(false);
+  // The chat list could not be read, and was never read before
+  const chatsFailed = ref(false);
   // Each loaded chat's requests in the order they were sent, by chat id
   const requests = ref({});
   // The chat tabs open in this browser tab, and the active one
@@ -79,12 +81,16 @@ export const useAssistantStore = defineStore('assistant', () => {
   // The revert waiting on the editor's confirmation, by chat id:
   // `{ requestId, requestIds, documents, cause }`
   const confirmations = ref({});
-  // The request whose revert's dry run is under way, by chat id
-  const checking = ref({});
   // What the editor did in this browser tab that the server hasn't answered
   // yet, by chat id, in the order clicked: `{ id, kind, key, data }`. Never
   // stored: the getters fold them over the records
   const actions = ref({});
+  // The chats whose thread could not be read, by chat id
+  const loadFailed = ref({});
+  // The answers the server refused, by call id, given back to the ask
+  const refusedAnswers = new Map();
+  // The chat tabs' titles as last shown, for chat tabs not read yet
+  const tabTitles = ref({});
 
   // Whether this browser tab is visible, as the page last reported it
   const visible = ref(document.visibilityState !== 'hidden');
@@ -176,14 +182,59 @@ export const useAssistantStore = defineStore('assistant', () => {
   }
 
   /**
-   * Whether an action of this kind is pending on the chat.
+   * Whether an action of this kind is pending on the chat, and with `key`,
+   * the one for that key (a request, a revert, a call).
    *
    * @param {string} id
    * @param {string} kind
+   * @param {*} [key]
    * @returns {boolean}
    */
-  function isPending(id, kind) {
-    return (actions.value[id] || []).some(action => action.kind === kind);
+  function isPending(id, kind, key) {
+    return (actions.value[id] || []).some(action => (action.kind === kind) &&
+      ((key === undefined) || (action.key === key)));
+  }
+
+  /**
+   * Whether a chat's thread is read: `ready`, `loading`, or `failed` when
+   * it could not be read (`loadChat` tries again). A new chat, and one with
+   * an action pending, are ready.
+   *
+   * @param {string} id
+   * @returns {'ready'|'loading'|'failed'}
+   */
+  function getThreadState(id) {
+    if ((id === NEW_CHAT) || requests.value[id] || actions.value[id]) {
+      return 'ready';
+    }
+    return loadFailed.value[id] ? 'failed' : 'loading';
+  }
+
+  /**
+   * A chat tab's title: the chat's, else the one it last showed while the
+   * chat is read, else `null` (a new chat).
+   *
+   * @param {string} id
+   * @returns {string|null}
+   */
+  function getTabTitle(id) {
+    if (id === NEW_CHAT) {
+      return null;
+    }
+    return getChat(id)?.title || tabTitles.value[id] || null;
+  }
+
+  /**
+   * The answers given to an ask that the server refused, once: the ask shows
+   * them again.
+   *
+   * @param {string} callId
+   * @returns {object|null}
+   */
+  function takeRefusedAnswer(callId) {
+    const value = refusedAnswers.get(callId) || null;
+    refusedAnswers.delete(callId);
+    return value;
   }
 
   // The chat's records with its pending actions applied in the order they
@@ -204,31 +255,157 @@ export const useAssistantStore = defineStore('assistant', () => {
   const folds = {
     send: foldSend,
     retry: foldSend,
-    stop: foldStop
+    stop: foldStop,
+    answer: foldAnswer,
+    skip: foldSkip,
+    continueHere: foldContinueHere,
+    revert: foldRevert,
+    retryRevert: foldRetryRevert,
+    dismissRevert: foldDismissRevert,
+    rename: foldRename,
+    delete: foldDelete
   };
 
-  // A stop on its way: the open request reads "Stopping…" until it ends
-  function foldStop(view) {
+  // The chat's open request changed in the chat and in its record, when
+  // its status is one of `statuses`
+  function changeOpen(view, statuses, change) {
     const open = view.chat?.openRequest;
-    if (!open || (open.status === 'stopping')) {
+    if (!open || !statuses.includes(open.status)) {
       return view;
     }
+    const request = view.requests.find(each => each._id === open._id);
+    const changed = change(request || {
+      _id: open._id,
+      status: open.status,
+      tabId: open.tabId
+    });
     return {
       ...view,
       chat: {
         ...view.chat,
-        openRequest: {
-          ...open,
-          status: 'stopping'
-        }
+        openRequest: [ 'running', 'waiting', 'stopping' ].includes(changed.status)
+          ? {
+            ...open,
+            status: changed.status,
+            tabId: changed.tabId
+          }
+          : null
       },
-      requests: view.requests.map(request => (((request._id === open._id) &&
-        [ 'running', 'waiting' ].includes(request.status))
-        ? {
-          ...request,
-          status: 'stopping'
+      requests: view.requests.map(each => ((each._id === open._id) ? changed : each))
+    };
+  }
+
+  // A stop on its way: the open request reads "Stopping…" until it ends,
+  // and a cancelled plan reads cancelling
+  function foldStop(view, { data }) {
+    return changeOpen(view, [ 'running', 'waiting' ], request => ({
+      ...request,
+      status: 'stopping',
+      ...(data?.planCancel && { planCancelled: true })
+    }));
+  }
+
+  // An answer on its way: the ask leaves, and the request goes on
+  function foldAnswer(view, { key }) {
+    return changeOpen(view, [ 'waiting' ], (request) => {
+      const asks = (request.asks || []).filter(ask => ask.callId !== key);
+      return {
+        ...request,
+        asks,
+        status: asks.length ? request.status : 'running'
+      };
+    });
+  }
+
+  // A skip on its way: the request ends skipped and the composer is free
+  function foldSkip(view) {
+    return changeOpen(view, [ 'waiting' ], request => ({
+      ...request,
+      asks: [],
+      status: 'skipped'
+    }));
+  }
+
+  // Continue here on its way: this browser tab owns the request
+  function foldContinueHere(view) {
+    return changeOpen(view, [ 'waiting' ], request => ({
+      ...request,
+      tabId: getTabId()
+    }));
+  }
+
+  // A revert on its way runs at once: its line where the requests it takes
+  // were, and Send waits. A revert the records hold now settles it
+  function foldRevert(view, { data }) {
+    if (view.reverts.some(revert => !data.before.includes(revert._id))) {
+      return view;
+    }
+    return {
+      ...view,
+      chat: view.chat && {
+        ...view.chat,
+        openRevert: { _id: data.revertId }
+      },
+      reverts: [
+        ...view.reverts,
+        {
+          _id: data.revertId,
+          chatId: data.chatId,
+          requestIds: data.requestIds,
+          cause: data.cause,
+          status: 'running',
+          progress: null,
+          documents: [],
+          pending: true
         }
-        : request))
+      ]
+    };
+  }
+
+  // A revert run again: running from the click
+  function foldRetryRevert(view, { key }) {
+    return {
+      ...view,
+      chat: view.chat && {
+        ...view.chat,
+        openRevert: { _id: key }
+      },
+      reverts: view.reverts.map(revert => ((revert._id === key)
+        ? {
+          ...revert,
+          status: 'running'
+        }
+        : revert))
+    };
+  }
+
+  function foldDismissRevert(view, { key }) {
+    return {
+      ...view,
+      reverts: view.reverts.map(revert => ((revert._id === key)
+        ? {
+          ...revert,
+          dismissed: true
+        }
+        : revert))
+    };
+  }
+
+  function foldRename(view, { data }) {
+    return {
+      ...view,
+      chat: view.chat && {
+        ...view.chat,
+        title: data.title
+      }
+    };
+  }
+
+  function foldDelete(view) {
+    return {
+      chat: null,
+      requests: [],
+      reverts: []
     };
   }
 
@@ -458,10 +635,12 @@ export const useAssistantStore = defineStore('assistant', () => {
     const sequence = ++chatsSequence;
     chatsStarted = sequence;
     let result;
+    chatsFailed.value = false;
     try {
       result = await apos.http.get(`${getAction()}/chat`, {});
     } catch (e) {
       report(e);
+      chatsFailed.value = !loaded.value && (sequence === chatsSequence);
       return;
     }
     if (sequence !== chatsSequence) {
@@ -473,6 +652,7 @@ export const useAssistantStore = defineStore('assistant', () => {
     }
     chats.value = result.chats;
     loaded.value = true;
+    rememberTabs();
     const open = new Set(chats.value.map(chat => chat.openRequest?._id));
     for (const [ callId, requestId ] of served) {
       if (!open.has(requestId)) {
@@ -496,6 +676,7 @@ export const useAssistantStore = defineStore('assistant', () => {
     const sequence = (chatSequences.get(id) || 0) + 1;
     chatSequences.set(id, sequence);
     chatStarted.set(id, sequence);
+    delete loadFailed.value[id];
     let result;
     try {
       result = await apos.http.get(`${getAction()}/chat/${id}`, {});
@@ -505,6 +686,9 @@ export const useAssistantStore = defineStore('assistant', () => {
         forget(id);
       } else if (e.status !== 404) {
         report(e);
+        if (chatSequences.get(id) === sequence) {
+          loadFailed.value[id] = true;
+        }
       }
       return;
     }
@@ -559,11 +743,12 @@ export const useAssistantStore = defineStore('assistant', () => {
     }
   }
 
-  // Waits for the ask's turn, runs the executor and answers. An ask that
-  // is no longer this browser tab's is left; an answer the server didn't
-  // take is given up, the reason in the console: the editor can still stop
-  // the request. One that never arrived, or arrived after the request moved
-  // to another browser tab, is served again if the records show it here
+  // Waits for the ask's turn, runs the executor and answers, in the chat's
+  // queue with the editor's own actions. An ask that is no longer this
+  // browser tab's is left; an answer the server didn't take is given up,
+  // the reason in the console: the editor can still stop the request. One
+  // that never arrived, or arrived after the request moved to another
+  // browser tab, is served again if the records show it here
   async function serveAsk(id, request, ask) {
     const turn = await waitForTurn(id, request, ask);
     if (turn.state === 'gone') {
@@ -589,24 +774,25 @@ export const useAssistantStore = defineStore('assistant', () => {
     // goes on from one answer at a time
     executors.value.set(ask.callId, request._id);
     try {
-      await apos.http.post(`${getAction()}/chat/${id}/answer`, {
-        body: {
-          tabId: getTabId(),
-          callId: ask.callId,
-          answer,
-          screen: getScreen()
+      await act('answer', id, {
+        key: ask.callId,
+        byEditor: false,
+        post: () => apos.http.post(`${getAction()}/chat/${id}/answer`, {
+          body: {
+            tabId: getTabId(),
+            callId: ask.callId,
+            answer,
+            screen: getScreen()
+          }
+        }),
+        refused(e) {
+          if (!e.status || (e.status === 409)) {
+            served.delete(ask.callId);
+          } else {
+            report(e);
+          }
         }
       });
-    } catch (e) {
-      if (!e.status || (e.status === 409)) {
-        served.delete(ask.callId);
-      } else {
-        report(e);
-      }
-    }
-    try {
-      await loadChats();
-      await loadChat(id);
     } finally {
       executors.value.delete(ask.callId);
       clearBrowserStep(request._id, ask.callId);
@@ -953,14 +1139,21 @@ export const useAssistantStore = defineStore('assistant', () => {
    *   it settles: says why.
    * @param {Function} [options.check] On no answer, resolves with what the
    *   server stored meanwhile as an answer, or `null`.
+   * @param {boolean} [options.byEditor] The editor's click, which clears why
+   *   the chat tab's last action didn't go through; `false` for this
+   *   browser tab's own answers to browser asks.
    * @returns {Promise<{ taken: boolean, answer?: object, error?: Error }>}
    */
   function act(kind, id, {
-    post, key = null, data = null, taken = null, refused = report, check = null
+    post, key = null, data = null, taken = null, refused = report, check = null,
+    byEditor = true
   }) {
     const pending = actions.value[id] || [];
     if (pending.some(action => (action.kind === kind) && (action.key === key))) {
       return Promise.resolve({ taken: false });
+    }
+    if (byEditor) {
+      delete refusals.value[id];
     }
     const action = {
       id: createId(),
@@ -1086,39 +1279,61 @@ export const useAssistantStore = defineStore('assistant', () => {
       : null;
   }
 
+  /**
+   * Renames a chat: the new title shows at once, and the old one returns if
+   * the server doesn't take it.
+   *
+   * @param {string} id
+   * @param {string} title
+   * @returns {Promise<null|'noAnswer'>} Why it didn't go through, if it
+   *   didn't and the editor has no other sign of it.
+   */
   async function rename(id, title) {
-    await act('rename', id, {
+    const { taken, error } = await act('rename', id, {
+      key: title,
       data: { title },
       post: () => apos.http.patch(`${getAction()}/chat/${id}`, {
         body: { title }
-      })
+      }),
+      refused: e => fail(id, e, { dock: false })
     });
+    return (!taken && error && !error.status) ? 'noAnswer' : null;
   }
 
   /**
-   * Deletes a chat. Refused while its request runs: resolves `false` and
-   * reads the chats again, since the view was stale.
+   * Deletes a chat: its row and its chat tab leave at once, and return
+   * where they were if the server doesn't take it.
    *
    * @param {string} id
-   * @returns {Promise<boolean>}
+   * @returns {Promise<null|'running'|'noAnswer'>} Why it didn't go through:
+   *   the chat runs (the view was stale), or no answer came.
    */
   async function remove(id) {
-    const { taken, error } = await act('delete', id, {
+    const index = tabs.value.indexOf(id);
+    const active = activeId.value === id;
+    const result = act('delete', id, {
       post: () => apos.http.delete(`${getAction()}/chat/${id}`, {}),
       taken: () => forget(id),
       refused(e) {
-        if (e.status === 404) {
-          forget(id);
+        if ((e.status !== 404) && (index !== -1) && !tabs.value.includes(id)) {
+          tabs.value.splice(Math.min(index, tabs.value.length), 0, id);
+          if (active) {
+            activate(id);
+          } else {
+            rememberTabs();
+          }
         }
+        fail(id, e, { dock: false });
       }
     });
-    if (taken || (error?.status === 404)) {
-      return true;
+    if (index !== -1) {
+      closeTab(id);
     }
-    if (error?.status === 409) {
-      return false;
+    const { taken, error } = await result;
+    if (taken || !error || (error.status === 404)) {
+      return null;
     }
-    throw error;
+    return error.status ? 'running' : 'noAnswer';
   }
 
   /**
@@ -1203,12 +1418,14 @@ export const useAssistantStore = defineStore('assistant', () => {
    *   request's plan.
    */
   async function stop(id, { planCancel = false } = {}) {
-    await act('stop', id, {
+    const { taken } = await act('stop', id, {
+      data: { planCancel },
       post: () => apos.http.post(`${getAction()}/chat/${id}/stop`, {
         body: planCancel ? { planCancel } : {}
       }),
-      refused: ignoreStale
+      refused: e => fail(id, e)
     });
+    return taken;
   }
 
   /**
@@ -1226,14 +1443,16 @@ export const useAssistantStore = defineStore('assistant', () => {
           screen: getScreen()
         }
       }),
-      refused: ignoreStale
+      // Its dock returns, which says it
+      refused: e => fail(id, e, { dock: false })
     });
   }
 
   /**
    * Answers the editor's ask of the chat's waiting request from this
-   * browser tab, with its screen as it is now. A refusal means the view was
-   * stale: the records are read again.
+   * browser tab, with its screen as it is now. The ask leaves at once; if
+   * the server doesn't take the answer, the records say whether it still
+   * waits, and then it shows the answers given (`takeRefusedAnswer`).
    *
    * @param {string} id
    * @param {string} callId The tool call that asked.
@@ -1251,7 +1470,11 @@ export const useAssistantStore = defineStore('assistant', () => {
           screen: getScreen()
         }
       }),
-      refused: ignoreStale
+      // The ask returns, which says it
+      refused(e) {
+        refusedAnswers.set(callId, value);
+        fail(id, e, { dock: false });
+      }
     });
     return taken;
   }
@@ -1267,7 +1490,7 @@ export const useAssistantStore = defineStore('assistant', () => {
       post: () => apos.http.post(`${getAction()}/chat/${id}/skip`, {
         body: { tabId: getTabId() }
       }),
-      refused: ignoreStale
+      refused: e => fail(id, e, { dock: false })
     });
   }
 
@@ -1314,12 +1537,9 @@ export const useAssistantStore = defineStore('assistant', () => {
    *   the request's plan.
    */
   async function startRevert(id, requestId, { cause = null } = {}) {
-    if (checking.value[id]) {
-      return;
-    }
-    checking.value[id] = requestId;
     delete confirmations.value[id];
-    const { taken, answer: check } = await act('revertCheck', id, {
+    await act('revertCheck', id, {
+      key: requestId,
       post: () => apos.http.post(`${getAction()}/chat/${id}/revert-check`, {
         body: {
           requestId,
@@ -1327,24 +1547,24 @@ export const useAssistantStore = defineStore('assistant', () => {
           screen: getScreen()
         }
       }),
-      refused: ignoreRevertStale
+      // In the tick the dry run settles, so its busy state gives way to the
+      // revert's line or its confirmation with no gap
+      taken(check) {
+        const clean = check.documents
+          .every(document => [ 'putBack', 'reverted' ].includes(document.outcome));
+        if (clean) {
+          runRevert(id, requestId, check.requestIds, cause);
+        } else {
+          confirmations.value[id] = {
+            requestId,
+            requestIds: check.requestIds,
+            documents: check.documents,
+            cause
+          };
+        }
+      },
+      refused: e => fail(id, e)
     });
-    delete checking.value[id];
-    if (!taken) {
-      return;
-    }
-    const clean = check.documents
-      .every(document => [ 'putBack', 'reverted' ].includes(document.outcome));
-    if (clean) {
-      await runRevert(id, requestId, cause);
-    } else {
-      confirmations.value[id] = {
-        requestId,
-        requestIds: check.requestIds,
-        documents: check.documents,
-        cause
-      };
-    }
   }
 
   // The revert the editor confirmed
@@ -1353,16 +1573,28 @@ export const useAssistantStore = defineStore('assistant', () => {
     if (!confirmation) {
       return;
     }
+    const result = runRevert(id, confirmation.requestId, confirmation.requestIds,
+      confirmation.cause);
     delete confirmations.value[id];
-    await runRevert(id, confirmation.requestId, confirmation.cause);
+    await result;
   }
 
   function cancelRevert(id) {
     delete confirmations.value[id];
   }
 
-  async function runRevert(id, requestId, cause) {
-    await act('revert', id, {
+  // Shows the revert running at once, the requests it takes out of view;
+  // the server names it
+  function runRevert(id, requestId, requestIds, cause) {
+    return act('revert', id, {
+      key: requestId,
+      data: {
+        chatId: id,
+        revertId: createId(),
+        requestIds,
+        cause,
+        before: (reverts.value[id] || []).map(revert => revert._id)
+      },
       post: () => apos.http.post(`${getAction()}/chat/${id}/revert`, {
         body: {
           requestId,
@@ -1372,7 +1604,7 @@ export const useAssistantStore = defineStore('assistant', () => {
         }
       }),
       taken: ({ revert }) => returning.add(revert._id),
-      refused: ignoreRevertStale
+      refused: e => fail(id, e, { always: true })
     });
   }
 
@@ -1402,45 +1634,41 @@ export const useAssistantStore = defineStore('assistant', () => {
           returning.add(revertId);
         }
       },
-      refused: ignoreRevertStale
+      refused: e => fail(id, e)
     });
   }
 
   async function dismissRevert(id, revertId) {
-    const { taken } = await act('dismissRevert', id, {
+    await act('dismissRevert', id, {
       key: revertId,
       post: () => apos.http.post(`${getAction()}/chat/${id}/revert-dismiss`, {
         body: { revertId }
       }),
-      refused(e) {
-        if (e.status !== 404) {
-          report(e);
-        }
-      }
+      refused: e => fail(id, e)
     });
-    if (taken) {
-      await loadChat(id);
-    }
   }
 
   /**
-   * Cancels the plan of the chat's open request: stops it, waits for it to
-   * end, then reverts it as any revert, asking first when it isn't clean.
+   * Cancels the plan of the chat's latest request: stops it if it is open
+   * and waits for it to end, then reverts it as any revert, asking first
+   * when it isn't clean.
    *
    * @param {string} id
    * @param {string} requestId
    */
   async function cancelPlan(id, requestId) {
-    await stop(id, { planCancel: true });
+    const open = () => getChatRecord(id)?.openRequest?._id === requestId;
+    if (open() && !await stop(id, { planCancel: true })) {
+      return;
+    }
     await new Promise((resolve) => {
-      const open = () => getChatRecord(id)?.openRequest?._id === requestId;
       if (!open()) {
         resolve();
         return;
       }
-      const stop = watch(open, (still) => {
+      const unwatch = watch(open, (still) => {
         if (!still) {
-          stop();
+          unwatch();
           resolve();
         }
       });
@@ -1450,18 +1678,51 @@ export const useAssistantStore = defineStore('assistant', () => {
     }
   }
 
-  // A refusal that only says the view was stale: the records, read again,
-  // say the rest
-  function ignoreStale(e) {
-    if (![ 404, 409 ].includes(e.status)) {
+  /**
+   * An action the server didn't take: the view is the records again, read
+   * anew. A chat deleted meanwhile is forgotten. One that got no answer
+   * says so in the chat tab's dock, and so does a refused one with
+   * `always`, whose click would otherwise vanish without a word.
+   *
+   * @param {string} id
+   * @param {Error} e
+   * @param {object} [options]
+   * @param {boolean} [options.dock] `false` when what the editor acted on
+   *   comes back in the dock's place (an ask, Continue here), or the editor
+   *   acted elsewhere (All chats), which says it there.
+   * @param {boolean} [options.always]
+   */
+  function fail(id, e, { dock = true, always = false } = {}) {
+    if (e.status === 404) {
+      if (dock && (activeId.value === id)) {
+        deleted(id);
+      } else {
+        forget(id);
+      }
+      return;
+    }
+    if (e.status && ![ 400, 409 ].includes(e.status)) {
       report(e);
+    }
+    if (dock && (!e.status || always)) {
+      refusals.value[id] = {
+        title: 'apostrophe:assistantNotDone',
+        text: e.status
+          ? 'apostrophe:assistantNotDoneRefused'
+          : 'apostrophe:assistantNotDoneNoAnswer'
+      };
     }
   }
 
-  function ignoreRevertStale(e) {
-    if (![ 400, 404, 409 ].includes(e.status)) {
-      report(e);
-    }
+  // Deleted in another browser tab: the draft moves to a new chat
+  function deleted(id) {
+    const draft = drafts.value[id];
+    forget(id);
+    newChat();
+    drafts.value[NEW_CHAT] = draft;
+    refusals.value[NEW_CHAT] = {
+      title: 'apostrophe:assistantChatDeleted'
+    };
   }
 
   function refuse(id, e) {
@@ -1485,14 +1746,7 @@ export const useAssistantStore = defineStore('assistant', () => {
       return;
     }
     if (e.status === 404) {
-      // Deleted in another browser tab: the draft moves to a new chat
-      const draft = drafts.value[id];
-      forget(id);
-      newChat();
-      drafts.value[NEW_CHAT] = draft;
-      refusals.value[NEW_CHAT] = {
-        title: 'apostrophe:assistantChatDeleted'
-      };
+      deleted(id);
       return;
     }
     refusals.value[id] = {
@@ -1542,13 +1796,26 @@ export const useAssistantStore = defineStore('assistant', () => {
     activeId.value = tabs.value.includes(stored.activeId)
       ? stored.activeId
       : tabs.value[0];
+    tabTitles.value = (stored.titles && (typeof stored.titles === 'object'))
+      ? stored.titles
+      : {};
   }
 
+  // The chat tabs, and their titles as shown now
   function rememberTabs() {
+    const titles = {};
+    for (const id of tabs.value) {
+      const title = getTabTitle(id);
+      if (title) {
+        titles[id] = title;
+      }
+    }
+    tabTitles.value = titles;
     try {
       window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
         tabs: tabs.value,
-        activeId: activeId.value
+        activeId: activeId.value,
+        titles
       }));
     } catch (e) {
       // The chat tabs last as long as the page
@@ -1563,6 +1830,7 @@ export const useAssistantStore = defineStore('assistant', () => {
   return {
     chats,
     loaded,
+    chatsFailed,
     requests,
     tabs,
     activeId,
@@ -1572,18 +1840,21 @@ export const useAssistantStore = defineStore('assistant', () => {
     reverts,
     revertProgress,
     confirmations,
-    checking,
     browserSteps,
     getChat,
     getChats,
     getRequests,
     getReverts,
     isPending,
+    getThreadState,
+    getTabTitle,
+    takeRefusedAnswer,
     getOwner,
     getBrowserStep,
     start,
     resume,
     catchUp,
+    loadChat,
     openChat,
     newChat,
     activate,
