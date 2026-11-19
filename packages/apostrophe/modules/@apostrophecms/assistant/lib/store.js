@@ -90,11 +90,14 @@ module.exports = (self) => {
     },
 
     // The user's chats, newest first, without what each chat saw of the
-    // documents it read
+    // documents it read and what its checkpoints shortened
     async listChats(req) {
       return self.chats
         .find({ ownerId: self.getOwnerId(req) })
-        .project({ seen: 0 })
+        .project({
+          seen: 0,
+          checkpoints: 0
+        })
         .sort({ createdAt: -1 })
         .toArray();
     },

@@ -42,7 +42,12 @@ module.exports = {
     screenWait: 15000,
     // A write changing more documents than this in one call asks the editor
     // first; 0 never asks
-    maxDocsWithoutConfirm: 5
+    maxDocsWithoutConfirm: 5,
+    // The most tokens a chat gives the model; the model's own window when
+    // that is lower
+    contextLimit: 250000,
+    // The percent of that budget past which a chat is shortened, 10 to 90
+    contextThreshold: 75
   },
   icons: {
     'creation-icon': 'Creation',
@@ -327,16 +332,21 @@ module.exports = {
     };
 
     // A chat as the panel reads it, without what it saw of each document
+    // and what its checkpoints shortened
     async function getReconciledChat(req) {
       const found = await self.getChat(req, req.params._id);
-      const { seen, ...chat } = await self.reconcileChat(req, found);
+      const {
+        seen, checkpoints, ...chat
+      } = await self.reconcileChat(req, found);
       return chat;
     }
 
     // An action's answer carries its chat as it is now, so the browser
     // shows the action's effect without reading again
     async function withChat(req, answer) {
-      const { seen, ...chat } = await self.getChat(req, req.params._id);
+      const {
+        seen, checkpoints, ...chat
+      } = await self.getChat(req, req.params._id);
       return {
         ...answer,
         chat
@@ -373,6 +383,7 @@ module.exports = {
       ...require('./lib/outside')(self),
       ...require('./lib/screen')(self),
       ...require('./lib/reconcile')(self),
+      ...require('./lib/long-chats')(self),
       ...require('./lib/revert')(self),
       ...require('./lib/events')(self),
       ...require('./lib/markdown')(self),

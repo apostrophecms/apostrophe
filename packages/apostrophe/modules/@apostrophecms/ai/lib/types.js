@@ -59,8 +59,9 @@
  * @property {string} [quality] The quality dial sent; image only.
  * @property {string} [aspect] The resolved aspect sent; image only.
  * @property {string} [size] The native pixel size, when reported; image only.
- * @property {object} metadata A copy of the `usageMetadata` option, `{}` by
- *   default; handlers may add to it.
+ * @property {object} metadata A copy of the `usageMetadata` option with the
+ *   call's own `usageMetadata` merged over it, `{}` by default; handlers may
+ *   add to it.
  * @property {true} [mock] Set under APOS_AI_MOCK: the counts are the mock's
  *   estimate and nothing was billed. `provider` is then whatever the call
  *   routed to, not necessarily 'mock'.

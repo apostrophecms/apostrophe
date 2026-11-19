@@ -7,7 +7,8 @@ module.exports = (self) => {
   return {
     validateOptions() {
       const {
-        enabled, maxSteps, delegationMaxSteps, screenWait, usageDisplay, modelDisplay
+        enabled, maxSteps, delegationMaxSteps, screenWait, usageDisplay, modelDisplay,
+        contextLimit, contextThreshold
       } = self.options;
       for (const [ name, value ] of Object.entries({
         enabled,
@@ -29,6 +30,13 @@ module.exports = (self) => {
       if (!Number.isInteger(self.options.maxDocsWithoutConfirm) ||
         (self.options.maxDocsWithoutConfirm < 0)) {
         fail('maxDocsWithoutConfirm', 'must be a whole number, 0 or more');
+      }
+      if (!Number.isInteger(contextLimit) || (contextLimit < 1)) {
+        fail('contextLimit', 'must be a positive integer');
+      }
+      if (!Number.isInteger(contextThreshold) || (contextThreshold < 10) ||
+        (contextThreshold > 90)) {
+        fail('contextThreshold', 'must be a whole number from 10 to 90');
       }
       if (!USAGE_DISPLAYS.includes(usageDisplay)) {
         fail('usageDisplay', `must be one of: ${USAGE_DISPLAYS.join(', ')}`);

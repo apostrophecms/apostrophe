@@ -2176,6 +2176,26 @@ describe('AI tools', function() {
       assert.equal(req.aposAiCallId, undefined);
     });
 
+    it('marks every step of a call with its usageMetadata, a subagent\'s calls apart', async function() {
+      chatScript = [
+        toolTurn(toolCall('c1', 'sub_agent')),
+        toolTurn(toolCall('c2', 'echo', { value: 'from below' })),
+        textTurn('inner done'),
+        textTurn('outer done')
+      ];
+      await apos.ai.generate(apos.task.getReq(), 'go', {
+        tools: [ 'sub_agent' ],
+        usageMetadata: { purpose: 'request' }
+      });
+      const [ outer, innerFirst, innerLast, outerLast ] = usageRecords;
+      assert.deepEqual(outer.metadata, { purpose: 'request' });
+      assert.deepEqual(outerLast.metadata, { purpose: 'request' });
+      // The subagent's own call passed none: its records are tied to the
+      // delegating call by parentCallId, not by the mark
+      assert.deepEqual(innerFirst.metadata, {});
+      assert.deepEqual(innerLast.metadata, {});
+    });
+
     it('reports the billed turns of a call a handler stops', async function() {
       chatScript = [ toolTurn(toolCall('c1', 'boom_forbidden')) ];
       await assert.rejects(

@@ -41,7 +41,8 @@ module.exports = {
     // mockImage: (req, request) => adapter image result, consulted only
     //   under APOS_AI_MOCK
     // usageMetadata: an object copied onto every `usage` record as its
-    //   `metadata`, e.g. the site a multisite instance serves
+    //   `metadata`, e.g. the site a multisite instance serves; a call's own
+    //   `usageMetadata` is merged over it
     // Conservative agent-loop cap; any call may override it
     maxSteps: 5,
     // Transient-failure retry cap, counting calls
@@ -538,6 +539,10 @@ module.exports = {
        *   finishReason 'paused': the transcript ends in the complete tool
        *   message, and a later call given it as `messages` continues the
        *   work. A throw stops the call.
+       * @property {object} [usageMetadata] Merged over the module's
+       *   `usageMetadata` on every `usage` record of this call, retries
+       *   included, so a caller can tell its calls apart, e.g.
+       *   `{ purpose: 'summary' }`.
        */
 
       /**
@@ -714,7 +719,8 @@ module.exports = {
                   provider,
                   step: turns,
                   attempt,
-                  request: context.request
+                  request: context.request,
+                  usageMetadata: canonical.usageMetadata
                 }, answer, () => {
                   self.validateTurn(answer);
                   // Only a 'stop' turn is the answer: tool turns run the
@@ -967,6 +973,8 @@ module.exports = {
        *   not apply then.
        * @property {string} [model]
        * @property {AbortSignal} [signal] Aborts the in-flight provider call.
+       * @property {object} [usageMetadata] Merged over the module's
+       *   `usageMetadata` on the call's `usage` records.
        */
 
       /**
@@ -1062,7 +1070,8 @@ module.exports = {
               provider,
               step: 1,
               attempt,
-              request: context.request
+              request: context.request,
+              usageMetadata: canonical.usageMetadata
             }, batch, () => self.validateImageResult(batch));
           });
         // The envelope: the adapter's minimal result plus what the

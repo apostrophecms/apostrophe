@@ -23,6 +23,7 @@ describe('Assistant: describe_images and delegate', function () {
   let script = null;
   let calls = [];
   let copied = [];
+  let usageRecords = [];
 
   before(async function () {
     process.env.APOS_AI_MOCK = '1';
@@ -48,6 +49,17 @@ describe('Assistant: describe_images and delegate', function () {
         '@apostrophecms/harness': {
           options: {
             guidance: 'Sections start at a widget with an h2.'
+          }
+        },
+        'assistant-usage-watch': {
+          handlers() {
+            return {
+              '@apostrophecms/ai:usage': {
+                record(req, usage) {
+                  usageRecords.push(usage);
+                }
+              }
+            };
           }
         },
         '@apostrophecms/assistant': {
@@ -107,6 +119,26 @@ describe('Assistant: describe_images and delegate', function () {
     script = null;
     calls = [];
     copied = [];
+    usageRecords = [];
+  });
+
+  it('marks the usage of the run, a vision call and a subagent by purpose', async function () {
+    const req = userReq(editor);
+    const chat = await apos.assistant.createChat(req);
+    script = {
+      run: sequence([
+        toolTurn('describe_images', { ids: [ images[0]._id ] }),
+        toolTurn('delegate', { instructions: 'Find the notes' }),
+        { text: 'Done.' }
+      ]),
+      vision: () => ({ text: 'A beach.' }),
+      subagent: () => ({ text: 'No notes.' })
+    };
+    const request = await runToEnd(req, chat, 'Describe the beach, then find the notes');
+
+    assert.equal(request.status, 'completed');
+    const purposes = usageRecords.map(record => record.metadata.purpose);
+    assert.deepEqual(purposes, [ 'request', 'describe_images', 'request', 'delegate', 'request' ]);
   });
 
   it('neither tool reaches the MCP door', function () {

@@ -121,8 +121,10 @@ module.exports = (self) => {
         if (title) {
           await self.publishChat(req, claimed._id);
         }
-        const transcript = await self.getTranscript(claimed, request);
-        await self.startRun(req, claimed, request, {
+        const earlier = await self.getReplayedRequests(claimed, request);
+        const shortened = await self.shortenBeforeSend(claimed, earlier, request);
+        const transcript = self.buildTranscript(shortened, earlier);
+        await self.startRun(req, shortened, request, {
           messages: [ ...transcript, self.getUserMessage(request) ],
           prior: transcript.length,
           title
@@ -303,11 +305,18 @@ module.exports = (self) => {
     },
 
     // The transcript a request continues: the stored slices of the chat's
-    // earlier requests, in order, reverted ones left out. A failed request
-    // is replayed as far as its run got, so a retry sees the calls already
-    // made; one the model never answered is left out, its message coming
-    // back with Retry
+    // earlier requests, in order, as the chat's latest checkpoint shortens
+    // them (`buildTranscript`)
     async getTranscript(chat, request) {
+      return self.buildTranscript(chat, await self.getReplayedRequests(chat, request));
+    },
+
+    // The chat's requests before `request` that are replayed, in order,
+    // each slice standing on its own: reverted ones left out, a failed
+    // request replayed as far as its run got, so a retry sees the calls
+    // already made, and one the model never answered left out, its message
+    // coming back with Retry
+    async getReplayedRequests(chat, request) {
       const earlier = await self.requests
         .find({
           chatId: chat._id,
@@ -316,19 +325,29 @@ module.exports = (self) => {
           revertId: { $exists: false }
         })
         .project({
+          sequence: 1,
           status: 1,
           finishReason: 1,
-          messages: 1
+          messages: 1,
+          lastStepUsage: 1
         })
         .sort({ sequence: 1 })
         .toArray();
       return earlier
         .filter(stored => (stored.status !== 'failed') ||
           (stored.messages || []).some(message => message.role === 'assistant'))
-        .flatMap(stored => self.completeCalls(stored.messages, () => ({
-          executed: false,
-          reason: (stored.finishReason === 'maxSteps') ? 'maxSteps' : stored.status
-        })));
+        .map(stored => ({
+          ...stored,
+          messages: self.completeCalls(stored.messages, () => ({
+            executed: false,
+            reason: (stored.finishReason === 'maxSteps') ? 'maxSteps' : stored.status
+          }))
+        }));
+    },
+
+    buildTranscript(chat, earlier) {
+      return self.applyCheckpoint(self.getCheckpoint(chat), earlier)
+        .flatMap(stored => stored.messages);
     },
 
     // A request's message as the model reads it, after a line naming the
@@ -452,6 +471,7 @@ module.exports = (self) => {
           toolInput
         }),
         notify: false,
+        usageMetadata: { purpose: 'request' },
         ...self.getProgressHooks(doorReq, request, tools),
         betweenSteps: () => self.apos.harness.commitSeen(doorReq),
         onEnd: async (error, result) => {
@@ -535,6 +555,7 @@ module.exports = (self) => {
           Object.assign(set, {
             messages: partial.messages.slice(prior),
             usage: addUsage(request.usage, partial.usage),
+            ...(partial.lastStepUsage && { lastStepUsage: partial.lastStepUsage }),
             provider: partial.provider,
             model: partial.model
           });
@@ -552,6 +573,8 @@ module.exports = (self) => {
           messages,
           replyMentions,
           usage: addUsage(request.usage, result.usage),
+          // What the provider last read: the measure long chats start from
+          ...(result.lastStepUsage && { lastStepUsage: result.lastStepUsage }),
           finishReason: result.finishReason,
           provider: result.provider,
           model: result.model,
@@ -666,7 +689,8 @@ module.exports = (self) => {
             content: message
           } ],
           schema: TITLE_SCHEMA,
-          effort
+          effort,
+          usageMetadata: { purpose: 'title' }
         });
         const title = (result.object?.title || '').replace(/\s+/g, ' ').trim()
           .slice(0, TITLE_MAX);
