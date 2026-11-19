@@ -233,6 +233,7 @@ describe('OAuth: tokens', function () {
       assert.equal(result.user.username, 'editor');
       assert.equal(result.clientId, client.client_id);
       assert.equal(result.scope, 'content');
+      assert(await apos.oauth.connections.findOne({ _id: result.connectionId }));
       assert.equal(await verify(tokens.access_token, `${BASE_URL}/api/v1/elsewhere`), null);
       assert.equal(await verify(tokens.refresh_token), null);
       assert.equal(await verify('not-a-token'), null);
@@ -464,6 +465,11 @@ describe('OAuth: tokens', function () {
       assert.ok(await verify(first.access_token));
       const third = await refresh(second.refresh_token);
       assert.ok(await verify(third.access_token));
+      // Still the one connection, for a resource that keeps state for it
+      const { connectionId } = await verify(first.access_token);
+      assert.equal((await verify(third.access_token)).connectionId, connectionId);
+      const other = await getTokens();
+      assert.notEqual((await verify(other.access_token)).connectionId, connectionId);
     });
 
     it('revokes the whole connection when a replaced refresh token comes back', async function () {

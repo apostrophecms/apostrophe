@@ -56,9 +56,11 @@ function getUrl(apos, path) {
 }
 
 // Connects `client` as the user whose session cookie is `cookie`: the
-// authorize step, Approve, and the code exchange, by hand. Returns the token
-// response
-async function connect(apos, { client, cookie }) {
+// authorize step, Approve, and the code exchange, by hand, for the resource
+// identifier `resource`. Returns the token response
+async function connect(apos, {
+  client, cookie, resource = `${BASE_URL}${RESOURCE}`
+}) {
   const redirectUri = client.redirect_uris[0];
   const verifier = crypto.randomBytes(32).toString('base64url');
   const search = new URLSearchParams({
@@ -68,7 +70,7 @@ async function connect(apos, { client, cookie }) {
     code_challenge: crypto.createHash('sha256').update(verifier).digest('base64url'),
     code_challenge_method: 'S256',
     state: 'the-state',
-    resource: `${BASE_URL}${RESOURCE}`
+    resource
   });
   const page = await fetch(getUrl(apos, `${ACTION}/authorize?${search}`), {
     redirect: 'manual',
@@ -100,7 +102,7 @@ async function connect(apos, { client, cookie }) {
       client_id: client.client_id,
       code,
       code_verifier: verifier,
-      resource: `${BASE_URL}${RESOURCE}`
+      resource
     }).toString()
   });
   const tokens = await response.json();

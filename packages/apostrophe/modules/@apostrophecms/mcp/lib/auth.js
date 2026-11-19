@@ -14,9 +14,11 @@
 // browser sends by itself, which the CSRF exemption must not lend anything
 // to.
 //
-// Until OAuth (PRO-10455), the one token accepted is the development token,
-// `APOS_MCP_DEV_TOKEN=<token>:<username>`, ignored in production. A request
-// with no token, or any other token, gets a 401.
+// The token is an access token of `@apostrophecms/oauth`, issued for this
+// route. Outside production, the development token
+// `APOS_MCP_DEV_TOKEN=<token>:<username>` works too. A request with no
+// token, or any other token, gets the OAuth server's 401, which points the
+// tool at the route's metadata and from there at the server.
 
 const crypto = require('node:crypto');
 
@@ -48,32 +50,48 @@ module.exports = (self) => {
       };
     },
 
-    // Sets `req.user` from the bearer token alone. Returns false when it has
-    // answered the request with a 401
+    // Sets `req.user` from the bearer token alone, and
+    // `req.aposMcpConnection`, the connection whose `seen` the request's
+    // tool calls use (see lib/seen.js). Returns false when it has answered
+    // the request with a 401
     async authenticate(req, res) {
       req.user = null;
+      req.aposMcpConnection = null;
       const token = self.getHeaderToken(req);
       if (!token) {
         // No error code when no credentials were sent (RFC 6750)
-        return refuse('Bearer', 'bearer token required');
-      }
-      const user = self.matchesDevToken(token) && await self.findDevUser();
-      if (!user) {
-        return refuse('Bearer error="invalid_token"', 'bearer token invalid');
-      }
-      req.user = user;
-      return true;
-
-      // OAuth (PRO-10455) adds the protected-resource metadata to the
-      // challenge
-      function refuse(challenge, message) {
-        res.set('WWW-Authenticate', challenge);
-        res.status(401).send({
-          name: 'invalid',
-          message
-        });
+        self.apos.oauth.challenge(res, self.action);
         return false;
       }
+      const identity = await self.verifyToken(token);
+      if (!identity) {
+        self.apos.oauth.challenge(res, self.action, { error: 'invalid_token' });
+        return false;
+      }
+      req.user = identity.user;
+      req.aposMcpConnection = identity.connection;
+      return true;
+    },
+
+    // `{ user, connection }` for a token this route accepts, or null
+    async verifyToken(token) {
+      if (self.matchesDevToken(token)) {
+        const user = await self.findDevUser();
+        return user && {
+          user,
+          connection: 'dev'
+        };
+      }
+      if (!self.oauthResource) {
+        return null;
+      }
+      const verified = await self.apos.oauth.verifyAccessToken(token, {
+        resource: self.apos.oauth.getResourceUrl(self.action)
+      });
+      return verified && {
+        user: verified.user,
+        connection: verified.connectionId
+      };
     },
 
     // The token of an `Authorization: Bearer <token>` header, or null. The
