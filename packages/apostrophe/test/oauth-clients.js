@@ -115,6 +115,21 @@ describe('OAuth: clients', function () {
       assert.deepEqual(body.grant_types, [ 'authorization_code', 'refresh_token' ]);
     });
 
+    it('drops grant types it does not offer', async function () {
+      const response = await register(apos, {
+        redirect_uris: [ 'https://tool.example.com/callback' ],
+        grant_types: [
+          'authorization_code',
+          'client_credentials',
+          'refresh_token',
+          'urn:ietf:params:oauth:grant-type:jwt-bearer'
+        ]
+      });
+      assert.equal(response.status, 201);
+      const body = await response.json();
+      assert.deepEqual(body.grant_types, [ 'authorization_code', 'refresh_token' ]);
+    });
+
     it('refuses a bad redirect URI', async function () {
       for (const uri of [
         'http://tool.example.com/callback',
@@ -150,7 +165,7 @@ describe('OAuth: clients', function () {
         { client_secret: 'secret' },
         { grant_types: [ 'implicit' ] },
         { grant_types: [ 'refresh_token' ] },
-        { grant_types: [ 'authorization_code', 'client_credentials' ] },
+        { grant_types: 'authorization_code' },
         { response_types: [ 'token' ] },
         { scope: 'content admin' },
         { client_name: 'x'.repeat(201) },
@@ -309,6 +324,29 @@ describe('OAuth: clients', function () {
         const seconds = (cached.expiresAt - cached.fetchedAt) / 1000;
         assert.ok(Math.abs(seconds - expected) < 5, `${maxAge}: ${seconds}`);
       }
+    });
+
+    it('takes the document claude.ai publishes', async function () {
+      // As fetched from https://claude.ai/oauth/mcp-oauth-client-metadata,
+      // with its own URL as client_id. It lists a grant type this server
+      // doesn't offer, which is dropped
+      answer = () => ({
+        document: document({
+          client_name: 'Claude',
+          client_uri: 'https://claude.ai',
+          redirect_uris: [ 'https://claude.ai/api/mcp/auth_callback' ],
+          grant_types: [
+            'authorization_code',
+            'refresh_token',
+            'urn:ietf:params:oauth:grant-type:jwt-bearer'
+          ],
+          response_types: [ 'code' ],
+          token_endpoint_auth_method: 'none'
+        })
+      });
+      const client = await apos.oauth.getClient(DOCUMENT_URL);
+      assert.equal(client.metadata.client_name, 'Claude');
+      assert.deepEqual(client.metadata.grant_types, [ 'authorization_code', 'refresh_token' ]);
     });
 
     it('fetches the document again once the cache expires', async function () {

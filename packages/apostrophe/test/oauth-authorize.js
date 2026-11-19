@@ -322,10 +322,19 @@ describe('OAuth: authorize', function () {
       assert.match(html, /data-oauth-resource-description>It can read &lt;your&gt; content \(en\)\.</);
     });
 
-    it('shows no resource description for a request without a resource', async function () {
-      const html = await (await authorize({ resource: undefined })).text();
-      assert.match(html, /never do more than your own permissions allow/);
-      assert.doesNotMatch(html, /data-oauth-resource-description/);
+    it('takes the site\'s only resource for a request without one', async function () {
+      // As claude.ai asks: no resource parameter
+      const response = await authorize({ resource: undefined });
+      const approval = await getApprovalId(response.clone());
+      assert.match(await response.text(), /data-oauth-resource-description>It can read &lt;your&gt; content/);
+      const { params: sent } = getRedirect(await decide({
+        approval,
+        decision: 'approve'
+      }));
+      const stored = await apos.oauth.codes.findOne({
+        _id: apos.oauth.hashSecret(sent.code)
+      });
+      assert.equal(stored.resource, `${BASE_URL}${RESOURCE}`);
     });
 
     it('can\'t be framed, cached or leak its URL, and loads nothing', async function () {
@@ -790,5 +799,70 @@ describe('OAuth: authorize, on a site with its own security headers', function (
     const response = await fetch(getUrl(apos, '/'));
     assert.equal(response.headers.get('content-security-policy'), 'default-src \'self\'; frame-src \'self\'');
     assert.equal(response.headers.get('x-frame-options'), 'SAMEORIGIN');
+  });
+});
+
+describe('OAuth: authorize, on a site with two resources', function () {
+  this.timeout(t.timeout);
+
+  let apos;
+
+  before(async function () {
+    apos = await createOauthApos(module, {
+      modules: {
+        'second-resource': {
+          init(self) {
+            self.apos.oauth.addResource('/api/v1/second-resource', { name: 'Second resource' });
+          }
+        }
+      }
+    });
+    await t.createUser(apos, 'editor', { username: 'editor' });
+  });
+
+  after(async function () {
+    await t.destroy(apos);
+  });
+
+  it('takes no resource for a request without one, so no resource accepts its tokens', async function () {
+    const jar = await t.loginAs(apos, 'editor');
+    const cookie = jar.getCookieStringSync(apos.http.getBase());
+    const redirectUri = 'https://tool.example.com/callback';
+    const client = await apos.oauth.registerClient({
+      client_name: 'Test tool',
+      redirect_uris: [ redirectUri ]
+    });
+    const search = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.client_id,
+      redirect_uri: redirectUri,
+      code_challenge: CHALLENGE,
+      code_challenge_method: 'S256',
+      state: 'the-state'
+    });
+    const page = await fetch(getUrl(apos, `${AUTHORIZE}?${search}`), {
+      redirect: 'manual',
+      headers: { cookie }
+    });
+    assert.equal(page.status, 200);
+    const html = await page.text();
+    assert.doesNotMatch(html, /data-oauth-resource-description/);
+    const approval = html.match(/name="approval" value="([^"]+)"/)[1];
+    const decision = await fetch(getUrl(apos, AUTHORIZE), {
+      method: 'POST',
+      redirect: 'manual',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        cookie
+      },
+      body: new URLSearchParams({
+        approval,
+        decision: 'approve'
+      }).toString()
+    });
+    assert.equal(decision.status, 303);
+    const code = new URL(decision.headers.get('location')).searchParams.get('code');
+    const stored = await apos.oauth.codes.findOne({ _id: apos.oauth.hashSecret(code) });
+    assert.equal(stored.resource, null);
   });
 });
