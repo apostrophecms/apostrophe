@@ -2,9 +2,9 @@
 
 const EFFORT_OPTIONS = [ 'effort', 'titleEffort', 'delegationEffort', 'summaryEffort' ];
 const USAGE_DISPLAYS = [ 'tokens', 'none' ];
-// In tokens, the least a chat holds before it is shortened: the
-// instructions and tools alone take most of it
-const MIN_THRESHOLD = 15000;
+// In tokens, the least a chat holds before it is shortened, whatever the
+// options: the instructions and tools alone take about half of it
+const MIN_THRESHOLD = 20000;
 
 module.exports = (self) => {
   return {

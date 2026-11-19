@@ -206,15 +206,15 @@ describe('Assistant: module and options', function () {
       [ { titleEffort: '' }, /titleEffort option must be the name of an effort level/ ],
       [ { contextLimit: 0 }, /contextLimit option must be a positive integer/ ],
       [
-        { contextLimit: 19000 },
-        /contextLimit option times contextThreshold percent must be at least 15000 tokens/
+        { contextLimit: 26000 },
+        /contextLimit option times contextThreshold percent must be at least 20000 tokens/
       ],
       [
         {
           contextThreshold: 10,
           contextLimit: 100000
         },
-        /contextLimit option times contextThreshold percent must be at least 15000 tokens/
+        /contextLimit option times contextThreshold percent must be at least 20000 tokens/
       ],
       [ { contextThreshold: 9 }, /contextThreshold option must be a whole number from 10 to 90/ ],
       [ { contextThreshold: 91 }, /contextThreshold option must be a whole number from 10 to 90/ ],

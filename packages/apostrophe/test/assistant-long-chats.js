@@ -41,7 +41,7 @@ describe('Assistant: long chats', function () {
             enabled: true,
             effort: 'high',
             titleEffort: 'none',
-            contextLimit: 30000,
+            contextLimit: 40000,
             contextThreshold: 50
           }
         },
@@ -118,7 +118,7 @@ describe('Assistant: long chats', function () {
 
   describe('the budget', function () {
     it('is the model\'s window when contextLimit is above it, contextLimit otherwise or without a window', function () {
-      // fake-large declares 8000, below the 30000 limit
+      // fake-large declares 8000, below the 40000 limit
       assert.equal(apos.assistant.getBudget(), 8000);
       assert.equal(apos.assistant.getThreshold(), 4000);
       apos.assistant.options.contextLimit = 6000;
@@ -128,7 +128,7 @@ describe('Assistant: long chats', function () {
         apos.assistant.options.effort = 'medium';
         assert.equal(apos.assistant.getBudget(), 6000);
       } finally {
-        apos.assistant.options.contextLimit = 30000;
+        apos.assistant.options.contextLimit = 40000;
         apos.assistant.options.effort = 'high';
       }
     });
@@ -1261,6 +1261,7 @@ describe('Assistant: long chats', function () {
       apos.ai.options.jobPollInterval = saved.jobPollInterval;
       apos.assistant.options.maxSteps = 30;
       apos.assistant.options.contextThreshold = 50;
+      apos.assistant.options.contextLimit = 40000;
       apos.assistant.options.effort = 'high';
       delete apos.assistant.options.summaryEffort;
     });
@@ -1282,9 +1283,10 @@ describe('Assistant: long chats', function () {
     });
 
     it('shortens a request again only once it has grown by a step, on one checkpoint', async function () {
-      // No window on the medium route: the 30000 limit is the budget, the
+      // No window on the medium route: a 30000 limit is the budget, the
       // threshold 15000 and the step 2500, two reads
       apos.assistant.options.effort = 'medium';
+      apos.assistant.options.contextLimit = 30000;
       assert.equal(apos.assistant.getStep(), 2500);
       const req = userReq();
       const chat = await apos.assistant.createChat(req);
