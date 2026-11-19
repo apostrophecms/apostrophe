@@ -11,7 +11,7 @@ module.exports = (self) => {
         name: 'save_image_to_media',
         label: 'apostrophe:aiToolSaveImageToMedia',
         description: 'Add an image to the media library, from the file\'s bytes as ' +
-          `base64, up to ${self.formatSize(self.options.maxImageSize)}. The image ` +
+          `base64, up to ${self.formatSize(self.maxImageSize)}. The image ` +
           'is live at once. The result gives its id, for image widgets and ' +
           'relationships to images.',
         input: {
