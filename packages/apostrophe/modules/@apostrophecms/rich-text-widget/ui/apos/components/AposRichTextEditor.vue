@@ -1115,10 +1115,15 @@ export default {
       // closed, does not, and neither does a slash after other text. Once
       // open, the menu stays open while the query is edited
       if (this.insertQuery === null) {
-        const $old = oldState?.selection.$from;
-        const opening = text === '/' &&
-          $old?.parent.isTextblock &&
-          ($old.parent.textContent === '');
+        // The same line before this change, found by position rather than
+        // through the old selection: a cursor moved and a slash typed in
+        // quick succession can leave the old selection behind on another
+        // line. Typing within this line moves nothing before it. The line
+        // may also be new, made by the slash itself, as when it is typed
+        // past a table that ends the text. Either way it held no text
+        const old = oldState?.doc.nodeAt($to.before());
+        const hadText = old?.isTextblock && (old.textContent !== '');
+        const opening = (text === '/') && !hadText;
         if (!opening) {
           return hide();
         }
