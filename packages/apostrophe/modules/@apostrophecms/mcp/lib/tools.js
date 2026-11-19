@@ -114,7 +114,10 @@ module.exports = (self) => {
       const doorReq = self.apos.harness.withDoor(req, {
         door: 'mcp',
         lockId: requestId,
-        requestId
+        requestId,
+        ...(req.aposMcpConnection && {
+          seen: await self.getSeen(req.aposMcpConnection)
+        })
       });
       try {
         const call = {

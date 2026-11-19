@@ -187,9 +187,10 @@ export default {
       ])));
     },
     redirectAfterLogin() {
-      // TODO handle situation where user should be sent somewhere other than
-      // homepage. Redisplay homepage with editing interface
-      this.$emit('redirect', `${apos.prefix}/`);
+      // Back where the login page was asked for from (checked server-side
+      // to be a path on this site), or the home page, with the editing
+      // interface
+      this.$emit('redirect', `${apos.prefix}${apos.login.returnTo || '/'}`);
     },
     async requirementBlock(requirementBlock) {
       const requirement = this.requirements

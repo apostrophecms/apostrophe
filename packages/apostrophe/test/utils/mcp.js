@@ -9,6 +9,8 @@ const {
 const PATH = '/api/v1/@apostrophecms/mcp';
 const TOKEN = 'dev-token-0123456789abcdef';
 const USERNAME = 'editor';
+// localhost, so that a browser Origin on localhost is allowed by default
+const BASE_URL = 'http://localhost:3000';
 
 // Both protocol versions a client may speak: the SDK client negotiates
 // 2026-07-28 with `auto`, and stays on the 2025 handshake with `legacy`
@@ -24,6 +26,8 @@ async function createMcpApos(root, {
   try {
     apos = await t.create({
       root,
+      // Required while the OAuth server is on, which the MCP route turns on
+      baseUrl: BASE_URL,
       modules: {
         ...modules,
         '@apostrophecms/mcp': {
@@ -136,6 +140,7 @@ function withEnv(values, fn) {
 }
 
 module.exports = {
+  BASE_URL,
   PATH,
   TOKEN,
   USERNAME,
