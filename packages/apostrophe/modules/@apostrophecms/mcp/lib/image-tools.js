@@ -49,9 +49,10 @@ module.exports = (self) => {
         name: 'get_image',
         label: 'apostrophe:aiToolGetImage',
         description: 'Read an image from the media library: its title, alt text, ' +
-          'dimensions and file type, and links to the file in a few sizes. The ' +
-          'links are only text: to see the image, open one, which works only if ' +
-          'you can reach the site.',
+          'dimensions and file type, and a link to each size of the file, with ' +
+          'its dimensions, smallest first. The links are only text: to see the ' +
+          'image, open one (a small size is enough to look at it), which works ' +
+          'only if you can reach the site.',
         input: {
           type: 'object',
           properties: {
