@@ -36,6 +36,12 @@ import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin'
 export default {
   name: 'AposInputRichText',
   mixins: [ AposInputMixin ],
+  // A field is not a widget: its insert menu must not offer the widgets of
+  // an area it happens to sit in, as adding one would land beside the
+  // widget the field belongs to
+  provide: {
+    aposAreaInsert: null
+  },
   emits: [ 'update:modelValue' ],
   methods: {
     update(content) {

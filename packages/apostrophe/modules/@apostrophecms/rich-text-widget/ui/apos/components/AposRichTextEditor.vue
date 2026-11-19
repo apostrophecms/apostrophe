@@ -2,6 +2,7 @@
   <div
     class="apos-rich-text-editor"
     :class="{ 'apos-rich-text-editor--inline': inline }"
+    @keydown.capture="onKeydownCapture"
     @keyup="handleUIKeyup"
   >
     <!--
@@ -87,6 +88,16 @@
             @set-active-insert-menu="setActiveInsertMenu"
           />
         </li>
+        <li
+          v-for="choice in insertWidgetChoices"
+          :key="`widget-${choice.name}`"
+        >
+          <AposTiptapInsertBtn
+            :name="choice.name"
+            :menu-item="choice"
+            @click.stop="insertWidget(choice.name)"
+          />
+        </li>
       </ul>
     </floating-menu>
     <div
@@ -155,6 +166,10 @@ import {
   FloatingMenu
 } from '@tiptap/vue-3';
 
+import { Extension, getHTMLFromFragment } from '@tiptap/core';
+import { Fragment } from '@tiptap/pm/model';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import AposTiptapTableControls from './AposTiptapTableControls.vue';
 // Starter Kit extensions
 import BlockQuote from '@tiptap/extension-blockquote';
@@ -189,8 +204,10 @@ import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useDocVersionMarkersStore } from 'Modules/@apostrophecms/document-versions/stores/docVersionMarkers.js';
 import removeSlash from 'Modules/@apostrophecms/rich-text-widget/lib/remove-slash.js';
 import { withoutHistory } from 'Modules/@apostrophecms/admin-bar/lib/history.js';
-import createContextHistory, { setContent } from 'Modules/@apostrophecms/rich-text-widget/lib/context-history.js';
+import createContextHistory, { setContent, HISTORY_META } from 'Modules/@apostrophecms/rich-text-widget/lib/context-history.js';
 import * as editorRegistry from 'Modules/@apostrophecms/rich-text-widget/lib/editor-registry.js';
+
+const insertQueryHighlightKey = new PluginKey('aposInsertQueryHighlight');
 
 export default {
   name: 'AposRichTextEditor',
@@ -220,6 +237,11 @@ export default {
     // scrolling window. By default they attach inside the editor
     aposMenusRoot: {
       from: 'aposMenusRoot',
+      default: null
+    },
+    // Provided by the area widget this editor sits in, if any
+    aposAreaInsert: {
+      from: 'aposAreaInsert',
       default: null
     }
   },
@@ -312,6 +334,14 @@ export default {
       showPlaceholder: null,
       activeInsertMenuComponent: false,
       suppressInsertMenu: false,
+      // Escape went down while the insert menu was open
+      escapingInsertMenu: false,
+      // What has been typed after the slash while the insert menu is open,
+      // or null when it is closed
+      insertQuery: null,
+      // Where the insert menu is anchored while it is open, see
+      // insertMenuAnchorRect
+      insertMenuAnchor: null,
       hasSelection: false,
       openedPopover: false,
       // Whether the context bar keeps our history, see the `history` prop
@@ -377,6 +407,23 @@ export default {
         duration: 100,
         zIndex: this.menusZIndex,
         placement: 'bottom-start',
+        // Anchored to the slash, not the cursor, so that the menu holds
+        // still while a choice is typed after it
+        getReferenceClientRect: () => this.insertMenuAnchorRect(),
+        // On the page, the admin bar covers the top of the window, so the
+        // menu must not flip up under it
+        ...!this.aposMenusRoot && {
+          popperOptions: {
+            modifiers: [ 'flip', 'preventOverflow' ].map(name => ({
+              name,
+              options: {
+                padding: {
+                  top: window.apos.adminBar?.height || 0
+                }
+              }
+            }))
+          }
+        },
         aria: {
           content: null,
           expanded: false
@@ -470,6 +517,35 @@ export default {
     insertMenu() {
       return this.moduleOptions.insertMenu;
     },
+    // The widgets the surrounding area accepts, offered after the insert
+    // menu's own items. Choosing one adds it to the area after this widget.
+    // None outside an area, such as in a rich text field
+    insertWidgetChoices() {
+      if (!this.aposAreaInsert) {
+        return [];
+      }
+      return this.aposAreaInsert.choices().map(choice => ({
+        name: choice.name,
+        icon: choice.icon,
+        label: choice.label,
+        // The widget's own description, as the expanded "add" menu shows it
+        description: apos.modules[`${choice.name}-widget`]?.description ||
+          'apostrophe:richTextInsertWidgetDescription'
+      }));
+    },
+    insertMenuOpen() {
+      return this.insertQuery !== null;
+    },
+    // Every choice in the insert menu, in the order it lists them
+    insertChoices() {
+      return [
+        ...this.insert.map(name => ({
+          name,
+          label: this.insertMenu?.[name]?.label
+        })),
+        ...this.insertWidgetChoices
+      ];
+    },
     isVisuallyEmpty() {
       const div = document.createElement('div');
       let hasSomeContent = false;
@@ -514,6 +590,10 @@ export default {
     }
   },
   watch: {
+    // Whether the slash and query are shaded, see `insertQueryHighlight`
+    insertMenuOpen() {
+      this.redrawInsertQuery();
+    },
     // Normally the value we are given is only the echo of what we reported.
     // On the page it can also be one the context bar put back, e.g. on undo,
     // and the editor has to show it. Not done for a local history, whose
@@ -526,6 +606,10 @@ export default {
         return;
       }
       setContent(this.editor, this.transformNamedAnchors(value || ''));
+      // What the editor now holds. Otherwise a redo back to what we last
+      // reported, as after an undo of a widget split by the insert menu,
+      // would look like an echo and be ignored
+      this.lastEmitted = value;
     },
     isFocused(newVal) {
       if (!newVal) {
@@ -603,6 +687,7 @@ export default {
         TableCell,
         TableHeader,
         TableRow,
+        this.insertQueryHighlight(),
         CustomPlaceholder.configure({
           placeholder: () => {
             const text = this.$t(this.placeholderText);
@@ -745,8 +830,23 @@ export default {
     onBubbleHide() {
       apos.bus.$emit('close-context-menus', 'richText');
     },
+    // Captured, so this sees the insert menu as it was when Escape went down,
+    // before the menu's own handler moves focus back to the editor and the
+    // menu stops showing
+    onKeydownCapture(event) {
+      if (event.key === 'Escape') {
+        this.escapingInsertMenu = this.isShowingInsert;
+      }
+    },
     handleUIKeyup(event) {
       if (event.key === 'Escape') {
+        // Escape that closes the insert menu goes no further: the widget
+        // would take it as a request to leave, when the user only wants
+        // to keep typing after the slash
+        if (this.escapingInsertMenu) {
+          event.stopPropagation();
+          this.escapingInsertMenu = false;
+        }
         this.doSuppressInsertMenu();
       } else {
         this.suppressInsertMenu = false;
@@ -767,10 +867,23 @@ export default {
       }
       this.$el.dispatchEvent(new KeyboardEvent('keyup', event));
     },
-    doSuppressInsertMenu() {
+    // Pass `{ focus: false }` to leave focus where it is. Also the handler
+    // of an item's `done` event
+    doSuppressInsertMenu(options) {
       this.suppressInsertMenu = true;
+      this.insertQuery = null;
+      this.insertMenuAnchor = null;
       this.activeInsertMenuComponent = false;
-      this.editor.commands.focus();
+      // The menu reconsiders itself only when the editor's state changes or
+      // it regains focus. With focus already in the editor, as after a
+      // second slash, neither happens, so it is hidden here
+      this.$refs.insertMenu?.$el
+        .closest('[data-tippy-root]')
+        ?._tippy
+        ?.hide();
+      if (options?.focus !== false) {
+        this.editor.commands.focus();
+      }
     },
     onAposRefreshing(refreshOptions) {
       if (this.activeInsertMenuComponent) {
@@ -972,35 +1085,274 @@ export default {
         JSON.stringify(oldState?.doc.toJSON());
       const { $to } = state.selection;
 
+      const hide = () => {
+        this.isShowingInsert = false;
+        this.insertQuery = null;
+        this.insertMenuAnchor = null;
+        return false;
+      };
+
       if (
-        !this.insertMenu ||
-        !this.insert.length ||
+        !this.insertChoices.length ||
         !hasChanges ||
         ($to.nodeAfter && $to.nodeAfter.text) ||
-        this.suppressInsertMenu
+        this.suppressInsertMenu ||
+        !state.selection.empty ||
+        !$to.parent.isTextblock
       ) {
-        this.isShowingInsert = false;
-        return false;
+        return hide();
       }
 
-      if (state.selection.empty) {
-        if ($to.nodeBefore && $to.nodeBefore.text) {
-          const text = $to.nodeBefore.text;
-          if (text.slice(-1) === '/') {
-            this.isShowingInsert = true;
-            return true;
-          }
+      // The line is the slash and whatever has been typed after it, the
+      // query, with the cursor at its end
+      const text = $to.parent.textContent;
+      if (!text.startsWith('/') || ($to.parentOffset !== text.length)) {
+        return hide();
+      }
+
+      // Only typing a slash on a blank line opens the menu. A line that
+      // merely ends up as "/", say by backspacing "/foo" once the menu has
+      // closed, does not, and neither does a slash after other text. Once
+      // open, the menu stays open while the query is edited
+      if (this.insertQuery === null) {
+        const $old = oldState?.selection.$from;
+        const opening = text === '/' &&
+          $old?.parent.isTextblock &&
+          ($old.parent.textContent === '');
+        if (!opening) {
+          return hide();
         }
       }
 
-      this.isShowingInsert = false;
-      return false;
+      // A query that no choice starts with ends it, so it does not linger
+      // over ordinary text that happens to start with a slash
+      const query = text.slice(1);
+      if (!this.insertMatches(query).length) {
+        return hide();
+      }
+
+      this.insertQuery = query;
+      this.isShowingInsert = true;
+      this.$nextTick(this.selectInsertMatch);
+      return true;
+    },
+    // Where the slash that opened the insert menu sat when it opened. Held
+    // for as long as the menu stays open, since in centered or right
+    // aligned text the slash itself moves as the query grows. Kept relative
+    // to the editor, so that it follows the editor when the page scrolls
+    insertMenuAnchorRect() {
+      const { view, state } = this.editor;
+      const editorRect = view.dom.getBoundingClientRect();
+      if (!this.insertMenuAnchor || (this.insertQuery === '')) {
+        const coords = view.coordsAtPos(state.selection.$from.start());
+        this.insertMenuAnchor = {
+          left: coords.left - editorRect.left,
+          top: coords.top - editorRect.top,
+          bottom: coords.bottom - editorRect.top
+        };
+      }
+      const left = editorRect.left + this.insertMenuAnchor.left;
+      const top = editorRect.top + this.insertMenuAnchor.top;
+      const bottom = editorRect.top + this.insertMenuAnchor.bottom;
+      return {
+        left,
+        right: left,
+        top,
+        bottom,
+        width: 0,
+        height: bottom - top,
+        x: left,
+        y: top
+      };
+    },
+    // Shades the slash and the query typed after it while the insert menu
+    // is open, as text that may yet become a choice. A decoration, so it
+    // styles the text without becoming part of the content: nothing to
+    // save, undo or clean up
+    insertQueryHighlight() {
+      return Extension.create({
+        name: 'aposInsertQueryHighlight',
+        addProseMirrorPlugins: () => [
+          new Plugin({
+            key: insertQueryHighlightKey,
+            props: {
+              decorations: (state) => this.insertQueryDecorations(state)
+            }
+          })
+        ]
+      });
+    },
+    insertQueryDecorations(state) {
+      if (this.insertQuery === null) {
+        return null;
+      }
+      const { $from, empty } = state.selection;
+      if (!empty || !$from.parent.isTextblock) {
+        return null;
+      }
+      const text = $from.parent.textContent;
+      if (!text.startsWith('/') || ($from.parentOffset !== text.length)) {
+        return null;
+      }
+      const start = $from.start();
+      return DecorationSet.create(state.doc, [
+        Decoration.inline(start, start + text.length, {
+          class: 'apos-rich-text-insert-query'
+        })
+      ]);
+    },
+    // The editor draws decorations before the insert menu decides whether
+    // it is open, so when it opens or closes the editor draws them again.
+    // An empty transaction that is not history and changes nothing
+    redrawInsertQuery() {
+      this.$nextTick(() => {
+        const view = this.editor?.view;
+        if (!view || view.isDestroyed) {
+          return;
+        }
+        view.dispatch(
+          view.state.tr
+            .setMeta(insertQueryHighlightKey, true)
+            .setMeta(HISTORY_META, true)
+            .setMeta('addToHistory', false)
+        );
+      });
+    },
+    // The choices whose labels start with the query, ignoring case
+    insertMatches(query) {
+      const prefix = query.toLowerCase();
+      return this.insertChoices
+        .map(({ name, label }, index) => ({
+          name,
+          label,
+          index
+        }))
+        .filter(({ label }) => {
+          return label && this.$t(label).toLowerCase().startsWith(prefix);
+        });
+    },
+    // Adds a widget the area accepts where the slash is, splitting this
+    // widget around it: what precedes the slash line stays here, and what
+    // follows it moves to a copy of this widget after the new one. At the
+    // end of the text the new widget simply follows this one, and at the
+    // start it precedes it. The slash line itself goes away.
+    //
+    // Nothing changes until the new widget exists, as the user may cancel
+    // its editor
+    insertWidget(name) {
+      // The new widget takes focus, not this editor
+      this.doSuppressInsertMenu({ focus: false });
+      // Save what was typed, so that undo comes back to it
+      if (this.pending) {
+        this.emitUpdate();
+      }
+      this.aposAreaInsert.add(name, ({ canSplit }) => this.splitAtSlash(canSplit));
+    },
+    // See `insertWidget` and `addBeside` in the area editor
+    splitAtSlash(canSplit) {
+      const { state } = this.editor;
+      const { doc, schema } = state;
+      const { $from } = state.selection;
+      if ($from.depth !== 1) {
+        // Inside a list or a table, which cannot be split around a widget:
+        // the new widget follows all of it
+        removeSlash(this.editor);
+        const content = this.editor.getHTML();
+        setContent(this.editor, content);
+        this.lastEmitted = content;
+        return {
+          position: 'after',
+          update: { content }
+        };
+      }
+      const line = $from.index(0);
+      const before = [];
+      const after = [];
+      doc.forEach((node, offset, index) => {
+        if (index < line) {
+          before.push(node);
+        } else if (index > line) {
+          after.push(node);
+        }
+      });
+      const blank = (node) => node.isTextblock && !node.content.size;
+      const html = (nodes) => getHTMLFromFragment(Fragment.from(nodes), schema);
+      const keep = (nodes) => {
+        // Not the editor's empty line at either end
+        const kept = [ ...nodes ];
+        while (kept.length && blank(kept[0])) {
+          kept.shift();
+        }
+        while (kept.length && blank(kept[kept.length - 1])) {
+          kept.pop();
+        }
+        return kept;
+      };
+      const head = keep(before);
+      const tail = keep(after);
+      let result;
+      if (!tail.length) {
+        result = {
+          position: 'after',
+          content: head
+        };
+      } else if (!head.length) {
+        result = {
+          position: 'before',
+          content: tail
+        };
+      } else if (canSplit) {
+        result = {
+          position: 'after',
+          content: head,
+          tail
+        };
+      } else {
+        // No room for the rest in a widget of its own, so it stays here,
+        // and the new widget follows all of it
+        result = {
+          position: 'after',
+          content: [ ...head, ...tail ]
+        };
+      }
+      const content = html(result.content);
+      // As it will now be saved, with no edit of its own to undo: the area
+      // records the whole split as one
+      setContent(this.editor, content);
+      this.lastEmitted = this.editor.getHTML();
+      return {
+        position: result.position,
+        update: { content: this.lastEmitted },
+        tail: result.tail && { content: html(result.tail) }
+      };
+    },
+    // A query that only one choice starts with selects that choice, so that
+    // Enter inserts it. With no query, the first choice is selected, as when
+    // the menu opens. Otherwise nothing is selected, and the menu itself
+    // holds focus, so that typing still reaches the query
+    selectInsertMatch() {
+      if (!this.isShowingInsert) {
+        return;
+      }
+      const matches = this.insertMatches(this.insertQuery || '');
+      if (!this.insertQuery) {
+        this.focusInsertMenuItem(false, 0);
+      } else if (matches.length === 1) {
+        this.focusInsertMenuItem(false, matches[0].index);
+      } else {
+        this.$refs.insertMenu?.$el.focus();
+      }
     },
     closeInsertMenu(e) {
       if (
-        [ 'ArrowUp', 'ArrowDown', 'Enter', ' ' ].includes(e.key) ||
+        [ 'ArrowUp', 'ArrowDown', 'Enter' ].includes(e.key) ||
         this.activeInsertMenuComponent
       ) {
+        return;
+      }
+      // Space chooses the selected item until a query is typed, then it is
+      // part of the query, as labels have spaces in them
+      if ((e.key === ' ') && !this.insertQuery) {
         return;
       }
       // Attached outside the editor, the menu keeps focus until Escape is
@@ -1012,14 +1364,30 @@ export default {
         // Don't let the global remove-widget shortcut see this key
         e.preventDefault();
         e.stopPropagation();
-        removeSlash(this.editor);
-        this.editor.commands.focus();
+        // Focus goes back to the editor at once, not on the next frame as
+        // the editor's own `focus` command does, so that the next key typed
+        // quickly lands in the editor rather than in the closing menu
+        this.editor.view.focus();
+        if (this.insertQuery || this.suppressInsertMenu) {
+          // Shorten the query, keeping the menu. Or, once Escape has
+          // dismissed it, delete a character as the editor would
+          const { from } = this.editor.state.selection;
+          this.editor.commands.deleteRange({
+            from: from - 1,
+            to: from
+          });
+        } else {
+          removeSlash(this.editor);
+        }
         return;
       }
-      this.editor.commands.focus();
+      // At once, as for Backspace above
+      this.editor.view.focus();
       this.activeInsertMenuComponent = false;
-      // Only insert character keys
+      // Only insert character keys. We insert them, so the browser must not
+      // as well, now that focus is back in the editor
       if (e.key.length === 1) {
+        e.preventDefault();
         this.editor.commands.insertContent(e.key);
       }
     },
@@ -1036,7 +1404,7 @@ export default {
       if (targetIndex < 0) {
         targetIndex = buttons.length - 1;
       }
-      buttons[index || targetIndex]?.focus();
+      buttons[index ?? targetIndex]?.focus();
     },
     setActiveInsertMenu(isActive = true) {
       this.activeInsertMenuComponent = isActive;
@@ -1289,7 +1657,18 @@ function traverseNextNode(node) {
     }
   }
 
-  .apos-rich-text-editor__editor :deep([data-tippy-root]) {
+  // The slash and the query typed after it, while the insert menu may still
+  // turn them into a choice. Shaded from the text's own color, so it reads
+  // on whatever background the site gives the text
+  .apos-rich-text-editor__editor :deep(.apos-rich-text-insert-query) {
+    border-radius: 3px;
+    background-color: color-mix(in srgb, currentcolor 12%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, currentcolor 12%, transparent);
+  }
+
+  // Menus that follow the selection glide after it. The insert menu does
+  // not: it is typed into, and any glide reads as jitter
+  .apos-rich-text-editor__editor :deep([data-tippy-root]:not(:has(.apos-rich-text-insert-menu))) {
     transition: transform 400ms var(--a-transition-timing-bounce) 100ms;
   }
 
@@ -1401,6 +1780,10 @@ function traverseNextNode(node) {
     list-style: none;
     margin: 0;
     padding: 0;
+    // With the area's widgets offered too, the list can outgrow the window.
+    // Small enough to fit above or below the line in most windows
+    max-height: min(400px, 40vh);
+    overflow-y: auto;
   }
 
   .apos-rich-text-insert-menu-heading {
