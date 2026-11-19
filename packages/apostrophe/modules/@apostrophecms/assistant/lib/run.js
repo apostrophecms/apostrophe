@@ -122,7 +122,7 @@ module.exports = (self) => {
           await self.publishChat(req, claimed._id);
         }
         const earlier = await self.getReplayedRequests(claimed, request);
-        const shortened = await self.shortenBeforeSend(claimed, earlier, request);
+        const shortened = await self.shortenBeforeSend(req, claimed, earlier, request);
         const transcript = self.buildTranscript(shortened, earlier);
         await self.startRun(req, shortened, request, {
           messages: [ ...transcript, self.getUserMessage(request) ],
@@ -435,35 +435,16 @@ module.exports = (self) => {
       messages, prior, toolInput, title
     }) {
       const { effort } = self.options;
-      const model = self.getModel();
-      // Every run of a request works in the locale it was sent in, an
-      // answer from another locale included
-      const doorReq = self.apos.harness.withDoor(req.clone({
-        locale: request.screen.locale
-      }), {
-        door: DOOR,
-        lockId: chat._id,
-        family: request.tabId,
-        chat: chat._id,
-        requestId: request._id,
-        // A write to a document saved since the chat last read or wrote it
-        // is refused, across requests
-        seen: new Map((chat.seen || []).map(({ _id, updatedAt }) => [ _id, updatedAt ])),
-        // A read counts from the end of its step: a write of the same step
-        // came from what the model read before
-        deferSeen: true,
-        ...(model && { model })
-      });
+      const doorReq = self.getRunReq(req, chat, request);
       const tools = self.apos.harness.getDoorTools(DOOR);
+      const system = self.getRunInstructions(doorReq, self.getCheckpoint(chat));
+      const toolNames = self.getRunTools();
       // The run's progress goes out as the assistant's own events, each
       // change only once it is stored (see events.js)
       const { jobId } = await self.apos.ai.generateJob(doorReq, {
-        system: self.apos.harness.getInstructions(doorReq, [
-          self.getReplySection(),
-          self.getScreenSection()
-        ]),
+        system,
         messages,
-        tools: tools.map(tool => tool.name),
+        tools: toolNames,
         maxSteps: self.options.maxSteps,
         ...(effort && { effort }),
         ...(toolInput && {
@@ -477,10 +458,12 @@ module.exports = (self) => {
         // continues on a new run (`endRun`)
         betweenSteps: async ({ usage, messages: sofar }) => {
           await self.apos.harness.commitSeen(doorReq);
-          if (await self.shortenInRequest(request, {
+          if (await self.shortenInRequest(doorReq, request, {
             usage,
             messages: sofar,
-            prior
+            prior,
+            system,
+            tools: toolNames
           })) {
             return { stop: true };
           }
@@ -515,6 +498,42 @@ module.exports = (self) => {
       if (stored?.status === 'stopping') {
         await self.apos.modules['@apostrophecms/job'].requestCancel(jobId);
       }
+    },
+
+    // The `req` a request's runs work with
+    getRunReq(req, chat, request) {
+      const model = self.getModel();
+      // Every run of a request works in the locale it was sent in, an
+      // answer from another locale included
+      return self.apos.harness.withDoor(req.clone({
+        locale: request.screen.locale
+      }), {
+        door: DOOR,
+        lockId: chat._id,
+        family: request.tabId,
+        chat: chat._id,
+        requestId: request._id,
+        // A write to a document saved since the chat last read or wrote it
+        // is refused, across requests
+        seen: new Map((chat.seen || []).map(({ _id, updatedAt }) => [ _id, updatedAt ])),
+        // A read counts from the end of its step: a write of the same step
+        // came from what the model read before
+        deferSeen: true,
+        ...(model && { model })
+      });
+    },
+
+    // A run's instructions, the chat's current summary last
+    getRunInstructions(doorReq, checkpoint) {
+      return self.apos.harness.getInstructions(doorReq, [
+        self.getReplySection(),
+        self.getScreenSection(),
+        self.getSummarySection(checkpoint)
+      ]);
+    },
+
+    getRunTools() {
+      return self.apos.harness.getDoorTools(DOOR).map(tool => tool.name);
     },
 
     /**
@@ -587,18 +606,19 @@ module.exports = (self) => {
         : null;
       const overflow = (error?.name === 'aiContextOverflow') && partial;
       // Refused as too long: shortened further, older requests kept no
-      // more, and tried once again
+      // more and summarized, and tried once again
       const retry = overflow && (current.status === 'running') && !current.overflowRetried &&
-        await self.shortenRequest(request, partial.messages.slice(prior), {
+        await self.shortenRequest(req, request, partial.messages.slice(prior), {
           before: self.estimateTokens(partial.messages),
           keep: 0,
-          keepRounds: 1
+          keepRounds: 1,
+          summary: { keep: 0 }
         });
       const now = new Date();
       const status = getStatus();
       if (overflow && (status === 'failed')) {
         // It can't fit: later requests replay it without its reads
-        await self.shortenRequest(request, partial.messages.slice(prior), {
+        await self.shortenRequest(req, request, partial.messages.slice(prior), {
           before: self.estimateTokens(partial.messages),
           keep: Infinity,
           keepRounds: 0

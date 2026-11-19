@@ -622,6 +622,8 @@ export const useAssistantStore = defineStore('assistant', () => {
       progress.value[requestId] = { label: null };
     } else if (stage === 'retry') {
       progress.value[requestId] = { retrying: true };
+    } else if (stage === 'summary') {
+      progress.value[requestId] = { label: 'apostrophe:assistantSummarizing' };
     }
   }
 

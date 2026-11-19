@@ -244,6 +244,7 @@
   "assistantStop": "Stop",
   "assistantStopped": "Stopped — let me know if you want to pick this back up.",
   "assistantStopping": "Stopping…",
+  "assistantSummarizing": "Summarizing earlier messages",
   "assistantThinking": "Thinking...",
   "assistantThoughtFor": "Thought for {{ duration }}",
   "assistantTitle": "Assistant",

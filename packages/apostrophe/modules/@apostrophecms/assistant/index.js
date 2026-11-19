@@ -384,6 +384,7 @@ module.exports = {
       ...require('./lib/screen')(self),
       ...require('./lib/reconcile')(self),
       ...require('./lib/long-chats')(self),
+      ...require('./lib/summaries')(self),
       ...require('./lib/revert')(self),
       ...require('./lib/events')(self),
       ...require('./lib/markdown')(self),

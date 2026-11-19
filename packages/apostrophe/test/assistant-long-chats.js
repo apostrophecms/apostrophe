@@ -12,6 +12,7 @@ describe('Assistant: long chats', function () {
   let editor;
   let script = null;
   const calls = [];
+  const usageRecords = [];
 
   before(async function () {
     process.env.APOS_AI_MOCK = '1';
@@ -41,6 +42,17 @@ describe('Assistant: long chats', function () {
             titleEffort: 'none',
             contextLimit: 10000,
             contextThreshold: 50
+          }
+        },
+        'assistant-long-chat-usage': {
+          handlers() {
+            return {
+              '@apostrophecms/ai:usage': {
+                record(req, usage) {
+                  usageRecords.push(usage);
+                }
+              }
+            };
           }
         },
         'assistant-long-chat-tools': {
@@ -582,6 +594,368 @@ describe('Assistant: long chats', function () {
     });
   });
 
+  describe('summaries', function () {
+    // Threshold 6000 and target 4000 of the 8000 budget
+    beforeEach(function () {
+      apos.assistant.options.contextThreshold = 75;
+    });
+    afterEach(function () {
+      apos.assistant.options.contextThreshold = 50;
+      delete apos.assistant.options.summaryEffort;
+    });
+
+    it('parses the outline as the models write it', function () {
+      const marked = apos.assistant.parseSummary([
+        '- **STANDING INSTRUCTIONS:**',
+        '  - "Always use British spelling from now on." (from the first request)',
+        '  - “Reply in one line.”',
+        '- **DECISIONS:**',
+        '  - Read doc-1 and changed its title',
+        '    in the same step.',
+        '- **CHANGES:** none',
+        '## OPEN THREADS',
+        '- none',
+        'LEARNED ABOUT THE SITE',
+        '1. Pages are long.'
+      ].join('\n'));
+      assert.deepEqual(marked, {
+        instructions: [ 'Always use British spelling from now on.', 'Reply in one line.' ],
+        decisions: [ 'Read doc-1 and changed its title in the same step.' ],
+        changes: [],
+        threads: [],
+        learned: [ 'Pages are long.' ]
+      });
+      // An item that starts like a heading is still an item
+      assert.deepEqual(apos.assistant.parseSummary('DECISIONS\n- Decisions: none taken yet').decisions,
+        [ 'Decisions: none taken yet' ]);
+      assert.equal(apos.assistant.parseSummary('I could not summarize this chat.'), null);
+    });
+
+    it('replaces older requests by a summary written as one more step of the chat when tier 1 is not enough', async function () {
+      const req = userReq();
+      const chat = await apos.assistant.createChat(req);
+      const [ first ] = await buildLongChat(req, chat, 's');
+      const lastSystem = calls.at(-1).system;
+      const published = watchPublish();
+      calls.length = 0;
+      usageRecords.length = 0;
+      script = summarizing(() => summaryTurn({
+        instructions: [
+          '"Always use British spelling   from now on." (from the first request)',
+          '"first: words words words"'
+        ],
+        decisions: [ 'Read the pages in order.' ]
+      }), [ textTurn('Next.', 100) ]);
+      let next;
+      try {
+        next = await runToEnd(req, chat, 'What next?');
+      } finally {
+        published.restore();
+      }
+      assert.equal(next.status, 'completed');
+      assert.equal(calls.length, 2);
+
+      // The summary step: the chat as last sent, its tools, one more message
+      const [ step, run ] = calls;
+      assert.equal(step.system, lastSystem);
+      assert.equal(step.model, 'fake-large');
+      const names = call => call.tools.map(tool => tool.name);
+      assert.deepEqual(names(step), names(run));
+      const asked = userTexts(step.messages);
+      assert.deepEqual(asked.slice(0, -1), [
+        'Always use British spelling from now on. Read first', 'Read second', 'Read third'
+      ]);
+      assert.match(asked.at(-1), new RegExp(`up to the end of request ${first._id}`));
+      assert(toolResults(step.messages).every(result => !result.output.cleared));
+      assert(published.events.some(({ stage, data }) => (stage === 'summary') &&
+        (data.requestId === next._id)));
+
+      // The run: the summary in the instructions, the first request gone
+      assert.match(run.system, /Earlier messages of this chat were replaced by this summary/);
+      assert.match(run.system, /STANDING INSTRUCTIONS:\n- Always use British spelling {3}from now on\./);
+      assert.match(run.system, /DECISIONS:\n- Read the pages in order\./);
+      assert.doesNotMatch(run.system, /words words/);
+      assert.deepEqual(userTexts(run.messages), [ 'Read second', 'Read third', 'What next?' ]);
+      assert.deepEqual(toolResults(run.messages).map(result => result.toolCallId), [ 's-2', 's-3' ]);
+      assertStandsOnItsOwn(run.messages);
+
+      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      assert.equal(checkpoints.length, 1);
+      const [ checkpoint ] = checkpoints;
+      assert.equal(checkpoint.sequence, next.sequence);
+      assert.deepEqual(checkpoint.calls, [ 's-1' ]);
+      assert.equal(checkpoint.summary.covers, first.sequence);
+      assert.deepEqual(checkpoint.summary.instructions, [ 'Always use British spelling   from now on.' ]);
+      assert(checkpoint.summaryUsage.inputTokens > 0);
+      assert(checkpoint.after < checkpoint.before);
+      assert.deepEqual(usageRecords.map(record => record.metadata.purpose), [ 'summary', 'request' ]);
+
+      // Under the threshold again: the summary stays, nothing new is made
+      calls.length = 0;
+      script = null;
+      await runToEnd(req, chat, 'Thanks');
+      assert.equal(calls.length, 1);
+      assert.match(calls[0].system, /Always use British spelling/);
+      assert.deepEqual(userTexts(calls[0].messages),
+        [ 'Read second', 'Read third', 'What next?', 'Thanks' ]);
+      assert.equal((await apos.assistant.getChat(req, chat._id)).checkpoints.length, 1);
+    });
+
+    it('folds the current summary into the next one', async function () {
+      const req = userReq();
+      const chat = await apos.assistant.createChat(req);
+      const [ , second ] = await buildLongChat(req, chat, 'g');
+      script = summarizing(() => summaryTurn({
+        instructions: [ 'Always use British spelling from now on.' ],
+        decisions: [ 'First decision.' ]
+      }), [ textTurn('Next.', 7000) ]);
+      await runToEnd(req, chat, 'What next?');
+
+      calls.length = 0;
+      script = summarizing(() => summaryTurn({
+        instructions: [ 'Always use British spelling from now on.' ],
+        decisions: [ 'First decision.', 'Second decision.' ]
+      }), [ textTurn('Going on.', 100) ]);
+      await runToEnd(req, chat, 'Go on');
+      const [ step, run ] = calls;
+      // The second step reads the first summary where the chat keeps it
+      assert.match(step.system, /DECISIONS:\n- First decision\./);
+      assert.match(userTexts(step.messages).at(-1), new RegExp(`request ${second._id}.*Fold in the summary`, 's'));
+      assert.deepEqual(userTexts(step.messages).slice(0, -1),
+        [ 'Read second', 'Read third', 'What next?' ]);
+      assert.match(run.system, /DECISIONS:\n- First decision\.\n- Second decision\./);
+      assert.deepEqual(userTexts(run.messages), [ 'Read third', 'What next?', 'Go on' ]);
+      assertStandsOnItsOwn(run.messages);
+
+      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      assert.equal(checkpoints.length, 2);
+      assert.equal(checkpoints[1].summary.covers, second.sequence);
+      assert.deepEqual(checkpoints[1].calls, [ 'g-1', 'g-2' ]);
+      // An instruction from a request the chat no longer replays still stands
+      assert.deepEqual(checkpoints[1].summary.instructions,
+        [ 'Always use British spelling from now on.' ]);
+    });
+
+    it('falls back to a call of its own when the summary step calls a tool', async function () {
+      const req = userReq();
+      const chat = await apos.assistant.createChat(req);
+      await buildLongChat(req, chat, 'b');
+      calls.length = 0;
+      script = (request) => {
+        if (isSeparateSummary(request)) {
+          return summaryTurn({ decisions: [ 'Written apart.' ] });
+        }
+        if (isSummaryStep(request)) {
+          return readTurn('b-x', 'more');
+        }
+        return textTurn('Next.', 100);
+      };
+      const next = await runToEnd(req, chat, 'What next?');
+      assert.equal(next.status, 'completed');
+      assert.equal(calls.filter(isSummaryStep).length, 1);
+      assert.equal(calls.filter(isSeparateSummary).length, 1);
+      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      assert.deepEqual(checkpoints[0].summary.decisions, [ 'Written apart.' ]);
+      // The tool the step asked for never ran
+      assert(!toolResults(next.messages).some(result => result.toolCallId === 'b-x'));
+    });
+
+    it('writes the summary on summaryEffort in calls of their own, oldest first in slices', async function () {
+      apos.assistant.options.summaryEffort = 'low';
+      const req = userReq();
+      const chat = await apos.assistant.createChat(req);
+      await buildLongChat(req, chat, 'e');
+      calls.length = 0;
+      let slice = 0;
+      script = summarizing(() => summaryTurn({
+        instructions: [ 'Always use British spelling from now on.' ],
+        decisions: [ `Slice ${++slice}.` ]
+      }), [ textTurn('Next.', 100) ]);
+      await runToEnd(req, chat, 'What next?');
+      const summaries = calls.filter(isSeparateSummary);
+      // The 2000-token window of the low route leaves 1000 per slice
+      assert(summaries.length >= 2);
+      assert.equal(calls.filter(isSummaryStep).length, 0);
+      for (const call of summaries) {
+        assert.equal(call.model, 'fake-small');
+        assert(!call.tools?.length);
+        assert(apos.assistant.estimateTokens(JSON.stringify(call.messages)) < 2000);
+      }
+      const texts = call => call.messages[0].content.map(part => part.text);
+      assert.match(texts(summaries[0])[0], /^The chat:\nEDITOR: Request id/);
+      assert.match(texts(summaries[1])[0], /^The summary of the chat before this part:\n/);
+      assert.match(texts(summaries[1])[0], /- Slice 1\./);
+      const run = calls.at(-1);
+      assert.equal(run.model, 'fake-large');
+      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      assert.deepEqual(checkpoints[0].summary.decisions, [ `Slice ${summaries.length}.` ]);
+      assert.deepEqual(checkpoints[0].summary.instructions,
+        [ 'Always use British spelling from now on.' ]);
+      assert(usageRecords.filter(record => record.metadata.purpose === 'summary').length >=
+        summaries.length);
+    });
+
+    it('summarizes the earlier requests when a request outgrows its budget mid-way', async function () {
+      const req = userReq();
+      const chat = await apos.assistant.createChat(req);
+      script = sequence([ readTurn('i-1', 'one'), textTurn('Read one.', 100) ]);
+      const first = await runToEnd(req, chat, 'Never use emojis. Read one');
+      script = sequence([ readTurn('i-2', 'two'), textTurn('Read two.', 100) ]);
+      const second = await runToEnd(req, chat, 'Read two');
+
+      calls.length = 0;
+      script = summarizing(() => summaryTurn({
+        instructions: [ 'Never use emojis.' ]
+      }), [
+        readTurn('i-3', 'three'),
+        readTurn('i-4', 'four', 7000),
+        textTurn('Read both.', 2000)
+      ]);
+      const request = await runToEnd(req, chat, 'Read three and four');
+      assert.equal(request.status, 'completed');
+      const step = calls.find(isSummaryStep);
+      // The step continues the run as it was sent, its last round answered
+      assert.equal(step.messages.at(-2).role, 'tool');
+      assert.match(userTexts(step.messages).at(-1), new RegExp(`request ${second._id}`));
+      const resumed = calls.at(-1);
+      assert.match(resumed.system, /Never use emojis\./);
+      assert.deepEqual(userTexts(resumed.messages), [ 'Read three and four' ]);
+      assertStandsOnItsOwn(resumed.messages);
+      assert.deepEqual(toolResults(request.messages).map(result => result.output.page),
+        [ 'three', 'four' ]);
+      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      assert.equal(checkpoints.length, 1);
+      assert.equal(checkpoints[0].sequence, request.sequence);
+      assert.equal(checkpoints[0].summary.covers, second.sequence);
+      assert(first.sequence < second.sequence);
+    });
+
+    it('summarizes in a call of its own when the provider refuses a request as too long', async function () {
+      const req = userReq();
+      const chat = await apos.assistant.createChat(req);
+      script = sequence([ textTurn('Noted.', 100) ]);
+      await runToEnd(req, chat, `Keep it short. ${'Some background. '.repeat(600)}`);
+      script = sequence([ readTurn('v-1', 'one'), textTurn('Read one.', 100) ]);
+      await runToEnd(req, chat, 'Read one');
+
+      calls.length = 0;
+      script = summarizing(() => summaryTurn({
+        instructions: [ 'Keep it short.' ]
+      }), [
+        () => {
+          throw apos.error('aiContextOverflow', 'prompt is too long');
+        },
+        textTurn('Fits now.', 100)
+      ]);
+      const request = await runToEnd(req, chat, 'Go on');
+      assert.equal(request.status, 'completed');
+      assert.equal(request.overflowRetried, true);
+      // The refused transcript can't be sent again: the summary is a call
+      // of its own
+      assert.equal(calls.filter(isSummaryStep).length, 0);
+      assert.equal(calls.filter(isSeparateSummary).length >= 1, true);
+      const retried = calls.at(-1);
+      assert.match(retried.system, /Keep it short\./);
+      assert.deepEqual(userTexts(retried.messages), [ 'Go on' ]);
+    });
+
+    it('drops the checkpoints a revert reaches and keeps a standing instruction only when the editor wrote it outside reverted work', async function () {
+      const req = userReq();
+      const chat = await apos.assistant.createChat(req);
+      const [ first ] = await buildLongChat(req, chat, 'r');
+      script = summarizing(() => summaryTurn({
+        instructions: [ 'Always use British spelling from now on.' ]
+      }), [ textTurn('Next.', 7000) ]);
+      const fourth = await runToEnd(req, chat, 'What next? Keep titles short.');
+      script = summarizing(() => summaryTurn({
+        instructions: [ 'Always use British spelling from now on.', 'Keep titles short.' ]
+      }), [ textTurn('Going on.', 100) ]);
+      const fifth = await runToEnd(req, chat, 'Go on');
+      assert.equal((await apos.assistant.getChat(req, chat._id)).checkpoints.length, 2);
+
+      // Reverting the request whose send made the second checkpoint falls
+      // back to the first
+      await revert(chat, fifth);
+      let stored = await apos.assistant.getChat(req, chat._id);
+      assert.deepEqual(stored.checkpoints.map(checkpoint => checkpoint.sequence),
+        [ fourth.sequence ]);
+      const later = { sequence: fifth.sequence + 1 };
+      let transcript = await apos.assistant.getTranscript(stored, later);
+      assert.deepEqual(userTexts(transcript), [ 'Read second', 'Read third', 'What next? Keep titles short.' ]);
+
+      // Reverting the request that made the first falls back to the whole chat
+      await revert(chat, fourth);
+      stored = await apos.assistant.getChat(req, chat._id);
+      assert.deepEqual(stored.checkpoints, []);
+      transcript = await apos.assistant.getTranscript(stored, later);
+      assert.deepEqual(userTexts(transcript),
+        [ 'Always use British spelling from now on. Read first', 'Read second', 'Read third' ]);
+      assert(toolResults(transcript).every(result => !result.output.cleared));
+
+      // "Keep titles short." was written in reverted work only
+      const checked = await apos.assistant.checkInstructions(stored, {
+        instructions: [
+          'Always use  British spelling from now on.',
+          'Keep titles short.',
+          'first: words words'
+        ]
+      });
+      assert.deepEqual(checked.instructions, [ 'Always use  British spelling from now on.' ]);
+      assert(first.sequence < fourth.sequence);
+    });
+
+    // Three requests, the last counted past the 6000 threshold: tier 1
+    // clears the first one's read and leaves the chat over the target
+    async function buildLongChat(req, chat, prefix) {
+      script = sequence([ readTurn(`${prefix}-1`, 'first'), textTurn('Read first.', 100) ]);
+      const first = await runToEnd(req, chat, 'Always use British spelling from now on. Read first');
+      script = sequence([ readTurn(`${prefix}-2`, 'second'), textTurn('Read second.', 100) ]);
+      const second = await runToEnd(req, chat, 'Read second');
+      script = sequence([ readTurn(`${prefix}-3`, 'third'), textTurn('Read third.', 7000) ]);
+      const third = await runToEnd(req, chat, 'Read third');
+      return [ first, second, third ];
+    }
+
+    // Summary calls answered by `summary`, the rest by `turns` in order
+    function summarizing(summary, turns) {
+      const rest = sequence(turns);
+      return (request) => ((isSummaryStep(request) || isSeparateSummary(request))
+        ? summary(request)
+        : rest(request));
+    }
+
+    function watchPublish() {
+      const events = [];
+      const original = apos.assistant.publish;
+      apos.assistant.publish = async (req, chatId, stage, data) => {
+        events.push({
+          stage,
+          data
+        });
+        return original(req, chatId, stage, data);
+      };
+      return {
+        events,
+        restore() {
+          apos.assistant.publish = original;
+        }
+      };
+    }
+
+    async function revert(chat, request) {
+      const started = await apos.assistant.revert(userReq(), chat._id, {
+        requestId: request._id,
+        tabId: 'tab-1'
+      });
+      await waitFor(async () => {
+        const stored = await apos.assistant.getRevert(userReq(), started._id);
+        return stored.status !== 'running';
+      });
+      const done = await apos.assistant.getRevert(userReq(), started._id);
+      assert.equal(done.status, 'done');
+    }
+  });
+
   function userReq() {
     return apos.task.getReq({
       user: editor,
@@ -661,6 +1035,29 @@ function textTurn(text, inputTokens) {
   };
 }
 
+function summaryTurn(sections) {
+  const heading = (title, items) => [ title, ...(items?.length ? items : [ 'none' ]).map(item => `- ${item}`) ];
+  return textTurn([
+    ...heading('STANDING INSTRUCTIONS', sections.instructions),
+    ...heading('DECISIONS', sections.decisions),
+    ...heading('CHANGES', sections.changes),
+    ...heading('OPEN THREADS', sections.threads),
+    ...heading('LEARNED ABOUT THE SITE', sections.learned)
+  ].join('\n'), 50);
+}
+
+// The summary as one more step of the chat
+function isSummaryStep(request) {
+  const last = request.messages.at(-1);
+  return (last?.role === 'user') && Array.isArray(last.content) &&
+    /^Summarize this chat up to/.test(last.content.at(-1)?.text || '');
+}
+
+// The summary as a call of its own
+function isSeparateSummary(request) {
+  return /^You summarize a chat/.test(request.system || '');
+}
+
 function toolResults(messages) {
   return messages
     .filter(message => message.role === 'tool')
@@ -725,7 +1122,9 @@ function fakeAdapter() {
       high: { model: 'fake-large' }
     },
     models: {
-      'fake-large': { contextWindow: 8000 }
+      'fake-large': { contextWindow: 8000 },
+      // Small enough to slice a chat
+      'fake-small': { contextWindow: 2000 }
     },
     validate() {},
     async chat() {
