@@ -1122,6 +1122,8 @@ export default {
         if (!opening) {
           return hide();
         }
+        // Where the slash is now, while it is all there is on the line
+        this.captureInsertMenuAnchor();
       }
 
       // A query that no choice starts with ends it, so it does not linger
@@ -1141,15 +1143,9 @@ export default {
     // aligned text the slash itself moves as the query grows. Kept relative
     // to the editor, so that it follows the editor when the page scrolls
     insertMenuAnchorRect() {
-      const { view, state } = this.editor;
-      const editorRect = view.dom.getBoundingClientRect();
-      if (!this.insertMenuAnchor || (this.insertQuery === '')) {
-        const coords = view.coordsAtPos(state.selection.$from.start());
-        this.insertMenuAnchor = {
-          left: coords.left - editorRect.left,
-          top: coords.top - editorRect.top,
-          bottom: coords.bottom - editorRect.top
-        };
+      const editorRect = this.editor.view.dom.getBoundingClientRect();
+      if (!this.insertMenuAnchor) {
+        this.captureInsertMenuAnchor();
       }
       const left = editorRect.left + this.insertMenuAnchor.left;
       const top = editorRect.top + this.insertMenuAnchor.top;
@@ -1163,6 +1159,18 @@ export default {
         height: bottom - top,
         x: left,
         y: top
+      };
+    },
+    // Taken once, when the menu opens: any later, and a character already
+    // typed after the slash may have moved it
+    captureInsertMenuAnchor() {
+      const { view, state } = this.editor;
+      const editorRect = view.dom.getBoundingClientRect();
+      const coords = view.coordsAtPos(state.selection.$from.start());
+      this.insertMenuAnchor = {
+        left: coords.left - editorRect.left,
+        top: coords.top - editorRect.top,
+        bottom: coords.bottom - editorRect.top
       };
     },
     // Shades the slash and the query typed after it while the insert menu
