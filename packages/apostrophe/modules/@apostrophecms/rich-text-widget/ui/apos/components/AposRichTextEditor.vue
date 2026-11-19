@@ -1390,6 +1390,9 @@ function traverseNextNode(node) {
     color: var(--a-base-1);
     font-family: var(--a-family-default);
     font-size: var(--a-type-base);
+    // The menu renders inside the site's own markup, so it would otherwise
+    // inherit the alignment of whatever the rich text sits in
+    text-align: start;
   }
 
   .apos-rich-text-insert-menu-wrapper {
