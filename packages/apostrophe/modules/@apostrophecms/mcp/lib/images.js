@@ -16,10 +16,6 @@ const { promisify } = require('node:util');
 
 const IMAGE = '@apostrophecms/image';
 
-// The sizes `get_image` links to, when the project has them: small enough
-// to look at, the width of a page's content, and the largest
-const SIZES = [ 'one-third', 'full', 'max' ];
-
 module.exports = (self) => {
   return {
     async saveImageToMedia(req, {
@@ -95,7 +91,7 @@ module.exports = (self) => {
           width: attachment.width,
           height: attachment.height,
           fileType: attachment.extension,
-          urls: getUrls(req, attachment)
+          sizes: getSizes(req, attachment)
         })
       };
     },
@@ -216,31 +212,53 @@ module.exports = (self) => {
     }
   }
 
-  // Absolute links to the attachment's file, by size name: up to three of
-  // the scaled sizes, or the file itself when it has none (SVG). Uploads
-  // stored on the site are linked through the site's own address
-  function getUrls(req, attachment) {
-    const urls = {};
-    if (self.apos.attachment.isSized(attachment)) {
-      const names = self.apos.attachment.imageSizes.map(size => size.name);
-      let chosen = SIZES.filter(name => names.includes(name));
-      if (!chosen.length) {
-        // The project has its own sizes: the smallest and the largest
-        const sorted = [ ...self.apos.attachment.imageSizes ]
-          .sort((one, two) => one.width - two.width)
-          .map(size => size.name);
-        chosen = [ ...new Set([ sorted[0], sorted.at(-1) ]) ];
-      }
-      for (const size of chosen) {
-        urls[size] = self.apos.attachment.url(attachment, { size });
-      }
-    } else {
-      urls.original = self.apos.attachment.url(attachment, { size: 'original' });
+  // `[ { name, width, height, url } ]`, smallest first: every scaled size
+  // the project defines (the attachment module's `imageSizes`), or the file
+  // itself when it has none (SVG). Links are absolute; uploads stored on the
+  // site are linked through the site's own address
+  function getSizes(req, attachment) {
+    const link = size => new URL(
+      self.apos.attachment.url(attachment, { size }),
+      req.baseUrl
+    ).href;
+    if (!self.apos.attachment.isSized(attachment)) {
+      return [ {
+        name: 'original',
+        ...getDimensions(attachment),
+        url: link('original')
+      } ];
     }
-    for (const [ size, url ] of Object.entries(urls)) {
-      urls[size] = new URL(url, req.baseUrl).href;
+    // By box first, so that sizes a small image fills alike stay in order
+    const bySize = (one, two) => (one.width - two.width) || (one.height - two.height);
+    return [ ...self.apos.attachment.imageSizes ]
+      .sort(bySize)
+      .map(size => ({
+        name: size.name,
+        ...getDimensions(attachment, size),
+        url: link(size.name)
+      }))
+      .sort(bySize);
+  }
+
+  // The dimensions of the file uploadfs makes for `size`: the image scaled to
+  // fit inside the size's box, never enlarged. Without a `size`, or without
+  // known dimensions, the attachment's own, when it has them
+  function getDimensions(attachment, size) {
+    const { width, height } = attachment;
+    if (!(width > 0 && height > 0)) {
+      return {};
     }
-    return urls;
+    if (!size) {
+      return {
+        width,
+        height
+      };
+    }
+    const scale = Math.min(1, size.width / width, size.height / height);
+    return {
+      width: Math.round(width * scale),
+      height: Math.round(height * scale)
+    };
   }
 
   function refuse(message) {

@@ -260,8 +260,20 @@ describe('MCP: image tools', function () {
         assert.equal(image.width, saved.width);
         assert.equal(image.height, saved.height);
         assert.equal(image.fileType, 'jpg');
-        assert.deepEqual(Object.keys(image.urls), [ 'one-third', 'full', 'max' ]);
-        for (const url of Object.values(image.urls)) {
+        // Every default size, smallest first, at the dimensions uploadfs
+        // makes from a 450×600 photo: fitted inside each box, never enlarged
+        assert.deepEqual(
+          image.sizes.map(size => `${size.name} ${size.width}×${size.height}`),
+          [
+            'one-sixth 190×253',
+            'one-third 380×507',
+            'one-half 450×600',
+            'two-thirds 450×600',
+            'full 450×600',
+            'max 450×600'
+          ]
+        );
+        for (const { url } of image.sizes) {
           assert.match(url, /^http:\/\/localhost:\d+\/uploads\/attachments\//);
           const response = await fetch(url);
           assert.equal(response.status, 200);
@@ -281,11 +293,11 @@ describe('MCP: image tools', function () {
           alt: 'Linked'
         })).structuredContent;
 
-        const { urls } = (await call(mode, 'get_image', { _id: saved._id }))
+        const { sizes } = (await call(mode, 'get_image', { _id: saved._id }))
           .structuredContent;
 
-        assert.deepEqual(Object.keys(urls), [ 'original' ]);
-        assert.equal((await fetch(urls.original)).status, 200);
+        assert.deepEqual(sizes.map(size => size.name), [ 'original' ]);
+        assert.equal((await fetch(sizes[0].url)).status, 200);
       });
 
       it('refuses a document that isn\'t an image', async function () {
@@ -393,5 +405,76 @@ describe('MCP: image tools for a user without media rights', function () {
       name,
       arguments: args
     }));
+  }
+});
+
+// A project with its own image sizes: `get_image` links to exactly those,
+// whatever their names
+describe('MCP: image tools with a project\'s own image sizes', function () {
+  this.timeout(t.timeout);
+
+  let apos;
+  let image;
+
+  before(async function () {
+    apos = await createMcpApos(module, {
+      modules: {
+        '@apostrophecms/attachment': {
+          imageSizes: {
+            remove: [ 'full', 'two-thirds', 'one-half', 'one-third', 'one-sixth' ],
+            add: {
+              hero: {
+                width: 2000,
+                height: 800
+              },
+              thumb: {
+                width: 100,
+                height: 100
+              }
+            }
+          }
+        }
+      }
+    });
+    const req = apos.task.getReq({ mode: 'draft' });
+    const attachment = await apos.attachment.insert(req, {
+      name: 'test-image.jpg',
+      path: path.join(__dirname, 'public/test-image.jpg')
+    });
+    image = await apos.image.insert(req, {
+      title: 'An image',
+      alt: 'An image',
+      attachment
+    });
+  });
+
+  after(async function () {
+    await t.destroy(apos);
+  });
+
+  for (const mode of MODES) {
+    describe(`with a ${mode === 'auto' ? '2026-07-28' : '2025-era'} client`, function () {
+      it('links every size the project has, with its dimensions', async function () {
+        const result = await withClient(apos, mode, client => client.callTool({
+          name: 'get_image',
+          arguments: { _id: image._id }
+        }));
+
+        assert.equal(result.isError, undefined);
+        const { sizes } = result.structuredContent;
+        assert.deepEqual(
+          sizes.map(size => `${size.name} ${size.width}×${size.height}`),
+          [
+            'thumb 75×100',
+            'max 450×600',
+            'hero 450×600'
+          ]
+        );
+        for (const { url } of sizes) {
+          const response = await fetch(url);
+          assert.equal(response.status, 200);
+        }
+      });
+    });
   }
 });
