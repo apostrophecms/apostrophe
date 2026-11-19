@@ -2,6 +2,9 @@
 
 const EFFORT_OPTIONS = [ 'effort', 'titleEffort', 'delegationEffort', 'summaryEffort' ];
 const USAGE_DISPLAYS = [ 'tokens', 'none' ];
+// In tokens, the least a chat holds before it is shortened: the
+// instructions and tools alone take most of it
+const MIN_THRESHOLD = 15000;
 
 module.exports = (self) => {
   return {
@@ -37,6 +40,10 @@ module.exports = (self) => {
       if (!Number.isInteger(contextThreshold) || (contextThreshold < 10) ||
         (contextThreshold > 90)) {
         fail('contextThreshold', 'must be a whole number from 10 to 90');
+      }
+      if ((contextLimit * contextThreshold / 100) < MIN_THRESHOLD) {
+        fail('contextLimit', `times contextThreshold percent must be at least ${
+          MIN_THRESHOLD} tokens: a chat is shortened from there`);
       }
       if (!USAGE_DISPLAYS.includes(usageDisplay)) {
         fail('usageDisplay', `must be one of: ${USAGE_DISPLAYS.join(', ')}`);

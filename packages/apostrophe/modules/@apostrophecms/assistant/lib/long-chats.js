@@ -11,13 +11,19 @@
 // (tier 2, `summaries.js`), which the instructions carry and every later
 // checkpoint keeps until a new summary folds it in.
 //
+// A chat is shortened again only once it has grown by a step past where
+// the last shortening left it. A request that outgrows the budget itself
+// gets one harder shortening, and past the budget again it ends: it can't
+// fit.
+//
 // A checkpoint: `{ _id, sequence, calls, media, summary, before, after,
-// at }`. `sequence` is the request whose send made it; `calls` the tool
-// call ids whose results are cleared and `media` the requests whose images
-// and documents are dropped, each including the earlier checkpoints';
+// at, summaries, summaryUsage }`, one per request, the request's latest.
+// `sequence` is the request whose send made it; `calls` the tool call ids
+// whose results are cleared and `media` the requests whose images and
+// documents are dropped, each including the earlier checkpoints';
 // `summary` the current summary, its `covers` the last request it
-// replaces; `before` and `after` the measure in tokens. The checkpoint
-// that wrote its summary has the summary's `summaryUsage`.
+// replaces; `before` and `after` the measure in tokens; `summaries` how
+// many summaries the request wrote and `summaryUsage` what they cost.
 
 // Measured on stored chats: about 2.1 characters per token, the ids and
 // JSON of tool results tokenizing densely
@@ -27,10 +33,8 @@ const KEEP_REQUESTS = 2;
 // Tool rounds of the running request tier 1 leaves whole, the latest ones:
 // the last one the model has not read yet
 const KEEP_ROUNDS = 2;
-// Of the budget, what shortening aims to get under: well below the
-// threshold, so a shortened chat runs many requests before the next pass
-// breaks the provider's cache again
-const TARGET_SHARE = 0.5;
+// Of the threshold, the step a chat grows by between two shortenings
+const STEP_SHARE = 1 / 6;
 // The note a cleared read leaves: the model saw the result and acted on
 // it, so what it concluded stands
 const CLEARED_NOTE = 'This result was read when the call was made and later removed from the ' +
@@ -61,9 +65,21 @@ module.exports = (self) => {
       return Math.floor(self.getBudget() * self.options.contextThreshold / 100);
     },
 
-    // The measure shortening aims to get under
-    getTarget() {
-      return Math.floor(self.getBudget() * TARGET_SHARE);
+    // What a chat grows by between two shortenings, and how far under the
+    // threshold a shortening aims, so the next one breaks the provider's
+    // cache only after real growth: a share of the threshold, at most half
+    // the room above it
+    getStep() {
+      const threshold = self.getThreshold();
+      const room = self.getBudget() - threshold;
+      return Math.floor(Math.min(threshold * STEP_SHARE, room / 2));
+    },
+
+    // Whether a chat that measures `before` is shortened now: past the
+    // threshold, and grown by a step since its latest checkpoint
+    isDue(chat, before) {
+      const after = self.getCheckpoint(chat)?.after ?? -Infinity;
+      return before > Math.max(self.getThreshold(), after + self.getStep());
     },
 
     estimateChars(tokens) {
@@ -208,25 +224,24 @@ module.exports = (self) => {
     },
 
     /**
-     * Shortens what the send of `request` replays when its measure is past
-     * the threshold: the results of `query` tools and the images and
-     * documents of every request but the latest `KEEP_REQUESTS` are
-     * replaced by notes, and when that leaves the chat over the target,
-     * those requests by a summary. Stored as a checkpoint when it changes
-     * anything. Silent but for the summary's status line.
+     * Shortens what the send of `request` replays, due by its measure
+     * (`isDue`): the results of `query` tools and the images and documents
+     * of every request but the latest `KEEP_REQUESTS` are replaced by
+     * notes, and when that leaves the chat less than a step under its
+     * threshold, those requests by a summary. Stored as a checkpoint when
+     * it changes anything. Silent but for the summary's status line.
      *
      * @param {object} req
      * @param {object} chat
      * @param {object[]} earlier The replayed requests.
      * @param {object} request
+     * @param {object} options
+     * @param {number} options.before The send's measure (`measureSend`).
+     * @param {AbortSignal} [options.signal] Ends a summary being written.
      * @returns {Promise<object>} The chat, with the new checkpoint when one
      *   was stored.
      */
-    async shortenBeforeSend(req, chat, earlier, request) {
-      const before = self.measureSend(chat, earlier, request);
-      if (before <= self.getThreshold()) {
-        return chat;
-      }
+    async shortenBeforeSend(req, chat, earlier, request, { before, signal }) {
       const checkpoint = await self.shorten(req, chat, earlier, {
         sequence: request.sequence,
         keep: KEEP_REQUESTS,
@@ -234,6 +249,7 @@ module.exports = (self) => {
         request,
         summary: {
           keep: KEEP_REQUESTS,
+          signal,
           // The chat as the latest request sent it
           continuation: () => ({
             system: self.getRunInstructions(self.getRunReq(req, chat, request), chat),
@@ -246,15 +262,20 @@ module.exports = (self) => {
     },
 
     /**
-     * Called between the steps of a running request: past the threshold,
-     * clears the `query` results of the earlier requests but the latest
-     * `KEEP_REQUESTS` and of the request's own tool rounds but the latest
-     * `KEEP_ROUNDS`, then, still over the target, replaces every earlier
-     * request by a summary, and stores the checkpoint. The run then pauses
-     * and the request continues on a new run that replays it. Nothing new
-     * to shorten leaves the run going.
+     * Called between the steps of a running request, with what its next
+     * step would send. Due a shortening (`isDue`), it clears the `query`
+     * results of the earlier requests but the latest `KEEP_REQUESTS` and of
+     * the request's own tool rounds but the latest `KEEP_ROUNDS`, then,
+     * less than a step under the threshold, replaces every earlier request
+     * by a summary, and stores the checkpoint. The run then pauses and the
+     * request continues on a new run that replays it. Nothing new to
+     * shorten leaves the run going.
+     *
+     * Past the budget it throws `aiContextOverflow`, as a provider does on
+     * a prompt too long, and the run ends the same way (`endRun`).
      *
      * @param {object} req The run's `req`.
+     * @param {object} chat The chat as the run started on it.
      * @param {object} request
      * @param {object} step
      * @param {object} step.usage The step's own usage.
@@ -262,13 +283,19 @@ module.exports = (self) => {
      * @param {number} step.prior Where the request's own part starts in it.
      * @param {string} step.system The run's instructions.
      * @param {string[]} step.tools The run's tool names.
+     * @param {AbortSignal} [step.signal] The run's.
      * @returns {Promise<boolean>} Whether the run should pause.
      */
-    async shortenInRequest(req, request, {
-      usage, messages, prior, system, tools
+    async shortenInRequest(req, chat, request, {
+      usage, messages, prior, system, tools, signal
     }) {
       const before = self.measureStep(usage, messages);
-      if (before <= self.getThreshold()) {
+      if (before > self.getBudget()) {
+        throw self.apos.error('aiContextOverflow', 'the chat is past its budget');
+      }
+      // A checkpoint ends the run, so the chat's latest is the one the run
+      // started on
+      if (!self.isDue(chat, before)) {
         return false;
       }
       return Boolean(await self.shortenRequest(req, request, messages.slice(prior), {
@@ -277,6 +304,7 @@ module.exports = (self) => {
         keepRounds: KEEP_ROUNDS,
         summary: {
           keep: 0,
+          signal,
           continuation: () => ({
             system,
             messages,
@@ -292,8 +320,8 @@ module.exports = (self) => {
      * but the latest `keep`, and the `query` results of the request's own
      * tool rounds but the latest `keepRounds`; with `summary`, then the
      * earlier requests but its `keep` replaced by a summary when the chat
-     * is still over the target. The checkpoint, or null when nothing new
-     * was shortened.
+     * is still less than a step under its threshold. The checkpoint, or
+     * null when nothing new was shortened.
      *
      * @param {object} req
      * @param {object} request
@@ -303,8 +331,8 @@ module.exports = (self) => {
      * @param {number} options.before The measure, in tokens.
      * @param {number} options.keep
      * @param {number} options.keepRounds
-     * @param {object} [options.summary] `{ keep, continuation }`, as
-     *   `shorten` takes it.
+     * @param {object} [options.summary] `{ keep, continuation, signal }`,
+     *   as `shorten` takes it.
      * @returns {Promise<object|null>}
      */
     async shortenRequest(req, request, own, {
@@ -334,10 +362,12 @@ module.exports = (self) => {
     },
 
     /**
-     * Tier 1, then tier 2 when tier 1 leaves the measure over the target:
-     * the earlier requests the current summary doesn't cover, but the last
-     * `summary.keep`, summarized, the current summary folded in. The new
-     * checkpoint, not stored, or null when nothing new was shortened.
+     * Tier 1, then tier 2 when tier 1 leaves the measure less than a step
+     * under the threshold: the earlier requests the current summary doesn't
+     * cover, but the last `summary.keep`, summarized as tier 1 leaves them,
+     * the current summary folded in. A request whose summary failed gets no
+     * second one. The new checkpoint, not stored, or null when nothing new
+     * was shortened.
      *
      * @param {object} req
      * @param {object} chat
@@ -350,9 +380,9 @@ module.exports = (self) => {
      * @param {object} [options.current] The running request, as
      *   `clearOldReads` takes it.
      * @param {object} [options.summary] Tier 2 may run: `keep`, the
-     *   requests it leaves out, and `continuation`, a function returning
-     *   the chat as last sent (`writeSummary`), absent when that can't be
-     *   sent again.
+     *   requests it leaves out, `continuation`, a function returning the
+     *   chat as last sent (`writeSummary`), absent when that can't be sent
+     *   again, and `signal`, which ends a summary being written.
      * @returns {Promise<object|null>}
      */
     async shorten(req, chat, earlier, {
@@ -365,23 +395,42 @@ module.exports = (self) => {
         before,
         current
       });
-      if (!summary || ((checkpoint?.after ?? before) <= self.getTarget())) {
+      const aim = self.getThreshold() - self.getStep();
+      if (!summary || ((checkpoint?.after ?? before) <= aim)) {
         return checkpoint;
       }
       const covers = previous?.summary?.covers ?? -1;
       const open = earlier.filter(stored => stored.sequence > covers);
       const requests = open.slice(0, Math.max(open.length - summary.keep, 0));
+      const asked = {
+        _id: request._id,
+        ownerId: request.ownerId
+      };
       if (!requests.length) {
         return checkpoint;
       }
+      const { summaryFailed } = await self.requests.findOne(asked, {
+        projection: { summaryFailed: 1 }
+      });
+      if (summaryFailed) {
+        return checkpoint;
+      }
+      const cleared = checkpoint || previous;
       const written = await self.writeSummary(req, chat, {
-        requests,
+        requests: self.applyCheckpoint(cleared && {
+          calls: cleared.calls,
+          media: cleared.media
+        }, requests),
         // A continued chat's first summary folds in the one it carried over
         previous: previous?.summary || chat.carried?.summary || null,
         continuation: summary.continuation?.(),
-        request
+        request,
+        signal: summary.signal
       });
       if (!written) {
+        if (!summary.signal?.aborted) {
+          await self.requests.updateOne(asked, { $set: { summaryFailed: true } });
+        }
         return checkpoint;
       }
       checkpoint = {
@@ -441,9 +490,26 @@ module.exports = (self) => {
       });
     },
 
-    // Adds a checkpoint to the chat; the chat with it
+    // Stores a checkpoint on the chat, in place of an earlier one of the
+    // same request: a revert falls back by request, so its latest is all
+    // a request needs. The chat with it
     async storeCheckpoint(chat, checkpoint) {
-      const checkpoints = [ ...(chat.checkpoints || []), checkpoint ];
+      const stored = chat.checkpoints || [];
+      const last = stored.at(-1);
+      const same = (last?.sequence === checkpoint.sequence) ? last : null;
+      const usage = { ...same?.summaryUsage };
+      for (const [ key, value ] of Object.entries(checkpoint.summaryUsage || {})) {
+        usage[key] = (usage[key] || 0) + value;
+      }
+      const checkpoints = [
+        ...(same ? stored.slice(0, -1) : stored),
+        {
+          ...checkpoint,
+          ...(same && { _id: same._id }),
+          summaries: (same?.summaries || 0) + (checkpoint.summaryUsage ? 1 : 0),
+          ...(Object.keys(usage).length && { summaryUsage: usage })
+        }
+      ];
       await self.chats.updateOne({
         _id: chat._id,
         ownerId: chat.ownerId

@@ -1788,6 +1788,36 @@ describe('AI tools', function() {
       assert.deepEqual(steps, [ 1 ]);
     });
 
+    it('betweenSteps receives the signal of the call, for the work it starts', async function() {
+      const req = apos.task.getReq();
+      const controller = new AbortController();
+      chatScript = [
+        toolTurn(toolCall('c1', 'echo', { value: 'one' })),
+        textTurn('done')
+      ];
+      const signals = [];
+      await apos.ai.generate(req, 'go', {
+        tools: [ 'echo' ],
+        signal: controller.signal,
+        betweenSteps: async ({ signal }) => {
+          signals.push(signal);
+        }
+      });
+      assert.deepEqual(signals, [ controller.signal ]);
+
+      chatScript = [
+        toolTurn(toolCall('c2', 'echo', { value: 'two' })),
+        textTurn('done')
+      ];
+      await apos.ai.generate(req, 'go', {
+        tools: [ 'echo' ],
+        betweenSteps: async (meta) => {
+          signals.push('signal' in meta);
+        }
+      });
+      assert.equal(signals.at(-1), false);
+    });
+
     it('a throwing betweenSteps stops the call', async function() {
       const req = apos.task.getReq();
       chatScript = [

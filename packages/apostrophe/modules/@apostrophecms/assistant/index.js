@@ -46,7 +46,8 @@ module.exports = {
     // The most tokens a chat gives the model; the model's own window when
     // that is lower
     contextLimit: 250000,
-    // The percent of that budget past which a chat is shortened, 10 to 90
+    // The percent of that budget past which a chat is shortened, 10 to 90,
+    // and at least 15000 tokens of it
     contextThreshold: 75
   },
   icons: {

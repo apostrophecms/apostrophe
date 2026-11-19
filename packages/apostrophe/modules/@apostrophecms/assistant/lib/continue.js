@@ -153,10 +153,14 @@ module.exports = (self) => {
   // runs on a job, which alone stores the carry's end once it starts
   async function startCarry(req, source, request, chat) {
     const base = getBase(source, request);
-    const replayed = await self.getReplayedRequests(source, {
+    const latest = self.getCheckpoint(source);
+    // As the source chat reads them now, its cleared reads left cleared
+    const requests = self.applyCheckpoint(latest && {
+      calls: latest.calls,
+      media: latest.media
+    }, await self.getReplayedRequests(source, {
       sequence: request.sequence + 1
-    });
-    const requests = replayed.filter(stored => stored.sequence > base.covers);
+    }, base.covers));
     if (!requests.length) {
       await endCarry(req, chat, { summary: base.summary });
       return;

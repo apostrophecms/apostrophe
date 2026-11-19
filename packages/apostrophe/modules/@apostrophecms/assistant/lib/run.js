@@ -2,6 +2,11 @@
 // started by a send or by the answer to an ask, and its end is stored on
 // the request record. Nothing holds the HTTP request open; the browser
 // follows the job over the notification poll and reads the records.
+//
+// A request may take several runs (an answer, a pause for shortening), one
+// at a time. Each has an id, on the record as `runId` before its job
+// starts, and a run's end is stored only while it is the request's. The
+// step limit is the request's: a run gets what the earlier ones left.
 
 const DOOR = 'assistant';
 const TITLE_MAX = 60;
@@ -122,13 +127,12 @@ module.exports = (self) => {
           await self.publishChat(req, claimed._id);
         }
         const earlier = await self.getReplayedRequests(claimed, request);
-        const shortened = await self.shortenBeforeSend(req, claimed, earlier, request);
-        const transcript = self.buildTranscript(shortened, earlier);
-        await self.startRun(req, shortened, request, {
-          messages: [ ...transcript, self.getUserMessage(request) ],
-          prior: transcript.length,
-          title
-        });
+        const before = self.measureSend(claimed, earlier, request);
+        if (self.isDue(claimed, before)) {
+          await shortenAndRun(earlier, before, title);
+        } else {
+          await run(claimed, earlier, title);
+        }
       } catch (e) {
         if (stored) {
           await self.endRun(req, claimed, request, { error: e });
@@ -147,6 +151,89 @@ module.exports = (self) => {
         throw e;
       }
       return self.getRequest(req, request._id);
+
+      async function run(chat, earlier, title) {
+        const transcript = self.buildTranscript(chat, earlier);
+        await self.startRun(req, chat, request, {
+          messages: [ ...transcript, self.getUserMessage(request) ],
+          prior: transcript.length,
+          title
+        });
+      }
+
+      // Shortening may take a model call, so it runs on a job, which then
+      // starts the run: its heartbeat keeps the request from reading as
+      // left behind, and a stop ends its summary
+      async function shortenAndRun(earlier, before, title) {
+        const jobs = self.apos.modules['@apostrophecms/job'];
+        const started = await jobs.run(req, async (workReq, reporting) => {
+          const controller = new AbortController();
+          const { signal } = controller;
+          let working = true;
+          watchStop();
+          try {
+            const shortened = await self.shortenBeforeSend(
+              req, claimed, earlier, request, {
+                before,
+                signal
+              }
+            );
+            if (signal.aborted) {
+              // Stopped meanwhile: it ends as a run stopped at its start
+              await self.endRun(req, claimed, request, {
+                result: {
+                  finishReason: 'cancel',
+                  messages: [ self.getUserMessage(request) ],
+                  usage: {}
+                },
+                prior: 0
+              });
+              return;
+            }
+            await run(shortened, earlier, title);
+          } catch (e) {
+            await self.endRun(req, claimed, request, { error: e });
+            throw e;
+          } finally {
+            working = false;
+          }
+
+          // A stop reaches this process through the job's record
+          async function watchStop() {
+            for (;;) {
+              await self.apos.ai.pause(self.apos.ai.options.jobPollInterval);
+              if (!working) {
+                break;
+              }
+              if (await reporting.isCanceling().catch(() => false)) {
+                controller.abort();
+                break;
+              }
+            }
+          }
+        }, {
+          notifications: false,
+          heartbeat: true,
+          userId: claimed.ownerId
+        });
+        if (!started?.jobId) {
+          throw self.apos.error('error', 'the job record could not be created');
+        }
+        // Unless the run has started already, with its own job
+        const unstarted = {
+          _id: request._id,
+          ownerId: request.ownerId,
+          runId: { $exists: false }
+        };
+        await self.requests.updateOne(unstarted, { $set: { jobId: started.jobId } });
+        // Stopped before the job's id was stored
+        if (await self.requests.findOne({
+          ...unstarted,
+          status: 'stopping'
+        })) {
+          await jobs.requestCancel(started.jobId);
+        }
+      }
 
       // The chat's one request at a time. A refusal is checked against a
       // request left behind by a process that died, once
@@ -317,13 +404,19 @@ module.exports = (self) => {
     // each slice standing on its own: reverted ones left out, a failed
     // request replayed as far as its run got, so a retry sees the calls
     // already made, and one the model never answered left out, its message
-    // coming back with Retry
-    async getReplayedRequests(chat, request) {
+    // coming back with Retry. Only those after the request `after`, by
+    // default the last one the chat's current summary covers
+    async getReplayedRequests(
+      chat, request, after = self.getCheckpoint(chat)?.summary?.covers ?? -1
+    ) {
       const earlier = await self.requests
         .find({
           chatId: chat._id,
           ownerId: chat.ownerId,
-          sequence: { $lt: request.sequence },
+          sequence: {
+            $gt: after,
+            $lt: request.sequence
+          },
           revertId: { $exists: false }
         })
         .project({
@@ -431,8 +524,9 @@ module.exports = (self) => {
       ];
     },
 
-    // Starts the request's run on a new job: a send, or the answer to an
-    // ask continuing the stored transcript (`toolInput`)
+    // Starts the request's run on a new job: a send, or a stored transcript
+    // continued after an answer to an ask (`toolInput`) or a pause.
+    // `request` is the record as stored now
     async startRun(req, chat, request, {
       messages, prior, toolInput, title
     }) {
@@ -441,64 +535,87 @@ module.exports = (self) => {
       const tools = self.apos.harness.getDoorTools(DOOR);
       const system = self.getRunInstructions(doorReq, chat);
       const toolNames = self.getRunTools();
-      // The run's progress goes out as the assistant's own events, each
-      // change only once it is stored (see events.js)
-      const { jobId } = await self.apos.ai.generateJob(doorReq, {
-        system,
-        messages,
-        tools: toolNames,
-        maxSteps: self.options.maxSteps,
-        ...(effort && { effort }),
-        ...(toolInput && {
-          pending: 'execute',
-          toolInput
-        }),
-        notify: false,
-        usageMetadata: { purpose: 'request' },
-        ...self.getProgressHooks(doorReq, request, tools),
-        // Past the threshold the run pauses for shortening and the request
-        // continues on a new run (`endRun`)
-        betweenSteps: async ({ usage, messages: sofar }) => {
-          await self.apos.harness.commitSeen(doorReq);
-          if (await self.shortenInRequest(doorReq, request, {
-            usage,
-            messages: sofar,
-            prior,
-            system,
-            tools: toolNames
-          })) {
-            return { stop: true };
-          }
-        },
-        onEnd: async (error, result) => {
-          await self.endRun(doorReq, chat, request, {
-            error,
-            result,
-            prior
-          });
-          if (title) {
-            await self.nameChat(req, chat, title, self.getPlainMessage(request.message));
-          }
-        }
-      });
-      // The run may have ended already: the job id is its own field.
+      const taken = (request.messages || [])
+        .filter(message => message.role === 'assistant').length;
+      const run = {
+        ...request,
+        runId: self.apos.util.generateId()
+      };
       // `prior` lets a run whose end was never stored be ended from its job
       await self.requests.updateOne({
         _id: request._id,
         ownerId: request.ownerId
       }, {
         $set: {
-          jobId,
+          runId: run.runId,
           prior
         }
       });
-      const stored = await self.requests.findOne({
+      let started;
+      try {
+        // The run's progress goes out as the assistant's own events, each
+        // change only once it is stored (see events.js)
+        started = await self.apos.ai.generateJob(doorReq, {
+          system,
+          messages,
+          tools: toolNames,
+          // A request that waited or paused has a step left at least
+          maxSteps: Math.max(self.options.maxSteps - taken, 1),
+          ...(effort && { effort }),
+          ...(toolInput && {
+            pending: 'execute',
+            toolInput
+          }),
+          notify: false,
+          usageMetadata: { purpose: 'request' },
+          ...self.getProgressHooks(doorReq, request, tools),
+          // Due a shortening, the run pauses for it and the request
+          // continues on a new run (`endRun`)
+          betweenSteps: async ({
+            usage, messages: sofar, signal
+          }) => {
+            await self.apos.harness.commitSeen(doorReq);
+            if (await self.shortenInRequest(doorReq, chat, request, {
+              usage,
+              messages: sofar,
+              prior,
+              system,
+              tools: toolNames,
+              signal
+            })) {
+              return { stop: true };
+            }
+          },
+          onEnd: async (error, result) => {
+            await self.endRun(doorReq, chat, run, {
+              error,
+              result,
+              prior
+            });
+            if (title) {
+              const message = self.getPlainMessage(request.message);
+              await self.nameChat(req, chat, title, message);
+            }
+          }
+        });
+      } catch (e) {
+        await self.endRun(doorReq, chat, run, { error: e });
+        throw e;
+      }
+      // The run may have ended already, or paused and gone on: its job is
+      // stored only while the run is the request's
+      const mine = {
         _id: request._id,
-        ownerId: request.ownerId
-      }, { projection: { status: 1 } });
+        ownerId: request.ownerId,
+        runId: run.runId
+      };
+      await self.requests.updateOne(mine, { $set: { jobId: started.jobId } });
       // Stopped before its job id was stored
-      if (stored?.status === 'stopping') {
-        await self.apos.modules['@apostrophecms/job'].requestCancel(jobId);
+      if (await self.requests.findOne({
+        ...mine,
+        status: 'stopping'
+      })) {
+        await started.cancel();
       }
     },
 
@@ -574,12 +691,13 @@ module.exports = (self) => {
      * second refusal fails the request, its reads cleared from what later
      * requests replay, so the chat goes on. Any other end frees the chat for
      * the next request and ends the request in the harness. A request
-     * already ended (by `reconcileChat`) is left as it is. What a run read
-     * shortened is stored as it was first stored.
+     * already ended (by `reconcileChat`), or on another run by now, is left
+     * as it is. What a run read shortened is stored as it was first stored.
      *
      * @param {object} req The run's `req`.
      * @param {object} chat
-     * @param {object} request The request as it was when the run started.
+     * @param {object} request The request as it was when the run started,
+     *   with the run's `runId`.
      * @param {object} end
      * @param {Error|object} [end.error] Why the run failed: an error, or
      *   one stored as `{ name, message }`.
@@ -597,13 +715,15 @@ module.exports = (self) => {
       }, {
         projection: {
           status: 1,
+          runId: 1,
           messages: 1,
           overflowRetried: 1,
           workStartedAt: 1,
           workedMs: 1
         }
       });
-      if (![ 'running', 'stopping' ].includes(current?.status)) {
+      if (![ 'running', 'stopping' ].includes(current?.status) ||
+        ((current.runId || null) !== (request.runId || null))) {
         return;
       }
       const partial = (error?.aposAiPartial && (prior !== undefined))
@@ -652,10 +772,12 @@ module.exports = (self) => {
           model: ran.model
         });
       } else if (error) {
-        set.error = {
-          name: error.name,
-          message: error.message
-        };
+        if (status === 'failed') {
+          set.error = {
+            name: error.name,
+            message: error.message
+          };
+        }
         // The work the run did before it failed stays on the record, its
         // calls without a result closed when replayed (`getReplayedRequests`),
         // so a retry knows what was already done
@@ -701,12 +823,14 @@ module.exports = (self) => {
       const { matchedCount } = await self.requests.updateOne({
         _id: request._id,
         ownerId: request.ownerId,
-        status: current.status
+        status: current.status,
+        runId: request.runId || { $exists: false }
       }, {
         $set: set,
-        // The next run's job is stored by `startRun`
+        // The next run's id and job are stored by `startRun`
         ...(status === 'running' && {
           $unset: {
+            runId: 1,
             jobId: 1,
             prior: 1
           }
@@ -729,7 +853,7 @@ module.exports = (self) => {
         }
         return;
       }
-      if (error) {
+      if (status === 'failed') {
         self.logError(req, 'run-failed', error.message, {
           chatId: chat._id,
           requestId: request._id,
@@ -752,8 +876,12 @@ module.exports = (self) => {
       await self.publishRequest(req, request);
 
       function getStatus() {
+        if (retry) {
+          return 'running';
+        }
         if (error) {
-          return retry ? 'running' : 'failed';
+          // Stopped while it didn't fit: stopped
+          return (overflow && (current.status === 'stopping')) ? 'stopped' : 'failed';
         }
         if (result.finishReason === 'cancel') {
           return 'stopped';

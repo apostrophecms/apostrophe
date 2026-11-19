@@ -75,9 +75,11 @@ module.exports = (self) => {
           workStartedAt: new Date(),
           ...(verified && { screen: verified })
         },
-        // The earlier run's job is over; this run's is stored by `startRun`.
-        // The run reads the screen as stored now, a shared one included
+        // The earlier run is over; this run's id and job are stored by
+        // `startRun`. The run reads the screen as stored now, a shared one
+        // included
         $unset: {
+          runId: 1,
           jobId: 1,
           prior: 1,
           screenChanged: 1

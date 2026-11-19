@@ -61,13 +61,15 @@ module.exports = (self) => {
       : null;
   }
 
-  // Continue in a new chat is suggested under the request whose send made
+  // Continue in a new chat is suggested under the request that wrote
   // every third summary, until dismissed
   function getSuggestion(chat) {
-    const written = (chat.checkpoints || []).filter(each => each.summaryUsage);
+    const written = (chat.checkpoints || []).filter(each => each.summaries);
     const last = written.at(-1);
-    if (!last || (written.length % SUGGEST_EVERY) ||
-      (chat.dismissedSuggestion === last._id)) {
+    const count = written.reduce((sum, each) => sum + each.summaries, 0);
+    const reached = Math.floor(count / SUGGEST_EVERY) >
+      Math.floor((count - (last?.summaries || 0)) / SUGGEST_EVERY);
+    if (!reached || (chat.dismissedSuggestion === last._id)) {
       return null;
     }
     return {
