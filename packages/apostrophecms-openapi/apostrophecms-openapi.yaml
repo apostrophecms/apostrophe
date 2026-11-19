@@ -109,6 +109,11 @@ tags:
     description: Site-wide styling controls
   - name: Submitted Drafts
     description: Draft submission workflow and review queue management
+  - name: Document Versions
+    description: |
+      The saved history of pages and pieces: list a document's versions, read one with its
+      changes, and list every change of a draft since its last publication (See Changes).
+      Restore a version by saving its content back with `_restoreVersion`.
   - name: Media
     description: File uploads, image management, and media organization
   - name: Attachments
@@ -122,7 +127,7 @@ x-tagGroups:
   - name: Start Here
     tags: [Authentication]
   - name: Content & Media
-    tags: [Pages, Global Content, Submitted Draft, Media, Attachments]
+    tags: [Pages, Global Content, Submitted Draft, Document Versions, Media, Attachments]
   - name: People
     tags: [Users]
   - name: Internationalization
@@ -1819,6 +1824,14 @@ components:
         Allows for patching of costom user added fields.
         It blocks the modification of the title, slu, and type fields.
       properties:
+        _strict:
+          $ref: '#/components/schemas/StrictPatchFlag'
+        _explicitSave:
+          $ref: '#/components/schemas/ExplicitSaveFlag'
+        _restoreVersion:
+          $ref: '#/components/schemas/RestoreVersionFlag'
+        _ai:
+          $ref: '#/components/schemas/AiSaveFlag'
         title:
           type: string
           description: Default title field
@@ -2664,6 +2677,12 @@ components:
         _copyingId:
           type: string
           description: Optional ID of existing page to copy properties from
+        _explicitSave:
+          $ref: '#/components/schemas/ExplicitSaveFlag'
+        _restoreVersion:
+          $ref: '#/components/schemas/RestoreVersionFlag'
+        _ai:
+          $ref: '#/components/schemas/AiSaveFlag'
         title:
           type: string
           description: Page title
@@ -2702,6 +2721,14 @@ components:
           - type: integer
             minimum: 0
           description: New position (required if moving page)
+        _strict:
+          $ref: '#/components/schemas/StrictPatchFlag'
+        _explicitSave:
+          $ref: '#/components/schemas/ExplicitSaveFlag'
+        _restoreVersion:
+          $ref: '#/components/schemas/RestoreVersionFlag'
+        _ai:
+          $ref: '#/components/schemas/AiSaveFlag'
         title:
           type: string
           description: Updated page title
@@ -3231,6 +3258,437 @@ components:
           - 'null'
           pattern: ^[a-fA-F0-9]{24}$
       title: AposPrimitives
+    ExplicitSaveFlag:
+      type: boolean
+      description: |
+        Marks a save the user asked for, such as Save Draft, rather than an autosave.
+        A draft save with `_explicitSave: true` starts a new document version instead of
+        updating the newest draft version in place. Not stored on the document.
+      example: true
+      title: ExplicitSaveFlag
+    RestoreVersionFlag:
+      type: string
+      description: |
+        The `_id` of the document version this save restores. Send it with the content of
+        that version, as `GET /@apostrophecms/document-versions/{_id}` returns it. The save
+        always records a new version, which names the restored one in `restoredFrom`.
+        Not stored on the document.
+      example: clx9v2k8f0000qz8h3m1a2b3c
+      title: RestoreVersionFlag
+    AiSaveFlag:
+      type: boolean
+      description: |
+        Marks a save whose content was written by an AI tool. The document version it
+        records has `ai: true`, and changes to and from AI-written content start a new
+        version. Not stored on the document.
+      example: true
+      title: AiSaveFlag
+    StrictPatchFlag:
+      type: boolean
+      description: |
+        Saves the patch only if the whole document is then valid, as a save from its editor
+        must be. Without it a patch is validated for the fields it names only. A patch that
+        would leave the document invalid is refused with `400` (`invalid`). Not stored on
+        the document.
+      example: true
+      title: StrictPatchFlag
+    DocVersion:
+      type: object
+      description: |
+        One saved version of a document. A version is recorded on each publish and at each
+        handoff of draft work: an explicit Save Draft, another author, a change in AI
+        involvement, or a draft older than the module's `draftInterval` (one day by default).
+        Autosaves in between update the newest draft version in place.
+      properties:
+        _id:
+          type: string
+          description: Version ID
+          example: clx9v2k8f0000qz8h3m1a2b3c
+        createdAt:
+          type: string
+          format: date-time
+          description: When the version was recorded. For a publication point, when it was published
+        updatedAt:
+          type: string
+          format: date-time
+          description: Only present on a draft version that later saves updated in place
+        mode:
+          type: string
+          enum:
+          - draft
+          - published
+          description: |
+            `published` for a publication point, `draft` for draft work. Documents without
+            modes record `published` versions only
+        author:
+          type: string
+          description: Title or username of the user who saved it, `SYSTEM` for a save without a user
+          example: Jane Editor
+        authorId:
+          type:
+          - string
+          - 'null'
+          description: "`_id` of that user, `null` for a save without a user"
+        ai:
+          type: boolean
+          description: |
+            Whether the content was saved with AI (`_ai: true`). Always `true` on a
+            consolidated version
+        restoredFrom:
+          type: object
+          description: Only present on a version that restored an older one
+          properties:
+            _id:
+              type: string
+              description: The restored version's ID
+            createdAt:
+              type: string
+              format: date-time
+              description: The restored version's `createdAt`
+        changeCount:
+          type: integer
+          minimum: 0
+          description: |
+            Number of changes since the previous version, as its change list shows them.
+            `0` for the first version and for a restore. Changes to fields the user may not
+            view are not counted
+        live:
+          type: boolean
+          description: |
+            Version lists only, on the newest item when it matches the current draft, so
+            restoring it would change nothing
+        versionIds:
+          type: array
+          items:
+            type: string
+          description: |
+            With `consolidate=1` only, on a consolidated version: the IDs of the
+            consecutive draft versions it stands for, newest first. One author's draft
+            versions saved with and without AI list as one consolidated version
+      required:
+      - _id
+      - createdAt
+      - mode
+      - author
+      - authorId
+      - ai
+      title: DocVersion
+    DocVersionPage:
+      type: object
+      description: One page of a document's versions, newest first
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocVersion'
+        next:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          description: Pass as `before` for the next page; `null` on the last page
+      required:
+      - results
+      - next
+      title: DocVersionPage
+    DocVersionDetail:
+      description: One version with the document content it holds
+      allOf:
+      - $ref: '#/components/schemas/DocVersion'
+      - type: object
+        properties:
+          doc:
+            type: object
+            additionalProperties: true
+            description: |
+              The document as this version stored it, with relationships and areas loaded as
+              a regular find loads them. With `annotate=1` it is marked with the changes of
+              the version: widgets carry `_inserted`, `_deleted` (a deleted widget is put
+              back in place), `_modified`, `_moved` or `_olderVersion`, with
+              `_changedWithAi` and `_movedWithAi` for changes made with AI. A changed
+              top-level field outside any widget is flagged in `aposMeta`
+          fields:
+            type: array
+            items:
+              $ref: '#/components/schemas/DocChangeRow'
+            description: |
+              With `annotate=1` only: the changes of fields a widget edits in place (rich
+              text and other WYSIWYG fields), keyed to the document by `patchKey`. Empty
+              when there are none
+        required:
+        - doc
+      title: DocVersionDetail
+    DocChangePathSegment:
+      type: object
+      description: One step of a change row's breadcrumb, from the top-level field down
+      properties:
+        name:
+          type: string
+          description: Schema field name, or the `_id` of an array item or widget
+        label:
+          type: string
+          description: |
+            The field's label, the array item's title (else `#n`), or the widget type's
+            label. Labels may be i18n keys, as the schema gives them
+        title:
+          type: string
+          description: Widgets only, when the widget type sets `titleField` and that field has text
+        ordinal:
+          type: integer
+          minimum: 1
+          description: Array items and widgets only, their 1-based position in their list
+        widgetType:
+          type: string
+          description: Widgets only, the widget type
+      required:
+      - label
+      title: DocChangePathSegment
+    DocChangeRow:
+      type: object
+      description: |
+        One change between two contents of a document. Rows come in schema order. An array
+        item, widget or object that exists on one side only is a single row. An array or area
+        whose items changed places has a row of its own for the order. Other properties may
+        be present; they are for the admin UI.
+      properties:
+        path:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocChangePathSegment'
+          description: Breadcrumb to the changed value, the top-level field first
+        type:
+          type: string
+          enum:
+          - added
+          - modified
+          - deleted
+        fieldType:
+          type: string
+          description: |
+            The schema type of the changed value (`string`, `relationship`, a project's own
+            type...), `arrayItem` or `widget` for a whole item or widget, `richText` for the
+            content of a rich text widget
+          example: string
+        kind:
+          type: string
+          enum:
+          - leaf
+          - richText
+          - object
+          - relationship
+          - array
+          - area
+          - arrayItem
+          - widget
+          description: What the row is, whatever its field type is called
+        old:
+          description: The older value as stored; absent when the value was added
+        new:
+          description: The newer value as stored; absent when the value was deleted
+        oldText:
+          type: string
+          description: The older value as text
+        newText:
+          type: string
+          description: The newer value as text
+        diff:
+          type: array
+          description: "`oldText` and `newText` compared word by word, in reading order"
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+              change:
+                type: string
+                enum:
+                - same
+                - added
+                - removed
+        formatChanges:
+          type: array
+          description: Modified rich text only, the formatting that changed (links, styles, images...)
+          items:
+            type: object
+            additionalProperties: true
+            properties:
+              type:
+                type: string
+                enum:
+                - added
+                - modified
+                - deleted
+              label:
+                type: string
+                description: What changed, such as "Link" or "Alignment"
+              text:
+                type: string
+                description: The words affected
+        fieldRows:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocChangeRow'
+          description: An array item added or deleted whole, the rows of its fields that have text
+        ai:
+          oneOf:
+          - type: boolean
+            enum:
+            - false
+          - type: string
+            enum:
+            - changed
+            - assisted
+          description: |
+            AI's part in the change. `changed` when a version saved with AI changed it,
+            `assisted` when a version saved without AI changed it after AI did, `false`
+            when AI never changed it
+        authors:
+          type: array
+          description: Draft changes only, everyone whose version changed this value, oldest first
+          items:
+            type: object
+            properties:
+              _id:
+                type:
+                - string
+                - 'null'
+              title:
+                type: string
+        changedAt:
+          type: string
+          format: date-time
+          description: Draft changes only, when the newest of those versions changed it
+        patchKey:
+          type: string
+          description: |
+            Where a PATCH of the document sets this value: dotted field names, or `@<_id>`
+            followed by field names below an array item, widget or object. Absent where no
+            key reaches the value without ambiguity
+          example: "@clx9w1a2b0001qz8hcontent1.content"
+        fieldId:
+          type: string
+          description: |
+            The `_id` of the schema field the row belongs to; for a whole array item or
+            widget, of the array or area holding it. Present with `patchKey`
+        editable:
+          type: boolean
+          enum:
+          - true
+          description: Draft changes only, present when the user may change the value at `patchKey`
+        restore:
+          type: object
+          description: |
+            Draft changes only: the PATCH body that puts the published value back, and the one
+            that undoes that. Send it to the document's PATCH endpoint, with `_strict: true`
+            to refuse a result that would leave the document invalid. Absent where a patch
+            cannot restore the value exactly
+          properties:
+            patch:
+              type: object
+              additionalProperties: true
+            inverse:
+              type: object
+              additionalProperties: true
+          required:
+          - patch
+          - inverse
+      required:
+      - path
+      - type
+      - fieldType
+      - kind
+      additionalProperties: true
+      title: DocChangeRow
+    DocChangeCounts:
+      type: object
+      description: Number of rows of each type, and of rows AI had a part in
+      properties:
+        added:
+          type: integer
+          minimum: 0
+        modified:
+          type: integer
+          minimum: 0
+        deleted:
+          type: integer
+          minimum: 0
+        ai:
+          type: integer
+          minimum: 0
+      required:
+      - added
+      - modified
+      - deleted
+      - ai
+      title: DocChangeCounts
+    DocVersionChangesResponse:
+      type: object
+      description: The change list of a version, against the version before it
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocChangeRow'
+        counts:
+          $ref: '#/components/schemas/DocChangeCounts'
+        versionIds:
+          type: array
+          items:
+            type: string
+          description: The versions the list covers, newest first; more than one for a consolidated version
+        compared:
+          type: boolean
+          description: |
+            `false` when there was nothing to compare: the first version of a document, or a
+            restore. `rows` is then empty
+      required:
+      - rows
+      - counts
+      - versionIds
+      - compared
+      title: DocVersionChangesResponse
+    DraftChangesResponse:
+      type: object
+      description: |
+        Every change of a draft since its last publication, each changed value once, credited
+        to the versions recorded since. This is what See Changes shows
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocChangeRow'
+        counts:
+          $ref: '#/components/schemas/DocChangeCounts'
+        baseline:
+          type: object
+          description: |
+            What the draft is compared with: its last publication, or for a document never
+            published, a new document of its type
+          properties:
+            kind:
+              type: string
+              enum:
+              - published
+              - default
+            at:
+              type:
+              - string
+              - 'null'
+              format: date-time
+              description: "`kind: published` only, the time of the last publication"
+          required:
+          - kind
+        doc:
+          type: object
+          additionalProperties: true
+          description: |
+            With `annotate=1` only: the draft marked with its changes, as
+            `DocVersionDetail.doc` describes
+      required:
+      - rows
+      - counts
+      - baseline
+      title: DraftChangesResponse
 
   responses:
     BadRequest:
@@ -4158,6 +4616,8 @@ paths:
         - Making incremental changes
 
         Can use MongoDB-style operators and dot notation for nested properties. Include `_targetId` and `_position` to move the page within the tree.
+
+        Include `_strict: true` to save only if the whole page is then valid, as the restore patches of `GET /@apostrophecms/document-versions/draft-changes` are sent.
       operationId: PagePatchById
       parameters:
         - $ref: '#/components/parameters/DocumentId'
@@ -4190,6 +4650,11 @@ paths:
                 summary: Update nested content with dot notation
                 value:
                   "description.items.0.content": "<p>Updated content</p>"
+              strict_patch:
+                summary: Patch only if the whole page stays valid
+                value:
+                  title: "About"
+                  _strict: true
       responses:
         '200':
           description: Page updated successfully
@@ -4225,6 +4690,8 @@ paths:
         - Replacing page content entirely
 
         Requires `_targetId` and `_position` for page tree positioning.
+
+        To restore a document version, send the content from `GET /@apostrophecms/document-versions/{_id}` with `_restoreVersion` set to that version's `_id`.
       operationId: PagePutById
       parameters:
         - $ref: '#/components/parameters/DocumentId'
@@ -4972,6 +5439,8 @@ paths:
             schema:
               type: object
               properties:
+                _strict:
+                  $ref: '#/components/schemas/StrictPatchFlag'
                 title:
                   type: string
                   description: Display name for the user
@@ -5444,6 +5913,12 @@ paths:
                 Only standard piece fields are shown below - actual available fields depend on
                 your project's global piece configuration.
               properties:
+                _explicitSave:
+                  $ref: '#/components/schemas/ExplicitSaveFlag'
+                _restoreVersion:
+                  $ref: '#/components/schemas/RestoreVersionFlag'
+                _ai:
+                  $ref: '#/components/schemas/AiSaveFlag'
                 _copyingId:
                   type: string
                   description: Optional ID of existing global document to copy properties from
@@ -6101,6 +6576,12 @@ paths:
             schema:
               type: object
               properties:
+                _explicitSave:
+                  $ref: '#/components/schemas/ExplicitSaveFlag'
+                _restoreVersion:
+                  $ref: '#/components/schemas/RestoreVersionFlag'
+                _ai:
+                  $ref: '#/components/schemas/AiSaveFlag'
                 title:
                   type: string
                   description: Styles document title
@@ -6395,7 +6876,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Styles'
+              allOf:
+                - $ref: '#/components/schemas/Styles'
+                - type: object
+                  properties:
+                    _strict:
+                      $ref: '#/components/schemas/StrictPatchFlag'
+                    _explicitSave:
+                      $ref: '#/components/schemas/ExplicitSaveFlag'
+                    _restoreVersion:
+                      $ref: '#/components/schemas/RestoreVersionFlag'
+                    _ai:
+                      $ref: '#/components/schemas/AiSaveFlag'
       responses:
         '200':
           description: Styles updated successfully
@@ -6734,6 +7226,12 @@ paths:
                 - title
                 - attachment
               properties:
+                _explicitSave:
+                  $ref: '#/components/schemas/ExplicitSaveFlag'
+                _restoreVersion:
+                  $ref: '#/components/schemas/RestoreVersionFlag'
+                _ai:
+                  $ref: '#/components/schemas/AiSaveFlag'
                 title:
                   type: string
                   example: "Beautiful Landscape"
@@ -7082,6 +7580,12 @@ paths:
                 - title
                 - attachment
               properties:
+                _explicitSave:
+                  $ref: '#/components/schemas/ExplicitSaveFlag'
+                _restoreVersion:
+                  $ref: '#/components/schemas/RestoreVersionFlag'
+                _ai:
+                  $ref: '#/components/schemas/AiSaveFlag'
                 title:
                   type: string
                   example: "Beautiful Landscape"
@@ -7135,6 +7639,14 @@ paths:
             schema:
               type: object
               properties:
+                _strict:
+                  $ref: '#/components/schemas/StrictPatchFlag'
+                _explicitSave:
+                  $ref: '#/components/schemas/ExplicitSaveFlag'
+                _restoreVersion:
+                  $ref: '#/components/schemas/RestoreVersionFlag'
+                _ai:
+                  $ref: '#/components/schemas/AiSaveFlag'
                 title:
                   type: string
                   example: "Beautiful Landscape"
@@ -7661,6 +8173,12 @@ paths:
                 - title
                 - attachment
               properties:
+                _explicitSave:
+                  $ref: '#/components/schemas/ExplicitSaveFlag'
+                _restoreVersion:
+                  $ref: '#/components/schemas/RestoreVersionFlag'
+                _ai:
+                  $ref: '#/components/schemas/AiSaveFlag'
                 title:
                   type: string
                   example: "Important Document"
@@ -7911,6 +8429,14 @@ paths:
             schema:
               type: object
               properties:
+                _strict:
+                  $ref: '#/components/schemas/StrictPatchFlag'
+                _explicitSave:
+                  $ref: '#/components/schemas/ExplicitSaveFlag'
+                _restoreVersion:
+                  $ref: '#/components/schemas/RestoreVersionFlag'
+                _ai:
+                  $ref: '#/components/schemas/AiSaveFlag'
                 title:
                   type: string
                   description: File title
@@ -7962,6 +8488,12 @@ paths:
                 - title
                 - attachment
               properties:
+                _explicitSave:
+                  $ref: '#/components/schemas/ExplicitSaveFlag'
+                _restoreVersion:
+                  $ref: '#/components/schemas/RestoreVersionFlag'
+                _ai:
+                  $ref: '#/components/schemas/AiSaveFlag'
                 title:
                   type: string
                   example: "Important Document"
@@ -8371,6 +8903,12 @@ paths:
               required:
                 - title
               properties:
+                _explicitSave:
+                  $ref: '#/components/schemas/ExplicitSaveFlag'
+                _restoreVersion:
+                  $ref: '#/components/schemas/RestoreVersionFlag'
+                _ai:
+                  $ref: '#/components/schemas/AiSaveFlag'
                 title:
                   type: string
                   example: "Hero Images"
@@ -8617,6 +9155,14 @@ paths:
             schema:
               type: object
               properties:
+                _strict:
+                  $ref: '#/components/schemas/StrictPatchFlag'
+                _explicitSave:
+                  $ref: '#/components/schemas/ExplicitSaveFlag'
+                _restoreVersion:
+                  $ref: '#/components/schemas/RestoreVersionFlag'
+                _ai:
+                  $ref: '#/components/schemas/AiSaveFlag'
                 title:
                   type: string
                   example: "Hero Images"
@@ -8667,6 +9213,12 @@ paths:
               required:
                 - title
               properties:
+                _explicitSave:
+                  $ref: '#/components/schemas/ExplicitSaveFlag'
+                _restoreVersion:
+                  $ref: '#/components/schemas/RestoreVersionFlag'
+                _ai:
+                  $ref: '#/components/schemas/AiSaveFlag'
                 title:
                   type: string
                   example: "Hero Images"
@@ -9069,6 +9621,12 @@ paths:
               required:
                 - title
               properties:
+                _explicitSave:
+                  $ref: '#/components/schemas/ExplicitSaveFlag'
+                _restoreVersion:
+                  $ref: '#/components/schemas/RestoreVersionFlag'
+                _ai:
+                  $ref: '#/components/schemas/AiSaveFlag'
                 title:
                   type: string
                   description: File tag name
@@ -9333,6 +9891,14 @@ paths:
             schema:
               type: object
               properties:
+                _strict:
+                  $ref: '#/components/schemas/StrictPatchFlag'
+                _explicitSave:
+                  $ref: '#/components/schemas/ExplicitSaveFlag'
+                _restoreVersion:
+                  $ref: '#/components/schemas/RestoreVersionFlag'
+                _ai:
+                  $ref: '#/components/schemas/AiSaveFlag'
                 title:
                   type: string
                   description: File tag name
@@ -9378,6 +9944,12 @@ paths:
               required:
                 - title
               properties:
+                _explicitSave:
+                  $ref: '#/components/schemas/ExplicitSaveFlag'
+                _restoreVersion:
+                  $ref: '#/components/schemas/RestoreVersionFlag'
+                _ai:
+                  $ref: '#/components/schemas/AiSaveFlag'
                 title:
                   type: string
                   description: File tag name
@@ -10528,6 +11100,300 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           description: Unprocessable entity - crop coordinates exceed image bounds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  # Document versions
+  /@apostrophecms/document-versions:
+    get:
+      tags:
+        - Document Versions
+      summary: List the versions of a document
+      description: |
+        Returns the versions of one document in one locale, newest first, ten per page.
+        Pass the `next` of a response as `before` to get the following page.
+
+        Only users who can edit the document can read its versions. Others get `404`, as
+        they do for a document whose type records no versions (`versions: false`, or
+        `autopublish: true` or `localized: false` without `versions: true`). A type with
+        `versions: false` still keeps its last two publications internally, for Undo
+        Publish, but they are not listed here.
+      operationId: DocumentVersionsGet
+      parameters:
+        - name: docId
+          in: query
+          required: true
+          description: |
+            The document's `_id`, with its locale, in either mode. The draft is always the
+            one checked for permission
+          schema:
+            type: string
+          example: ckhdscx5900054z9k88uqs16w:en:draft
+        - name: before
+          in: query
+          required: false
+          description: Only list versions older than this time; the `next` of the previous page
+          schema:
+            type: string
+            format: date-time
+        - name: consolidate
+          in: query
+          required: false
+          description: |
+            List one author's consecutive draft versions saved with and without AI as one
+            consolidated version, with `versionIds`. A page never ends in the middle of one
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Versions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocVersionPage'
+              example:
+                results:
+                  - _id: clx9v2k8f0000qz8h3m1a2b3c
+                    createdAt: '2026-10-21T14:05:12.000Z'
+                    updatedAt: '2026-10-21T15:40:03.000Z'
+                    mode: draft
+                    author: Jane Editor
+                    authorId: clx1u0a9z0000qz8habcdefgh
+                    ai: false
+                    changeCount: 3
+                    live: true
+                  - _id: clx9u7p3d0000qz8h9k8j7h6g
+                    createdAt: '2026-10-20T09:12:44.000Z'
+                    mode: published
+                    author: Jane Editor
+                    authorId: clx1u0a9z0000qz8habcdefgh
+                    ai: false
+                    changeCount: 1
+                next: '2026-10-20T09:12:44.000Z'
+        '400':
+          description: "`docId` is missing or malformed, or `before` is not a date"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/document-versions/draft-changes:
+    get:
+      tags:
+        - Document Versions
+      summary: List the changes of a draft since its last publication
+      description: |
+        Returns every change of the draft of a document since its last publication, each
+        changed value once, with who changed it and when. This is the list See Changes
+        shows. A document never published is compared with a new document of its type.
+
+        A row with `restore` carries the PATCH body that puts the published value back.
+        Send it to the document's PATCH endpoint with `_strict: true`.
+
+        Only for types whose drafts record versions: not `autopublish: true`, not
+        `localized: false`. Other types, and users who cannot edit the draft, get `404`.
+      operationId: DocumentVersionsDraftChangesGet
+      parameters:
+        - name: docId
+          in: query
+          required: true
+          description: The document's `_id` in either mode, with its locale
+          schema:
+            type: string
+          example: ckhdscx5900054z9k88uqs16w:en:draft
+        - name: annotate
+          in: query
+          required: false
+          description: Also return the draft marked with its changes, as `doc`
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Draft changes retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftChangesResponse'
+              example:
+                rows:
+                  - path:
+                      - name: title
+                        label: Title
+                    type: modified
+                    fieldType: string
+                    kind: leaf
+                    old: About
+                    new: About us
+                    oldText: About
+                    newText: About us
+                    diff:
+                      - text: About
+                        change: same
+                      - text: ' us'
+                        change: added
+                    ai: false
+                    authors:
+                      - _id: clx1u0a9z0000qz8habcdefgh
+                        title: Jane Editor
+                    changedAt: '2026-10-21T15:40:03.000Z'
+                    patchKey: title
+                    fieldId: clx1u0b2c0000qz8hfieldid01
+                    editable: true
+                    restore:
+                      patch:
+                        title: About
+                      inverse:
+                        title: About us
+                counts:
+                  added: 0
+                  modified: 1
+                  deleted: 0
+                  ai: 0
+                baseline:
+                  kind: published
+                  at: '2026-10-20T09:12:44.000Z'
+        '400':
+          description: "`docId` is missing or malformed"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/document-versions/{_id}:
+    get:
+      tags:
+        - Document Versions
+      summary: Get a version with its content
+      description: |
+        Returns one version with the document content it stored, loaded as a regular find
+        loads it. To restore the version, save that content back to the document's PUT
+        endpoint with `_restoreVersion` set to the version `_id`.
+
+        Changes to fields the user may not view are neither marked nor counted.
+      operationId: DocumentVersionsGetById
+      parameters:
+        - name: _id
+          in: path
+          required: true
+          description: Version ID
+          schema:
+            type: string
+          example: clx9v2k8f0000qz8h3m1a2b3c
+        - name: annotate
+          in: query
+          required: false
+          description: |
+            Mark the content with the changes of this version, and add `fields`. A first
+            version and a restore have no changes to mark
+          schema:
+            type: boolean
+            default: false
+        - name: consolidate
+          in: query
+          required: false
+          description: |
+            With `annotate`, mark the changes of the whole consolidated version this version
+            is the newest of
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Version retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocVersionDetail'
+        '400':
+          description: The version ID is malformed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: |
+            The version does not exist, belongs to a type without versions, or the user
+            cannot edit its document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/document-versions/{_id}/changes:
+    get:
+      tags:
+        - Document Versions
+      summary: Get the change list of a version
+      description: |
+        Returns the changes of one version against the version before it. `compared` is
+        `false`, and `rows` empty, for a first version and for a restore.
+      operationId: DocumentVersionsChangesGetById
+      parameters:
+        - name: _id
+          in: path
+          required: true
+          description: Version ID
+          schema:
+            type: string
+          example: clx9v2k8f0000qz8h3m1a2b3c
+        - name: consolidate
+          in: query
+          required: false
+          description: |
+            List the changes of the whole consolidated version this version is the newest
+            of, against the version before its oldest
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Version changes retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocVersionChangesResponse'
+        '400':
+          description: The version ID is malformed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '404':
+          description: |
+            The version does not exist, belongs to a type without versions, or the user
+            cannot edit its document
           content:
             application/json:
               schema:
