@@ -148,11 +148,25 @@ module.exports = (self) => {
           `${self.formatSize(max)}. Send a smaller or more compressed file.`
       );
     }
-    // Standard or URL-safe
-    if (!/^[A-Za-z0-9+/_-]+={0,2}$/.test(base64)) {
+    if (!isBase64(base64)) {
       throw refuse('"data" isn\'t valid base64.');
     }
     return Buffer.from(base64, 'base64');
+  }
+
+  // Standard or URL-safe base64, with up to two `=` of padding at the end.
+  // Checked by searching for one character out of place, not by matching
+  // the whole string with a repeated pattern: on a string of a few MB that
+  // pattern overflows the regular expression engine's stack inside a
+  // request
+  function isBase64(base64) {
+    const padding = base64.indexOf('=');
+    return (base64.length > 0) &&
+      !/[^A-Za-z0-9+/_=-]/.test(base64) &&
+      ((padding === -1) || (
+        (padding >= base64.length - 2) &&
+        (base64.slice(padding) === '='.repeat(base64.length - padding))
+      ));
   }
 
   // Stores the file as an attachment through the attachment module's

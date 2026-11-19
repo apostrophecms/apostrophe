@@ -1,4 +1,5 @@
 const assert = require('assert').strict;
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const t = require('../test-lib/test.js');
@@ -240,6 +241,17 @@ describe('MCP: image tools', function () {
 
         assert.equal(result.isError, true);
         assert.match(result.content[0].text, /isn't valid base64/);
+
+        // Padding only at the end, and no more than two
+        for (const data of [ 'ab=c', 'abc===' ]) {
+          const padded = await save(mode, {
+            data,
+            fileName: 'photo.jpg',
+            title: 'Photo',
+            alt: 'Photo'
+          });
+          assert.match(padded.content[0].text, /isn't valid base64/, data);
+        }
       });
 
       it('reads an image back as working links, with no image data', async function () {
@@ -477,4 +489,39 @@ describe('MCP: image tools with a project\'s own image sizes', function () {
       });
     });
   }
+});
+
+// The default size limit, so that a payload of several MB reaches the
+// base64 check. In a running site, checking a string that long with a
+// repeated pattern overflowed the regular expression engine's stack from
+// about 3 MB. That overflow doesn't happen under mocha, so this only shows
+// that a payload of several MB is checked and refused for what it is
+describe('MCP: image tools with a payload of several MB', function () {
+  this.timeout(t.timeout);
+
+  let apos;
+
+  before(async function () {
+    apos = await createMcpApos(module);
+  });
+
+  after(async function () {
+    await t.destroy(apos);
+  });
+
+  it('checks a 6 MB payload, refusing it as no image, not as an error', async function () {
+    const data = crypto.randomBytes(6 * 1024 * 1024).toString('base64');
+    const result = await withClient(apos, 'auto', client => client.callTool({
+      name: 'save_image_to_media',
+      arguments: {
+        data,
+        fileName: 'large.jpg',
+        title: 'Large',
+        alt: 'Large'
+      }
+    }));
+
+    assert.equal(result.isError, true);
+    assert.match(result.content[0].text, /isn't an image the media library takes/);
+  });
 });
