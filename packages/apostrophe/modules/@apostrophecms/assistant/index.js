@@ -187,12 +187,12 @@ module.exports = {
         chat: route(async (req) => {
           const chats = [];
           for (const chat of await self.listChats(req)) {
-            chats.push(await self.reconcileChat(req, chat));
+            chats.push(self.renderChat(await self.reconcileChat(req, chat)));
           }
           return { chats };
         }),
         'chat/:_id': route(async (req) => {
-          const chat = await getReconciledChat(req);
+          const chat = await getReconciledChat(req, { length: true });
           const requests = await self.getChatRequests(req, chat._id);
           const reverts = await self.getChatReverts(req, chat._id);
           return {
@@ -203,7 +203,7 @@ module.exports = {
         }),
         // What a request event changed: the request, and its chat's slot
         'chat/:_id/request/:requestId': route(async (req) => {
-          const chat = await getReconciledChat(req);
+          const chat = await getReconciledChat(req, { length: true });
           const request = await self.getChatRequest(req, chat._id,
             req.params.requestId);
           return {
@@ -303,6 +303,21 @@ module.exports = {
             revertId: req.body.revertId
           }))
         })),
+        // A new chat continuing this one from one of its requests, under
+        // the id the browser named it by: the answer is the new chat
+        'chat/:_id/continue': route(async (req) => {
+          const chat = await self.continueInNewChat(req, req.params._id, {
+            requestId: req.body.requestId,
+            chatId: req.body.chatId
+          });
+          return {
+            chat: self.renderChat(chat, { thread: true })
+          };
+        }),
+        'chat/:_id/suggestion-dismiss': route(async (req) => {
+          await self.dismissSuggestion(req, req.params._id, req.body.suggestionId);
+          return withChat(req, {});
+        }),
         screen: route(async (req) => {
           await self.postScreen(req, {
             tabId: req.body.tabId,
@@ -331,25 +346,22 @@ module.exports = {
       }
     };
 
-    // A chat as the panel reads it, without what it saw of each document
-    // and what its checkpoints shortened
-    async function getReconciledChat(req) {
-      const found = await self.getChat(req, req.params._id);
-      const {
-        seen, checkpoints, ...chat
-      } = await self.reconcileChat(req, found);
-      return chat;
+    // A chat as its thread reads it, the gauge's length with it while the
+    // chat is idle: a run holds the last one
+    async function getReconciledChat(req, { length = false } = {}) {
+      const chat = await self.reconcileChat(req, await self.getChat(req, req.params._id));
+      return self.renderChat(chat, {
+        thread: true,
+        length: (length && !chat.openRequest) ? await self.getChatLength(chat) : null
+      });
     }
 
     // An action's answer carries its chat as it is now, so the browser
     // shows the action's effect without reading again
     async function withChat(req, answer) {
-      const {
-        seen, checkpoints, ...chat
-      } = await self.getChat(req, req.params._id);
       return {
         ...answer,
-        chat
+        chat: self.renderChat(await self.getChat(req, req.params._id), { thread: true })
       };
     }
 
@@ -386,6 +398,7 @@ module.exports = {
       ...require('./lib/long-chats')(self),
       ...require('./lib/summaries')(self),
       ...require('./lib/revert')(self),
+      ...require('./lib/continue')(self),
       ...require('./lib/events')(self),
       ...require('./lib/markdown')(self),
       ...require('./lib/mentions')(self),

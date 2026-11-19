@@ -900,9 +900,15 @@ describe('Assistant: chats and the run', function () {
       await assert.rejects(answer(req, chat, 'tab-2', 'shown'), conflict('otherBrowserTab'));
       await assert.rejects(answer(req, chat, 'tab-1', 42), { name: 'invalid' });
       assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest.status, 'waiting');
+      assert(Number.isFinite(waiting.workedMs));
 
+      // The editor takes a while to answer
+      await new Promise(resolve => setTimeout(resolve, 300));
       await answer(req, chat, 'tab-1', 'shown');
       const done = await waitForEnd(req, chat);
+      // The time the assistant worked leaves the wait out
+      assert(done.workedMs >= waiting.workedMs);
+      assert(done.workedMs - waiting.workedMs < 300);
       assert.equal(done._id, waiting._id);
       assert.equal(done.status, 'completed');
       assert.equal(done.asks, null);

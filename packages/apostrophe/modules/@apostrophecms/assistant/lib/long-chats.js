@@ -84,7 +84,8 @@ module.exports = (self) => {
      *
      * @param {object} chat
      * @param {object[]} earlier The replayed requests (`getReplayedRequests`).
-     * @param {object} request The request being sent.
+     * @param {object} [request] The request being sent; without one, what
+     *   the next send gives the model before its message.
      * @returns {number}
      */
     measureSend(chat, earlier, request) {
@@ -115,8 +116,24 @@ module.exports = (self) => {
       }
       return base + self.estimateTokens([
         ...self.applyCheckpoint(checkpoint, added).flatMap(({ messages }) => messages),
-        self.getUserMessage(request)
+        ...(request ? [ self.getUserMessage(request) ] : [])
       ]);
+    },
+
+    /**
+     * How long a chat is as the panel's gauge shows it: `measure`, what the
+     * next send gives the model before its message, and `threshold`, where
+     * shortening starts, both in tokens.
+     *
+     * @param {object} chat The chat record, its checkpoints included.
+     * @returns {Promise<{ measure: number, threshold: number }>}
+     */
+    async getChatLength(chat) {
+      const earlier = await self.getReplayedRequests(chat, { sequence: Infinity });
+      return {
+        measure: self.measureSend(chat, earlier),
+        threshold: self.getThreshold()
+      };
     },
 
     // What the model reads at the next step of a running request: the
@@ -219,10 +236,7 @@ module.exports = (self) => {
           keep: KEEP_REQUESTS,
           // The chat as the latest request sent it
           continuation: () => ({
-            system: self.getRunInstructions(
-              self.getRunReq(req, chat, request),
-              self.getCheckpoint(chat)
-            ),
+            system: self.getRunInstructions(self.getRunReq(req, chat, request), chat),
             messages: self.buildTranscript(chat, earlier),
             tools: self.getRunTools()
           })
@@ -362,7 +376,8 @@ module.exports = (self) => {
       }
       const written = await self.writeSummary(req, chat, {
         requests,
-        previous: previous?.summary || null,
+        // A continued chat's first summary folds in the one it carried over
+        previous: previous?.summary || chat.carried?.summary || null,
         continuation: summary.continuation?.(),
         request
       });
@@ -391,17 +406,18 @@ module.exports = (self) => {
           : [])
       ];
       checkpoint.after = Math.max(
-        before - self.getReplaySize(previous, all) + self.getReplaySize(checkpoint, all),
+        before - self.getReplaySize(previous, all, chat) +
+          self.getReplaySize(checkpoint, all, chat),
         0
       );
       return checkpoint;
     },
 
     // What a checkpoint leaves of the requests and its summary, in tokens
-    getReplaySize(checkpoint, requests) {
+    getReplaySize(checkpoint, requests, chat) {
       const replayed = self.applyCheckpoint(checkpoint, requests)
         .flatMap(({ messages }) => messages);
-      return self.estimateTokens([ replayed, self.getSummarySection(checkpoint) ]);
+      return self.estimateTokens([ replayed, self.getSummarySection(checkpoint, chat) ]);
     },
 
     // A revert takes back what the checkpoints made at or after its first

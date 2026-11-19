@@ -8,6 +8,9 @@ const DOOR = 'assistant';
 // A step's arguments and result are a trail, not a reader: a document read
 // can run to tens of thousands of characters
 const STEP_TEXT_MAX = 2000;
+// The panel suggests continuing in a new chat after this many summaries,
+// and again after as many more
+const SUGGEST_EVERY = 3;
 
 module.exports = (self) => {
   // A request's tool calls in order, each with its arguments and its result
@@ -50,7 +53,74 @@ module.exports = (self) => {
     return `${text.slice(0, STEP_TEXT_MAX)}\n…`;
   }
 
+  // A summary as the panel shows it: the sections the editor can check and
+  // act on. What the assistant changed is in the thread, and what it
+  // learned about the site is its working notes
+  function previewSummary(summary) {
+    return summary
+      ? {
+        instructions: summary.instructions || [],
+        decisions: summary.decisions || [],
+        threads: summary.threads || []
+      }
+      : null;
+  }
+
+  // Continue in a new chat is suggested under the request whose send made
+  // every third summary, until dismissed
+  function getSuggestion(chat) {
+    const written = (chat.checkpoints || []).filter(each => each.summaryUsage);
+    const last = written.at(-1);
+    if (!last || (written.length % SUGGEST_EVERY) ||
+      (chat.dismissedSuggestion === last._id)) {
+      return null;
+    }
+    return {
+      _id: last._id,
+      sequence: last.sequence
+    };
+  }
+
   return {
+    /**
+     * A chat as the panel reads it, without what it saw of each document,
+     * what its checkpoints shortened and the summary it carried over as
+     * the model reads it. A read of the chat's thread adds `summary`, the
+     * current summary's sections the panel shows and `covers`, the last
+     * request it covers; `carriedSummary`, the same of the summary a
+     * continued chat carried over; `suggestion`, `{ _id, sequence }` when
+     * continuing in a new chat is suggested under that request; and, when
+     * given, `length` for the gauge (`getChatLength`). The chat list reads
+     * none of them, and the panel keeps the ones it has.
+     *
+     * @param {object} chat The chat record.
+     * @param {object} [options]
+     * @param {boolean} [options.thread] Add what the thread shows.
+     * @param {object} [options.length]
+     * @returns {object}
+     */
+    renderChat(chat, { thread = false, length = null } = {}) {
+      const {
+        seen, checkpoints, carried, dismissedSuggestion, ...rest
+      } = chat;
+      if (!thread) {
+        return rest;
+      }
+      const summary = self.getCheckpoint(chat)?.summary;
+      return {
+        ...rest,
+        summary: summary
+          ? {
+            ...previewSummary(summary),
+            covers: summary.covers
+          }
+          : null,
+        carriedSummary: previewSummary(carried?.summary),
+        suggestion: getSuggestion(chat),
+        ...(length && { length })
+      };
+    },
+
     /**
      * A request as the panel reads it: what the thread shows, never the
      * transcript. Its message stays as typed, which the panel shows with its

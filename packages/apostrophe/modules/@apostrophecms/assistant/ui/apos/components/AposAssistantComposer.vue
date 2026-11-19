@@ -85,26 +85,29 @@
         @key="onKey"
       />
       <div class="apos-assistant-composer__actions">
-        <button
-          v-if="canSelect"
-          type="button"
-          class="apos-assistant-composer__tool"
-          :aria-label="$t('apostrophe:assistantSelectOnPage')"
-          :title="$t('apostrophe:assistantSelectOnPage')"
-          data-apos-test="assistant-select-on-page"
-          @click="selectOnPage"
-        >
-          <svg
-            viewBox="0 0 18 18"
-            fill="currentColor"
-            aria-hidden="true"
+        <div class="apos-assistant-composer__tools">
+          <button
+            v-if="canSelect"
+            type="button"
+            class="apos-assistant-composer__tool"
+            :aria-label="$t('apostrophe:assistantSelectOnPage')"
+            :title="$t('apostrophe:assistantSelectOnPage')"
+            data-apos-test="assistant-select-on-page"
+            @click="selectOnPage"
           >
-            <path
-              fill-rule="nonzero"
-              d="M1,0 L2,0 L2,2 L0,2 L0,1 C0,0.44771525 0.44771525,0 1,0 M17,0 C17.5522847,0 18,0.44771525 18,1 L18,2 L16,2 L16,0 L17,0 M12,2 L12,0 L14,0 L14,2 L12,2 M8,2 L8,0 L10,0 L10,2 L8,2 M4,2 L4,0 L6,0 L6,2 L4,2 M4,18 L4,16 L6,16 L6,18 L4,18 M1,18 C0.44771525,18 0,17.5522847 0,17 L0,16 L2,16 L2,18 L1,18 M0,12 L2,12 L2,14 L0,14 L0,12 M0,8 L2,8 L2,10 L0,10 L0,8 M0,4 L2,4 L2,6 L0,6 L0,4 M18,8 L18,9.92037447 L11.2394414,9.92037447 L18,16.7535528 L16.554249,18 L9.89996565,11.2742385 L9.89996565,18 L8,18 L8,8 L18,8 Z M18,4 L18,6 L16,6 L16,4 L18,4 Z"
-            />
-          </svg>
-        </button>
+            <svg
+              viewBox="0 0 18 18"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="nonzero"
+                d="M1,0 L2,0 L2,2 L0,2 L0,1 C0,0.44771525 0.44771525,0 1,0 M17,0 C17.5522847,0 18,0.44771525 18,1 L18,2 L16,2 L16,0 L17,0 M12,2 L12,0 L14,0 L14,2 L12,2 M8,2 L8,0 L10,0 L10,2 L8,2 M4,2 L4,0 L6,0 L6,2 L4,2 M4,18 L4,16 L6,16 L6,18 L4,18 M1,18 C0.44771525,18 0,17.5522847 0,17 L0,16 L2,16 L2,18 L1,18 M0,12 L2,12 L2,14 L0,14 L0,12 M0,8 L2,8 L2,10 L0,10 L0,8 M0,4 L2,4 L2,6 L0,6 L0,4 M18,8 L18,9.92037447 L11.2394414,9.92037447 L18,16.7535528 L16.554249,18 L9.89996565,11.2742385 L9.89996565,18 L8,18 L8,8 L18,8 Z M18,4 L18,6 L16,6 L16,4 L18,4 Z"
+              />
+            </svg>
+          </button>
+          <AposAssistantGauge :chat-id="chatId" />
+        </div>
         <!-- One button, Send or Stop, so focus stays on it when it turns -->
         <button
           :type="stopShown ? 'button' : 'submit'"
@@ -112,7 +115,7 @@
           :disabled="!stopShown && !canSend"
           :aria-disabled="(stopShown && stopping) ? 'true' : null"
           :aria-label="$t(stopShown ? 'apostrophe:assistantStop' : 'apostrophe:assistantSend')"
-          :title="stopShown ? $t('apostrophe:assistantStop') : null"
+          :title="sendTitle"
           :data-apos-test="stopShown ? 'assistant-stop' : 'assistant-send'"
           @click="stopShown && stop()"
         >
@@ -128,12 +131,13 @@
 
 <script setup>
 import {
-  computed, onBeforeUnmount, onMounted, ref
+  computed, inject, onBeforeUnmount, onMounted, ref
 } from 'vue';
 import { createId } from 'apostrophe/lib/beneath.js';
 import { useAssistantStore } from '../stores/assistant.js';
 import AposAssistantInput from './AposAssistantInput.vue';
 import AposAssistantSelection from './AposAssistantSelection.vue';
+import AposAssistantGauge from './AposAssistantGauge.vue';
 
 // The composer of the active chat tab. It never takes focus on its own:
 // only the editor's click or Tab puts it there
@@ -144,6 +148,7 @@ const props = defineProps({
   }
 });
 
+const $t = inject('i18n');
 const store = useAssistantStore();
 const input = ref(null);
 const listId = `apos-assistant-mention-${createId()}`;
@@ -176,10 +181,13 @@ const draft = computed(() => store.drafts[props.chatId] || '');
 const chat = computed(() => store.getChat(props.chatId));
 const owner = computed(() => store.getOwner(chat.value));
 // A revert running or waiting on its confirmation is about to rewind the
-// thread: the composer takes a draft, Send waits
+// thread, and a continued chat waits for what it carries over: the composer
+// takes a draft, Send waits
+const carrying = computed(() => Boolean(chat.value?.carry));
 const canSend = computed(() => !!draft.value.trim() &&
   (owner.value === 'none') &&
   !chat.value?.openRevert &&
+  !carrying.value &&
   !store.confirmations[props.chatId]);
 // While the chat runs, an empty composer stops it, in any browser tab, and
 // so it does while a browser step works on this browser tab's screen
@@ -187,6 +195,14 @@ const running = computed(() => [ 'running', 'stopping' ].includes(chat.value?.op
   Boolean(store.getBrowserStep(chat.value)));
 const stopping = computed(() => chat.value?.openRequest?.status === 'stopping');
 const stopShown = computed(() => running.value && !draft.value.trim());
+const sendTitle = computed(() => {
+  if (stopShown.value) {
+    return $t('apostrophe:assistantStop');
+  }
+  return (carrying.value && draft.value.trim())
+    ? $t('apostrophe:assistantCarryingSend')
+    : null;
+});
 
 // A refused send says why; a chat running in another browser tab says it
 // can only be followed here, and one waiting there offers to continue here
@@ -495,6 +511,13 @@ function cancelPlan() {
     }
   }
 
+  .apos-assistant-composer__tools {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: auto;
+  }
+
   .apos-assistant-composer__tool {
     @include apos-button-reset();
 
@@ -503,7 +526,6 @@ function cancelPlan() {
       place-items: center;
       width: 23px;
       height: 23px;
-      margin-right: auto;
       color: var(--a-base-3);
       border-radius: var(--a-border-radius);
       transition: color 200ms, background-color 200ms;

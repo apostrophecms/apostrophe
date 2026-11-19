@@ -156,6 +156,8 @@ module.exports = (self) => {
           ownerId: self.getOwnerId(req),
           openRequest: null,
           openRevert: null,
+          // A continued chat takes its first message once its carry is done
+          carry: null,
           deleting: { $ne: true }
         }, {
           $set: {
@@ -437,7 +439,7 @@ module.exports = (self) => {
       const { effort } = self.options;
       const doorReq = self.getRunReq(req, chat, request);
       const tools = self.apos.harness.getDoorTools(DOOR);
-      const system = self.getRunInstructions(doorReq, self.getCheckpoint(chat));
+      const system = self.getRunInstructions(doorReq, chat);
       const toolNames = self.getRunTools();
       // The run's progress goes out as the assistant's own events, each
       // change only once it is stored (see events.js)
@@ -523,12 +525,13 @@ module.exports = (self) => {
       });
     },
 
-    // A run's instructions, the chat's current summary last
-    getRunInstructions(doorReq, checkpoint) {
+    // A run's instructions, the chat's current summary, or the one it
+    // carried over, last
+    getRunInstructions(doorReq, chat) {
       return self.apos.harness.getInstructions(doorReq, [
         self.getReplySection(),
         self.getScreenSection(),
-        self.getSummarySection(checkpoint)
+        self.getSummarySection(self.getCheckpoint(chat), chat)
       ]);
     },
 
@@ -595,7 +598,9 @@ module.exports = (self) => {
         projection: {
           status: 1,
           messages: 1,
-          overflowRetried: 1
+          overflowRetried: 1,
+          workStartedAt: 1,
+          workedMs: 1
         }
       });
       if (![ 'running', 'stopping' ].includes(current?.status)) {
@@ -627,7 +632,12 @@ module.exports = (self) => {
       const set = {
         status,
         updatedAt: now,
-        ...(![ 'waiting', 'running' ].includes(status) && { endedAt: now })
+        ...(![ 'waiting', 'running' ].includes(status) && { endedAt: now }),
+        // A wait for the editor or the end closes a stretch of work
+        ...((status !== 'running') && current.workStartedAt && {
+          workedMs: (current.workedMs || 0) +
+            Math.max(now - new Date(current.workStartedAt), 0)
+        })
       };
       if (status === 'running') {
         // The run paused for shortening, or is tried again: the part it
@@ -881,7 +891,7 @@ module.exports = (self) => {
      * reason is the error's `reason`: `requestOpen` (a request is open),
      * `otherBrowserTab` (another browser tab owns it), `notWaiting` (no ask
      * waits for an answer), `notRunning` (no request runs), `revertRunning`
-     * (a revert runs).
+     * (a revert runs), `carrying` (a continued chat's carry is not done).
      *
      * @param {object} chat
      * @param {object} [options]
@@ -905,6 +915,9 @@ module.exports = (self) => {
       }
       if (chat.openRevert) {
         return refuse('revertRunning', 'a revert is running in this chat');
+      }
+      if (chat.carry && !open) {
+        return refuse('carrying', 'the earlier chat is still being carried over');
       }
       if (open && tabId && (open.tabId !== tabId)) {
         return refuse('otherBrowserTab', 'the request is running in another browser tab');

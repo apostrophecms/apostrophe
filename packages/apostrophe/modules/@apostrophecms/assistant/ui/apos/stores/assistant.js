@@ -45,6 +45,12 @@ import { browserTools, releaseAhead } from '../lib/browser-tools.js';
  * clean revert runs at once, any other waits on the editor's confirmation,
  * which is this page's alone and never stored. Once a revert this page
  * started is done, the reverted message returns to the composer.
+ *
+ * Continue in a new chat opens the new chat's tab at once, named by the
+ * browser, and its thread shows the carry until the server says it is
+ * done. A read of a chat's thread brings what only the thread shows (see
+ * `THREAD_FIELDS`); the chat list doesn't, and a chat keeps the ones it
+ * has.
  */
 
 export const NEW_CHAT = 'new';
@@ -56,6 +62,10 @@ const SERVED_KINDS = [ 'browser', 'editMode' ];
 const LOAD_DELAY = 50;
 // A request not stored yet sorts last, where its record lands
 const PENDING_SEQUENCE = Number.MAX_SAFE_INTEGER;
+// What a read of a chat's thread brings and the chat list doesn't: the
+// current summary, the carried one, the suggestion and the gauge's length.
+// The length comes only while the chat is idle: a run holds the last one
+const THREAD_FIELDS = [ 'summary', 'carriedSummary', 'suggestion', 'length' ];
 
 export const useAssistantStore = defineStore('assistant', () => {
   const { getScreen } = useScreen();
@@ -273,7 +283,9 @@ export const useAssistantStore = defineStore('assistant', () => {
     retryRevert: foldRetryRevert,
     dismissRevert: foldDismissRevert,
     rename: foldRename,
-    delete: foldDelete
+    delete: foldDelete,
+    continue: foldContinue,
+    dismissSuggestion: foldDismissSuggestion
   };
 
   // The chat's open request changed in the chat and in its record, when
@@ -409,6 +421,37 @@ export const useAssistantStore = defineStore('assistant', () => {
         title: data.title
       }
     };
+  }
+
+  // A new chat on its way, or its failed carry started again: carrying from
+  // the click
+  function foldContinue(view, { data }) {
+    return {
+      ...view,
+      chat: {
+        ...(view.chat || {
+          _id: data.chatId,
+          title: null,
+          openRequest: null,
+          openRevert: null,
+          continuedFrom: data.continuedFrom,
+          createdAt: data.createdAt
+        }),
+        carry: { status: 'running' }
+      }
+    };
+  }
+
+  function foldDismissSuggestion(view, { key }) {
+    return (view.chat?.suggestion?._id === key)
+      ? {
+        ...view,
+        chat: {
+          ...view.chat,
+          suggestion: null
+        }
+      }
+      : view;
   }
 
   function foldDelete(view) {
@@ -624,7 +667,34 @@ export const useAssistantStore = defineStore('assistant', () => {
       progress.value[requestId] = { retrying: true };
     } else if (stage === 'summary') {
       progress.value[requestId] = { label: 'apostrophe:assistantSummarizing' };
+    } else if (stage === 'carry') {
+      applyCarry(chatId, event.status);
+    } else if (stage === 'suggestion') {
+      const chat = getChatRecord(chatId);
+      if (chat?.suggestion?._id === event.dismissed) {
+        setChat({
+          ...chat,
+          suggestion: null
+        });
+      }
     }
+  }
+
+  // A carry's end, set at once; the chat is read for what it carried over
+  function applyCarry(id, status) {
+    const chat = getChatRecord(id);
+    if (!chat) {
+      if (!actions.value[id]) {
+        schedule('chats');
+      }
+      return;
+    }
+    stamps.set(`chat:${id}`, ++clock);
+    setChat({
+      ...chat,
+      carry: (status === 'done') ? null : { status }
+    });
+    schedule(id);
   }
 
   function hear(id, {
@@ -778,8 +848,11 @@ export const useAssistantStore = defineStore('assistant', () => {
     if (!isCurrent('chats', null, tick)) {
       return;
     }
-    // Newest first, as the server lists them
+    // Newest first, as the server lists them, each keeping what its thread
+    // read brought
+    const before = new Map(chats.value.map(chat => [ chat._id, chat ]));
     chats.value = merge('chat', chats.value, result.chats, tick)
+      .map(chat => keepThreadFields(chat, before.get(chat._id)))
       .sort((one, two) => String(two.createdAt).localeCompare(String(one.createdAt)));
     loaded.value = true;
     rememberTabs();
@@ -1225,8 +1298,21 @@ export const useAssistantStore = defineStore('assistant', () => {
     if (index === -1) {
       chats.value = [ chat, ...chats.value ];
     } else {
-      chats.value.splice(index, 1, chat);
+      chats.value.splice(index, 1, keepThreadFields(chat, chats.value[index]));
     }
+  }
+
+  function keepThreadFields(chat, earlier) {
+    if (!earlier || (earlier === chat)) {
+      return chat;
+    }
+    const kept = { ...chat };
+    for (const field of THREAD_FIELDS) {
+      if (!(field in kept) && (field in earlier)) {
+        kept[field] = earlier[field];
+      }
+    }
+    return kept;
   }
 
   // A chat that is gone: deleted here, in another browser tab, or not found
@@ -1271,10 +1357,15 @@ export const useAssistantStore = defineStore('assistant', () => {
   }
 
   // The chat tab to the right of a closed active one takes its place, else
-  // the one to its left, else a new chat
+  // the one to its left, else a new chat. A continued chat whose carry
+  // failed is dropped with its chat tab
   function closeTab(id) {
     const index = tabs.value.indexOf(id);
     if (index === -1) {
+      return;
+    }
+    if (getChat(id)?.carry?.status === 'failed') {
+      remove(id);
       return;
     }
     tabs.value.splice(index, 1);
@@ -1847,6 +1938,100 @@ export const useAssistantStore = defineStore('assistant', () => {
   }
 
   /**
+   * Continues a chat in a new chat from one of its requests: the new chat's
+   * tab opens at once, active, right of the chat's, carrying over what the
+   * chat knew. Refused, the tab closes and the chat's tab says why.
+   *
+   * @param {string} id
+   * @param {string} requestId
+   */
+  async function continueInNewChat(id, requestId) {
+    const chatId = createId();
+    const index = tabs.value.indexOf(id);
+    tabs.value.splice((index === -1) ? 0 : index + 1, 0, chatId);
+    activeId.value = chatId;
+    rememberTabs();
+    await carry(chatId, {
+      chatId: id,
+      requestId,
+      title: getChat(id)?.title || null
+    }, {
+      refused(e) {
+        if (tabs.value.includes(chatId)) {
+          tabs.value.splice(tabs.value.indexOf(chatId), 1);
+          if (activeId.value === chatId) {
+            activeId.value = tabs.value.includes(id) ? id : (tabs.value[0] || NEW_CHAT);
+          }
+          if (!tabs.value.length) {
+            tabs.value.push(NEW_CHAT);
+          }
+          rememberTabs();
+        }
+        fail(id, e, { always: true });
+      }
+    });
+  }
+
+  /**
+   * Starts a continued chat's failed carry again.
+   *
+   * @param {string} id
+   */
+  async function retryCarry(id) {
+    const { continuedFrom } = getChat(id) || {};
+    if (continuedFrom) {
+      await carry(id, continuedFrom, { refused: e => fail(id, e, { always: true }) });
+    }
+  }
+
+  // The new chat exists from the click; its answer settles it, its thread
+  // read once the carry ends
+  function carry(chatId, continuedFrom, { refused }) {
+    return act('continue', chatId, {
+      data: {
+        chatId,
+        continuedFrom,
+        createdAt: new Date().toISOString()
+      },
+      post: () => apos.http.post(`${getAction()}/chat/${continuedFrom.chatId}/continue`, {
+        body: {
+          requestId: continuedFrom.requestId,
+          chatId
+        }
+      }),
+      check: async () => {
+        try {
+          return { chat: (await apos.http.get(`${getAction()}/chat/${chatId}`, {})).chat };
+        } catch (e) {
+          return null;
+        }
+      },
+      taken() {
+        requests.value[chatId] = requests.value[chatId] || [];
+        reverts.value[chatId] = reverts.value[chatId] || [];
+      },
+      refused
+    });
+  }
+
+  /**
+   * Dismisses the suggestion to continue in a new chat, in every browser
+   * tab.
+   *
+   * @param {string} id
+   * @param {string} suggestionId
+   */
+  async function dismissSuggestion(id, suggestionId) {
+    await act('dismissSuggestion', id, {
+      key: suggestionId,
+      post: () => apos.http.post(`${getAction()}/chat/${id}/suggestion-dismiss`, {
+        body: { suggestionId }
+      }),
+      refused: e => fail(id, e)
+    });
+  }
+
+  /**
    * Cancels the plan of the chat's latest request: stops it if it is open
    * and waits for it to end, then reverts it as any revert, asking first
    * when it isn't clean.
@@ -2072,6 +2257,9 @@ export const useAssistantStore = defineStore('assistant', () => {
     retryRevert,
     dismissRevert,
     cancelPlan,
+    continueInNewChat,
+    retryCarry,
+    dismissSuggestion,
     findMentions,
     setDraft
   };

@@ -72,6 +72,7 @@ module.exports = (self) => {
           status: 'running',
           asks: null,
           updatedAt: new Date(),
+          workStartedAt: new Date(),
           ...(verified && { screen: verified })
         },
         // The earlier run's job is over; this run's is stored by `startRun`.

@@ -21,13 +21,18 @@ module.exports = (self) => {
      * job is abandoned or gone, or that never got one, ends the request as
      * failed; a job that ended while its end was never stored ends the
      * request from the job's record; a skip or an answer cut short ends the
-     * request as failed.
+     * request as failed. A continued chat's carry is reconciled as a run is
+     * (`reconcileCarry`).
      *
      * @param {object} req
      * @param {object} chat
      * @returns {Promise<object>} The chat as it is now.
      */
     async reconcileChat(req, chat) {
+      if ((chat.carry?.status === 'running') && !chat.deleting) {
+        await self.reconcileCarry(req, chat);
+        return self.getChat(req, chat._id);
+      }
       if (chat.openRevert && !chat.deleting) {
         await self.reconcileRevert(req, chat);
         return self.getChat(req, chat._id);

@@ -349,6 +349,11 @@ describe('Assistant: long chats', function () {
       const [ listed ] = (await apos.assistant.listChats(req))
         .filter(({ _id }) => _id === chat._id);
       assert.equal(listed.checkpoints, undefined);
+      // Silent: no summary, so no divider
+      const shortened = await apos.assistant.getChat(req, chat._id);
+      const panel = apos.assistant.renderChat(shortened, { thread: true });
+      assert.equal(panel.summary, null);
+      assert.equal(panel.checkpoints, undefined);
 
       // Under the threshold again: the next send makes no checkpoint and
       // still replays the cleared read as cleared
@@ -902,6 +907,280 @@ describe('Assistant: long chats', function () {
       });
       assert.deepEqual(checked.instructions, [ 'Always use  British spelling from now on.' ]);
       assert(first.sequence < fourth.sequence);
+    });
+
+    describe('continue in a new chat', function () {
+      // A chat whose current summary covers its first request, the
+      // requests made, and the request whose send summarized
+      async function buildSummarizedChat(req, prefix) {
+        const chat = await apos.assistant.createChat(req);
+        const [ first, second, third ] = await buildLongChat(req, chat, prefix);
+        script = summarizing(() => summaryTurn({
+          instructions: [ 'Always use British spelling from now on.' ],
+          decisions: [ 'Read the pages in order.' ],
+          changes: [ 'Nothing changed yet.' ],
+          threads: [ 'The fourth page is still to read.' ],
+          learned: [ 'Pages are long.' ]
+        }), [ textTurn('Next.', 100) ]);
+        const fourth = await runToEnd(req, chat, 'What next?');
+        return {
+          chat: await apos.assistant.getChat(req, chat._id),
+          requests: [ first, second, third, fourth ]
+        };
+      }
+
+      async function continueFrom(req, chat, request, chatId = apos.util.generateId()) {
+        await apos.assistant.continueInNewChat(req, chat._id, {
+          requestId: request._id,
+          chatId
+        });
+        let continued;
+        await waitFor(async () => {
+          continued = await apos.assistant.getChat(req, chatId);
+          const job = continued.carry?.jobId &&
+            await apos.modules['@apostrophecms/job'].db.findOne({ _id: continued.carry.jobId });
+          return (continued.carry?.status !== 'running') && (!job || job.ended);
+        });
+        return continued;
+      }
+
+      it('reuses the current summary when it ends at the request, with no model call', async function () {
+        const req = userReq();
+        const { chat, requests: [ first ] } = await buildSummarizedChat(req, 'c1');
+        calls.length = 0;
+        const continued = await continueFrom(req, chat, first);
+        assert.equal(calls.length, 0);
+        assert.equal(continued.carry, null);
+        assert.equal(continued.title, null);
+        assert.deepEqual(continued.continuedFrom, {
+          chatId: chat._id,
+          requestId: first._id,
+          title: chat.title
+        });
+        assert.deepEqual(continued.carried.summary.instructions,
+          [ 'Always use British spelling from now on.' ]);
+        assert.equal(continued.carried.summary.covers, undefined);
+        // The source chat is as it was
+        const after = await apos.assistant.getChat(req, chat._id);
+        assert.deepEqual(after.checkpoints, chat.checkpoints);
+
+        // The new chat's first request reads the carried summary, dated, and
+        // nothing of the earlier chat's messages
+        script = null;
+        await runToEnd(req, continued, 'Now the contact page');
+        const [ run ] = calls;
+        assert.match(run.system, /carried over on \d{4}-\d{2}-\d{2}/);
+        assert.match(run.system, /STANDING INSTRUCTIONS:\n- Always use British spelling from now on\./);
+        assert.doesNotMatch(run.system, /Earlier messages of this chat were replaced/);
+        assert.deepEqual(userTexts(run.messages), [ 'Now the contact page' ]);
+      });
+
+      it('folds the requests after the summary up to the request into it, nothing later', async function () {
+        const req = userReq();
+        const { chat, requests: [ , second ] } = await buildSummarizedChat(req, 'c2');
+        calls.length = 0;
+        usageRecords.length = 0;
+        script = summarizing(() => summaryTurn({
+          instructions: [ 'Always use British spelling from now on.', 'Read second' ],
+          decisions: [ 'Read the pages in order.', 'Second read.' ]
+        }), []);
+        const continued = await continueFrom(req, chat, second);
+        assert.equal(continued.carry, null);
+        assert.equal(calls.length, 1);
+        assert(isSeparateSummary(calls[0]));
+        const text = calls[0].messages[0].content.map(part => part.text).join('\n');
+        assert.match(text, /DECISIONS:\n- Read the pages in order\./);
+        assert.match(text, /EDITOR: .*Read second/);
+        assert.doesNotMatch(text, /Read third|What next\?|Read first/);
+        assert.deepEqual(usageRecords.map(record => record.metadata.purpose), [ 'summary' ]);
+        // Instructions are checked against the earlier chat
+        assert.deepEqual(continued.carried.summary.instructions,
+          [ 'Always use British spelling from now on.', 'Read second' ]);
+        assert.deepEqual(continued.carried.summary.decisions,
+          [ 'Read the pages in order.', 'Second read.' ]);
+      });
+
+      it('summarizes the stored chat up to the request when no summary ends before it', async function () {
+        const req = userReq();
+        const chat = await apos.assistant.createChat(req);
+        script = null;
+        const first = await runToEnd(req, chat, 'Always use British spelling from now on. Read first');
+        await runToEnd(req, chat, 'Read second');
+        calls.length = 0;
+        script = summarizing(() => summaryTurn({
+          instructions: [ 'Always use British spelling from now on.' ]
+        }), []);
+        const continued = await continueFrom(req, chat, first);
+        assert.equal(calls.length, 1);
+        const text = calls[0].messages[0].content.map(part => part.text).join('\n');
+        assert.match(text, /^The chat:/);
+        assert.doesNotMatch(text, /Read second/);
+        assert.deepEqual(continued.carried.summary.instructions,
+          [ 'Always use British spelling from now on.' ]);
+      });
+
+      it('is refused while the chat runs, and takes no message until its carry is done', async function () {
+        const req = userReq();
+        const chat = await apos.assistant.createChat(req);
+        script = null;
+        const first = await runToEnd(req, chat, 'Read first');
+        await apos.assistant.chats.updateOne({ _id: chat._id }, {
+          $set: {
+            openRequest: {
+              _id: 'elsewhere',
+              tabId: 'tab-2',
+              status: 'running'
+            }
+          }
+        });
+        try {
+          await assert.rejects(continueFrom(req, chat, first),
+            e => e.data?.reason === 'requestOpen');
+        } finally {
+          await apos.assistant.chats.updateOne({ _id: chat._id }, {
+            $set: { openRequest: null }
+          });
+        }
+
+        // A summary that can't be read fails the carry: no message is taken
+        script = () => textTurn('I can not.', 50);
+        const chatId = apos.util.generateId();
+        const failed = await continueFrom(req, chat, first, chatId);
+        assert.equal(failed.carry.status, 'failed');
+        await assert.rejects(apos.assistant.send(req, chatId, {
+          message: 'Hello',
+          screen: { tabId: 'tab-1' }
+        }), e => e.data?.reason === 'carrying');
+
+        // The same id starts it again
+        script = summarizing(() => summaryTurn({ decisions: [ 'Read first.' ] }), []);
+        const continued = await continueFrom(req, chat, first, chatId);
+        assert.equal(continued.carry, null);
+        assert.deepEqual(continued.carried.summary.decisions, [ 'Read first.' ]);
+        // Another request's id, or another chat's, is not found
+        const other = apos.util.generateId();
+        await assert.rejects(apos.assistant.continueInNewChat(req, other, {
+          requestId: first._id,
+          chatId
+        }), e => e.name === 'notfound');
+      });
+
+      it('fails a carry whose process died', async function () {
+        const req = userReq();
+        const chat = await apos.assistant.createChat(req);
+        script = null;
+        const first = await runToEnd(req, chat, 'Read first');
+        const chatId = apos.util.generateId();
+        await apos.assistant.createChat(req, {
+          _id: chatId,
+          continuedFrom: {
+            chatId: chat._id,
+            requestId: first._id,
+            title: chat.title
+          }
+        });
+        const old = new Date(Date.now() - (2 * apos.modules['@apostrophecms/job'].options.abandonAfter));
+        await apos.assistant.chats.updateOne({ _id: chatId }, {
+          $set: { 'carry.updatedAt': old }
+        });
+        const reconciled = await apos.assistant.reconcileChat(req,
+          await apos.assistant.getChat(req, chatId));
+        assert.equal(reconciled.carry.status, 'failed');
+      });
+
+      it('keeps carried instructions in the new chat\'s own summaries', async function () {
+        const req = userReq();
+        const { chat, requests: [ first ] } = await buildSummarizedChat(req, 'c3');
+        const continued = await continueFrom(req, chat, first);
+        const checked = await apos.assistant.checkInstructions(continued, {
+          instructions: [ 'Always use British spelling from now on.', 'Made up.' ]
+        });
+        assert.deepEqual(checked.instructions, [ 'Always use British spelling from now on.' ]);
+
+        // Its first summary folds in the carried one, which stays for
+        // "Continued from"
+        await buildLongChat(req, continued, 'c3n');
+        calls.length = 0;
+        script = summarizing(() => summaryTurn({
+          instructions: [ 'Always use British spelling from now on.' ],
+          decisions: [ 'Kept going.' ]
+        }), [ textTurn('Next.', 100) ]);
+        await runToEnd(req, continued, 'What next?');
+        const [ step, run ] = calls;
+        assert.match(step.system, /carried over on/);
+        assert.match(run.system, /Earlier messages of this chat were replaced/);
+        assert.doesNotMatch(run.system, /carried over on/);
+        const stored = await apos.assistant.getChat(req, continued._id);
+        assert.deepEqual(stored.checkpoints.at(-1).summary.instructions,
+          [ 'Always use British spelling from now on.' ]);
+        assert(stored.carried.summary);
+      });
+
+      it('leaves either chat as it is when the other reverts', async function () {
+        const req = userReq();
+        const chat = await apos.assistant.createChat(req);
+        script = null;
+        const first = await runToEnd(req, chat, 'Always use British spelling. Read first');
+        const second = await runToEnd(req, chat, 'Read second');
+        script = summarizing(() => summaryTurn({ instructions: [ 'Always use British spelling.' ] }), []);
+        const continued = await continueFrom(req, chat, first);
+        script = null;
+        const own = await runToEnd(req, continued, 'Go on');
+
+        await revert(continued, own);
+        let source = await apos.assistant.getChatRequests(req, chat._id);
+        assert(source.every(request => !request.revertId));
+        await revert(chat, second);
+        source = await apos.assistant.getChatRequests(req, chat._id);
+        assert.deepEqual(source.map(request => Boolean(request.revertId)),
+          [ false, true ]);
+        const stored = await apos.assistant.getChat(req, continued._id);
+        assert.deepEqual(stored.carried.summary.instructions, [ 'Always use British spelling.' ]);
+        const ownRequests = await apos.assistant.getChatRequests(req, continued._id);
+        assert.equal(ownRequests.length, 1);
+        assert(ownRequests[0].revertId);
+      });
+
+      it('shows the panel the summary preview, its length and the suggestion after every third summary', async function () {
+        const req = userReq();
+        const { chat } = await buildSummarizedChat(req, 'c4');
+        const panel = apos.assistant.renderChat(chat, { thread: true });
+        assert.equal(panel.checkpoints, undefined);
+        assert.deepEqual(panel.summary, {
+          instructions: [ 'Always use British spelling from now on.' ],
+          decisions: [ 'Read the pages in order.' ],
+          threads: [ 'The fourth page is still to read.' ],
+          covers: chat.checkpoints[0].summary.covers
+        });
+        assert.equal(panel.carriedSummary, null);
+        assert.equal(panel.suggestion, null);
+        assert.equal(apos.assistant.renderChat(chat).summary, undefined);
+
+        const length = await apos.assistant.getChatLength(chat);
+        assert.equal(length.threshold, 6000);
+        assert(length.measure > 0);
+
+        // Three summaries: suggested under the request whose send made the
+        // third, until dismissed
+        const written = {
+          ...chat.checkpoints[0],
+          _id: 'third'
+        };
+        const three = {
+          ...chat,
+          checkpoints: [ chat.checkpoints[0], chat.checkpoints[0], written ]
+        };
+        assert.deepEqual(apos.assistant.renderChat(three, { thread: true }).suggestion, {
+          _id: 'third',
+          sequence: written.sequence
+        });
+        assert.equal(apos.assistant.renderChat({
+          ...three,
+          dismissedSuggestion: 'third'
+        }, { thread: true }).suggestion, null);
+        await apos.assistant.dismissSuggestion(req, chat._id, 'third');
+        assert.equal((await apos.assistant.getChat(req, chat._id)).dismissedSuggestion, 'third');
+      });
     });
 
     // Three requests, the last counted past the 6000 threshold: tier 1

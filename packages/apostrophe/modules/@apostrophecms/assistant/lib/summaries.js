@@ -46,6 +46,12 @@ const SEPARATE_SYSTEM = 'You summarize a chat between a website editor and the c
   'replaces the messages it covers. Answer with the summary only.';
 const SUMMARY_INTRO = 'Earlier messages of this chat were replaced by this summary. Follow its ' +
   'standing instructions as the editor\'s own.';
+// A continued chat's summary of the chat it continues, a snapshot: the site
+// may have changed since
+const CARRIED_INTRO = 'This chat continues an earlier chat of the editor\'s, whose summary was ' +
+  'carried over on {date}. It tells what the earlier chat knew then; documents may have changed ' +
+  'since, so read them again before relying on it. Follow its standing instructions as the ' +
+  'editor\'s own.';
 // Quotation marks a model may wrap a copied instruction in
 const QUOTES = {
   '"': '"',
@@ -279,8 +285,9 @@ module.exports = (self) => {
     /**
      * The summary's sections with each standing instruction the editor
      * did not write dropped: one is kept only when it appears in the
-     * message of one of the chat's requests not reverted, whitespace runs
-     * aside.
+     * message of one of the chat's requests not reverted, or among the
+     * standing instructions of the summary the chat carried over (checked
+     * in its own chat), whitespace runs aside.
      *
      * @param {object} chat
      * @param {object} sections
@@ -295,7 +302,10 @@ module.exports = (self) => {
         })
         .project({ message: 1 })
         .toArray();
-      const sources = requests.map(({ message }) => squeeze(message || ''));
+      const sources = [
+        ...requests.map(({ message }) => message || ''),
+        ...(chat.carried?.summary?.instructions || [])
+      ].map(squeeze);
       return {
         ...sections,
         instructions: sections.instructions.filter(instruction => {
@@ -317,11 +327,18 @@ module.exports = (self) => {
       ].join('\n')).join('\n');
     },
 
-    // The instructions' section holding the chat's current summary
-    getSummarySection(checkpoint) {
-      return checkpoint?.summary
-        ? `${SUMMARY_INTRO}\n\n${self.renderSummary(checkpoint.summary)}`
-        : '';
+    // The instructions' section holding the chat's current summary, else
+    // the one it carried over, dated
+    getSummarySection(checkpoint, chat) {
+      if (checkpoint?.summary) {
+        return `${SUMMARY_INTRO}\n\n${self.renderSummary(checkpoint.summary)}`;
+      }
+      const carried = chat?.carried;
+      if (!carried?.summary) {
+        return '';
+      }
+      const date = new Date(carried.at).toISOString().slice(0, 10);
+      return `${CARRIED_INTRO.replace('{date}', date)}\n\n${self.renderSummary(carried.summary)}`;
     },
 
     /**
