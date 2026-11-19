@@ -19,7 +19,7 @@ const SVG = Buffer.from(
   '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10">' +
     '<rect width="10" height="10" fill="red"/></svg>'
 );
-const MAX = 64 * 1024;
+const MAX = 64 * 1000;
 
 describe('MCP: image tools', function () {
   this.timeout(t.timeout);
@@ -188,7 +188,7 @@ describe('MCP: image tools', function () {
         });
 
         assert.equal(result.isError, true);
-        assert.match(result.content[0].text, /^The image is 102 KB, over the limit of 64 KB/);
+        assert.match(result.content[0].text, /^The image is 104 KB, over the limit of 64 KB/);
         assert.equal(await countAttachments(), before);
         assert.equal(await countImages('Too big'), 0);
       });
@@ -509,6 +509,13 @@ describe('MCP: image tools with a payload of several MB', function () {
     await t.destroy(apos);
   });
 
+  it('takes up to 10 MB by default, as Finder counts them', async function () {
+    assert.equal(apos.mcp.maxImageSize, 10 * 1000 * 1000);
+    const { tools } = await withClient(apos, 'auto', client => client.listTools());
+    const save = tools.find(tool => tool.name === 'save_image_to_media');
+    assert.match(save.description, /up to 10 MB\./);
+  });
+
   it('checks a 6 MB payload, refusing it as no image, not as an error', async function () {
     const data = crypto.randomBytes(6 * 1024 * 1024).toString('base64');
     const result = await withClient(apos, 'auto', client => client.callTool({
@@ -524,4 +531,81 @@ describe('MCP: image tools with a payload of several MB', function () {
     assert.equal(result.isError, true);
     assert.match(result.content[0].text, /isn't an image the media library takes/);
   });
+});
+
+// The attachment module's `maxSize`, the one limit the uploader shows and
+// the form module enforces, applies here too unless `maxImageSize` is set
+describe('MCP: image tools with the attachment module\'s maxSize', function () {
+  this.timeout(t.timeout);
+
+  let apos;
+
+  before(async function () {
+    apos = await createMcpApos(module, {
+      modules: {
+        '@apostrophecms/attachment': {
+          options: { maxSize: 50 * 1000 }
+        }
+      }
+    });
+  });
+
+  after(async function () {
+    await t.destroy(apos);
+  });
+
+  it('refuses an image over the attachment module\'s maxSize', async function () {
+    assert.equal(apos.mcp.maxImageSize, 50 * 1000);
+    const result = await save(PNG, 'big.png');
+    assert.equal(result.isError, true);
+    assert.match(result.content[0].text, /^The image is 104 KB, over the limit of 50 KB\./);
+  });
+
+  it('takes maxImageSize over maxSize, and ignores a maxSize that isn\'t bytes', function () {
+    const { options } = apos.mcp;
+    const { options: attachment } = apos.attachment;
+    try {
+      options.maxImageSize = 2 * 1000 * 1000;
+      assert.equal(apos.mcp.getMaxImageSize(), 2 * 1000 * 1000);
+      delete options.maxImageSize;
+      attachment.maxSize = '10MB';
+      assert.equal(apos.mcp.getMaxImageSize(), 10 * 1000 * 1000);
+    } finally {
+      delete options.maxImageSize;
+      attachment.maxSize = 50 * 1000;
+    }
+  });
+
+  it('gives exact byte counts when both round to the same figure', async function () {
+    // The PNG is 104,260 bytes: "104 KB", as the limit would be
+    apos.mcp.maxImageSize = 104 * 1000;
+    try {
+      const result = await save(PNG, 'just-over.png');
+      assert.match(
+        result.content[0].text,
+        /^The image is 104,260 bytes, over the limit of 104,000 bytes\./
+      );
+    } finally {
+      apos.mcp.maxImageSize = 50 * 1000;
+    }
+  });
+
+  it('formats sizes in decimal units', function () {
+    assert.equal(apos.mcp.formatSize(999), '999 bytes');
+    assert.equal(apos.mcp.formatSize(104260), '104 KB');
+    assert.equal(apos.mcp.formatSize(10 * 1000 * 1000), '10 MB');
+    assert.equal(apos.mcp.formatSize(10300000), '10.3 MB');
+  });
+
+  function save(file, fileName) {
+    return withClient(apos, 'auto', client => client.callTool({
+      name: 'save_image_to_media',
+      arguments: {
+        data: file.toString('base64'),
+        fileName,
+        title: 'Image',
+        alt: 'Image'
+      }
+    }));
+  }
 });

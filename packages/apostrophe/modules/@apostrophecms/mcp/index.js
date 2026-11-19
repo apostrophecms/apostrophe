@@ -13,12 +13,13 @@
 module.exports = {
   options: {
     alias: 'mcp',
-    enabled: false,
-    // The largest image `save_image_to_media` takes, in bytes. The image
-    // comes as base64 in a JSON body, a third larger than the file, so a
-    // limit over about 12 MB also needs the express module's
-    // `bodyParser.json.limit` (16mb by default) raised
-    maxImageSize: 10 * 1024 * 1024
+    enabled: false
+    // maxImageSize: the largest image `save_image_to_media` takes, in
+    //   bytes. Unset, it's the attachment module's `maxSize` when that is a
+    //   number of bytes, otherwise 10 MB (10,000,000 bytes). The image comes
+    //   as base64 in a JSON body, a third larger than the file, so a limit
+    //   over about 12 MB also needs the express module's
+    //   `bodyParser.json.limit` (16mb by default) raised.
     // allowedOrigins: the hostnames a browser-sent `Origin` header may name.
     //   Requests with no `Origin` (every non-browser client) always pass.
     //   Defaults to the hostname of `baseUrl`, or localhost when unset.
@@ -31,6 +32,7 @@ module.exports = {
       return;
     }
     self.devToken = self.getDevToken();
+    self.maxImageSize = self.getMaxImageSize();
     self.addImageTools();
     self.enableHttp();
   },
@@ -91,7 +93,7 @@ module.exports = {
         if (typeof enabled !== 'boolean') {
           throw new Error('The "@apostrophecms/mcp" module\'s enabled option must be a boolean.');
         }
-        if (!(Number.isSafeInteger(maxImageSize) && (maxImageSize > 0))) {
+        if ((maxImageSize !== undefined) && !self.isBytes(maxImageSize)) {
           throw new Error('The "@apostrophecms/mcp" module\'s maxImageSize option must be a positive whole number of bytes.');
         }
         if ((allowedOrigins != null) && !(

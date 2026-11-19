@@ -15,6 +15,8 @@ const path = require('node:path');
 const { promisify } = require('node:util');
 
 const IMAGE = '@apostrophecms/image';
+// 10 MB, as Finder and the media library count: 1 MB is 1,000,000 bytes
+const DEFAULT_MAX_IMAGE_SIZE = 10 * 1000 * 1000;
 
 module.exports = (self) => {
   return {
@@ -96,12 +98,32 @@ module.exports = (self) => {
       };
     },
 
-    // `bytes` as people read it: "512 KB", "10 MB"
+    // The largest image `save_image_to_media` takes, in bytes: the
+    // `maxImageSize` option, else the attachment module's `maxSize` when it
+    // is a number of bytes (a string such as "10MB" is only shown in the
+    // uploader), else 10 MB
+    getMaxImageSize() {
+      if (self.options.maxImageSize !== undefined) {
+        return self.options.maxImageSize;
+      }
+      const { maxSize } = self.apos.attachment.options;
+      return self.isBytes(maxSize) ? maxSize : DEFAULT_MAX_IMAGE_SIZE;
+    },
+
+    isBytes(value) {
+      return Number.isSafeInteger(value) && (value > 0);
+    },
+
+    // `bytes` as people read it, in decimal units as Finder, phones and the
+    // media library show file sizes: "104 KB", "10.3 MB"
     formatSize(bytes) {
-      const mb = bytes / (1024 * 1024);
-      return (mb >= 1)
-        ? `${Number(mb.toFixed(1))} MB`
-        : `${Math.ceil(bytes / 1024)} KB`;
+      if (bytes >= 1000 * 1000) {
+        return `${Number((bytes / (1000 * 1000)).toFixed(1))} MB`;
+      }
+      if (bytes >= 1000) {
+        return `${Math.round(bytes / 1000)} KB`;
+      }
+      return `${bytes} bytes`;
     }
   };
 
@@ -141,11 +163,15 @@ module.exports = (self) => {
       .replace(/\s+/g, '');
     const padding = base64.endsWith('==') ? 2 : (base64.endsWith('=') ? 1 : 0);
     const size = Math.floor(base64.length * 3 / 4) - padding;
-    const max = self.options.maxImageSize;
+    const max = self.maxImageSize;
     if (size > max) {
+      // Just over the limit, both may round to the same figure
+      const [ shown, limit ] = (self.formatSize(size) === self.formatSize(max))
+        ? [ size, max ].map(bytes => `${bytes.toLocaleString('en-US')} bytes`)
+        : [ size, max ].map(self.formatSize);
       throw refuse(
-        `The image is ${self.formatSize(size)}, over the limit of ` +
-          `${self.formatSize(max)}. Send a smaller or more compressed file.`
+        `The image is ${shown}, over the limit of ${limit}. ` +
+          'Send a smaller or more compressed file.'
       );
     }
     if (!isBase64(base64)) {
