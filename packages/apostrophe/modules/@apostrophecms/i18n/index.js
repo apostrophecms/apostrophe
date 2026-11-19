@@ -608,12 +608,11 @@ module.exports = {
           return;
         }
         // Only the request that actually removes the entry may use it, so
-        // that simultaneous requests cannot all use the same token
-        const { deletedCount } = await self.apos.cache.cacheCollection.deleteOne({
-          namespace: CROSS_DOMAIN_SESSIONS,
-          key: token
-        });
-        if (deletedCount !== 1) {
+        // that simultaneous requests cannot all use the same token. A cache
+        // implementation whose `delete` does not report a count is trusted
+        // to have removed it
+        const deleted = await self.apos.cache.delete(CROSS_DOMAIN_SESSIONS, token);
+        if (((typeof deleted) === 'number') && (deleted < 1)) {
           return;
         }
         return bound ? entry.session : entry;
