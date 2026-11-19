@@ -1692,7 +1692,19 @@ describe('AI tools', function() {
         betweenSteps: async (meta) => {
           // The step's tool results are already in the transcript
           assert.deepEqual(log, seen.map(() => 'start:echo').concat('start:echo'));
-          seen.push(meta);
+          assert.deepEqual(meta.messages.at(-1), {
+            role: 'tool',
+            content: [ {
+              type: 'toolResult',
+              toolCallId: `c${meta.step}`,
+              output: meta.messages.at(-1).content[0].output
+            } ]
+          });
+          seen.push({
+            step: meta.step,
+            usage: meta.usage,
+            roles: meta.messages.map(message => message.role)
+          });
           return meta.usage.inputTokens > 150 ? { stop: true } : undefined;
         }
       });
@@ -1704,7 +1716,8 @@ describe('AI tools', function() {
           usage: {
             inputTokens: 100,
             outputTokens: 4
-          }
+          },
+          roles: [ 'user', 'assistant', 'tool' ]
         },
         {
           step: 2,
@@ -1712,7 +1725,8 @@ describe('AI tools', function() {
             inputTokens: 180,
             outputTokens: 4,
             cacheReadTokens: 90
-          }
+          },
+          roles: [ 'user', 'assistant', 'tool', 'assistant', 'tool' ]
         }
       ]);
       assert.deepEqual(first.lastStepUsage, {

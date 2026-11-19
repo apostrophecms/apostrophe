@@ -3,6 +3,9 @@
 // results of old reads and old images and documents are replaced by short
 // notes (tier 1). What was shortened is a checkpoint on the chat, applied
 // whenever the chat is replayed, so a stored part is never rewritten.
+// Inside a running request the between-steps hook does the same: the run
+// pauses, its own older reads are cleared too, and the request continues in
+// a new run.
 //
 // A checkpoint: `{ _id, sequence, calls, media, before, after, at }`.
 // `sequence` is the request whose send made it; `calls` the tool call ids
@@ -15,6 +18,9 @@
 const CHARS_PER_TOKEN = 2;
 // Requests tier 1 leaves whole, the latest ones
 const KEEP_REQUESTS = 2;
+// Tool rounds of the running request tier 1 leaves whole, the latest ones:
+// the last one the model has not read yet
+const KEEP_ROUNDS = 2;
 // The note a cleared read leaves: the model saw the result and acted on
 // it, so what it concluded stands
 const CLEARED_NOTE = 'This result was read when the call was made and later removed from the ' +
@@ -92,6 +98,15 @@ module.exports = (self) => {
         ...self.applyCheckpoint(checkpoint, added).flatMap(({ messages }) => messages),
         self.getUserMessage(request)
       ]);
+    },
+
+    // What the model reads at the next step of a running request: the
+    // provider's count for the step just made plus an estimate of the
+    // results its tool calls added
+    measureStep(usage, messages) {
+      const last = messages.findLastIndex(message => message.role === 'assistant');
+      return usage.inputTokens + usage.outputTokens +
+        self.estimateTokens(messages.slice(last + 1));
     },
 
     getCheckpoint(chat) {
@@ -178,9 +193,80 @@ module.exports = (self) => {
         keep: KEEP_REQUESTS,
         before
       });
-      if (!checkpoint) {
-        return chat;
+      return checkpoint ? self.storeCheckpoint(chat, checkpoint) : chat;
+    },
+
+    /**
+     * Called between the steps of a running request: past the threshold,
+     * clears the `query` results of the earlier requests but the latest
+     * `KEEP_REQUESTS` and of the request's own tool rounds but the latest
+     * `KEEP_ROUNDS`, and stores the checkpoint. The run then pauses and the
+     * request continues on a new run that replays it. Nothing new to clear
+     * leaves the run going.
+     *
+     * @param {object} request
+     * @param {object} step
+     * @param {object} step.usage The step's own usage.
+     * @param {object[]} step.messages The run's transcript so far.
+     * @param {number} step.prior Where the request's own part starts in it.
+     * @returns {Promise<boolean>} Whether the run should pause.
+     */
+    async shortenInRequest(request, {
+      usage, messages, prior
+    }) {
+      const before = self.measureStep(usage, messages);
+      if (before <= self.getThreshold()) {
+        return false;
       }
+      return Boolean(await self.shortenRequest(request, messages.slice(prior), {
+        before,
+        keep: KEEP_REQUESTS,
+        keepRounds: KEEP_ROUNDS
+      }));
+    },
+
+    /**
+     * Shortens what a request's next run replays and stores the checkpoint:
+     * the `query` results and images and documents of the earlier requests
+     * but the latest `keep`, and the `query` results of the request's own
+     * tool rounds but the latest `keepRounds`. The checkpoint, or null when
+     * nothing new was cleared.
+     *
+     * @param {object} request
+     * @param {object[]} own The request's part of the transcript, as its run
+     *   read it.
+     * @param {object} options
+     * @param {number} options.before The measure, in tokens.
+     * @param {number} options.keep
+     * @param {number} options.keepRounds
+     * @returns {Promise<object|null>}
+     */
+    async shortenRequest(request, own, {
+      before, keep, keepRounds
+    }) {
+      const chat = await self.chats.findOne({
+        _id: request.chatId,
+        ownerId: request.ownerId
+      });
+      const earlier = await self.getReplayedRequests(chat, request);
+      const checkpoint = self.clearOldReads(chat, earlier, {
+        sequence: request.sequence,
+        keep,
+        before,
+        current: {
+          _id: request._id,
+          messages: own,
+          keepRounds
+        }
+      });
+      if (checkpoint) {
+        await self.storeCheckpoint(chat, checkpoint);
+      }
+      return checkpoint;
+    },
+
+    // Adds a checkpoint to the chat; the chat with it
+    async storeCheckpoint(chat, checkpoint) {
       const checkpoints = [ ...(chat.checkpoints || []), checkpoint ];
       await self.chats.updateOne({
         _id: chat._id,
@@ -197,8 +283,9 @@ module.exports = (self) => {
     /**
      * Tier 1: a checkpoint clearing what the latest one hasn't of the
      * `query` results and the images and documents of `requests` but the
-     * last `keep`, or null when there is nothing new to clear. `after` is
-     * `before` less the estimate of what was cleared.
+     * last `keep`, and of the `query` results of a running request's own
+     * tool rounds but its last `keepRounds`; null when there is nothing new
+     * to clear. `after` is `before` less the estimate of what was cleared.
      *
      * @param {object} chat
      * @param {object[]} requests
@@ -206,15 +293,32 @@ module.exports = (self) => {
      * @param {number} options.sequence The request the checkpoint is made for.
      * @param {number} options.keep
      * @param {number} options.before
+     * @param {object} [options.current] The running request: `{ _id,
+     *   messages, keepRounds }`, its images and documents left alone.
      * @returns {object|null}
      */
     clearOldReads(chat, requests, {
-      sequence, keep, before
+      sequence, keep, before, current
     }) {
       const previous = self.getCheckpoint(chat);
       const calls = new Set(previous?.calls);
       const media = new Set(previous?.media);
       const older = requests.slice(0, Math.max(requests.length - keep, 0));
+      if (current) {
+        // Up to the latest `keepRounds` tool messages, the calls they
+        // answer with them
+        const rounds = current.messages
+          .map((message, index) => ((message.role === 'tool') ? index : -1))
+          .filter(index => index !== -1);
+        const end = (rounds.length > current.keepRounds)
+          ? rounds.at(-current.keepRounds - 1) + 1
+          : 0;
+        older.push({
+          _id: current._id,
+          messages: current.messages.slice(0, end),
+          running: true
+        });
+      }
       const cleared = [];
       const dropped = [];
       for (const stored of older) {
@@ -229,7 +333,8 @@ module.exports = (self) => {
               calls.add(part.toolCallId);
               cleared.push(part.toolCallId);
             }
-            if (MEDIA_TYPES.includes(part.type) && !media.has(stored._id)) {
+            if (MEDIA_TYPES.includes(part.type) && !stored.running &&
+              !media.has(stored._id)) {
               media.add(stored._id);
               dropped.push(stored._id);
             }

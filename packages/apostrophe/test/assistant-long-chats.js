@@ -422,6 +422,166 @@ describe('Assistant: long chats', function () {
     });
   });
 
+  describe('inside a request', function () {
+    const tooLong = () => {
+      throw apos.error('aiContextOverflow', 'prompt is too long');
+    };
+
+    it('finishes a request whose reads outgrow the budget mid-way in one request over two runs', async function () {
+      const req = userReq();
+      const chat = await apos.assistant.createChat(req);
+      // The third step's count is past the 4000 threshold
+      script = sequence([
+        readTurn('m-1', 'one'),
+        readTurn('m-2', 'two'),
+        readTurn('m-3', 'three', 4500),
+        textTurn('Read all three.', 2000)
+      ]);
+      const request = await runToEnd(req, chat, 'Read three pages');
+      assert.equal(request.status, 'completed');
+      assert.equal(request.finishReason, 'stop');
+      assert.equal(calls.length, 4);
+      // The run paused after the third step; the next run replays the
+      // first read cleared, the last two rounds whole
+      const resumed = Object.fromEntries(toolResults(calls[3].messages)
+        .map(result => [ result.toolCallId, result.output ]));
+      assert.equal(resumed['m-1'].cleared, true);
+      assert.equal(resumed['m-1'].tool, 't_read');
+      assert.equal(resumed['m-2'].page, 'two');
+      assert.equal(resumed['m-3'].page, 'three');
+      assertStandsOnItsOwn(calls[3].messages);
+      assert.deepEqual(userTexts(calls[3].messages), [ 'Read three pages' ]);
+
+      // One record holds the whole request, every result as it was read
+      const requests = await apos.assistant.getChatRequests(req, chat._id);
+      assert.equal(requests.length, 1);
+      assert.deepEqual(toolResults(request.messages).map(result => result.output.page),
+        [ 'one', 'two', 'three' ]);
+      assert.deepEqual(replies(request.messages), [ 'Read all three.' ]);
+      assert.deepEqual(request.usage, {
+        inputTokens: 100 + 100 + 4500 + 2000,
+        outputTokens: 40
+      });
+      assert.deepEqual(request.lastStepUsage, {
+        inputTokens: 2000,
+        outputTokens: 10
+      });
+      assert.equal(request.jobId && typeof request.jobId, 'string');
+
+      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      assert.equal(checkpoints.length, 1);
+      assert.equal(checkpoints[0].sequence, request.sequence);
+      assert.deepEqual(checkpoints[0].calls, [ 'm-1' ]);
+      assert(checkpoints[0].before > 4000);
+
+      // The next send replays the cleared read as cleared
+      calls.length = 0;
+      script = null;
+      await runToEnd(req, chat, 'Thanks');
+      const replayed = toolResults(calls[0].messages);
+      assert.equal(replayed.find(result => result.toolCallId === 'm-1').output.cleared, true);
+      assertStandsOnItsOwn(calls[0].messages);
+    });
+
+    it('keeps running past the threshold while there is nothing to clear', async function () {
+      const req = userReq();
+      const chat = await apos.assistant.createChat(req);
+      script = sequence([
+        readTurn('n-1', 'one', 4500),
+        readTurn('n-2', 'two', 4600),
+        textTurn('Read both.', 4700)
+      ]);
+      const request = await runToEnd(req, chat, 'Read two pages');
+      assert.equal(request.status, 'completed');
+      assert.equal(calls.length, 3);
+      assert.equal((await apos.assistant.getChat(req, chat._id)).checkpoints, undefined);
+    });
+
+    it('shortens further and tries once again when the provider refuses a request as too long', async function () {
+      const req = userReq();
+      const chat = await apos.assistant.createChat(req);
+      script = sequence([ readTurn('o-1', 'one'), textTurn('Read one.', 100) ]);
+      await runToEnd(req, chat, 'Read one');
+      script = sequence([ readTurn('o-2', 'two'), textTurn('Read two.', 100) ]);
+      await runToEnd(req, chat, 'Read two');
+
+      // Under the threshold by the count, yet refused
+      calls.length = 0;
+      script = sequence([ tooLong, textTurn('Fits now.', 100) ]);
+      const request = await runToEnd(req, chat, 'Go on');
+      assert.equal(request.status, 'completed');
+      assert.equal(request.overflowRetried, true);
+      assert.equal(request.error, undefined);
+      assert.deepEqual(replies(request.messages), [ 'Fits now.' ]);
+      assert.equal(calls.length, 2);
+      // The first try sent both reads; the second, none of the earlier
+      // requests kept
+      assert(toolResults(calls[0].messages).every(result => !result.output.cleared));
+      assert(toolResults(calls[1].messages).every(result => result.output.cleared));
+      assert.deepEqual(userTexts(calls[1].messages), [ 'Read one', 'Read two', 'Go on' ]);
+      assertStandsOnItsOwn(calls[1].messages);
+      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      assert.deepEqual(checkpoints.map(checkpoint => checkpoint.calls), [ [ 'o-1', 'o-2' ] ]);
+    });
+
+    it('fails a request that still can\'t fit, and the chat answers the next message', async function () {
+      const req = userReq();
+      const chat = await apos.assistant.createChat(req);
+      script = sequence([ readTurn('f-1', 'one'), textTurn('Read one.', 100) ]);
+      await runToEnd(req, chat, 'Read one');
+
+      calls.length = 0;
+      script = sequence([
+        readTurn('f-2', 'two'),
+        readTurn('f-3', 'three'),
+        tooLong,
+        readTurn('f-4', 'four'),
+        tooLong
+      ]);
+      const failed = await runToEnd(req, chat, 'Read everything');
+      assert.equal(failed.status, 'failed');
+      assert.equal(failed.error.name, 'aiContextOverflow');
+      assert.equal(failed.overflowRetried, true);
+      assert.equal(calls.length, 5);
+      // The retry cleared the earlier request's read and the request's own
+      // but its last round
+      const retried = Object.fromEntries(toolResults(calls[3].messages)
+        .map(result => [ result.toolCallId, result.output ]));
+      assert.equal(retried['f-1'].cleared, true);
+      assert.equal(retried['f-2'].cleared, true);
+      assert.equal(retried['f-3'].page, 'three');
+      // Stored as read
+      assert.deepEqual(toolResults(failed.messages).map(result => result.output.page),
+        [ 'two', 'three', 'four' ]);
+
+      calls.length = 0;
+      script = null;
+      const next = await runToEnd(req, chat, 'Go on');
+      assert.equal(next.status, 'completed');
+      // The failed request is replayed as far as it got, without its reads
+      const sent = calls[0].messages;
+      assert.deepEqual(userTexts(sent), [ 'Read one', 'Read everything', 'Go on' ]);
+      assert(toolResults(sent).every(result => result.output.cleared));
+      assertStandsOnItsOwn(sent);
+      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      assert.deepEqual(checkpoints.at(-1).calls.sort(), [ 'f-1', 'f-2', 'f-3', 'f-4' ]);
+    });
+
+    it('fails at once when a refused request has nothing to clear', async function () {
+      const req = userReq();
+      const chat = await apos.assistant.createChat(req);
+      script = sequence([ tooLong ]);
+      const failed = await runToEnd(req, chat, 'Hello');
+      assert.equal(failed.status, 'failed');
+      assert.equal(failed.error.name, 'aiContextOverflow');
+      assert.equal(failed.overflowRetried, undefined);
+      assert.equal(calls.length, 1);
+      script = null;
+      const next = await runToEnd(req, chat, 'Hello again');
+      assert.equal(next.status, 'completed');
+    });
+  });
+
   function userReq() {
     return apos.task.getReq({
       user: editor,
@@ -455,7 +615,7 @@ describe('Assistant: long chats', function () {
   }
 });
 
-function readTurn(id, page) {
+function readTurn(id, page, inputTokens = 100) {
   return {
     content: [ {
       type: 'toolCall',
@@ -465,7 +625,7 @@ function readTurn(id, page) {
     } ],
     finishReason: 'toolCalls',
     usage: {
-      inputTokens: 100,
+      inputTokens,
       outputTokens: 10
     }
   };

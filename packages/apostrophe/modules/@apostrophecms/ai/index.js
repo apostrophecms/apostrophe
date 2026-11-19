@@ -534,8 +534,10 @@ module.exports = {
        *   throw stops the call.
        * @property {(meta: object) => Promise<object|void>} [betweenSteps]
        *   Called after each step whose tool calls all ran, before the next
-       *   model call, with `{ step, usage }`, `usage` being that step's own
-       *   (AiUsage). Returning `{ stop: true }` ends the run with
+       *   model call, with `{ step, usage, messages }`, `usage` being that
+       *   step's own (AiUsage) and `messages` the transcript so far, ending
+       *   in the step's tool message (read only). Returning `{ stop: true }`
+       *   ends the run with
        *   finishReason 'paused': the transcript ends in the complete tool
        *   message, and a later call given it as `messages` continues the
        *   work. A throw stops the call.
@@ -811,7 +813,8 @@ module.exports = {
             if (canonical.betweenSteps) {
               const verdict = await canonical.betweenSteps({
                 step: turns,
-                usage: stepUsage(turn.usage)
+                usage: stepUsage(turn.usage),
+                messages: context.request.messages
               });
               if (verdict?.stop === true) {
                 paused = true;

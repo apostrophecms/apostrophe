@@ -473,7 +473,18 @@ module.exports = (self) => {
         notify: false,
         usageMetadata: { purpose: 'request' },
         ...self.getProgressHooks(doorReq, request, tools),
-        betweenSteps: () => self.apos.harness.commitSeen(doorReq),
+        // Past the threshold the run pauses for shortening and the request
+        // continues on a new run (`endRun`)
+        betweenSteps: async ({ usage, messages: sofar }) => {
+          await self.apos.harness.commitSeen(doorReq);
+          if (await self.shortenInRequest(request, {
+            usage,
+            messages: sofar,
+            prior
+          })) {
+            return { stop: true };
+          }
+        },
         onEnd: async (error, result) => {
           await self.endRun(doorReq, chat, request, {
             error,
@@ -507,12 +518,42 @@ module.exports = (self) => {
     },
 
     /**
+     * Continues a running request on a new run, from its stored part as the
+     * chat's latest checkpoint shortens it: after an answer to an ask
+     * (`toolInput`), or after its run paused for shortening.
+     *
+     * @param {object} req
+     * @param {object} request The request record as stored now.
+     * @param {object} [options]
+     * @param {object} [options.toolInput] The answers, by tool call id.
+     */
+    async continueRun(req, request, { toolInput } = {}) {
+      const chat = await self.chats.findOne({
+        _id: request.chatId,
+        ownerId: request.ownerId
+      });
+      const earlier = await self.getReplayedRequests(chat, request);
+      const transcript = self.buildTranscript(chat, earlier);
+      const [ own ] = self.applyCheckpoint(self.getCheckpoint(chat), [ request ]);
+      await self.startRun(req, chat, request, {
+        messages: [ ...transcript, ...own.messages ],
+        prior: transcript.length,
+        toolInput
+      });
+    },
+
+    /**
      * Stores the end of a run on its request: what the run added to the
      * transcript, the documents its reply names, the usage, the outcome. A
      * run that suspended leaves the request waiting for an answer, its asks
-     * on the record, unless it was stopped meanwhile; any other end frees
-     * the chat for the next request and ends the request in the harness. A
-     * request already ended (by `reconcileChat`) is left as it is.
+     * on the record, unless it was stopped meanwhile. A run that paused for
+     * shortening, or that the provider refused as too long for the first
+     * time in the request, is shortened and continues on a new run; a
+     * second refusal fails the request, its reads cleared from what later
+     * requests replay, so the chat goes on. Any other end frees the chat for
+     * the next request and ends the request in the harness. A request
+     * already ended (by `reconcileChat`) is left as it is. What a run read
+     * shortened is stored as it was first stored.
      *
      * @param {object} req The run's `req`.
      * @param {object} chat
@@ -531,29 +572,66 @@ module.exports = (self) => {
       const current = await self.requests.findOne({
         _id: request._id,
         ownerId: request.ownerId
-      }, { projection: { status: 1 } });
+      }, {
+        projection: {
+          status: 1,
+          messages: 1,
+          overflowRetried: 1
+        }
+      });
       if (![ 'running', 'stopping' ].includes(current?.status)) {
         return;
       }
+      const partial = (error?.aposAiPartial && (prior !== undefined))
+        ? error.aposAiPartial
+        : null;
+      const overflow = (error?.name === 'aiContextOverflow') && partial;
+      // Refused as too long: shortened further, older requests kept no
+      // more, and tried once again
+      const retry = overflow && (current.status === 'running') && !current.overflowRetried &&
+        await self.shortenRequest(request, partial.messages.slice(prior), {
+          before: self.estimateTokens(partial.messages),
+          keep: 0,
+          keepRounds: 1
+        });
       const now = new Date();
       const status = getStatus();
+      if (overflow && (status === 'failed')) {
+        // It can't fit: later requests replay it without its reads
+        await self.shortenRequest(request, partial.messages.slice(prior), {
+          before: self.estimateTokens(partial.messages),
+          keep: Infinity,
+          keepRounds: 0
+        });
+      }
       const set = {
         status,
         updatedAt: now,
-        ...(status !== 'waiting' && { endedAt: now })
+        ...(![ 'waiting', 'running' ].includes(status) && { endedAt: now })
       };
-      if (error) {
+      if (status === 'running') {
+        // The run paused for shortening, or is tried again: the part it
+        // got through is stored, and the request continues
+        const ran = partial || result;
+        Object.assign(set, {
+          messages: restore(ran.messages.slice(prior)),
+          usage: addUsage(request.usage, ran.usage),
+          ...(ran.lastStepUsage && { lastStepUsage: ran.lastStepUsage }),
+          ...(retry && { overflowRetried: true }),
+          provider: ran.provider,
+          model: ran.model
+        });
+      } else if (error) {
         set.error = {
           name: error.name,
           message: error.message
         };
         // The work the run did before it failed stays on the record, its
-        // calls without a result closed when replayed (`getTranscript`),
+        // calls without a result closed when replayed (`getReplayedRequests`),
         // so a retry knows what was already done
-        const partial = error.aposAiPartial;
-        if (partial && (prior !== undefined)) {
+        if (partial) {
           Object.assign(set, {
-            messages: partial.messages.slice(prior),
+            messages: restore(partial.messages.slice(prior)),
             usage: addUsage(request.usage, partial.usage),
             ...(partial.lastStepUsage && { lastStepUsage: partial.lastStepUsage }),
             provider: partial.provider,
@@ -561,7 +639,7 @@ module.exports = (self) => {
           });
         }
       } else {
-        const messages = result.messages.slice(prior);
+        const messages = restore(result.messages.slice(prior));
         // The documents the reply names, checked as a message's mentions
         const { mentions: replyMentions } = await self.verifyMentions(req, messages
           .filter(message => message.role === 'assistant')
@@ -594,10 +672,32 @@ module.exports = (self) => {
         _id: request._id,
         ownerId: request.ownerId,
         status: current.status
-      }, { $set: set });
+      }, {
+        $set: set,
+        // The next run's job is stored by `startRun`
+        ...(status === 'running' && {
+          $unset: {
+            jobId: 1,
+            prior: 1
+          }
+        })
+      });
       if (!matchedCount) {
         // Stopped or ended meanwhile: read it again
         return self.endRun(req, chat, request, end);
+      }
+      if (status === 'running') {
+        await self.publishRequest(req, request);
+        const continued = await self.requests.findOne({
+          _id: request._id,
+          ownerId: request.ownerId
+        });
+        try {
+          await self.continueRun(req, continued);
+        } catch (e) {
+          await self.endRun(req, chat, continued, { error: e });
+        }
+        return;
       }
       if (error) {
         self.logError(req, 'run-failed', error.message, {
@@ -623,16 +723,34 @@ module.exports = (self) => {
 
       function getStatus() {
         if (error) {
-          return 'failed';
+          return retry ? 'running' : 'failed';
         }
         if (result.finishReason === 'cancel') {
           return 'stopped';
+        }
+        if (result.finishReason === 'paused') {
+          return (current.status === 'stopping') ? 'stopped' : 'running';
         }
         // Suspended as a stop arrived: the asks are never answered
         if (result.finishReason === 'input') {
           return (current.status === 'stopping') ? 'stopped' : 'waiting';
         }
         return 'completed';
+      }
+
+      // A run reads the request's own results as the chat's checkpoint
+      // shortens them; each result already stored is stored as it was
+      function restore(messages) {
+        const stored = new Map((current.messages || [])
+          .flatMap(message => (Array.isArray(message.content) ? message.content : []))
+          .filter(part => part.type === 'toolResult')
+          .map(part => [ part.toolCallId, part ]));
+        return messages.map(message => ((message.role === 'tool')
+          ? {
+            ...message,
+            content: message.content.map(part => stored.get(part.toolCallId) || part)
+          }
+          : message));
       }
     },
 
