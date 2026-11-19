@@ -689,6 +689,7 @@
   "managePages": "Manage Pages",
   "maxLabel": "Max:",
   "maxUi": "Max: {{ number }}",
+  "mcpOauthDescription": "It can find, read, create and edit content with your permissions. Changes are saved as drafts, except for content types that autopublish, such as images. It can't view or change users or groups.",
   "mediaCreatedDate": "Uploaded: {{ createdDate }}",
   "mediaDimensions": "Dimensions: {{ width }} 𝗑 {{ height }}",
   "mediaFileSize": "File Size: {{ fileSize }}",

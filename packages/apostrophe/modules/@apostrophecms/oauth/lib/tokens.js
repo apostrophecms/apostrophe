@@ -77,10 +77,12 @@ module.exports = (self) => {
       return res.status(200).send({});
     },
 
-    // The user an access token acts for, as `{ user, clientId, scope }`, or
-    // null when the token is unknown, expired or revoked, isn't for
-    // `resource`, or its user can no longer log in. For resources, which
-    // check tokens but never issue them
+    // The user an access token acts for, as `{ user, clientId, scope,
+    // connectionId }`, or null when the token is unknown, expired or revoked,
+    // isn't for `resource`, or its user can no longer log in. For resources,
+    // which check tokens but never issue them. `connectionId` stays the same
+    // across refreshes until the user approves the tool again, so a resource
+    // can keep state for one connection
     async verifyAccessToken(token, { resource } = {}) {
       if ((typeof token !== 'string') || !token.length) {
         return null;
@@ -109,7 +111,8 @@ module.exports = (self) => {
       return {
         user,
         clientId: doc.clientId,
-        scope: doc.scope
+        scope: doc.scope,
+        connectionId: doc.grantId
       };
     },
 
