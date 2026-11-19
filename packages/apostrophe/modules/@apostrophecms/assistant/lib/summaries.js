@@ -6,9 +6,9 @@
 // its cleared reads left cleared, oldest first, in at most `MAX_SLICES`
 // slices that fit the summarizer. The answer is a plain outline
 // (structured output costs the cache), parsed here. Only the editor gives
-// instructions: a standing instruction is kept only when it is whole
-// sentences the editor wrote. The other sections are the assistant's
-// notes, limited in size.
+// instructions: a standing instruction is kept as the whole sentences
+// the editor wrote it in. The other sections are the assistant's notes,
+// limited in size.
 
 // What a section of notes is asked to hold, and what it keeps at most: the
 // summary sits in every later call
@@ -74,11 +74,16 @@ const QUOTES = {
 };
 // Of the summarizer's budget, what one slice of the chat may fill
 const SLICE_SHARE = 0.5;
+// An item saying there is none, a remark after it or not ("none so far",
+// "none (read-only)"), but not a finding ("None of the pages ...")
+const NONE = /^none\b(?!\s+of\b)/i;
 // The model calls one summary may take as a call of its own
 const MAX_SLICES = 8;
 // Where a sentence ends: after its closing punctuation, or at a line's end
 const SENTENCE_BREAK = /\n+|(?<=[.!?…]["'”’)\]]*)\s+|(?<=[。！？])/;
 const SENTENCE_CLOSE = /[.!?…。！？]+$/;
+// The least of a sentence, in characters, that names the sentence
+const PART_MIN = 12;
 
 module.exports = (self) => {
   return {
@@ -249,7 +254,8 @@ module.exports = (self) => {
     /**
      * The outline a summary step answers with, as its sections, each a list
      * of items; null when none of the headings is there. Headings may come
-     * marked up (`## `, `**`, a bullet, a colon); "none" is an empty list;
+     * marked up (`## `, `**`, a bullet, a colon); "none", with a remark or
+     * not, is no item;
      * a line that is not an item continues the item before it. A section
      * of notes keeps its first `MAX_ITEMS` items, each cut at `ITEM_MAX`
      * characters.
@@ -295,7 +301,7 @@ module.exports = (self) => {
         return null;
       }
       for (const key of Object.keys(sections)) {
-        sections[key] = sections[key].filter(item => !/^none\.?$/i.test(item));
+        sections[key] = sections[key].filter(item => !NONE.test(item));
         if (key !== 'instructions') {
           sections[key] = sections[key].slice(0, MAX_ITEMS).map(item =>
             ((item.length > ITEM_MAX) ? `${item.slice(0, ITEM_MAX)}…` : item));
@@ -322,13 +328,14 @@ module.exports = (self) => {
     },
 
     /**
-     * The summary's sections with each standing instruction the editor
-     * did not write dropped: one is kept only when it is one or more whole
-     * sentences, in a row, of the message of one of the chat's requests not
-     * reverted, or of a standing instruction of the summary the chat
-     * carried over (checked in its own chat), whitespace runs and the
-     * punctuation that ends a sentence aside. Part of a sentence can say
-     * the opposite of the whole.
+     * The summary's sections with its standing instructions as the editor
+     * wrote them: each is replaced by the whole sentences it is found in,
+     * in a row, of the message of one of the chat's requests not reverted,
+     * or of a standing instruction of the summary the chat carried over
+     * (checked in its own chat), and dropped when it is found in none.
+     * Whitespace runs and the punctuation that ends a sentence aside. Part
+     * of a sentence can say the opposite of the whole, so a part is never
+     * kept as it came; one shorter than `PART_MIN` characters is dropped.
      *
      * @param {object} chat
      * @param {object} sections
@@ -342,28 +349,63 @@ module.exports = (self) => {
           revertId: { $exists: false }
         })
         .project({ message: 1 })
+        .sort({ sequence: 1 })
         .toArray();
       const sources = [
         ...requests.map(({ message }) => message || ''),
         ...(chat.carried?.summary?.instructions || [])
       ].map(getSentences);
+      const instructions = sections.instructions.map((instruction) => {
+        const wanted = getSentences(instruction).map(({ bare }) => bare);
+        for (const written of sources) {
+          const start = written
+            .findIndex((sentence, index) => startsAt(written, index, wanted));
+          if (start !== -1) {
+            return written.slice(start, start + wanted.length)
+              .map(({ whole }) => whole).join(' ');
+          }
+        }
+        return null;
+      });
       return {
         ...sections,
-        instructions: [ ...new Set(sections.instructions) ].filter(instruction => {
-          const wanted = getSentences(instruction);
-          const startsAt = (written, start) => wanted
-            .every((sentence, index) => sentence === written[start + index]);
-          return wanted.length && sources
-            .some(written => written.some((sentence, start) => startsAt(written, start)));
-        })
+        instructions: [ ...new Set(instructions.filter(Boolean)) ]
       };
 
-      // A text's sentences and lines, each without its closing punctuation
+      // A text's sentences and lines: each `whole`, and `bare`, without its
+      // closing punctuation
       function getSentences(text) {
         return text
           .split(SENTENCE_BREAK)
-          .map(sentence => sentence.replace(/\s+/g, ' ').trim().replace(SENTENCE_CLOSE, '').trim())
-          .filter(Boolean);
+          .map(sentence => sentence.replace(/\s+/g, ' ').trim())
+          .map(whole => ({
+            whole,
+            bare: whole.replace(SENTENCE_CLOSE, '').trim()
+          }))
+          .filter(({ bare }) => bare);
+      }
+
+      // Whether `wanted` is found in the sentences of `written` from
+      // `start`: whole, or the first from somewhere to its end and the
+      // last from its start
+      function startsAt(written, start, wanted) {
+        const found = written.slice(start, start + wanted.length)
+          .map(({ bare }) => bare);
+        if (found.length < wanted.length) {
+          return false;
+        }
+        if (found.every((sentence, index) => sentence === wanted[index])) {
+          return true;
+        }
+        if (wanted.join(' ').length < PART_MIN) {
+          return false;
+        }
+        const last = wanted.length - 1;
+        if (last === 0) {
+          return found[0].includes(wanted[0]);
+        }
+        return found[0].endsWith(wanted[0]) && found[last].startsWith(wanted[last]) &&
+          wanted.slice(1, last).every((sentence, index) => sentence === found[index + 1]);
       }
     },
 
