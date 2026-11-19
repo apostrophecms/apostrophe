@@ -336,6 +336,27 @@ describe('Schemas', function() {
             };
           }
         },
+        'builder-conflict': {
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              author: {
+                label: 'Author Name',
+                type: 'string'
+              },
+              _author: {
+                label: 'Author',
+                type: 'relationship',
+                withType: 'article'
+              },
+              _editor: {
+                label: 'Editor',
+                type: 'relationship',
+                withType: 'article'
+              }
+            }
+          }
+        },
         topic: {
           extend: '@apostrophecms/piece-type',
           options: {
@@ -404,6 +425,15 @@ describe('Schemas', function() {
   /// ///
   // EXISTENCE
   /// ///
+
+  it('should warn at startup when a relationship\'s slug query builder name is taken by another field', function() {
+    const warnings = warnMessages.filter(message => (typeof message === 'string') &&
+      message.includes('query builder'));
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /"builder-conflict"/);
+    assert.match(warnings[0], /"_author"/);
+    assert.match(warnings[0], /"author"/);
+  });
 
   it('should be a property of the apos object', function() {
     assert(apos.schema);
@@ -1660,6 +1690,96 @@ describe('Schemas', function() {
       name: 'duplicate',
       message: 'Address in Addresses must be unique'
     });
+  });
+
+  it('should reject duplicate values of a unique array subfield', async function() {
+    const schema = apos.schema.compose({
+      addFields: [
+        {
+          type: 'array',
+          name: 'addresses',
+          label: 'Addresses',
+          schema: [
+            {
+              name: 'address',
+              type: 'string',
+              label: 'Address',
+              unique: true
+            }
+          ]
+        }
+      ]
+    });
+    const req = apos.task.getReq();
+    const input = {
+      addresses: [
+        { address: '500 test lane' },
+        { address: '602 test ave' },
+        { address: '500 test lane' }
+      ]
+    };
+    await testSchemaError(schema, input, 'addresses', 'duplicate');
+    await assert.rejects(
+      () => apos.schema.fieldTypes.array.convert(req, schema[0], input, {}),
+      {
+        name: 'duplicate',
+        message: 'Address in Addresses must be unique'
+      }
+    );
+    input.addresses.pop();
+    const result = {};
+    await apos.schema.convert(req, schema, input, result);
+    assert.strictEqual(result.addresses.length, 2);
+  });
+
+  it('should check a large array with a unique subfield in linear time', async function() {
+    this.timeout(20000);
+    const schema = apos.schema.compose({
+      addFields: [
+        {
+          type: 'array',
+          name: 'addresses',
+          label: 'Addresses',
+          schema: [
+            {
+              name: 'address',
+              type: 'string',
+              label: 'Address',
+              unique: true
+            }
+          ]
+        }
+      ]
+    });
+    const req = apos.task.getReq();
+    const field = schema[0];
+    const count = 50000;
+    const data = {
+      addresses: Array.from({ length: count }, (value, i) => ({
+        _id: `item${i}`,
+        address: `address ${i}`
+      }))
+    };
+    // Time the duplicate check alone by stubbing the per-item conversion
+    const convert = apos.schema.convert;
+    apos.schema.convert = async () => {};
+    let elapsed;
+    try {
+      const start = Date.now();
+      await apos.schema.fieldTypes.array.convert(req, field, data, {});
+      elapsed = Date.now() - start;
+      data.addresses.push({
+        _id: 'duplicate',
+        address: 'address 0'
+      });
+      await assert.rejects(
+        () => apos.schema.fieldTypes.array.convert(req, field, data, {}),
+        { name: 'duplicate' }
+      );
+    } finally {
+      apos.schema.convert = convert;
+    }
+    assert(elapsed < 1000, `Checking ${count} items took ${elapsed}ms`);
   });
 
   it('should convert string values to areas correctly', async function() {

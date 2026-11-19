@@ -214,6 +214,55 @@ describe('Cross-domain session tokens', function() {
     assert.notEqual(sessionId(jar), before);
   });
 
+  describe('with a cache implementation other than the default', function() {
+    let original;
+
+    // Replace the cache with one that offers only the public cache API,
+    // as alternative implementations such as @apostrophecms/cache-redis do
+    beforeEach(function() {
+      original = {
+        get: apos.cache.get,
+        set: apos.cache.set,
+        delete: apos.cache.delete,
+        cacheCollection: apos.cache.cacheCollection
+      };
+      const entries = new Map();
+      const keyOf = (namespace, key) => JSON.stringify([ namespace, key ]);
+      apos.cache.get = async (namespace, key) => entries.get(keyOf(namespace, key));
+      apos.cache.set = async (namespace, key, value) => {
+        entries.set(keyOf(namespace, key), value);
+      };
+      apos.cache.delete = async (namespace, key) => (
+        entries.delete(keyOf(namespace, key)) ? 1 : 0
+      );
+      delete apos.cache.cacheCollection;
+    });
+
+    afterEach(function() {
+      Object.assign(apos.cache, original);
+    });
+
+    it('moves the session to the destination hostname', async function() {
+      const url = await switchToFrench();
+      const jar = apos.http.jar();
+
+      const response = await redeem(url, jar);
+
+      assert.equal(response.status, 302);
+      assert.equal(await isAdmin(jar), true);
+    });
+
+    it('can only be used once', async function() {
+      const url = await switchToFrench();
+      const jars = Array.from({ length: 10 }, () => apos.http.jar());
+
+      await Promise.all(jars.map(jar => redeem(url, jar)));
+
+      const admins = await Promise.all(jars.map(jar => isAdmin(jar)));
+      assert.equal(admins.filter(Boolean).length, 1);
+    });
+  });
+
   function sessionId(jar) {
     const cookies = jar.getCookiesSync(`http://fr.localhost:${port}/`);
     const cookie = cookies.find(cookie => cookie.key === `${apos.shortName}.sid`);

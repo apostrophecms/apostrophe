@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const crypto = require('node:crypto');
 const presets = require('./presets');
 const { klona } = require('klona');
 const breakpointPreviewTransformer = require('postcss-viewport-to-container-toggle/standalone');
@@ -189,6 +190,16 @@ module.exports = (self, options) => {
         imageSizes: self.apos.attachment.imageSizes
       });
     },
+    // A cheap id for scoping one widget's styles: the wrapper's `id` and
+    // the `#id` root selector of its stylesheet. It only has to be unique
+    // on the page, not unguessable, so `apos.util.generateId()` (cuid2,
+    // ~120µs a call, once per widget per render) is far more than needed.
+    // Random rather than a counter, because a widget rendered by a later
+    // request (e.g. after an edit) joins a page whose other ids came from
+    // an earlier one. Starts with a letter so `#id` is a valid selector.
+    generateStyleId() {
+      return `s${crypto.randomBytes(8).toString('hex')}`;
+    },
     // Generate unique ID, Invoke the widget owned `getStylesheet` method
     // and return object:
     // {
@@ -212,7 +223,7 @@ module.exports = (self, options) => {
           widgetId: ''
         };
       }
-      const styleId = self.apos.util.generateId();
+      const styleId = self.generateStyleId();
       const styles = widgetManager.getStylesheet(
         widget,
         styleId

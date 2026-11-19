@@ -1007,10 +1007,25 @@ module.exports = {
         const { enableCacheOnDemand = true } = self.options;
         if (enableCacheOnDemand) {
           // Instantiate independently for this instance of ApostropheCMS
-          self.apos.expressCacheOnDemand = expressCacheOnDemand(undefined, {
-            logger: self.getConsoleLogger('cache-on-demand')
-          });
+          self.apos.expressCacheOnDemand = expressCacheOnDemand(
+            self.cacheOnDemandHasher,
+            { logger: self.getConsoleLogger('cache-on-demand') }
+          );
         }
+      },
+      // Returns the key under which simultaneous requests share a single
+      // response via cache-on-demand, or `false` if the request must get its
+      // own response. Requests from an external front end get a JSON
+      // response, so they never share one with ordinary requests for the
+      // same URL. The key cannot collide with a key from the default hasher,
+      // which never contains spaces
+      cacheOnDemandHasher(req) {
+        const key = expressCacheOnDemand.expressHasher(req);
+        if (!key || !req.aposExternalFront) {
+          return key;
+        }
+        const variant = req.aposStaticBuild ? 'external-front static-build' : 'external-front';
+        return `[${variant}] ${key}`;
       }
     };
   }
