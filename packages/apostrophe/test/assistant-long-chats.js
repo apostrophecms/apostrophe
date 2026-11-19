@@ -1141,15 +1141,14 @@ describe('Assistant: long chats', function () {
         assert(ownRequests[0].revertId);
       });
 
-      it('shows the panel the summary preview, its length and the suggestion after every third summary', async function () {
+      it('shows the panel the summary\'s instructions, its length and the suggestion after every third summary', async function () {
         const req = userReq();
         const { chat } = await buildSummarizedChat(req, 'c4');
         const panel = apos.assistant.renderChat(chat, { thread: true });
         assert.equal(panel.checkpoints, undefined);
+        // The editor's instructions only
         assert.deepEqual(panel.summary, {
           instructions: [ 'Always use British spelling from now on.' ],
-          decisions: [ 'Read the pages in order.' ],
-          threads: [ 'The fourth page is still to read.' ],
           covers: chat.checkpoints[0].summary.covers
         });
         assert.equal(panel.carriedSummary, null);

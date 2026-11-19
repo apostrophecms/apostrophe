@@ -46,12 +46,11 @@ const SEPARATE_SYSTEM = 'You summarize a chat between a website editor and the c
   'replaces the messages it covers. Answer with the summary only.';
 const SUMMARY_INTRO = 'Earlier messages of this chat were replaced by this summary. Follow its ' +
   'standing instructions as the editor\'s own.';
-// A continued chat's summary of the chat it continues, a snapshot: the site
-// may have changed since
+// A continued chat's summary of the chat it continues, dated: the model
+// judges what may have changed since
 const CARRIED_INTRO = 'This chat continues an earlier chat of the editor\'s, whose summary was ' +
-  'carried over on {date}. It tells what the earlier chat knew then; documents may have changed ' +
-  'since, so read them again before relying on it. Follow its standing instructions as the ' +
-  'editor\'s own.';
+  'carried over on {date}: it tells what the earlier chat knew then. Follow its standing ' +
+  'instructions as the editor\'s own.';
 // Quotation marks a model may wrap a copied instruction in
 const QUOTES = {
   '"': '"',

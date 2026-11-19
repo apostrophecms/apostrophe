@@ -27,7 +27,7 @@
         class="apos-assistant-summary__text"
       >{{ $t('apostrophe:assistantSummarized') }}</span>
       <button
-        v-if="sections.length"
+        v-if="instructions.length"
         type="button"
         class="apos-assistant-summary__toggle"
         :aria-expanded="open ? 'true' : 'false'"
@@ -39,7 +39,7 @@
       </button>
     </div>
     <div
-      v-if="sections.length"
+      v-if="instructions.length"
       v-show="open"
       :id="regionId"
       class="apos-assistant-summary__preview"
@@ -47,26 +47,17 @@
       :aria-label="$t('apostrophe:assistantSummaryRegion')"
       data-apos-test="assistant-summary-preview"
     >
-      <div
-        v-for="section in sections"
-        :key="section.key"
-        class="apos-assistant-summary__section"
-      >
-        <h3 class="apos-assistant-summary__heading">
-          {{ section.heading }}
-        </h3>
-        <ul class="apos-assistant-summary__items">
-          <li
-            v-for="(item, index) in section.items"
-            :key="index"
-          >
-            <q v-if="section.key === 'instructions'">{{ item }}</q>
-            <template v-else>
-              {{ item }}
-            </template>
-          </li>
-        </ul>
-      </div>
+      <h3 class="apos-assistant-summary__heading">
+        {{ $t('apostrophe:assistantSummaryInstructions') }}
+      </h3>
+      <ul class="apos-assistant-summary__items">
+        <li
+          v-for="(item, index) in instructions"
+          :key="index"
+        >
+          <q>{{ item }}</q>
+        </li>
+      </ul>
     </div>
   </div>
 </template>
@@ -80,15 +71,15 @@ import { useAssistantStore } from '../stores/assistant.js';
 
 // A summary in the thread, read-only: the divider where the chat's current
 // summary ends, or "Continued from" at the top of a continued chat. Its
-// preview shows the sections the editor can check and act on, in the
-// language the summary was written in, an empty one left out
+// preview shows the editor's standing instructions it keeps, in their own
+// words; without any, there is nothing to show
 const props = defineProps({
   // 'divider' or 'continued'
   kind: {
     type: String,
     required: true
   },
-  // `{ instructions, decisions, threads }`, each a list
+  // `{ instructions }`, a list
   summary: {
     type: Object,
     default: null
@@ -106,23 +97,7 @@ const store = useAssistantStore();
 const open = ref(false);
 const regionId = `apos-assistant-summary-${createId()}`;
 
-const sections = computed(() => [
-  {
-    key: 'instructions',
-    heading: $t('apostrophe:assistantSummaryInstructions')
-  },
-  {
-    key: 'decisions',
-    heading: $t('apostrophe:assistantSummaryDecisions')
-  },
-  {
-    key: 'threads',
-    heading: $t('apostrophe:assistantSummaryThreads')
-  }
-].map(section => ({
-  ...section,
-  items: props.summary?.[section.key] || []
-})).filter(section => section.items.length));
+const instructions = computed(() => props.summary?.instructions || []);
 const sourceTitle = computed(() => props.source?.title || $t('apostrophe:assistantUntitled'));
 // A link while the earlier chat exists
 const sourceShown = computed(() => Boolean(props.source &&
@@ -216,15 +191,10 @@ const sourceShown = computed(() => Boolean(props.source &&
 
   .apos-assistant-summary__preview {
     display: grid;
-    gap: 10px;
+    gap: 2px;
     padding: 10px 12px;
     border: 1px solid var(--a-base-8);
     border-radius: var(--a-border-radius-large);
-  }
-
-  .apos-assistant-summary__section {
-    display: grid;
-    gap: 2px;
   }
 
   .apos-assistant-summary__heading {

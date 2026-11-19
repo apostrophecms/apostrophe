@@ -53,16 +53,11 @@ module.exports = (self) => {
     return `${text.slice(0, STEP_TEXT_MAX)}\n…`;
   }
 
-  // A summary as the panel shows it: the sections the editor can check and
-  // act on. What the assistant changed is in the thread, and what it
-  // learned about the site is its working notes
+  // A summary as the panel shows it: the editor's standing instructions,
+  // their own words. The other sections are the model's working notes
   function previewSummary(summary) {
     return summary
-      ? {
-        instructions: summary.instructions || [],
-        decisions: summary.decisions || [],
-        threads: summary.threads || []
-      }
+      ? { instructions: summary.instructions || [] }
       : null;
   }
 
@@ -86,7 +81,7 @@ module.exports = (self) => {
      * A chat as the panel reads it, without what it saw of each document,
      * what its checkpoints shortened and the summary it carried over as
      * the model reads it. A read of the chat's thread adds `summary`, the
-     * current summary's sections the panel shows and `covers`, the last
+     * current summary's standing instructions and `covers`, the last
      * request it covers; `carriedSummary`, the same of the summary a
      * continued chat carried over; `suggestion`, `{ _id, sequence }` when
      * continuing in a new chat is suggested under that request; and, when
