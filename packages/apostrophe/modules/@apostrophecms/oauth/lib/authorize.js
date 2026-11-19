@@ -258,12 +258,14 @@ module.exports = (self) => {
         throw self.oauthError('invalid_scope', `scope may name only: ${allowed.join(', ')}.`);
       }
       // RFC 8707: the resource the token is for, which becomes its audience.
-      // A token without one is accepted by no resource
-      let resource = null;
+      // Not every client names one (claude.ai doesn't), so a site with a
+      // single resource uses it by default. With several there is no safe
+      // default: a token without a resource is accepted by none
+      const resources = [ ...self.resources.keys() ]
+        .map(path => self.getResourceUrl(path));
+      let resource = (resources.length === 1) ? resources[0] : null;
       if (query.resource !== undefined) {
-        resource = [ ...self.resources.keys() ]
-          .map(path => self.getResourceUrl(path))
-          .find(url => url === query.resource);
+        resource = resources.find(url => url === query.resource);
         if (!resource) {
           throw self.oauthError('invalid_target', 'resource is not a resource of this site.');
         }

@@ -117,12 +117,11 @@ module.exports = (self) => {
       if (input.client_secret != null) {
         throw self.oauthError('invalid_client_metadata', 'Only public clients are supported: a client_secret is not allowed.');
       }
-      if (
-        !isStringArray(grantTypes) ||
-        !grantTypes.includes('authorization_code') ||
-        grantTypes.some(type => !GRANT_TYPES.includes(type))
-      ) {
-        throw self.oauthError('invalid_client_metadata', 'grant_types must include "authorization_code" and may add only "refresh_token".');
+      // Grant types this server doesn't offer are dropped, not refused: a
+      // client may list more than one server supports (claude.ai lists
+      // jwt-bearer), and only uses what the server metadata advertises
+      if (!isStringArray(grantTypes) || !grantTypes.includes('authorization_code')) {
+        throw self.oauthError('invalid_client_metadata', 'grant_types must include "authorization_code".');
       }
       if (!isStringArray(responseTypes) || (responseTypes.join() !== 'code')) {
         throw self.oauthError('invalid_client_metadata', 'response_types must be [ "code" ].');
@@ -134,7 +133,7 @@ module.exports = (self) => {
       return {
         redirect_uris: [ ...new Set(redirectUris) ],
         token_endpoint_auth_method: 'none',
-        grant_types: [ ...new Set(grantTypes) ],
+        grant_types: GRANT_TYPES.filter(type => grantTypes.includes(type)),
         response_types: [ 'code' ],
         scope,
         ...optionalText('client_name'),
