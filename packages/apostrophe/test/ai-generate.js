@@ -253,6 +253,13 @@ describe('AI generate', function() {
       );
     });
 
+    it('rejects a usageMetadata that is not an object', function() {
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', { usageMetadata: 'summary' }),
+        /"usageMetadata" must be an object/
+      );
+    });
+
     it('rejects malformed scalar options', function() {
       throwsInvalid(
         () => apos.ai.normalizeGenerateOptions('p', { system: 5 }),
@@ -1343,6 +1350,61 @@ describe('AI generate', function() {
           assert.deepEqual(usageRecords[1].metadata, { siteId: 's1' });
           assert.deepEqual(apos.ai.options.usageMetadata, { siteId: 's1' });
           assert.notEqual(usageRecords[0].callId, usageRecords[1].callId);
+        } finally {
+          apos.ai.options.usageMetadata = saved;
+        }
+      });
+
+      it('merges a call\'s own usageMetadata over the module\'s on every attempt', async function() {
+        const saved = apos.ai.options.usageMetadata;
+        try {
+          apos.ai.options.usageMetadata = {
+            siteId: 's1',
+            purpose: 'site'
+          };
+          chatScript = [
+            // Billed and rejected, then accepted on the retry
+            () => turn({ content: [ { type: 'text' } ] }),
+            () => turn(),
+            () => turn()
+          ];
+          const usageMetadata = { purpose: 'summary' };
+          await apos.ai.generate(apos.task.getReq(), 'p', { usageMetadata });
+          await apos.ai.generate(apos.task.getReq(), 'p');
+          assert.deepEqual(
+            usageRecords.map(({ outcome, metadata }) => ({
+              outcome,
+              metadata
+            })),
+            [
+              {
+                outcome: 'rejected',
+                metadata: {
+                  siteId: 's1',
+                  purpose: 'summary'
+                }
+              },
+              {
+                outcome: 'accepted',
+                metadata: {
+                  siteId: 's1',
+                  purpose: 'summary'
+                }
+              },
+              // A call without its own carries the module's alone
+              {
+                outcome: 'accepted',
+                metadata: {
+                  siteId: 's1',
+                  purpose: 'site'
+                }
+              }
+            ]
+          );
+          // Each record a copy: the caller's object stays as given
+          usageRecords[0].metadata.extra = true;
+          assert.deepEqual(usageMetadata, { purpose: 'summary' });
+          assert.equal(usageRecords[1].metadata.extra, undefined);
         } finally {
           apos.ai.options.usageMetadata = saved;
         }

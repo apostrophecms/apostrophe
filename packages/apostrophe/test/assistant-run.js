@@ -17,6 +17,7 @@ describe('Assistant: chats and the run', function () {
   let script = null;
   const calls = [];
   const doors = [];
+  const usageRecords = [];
 
   before(async function () {
     process.env.APOS_AI_MOCK = '1';
@@ -40,6 +41,17 @@ describe('Assistant: chats and the run', function () {
             enabled: true,
             effort: 'high',
             titleEffort: 'none'
+          }
+        },
+        'assistant-usage-watch': {
+          handlers() {
+            return {
+              '@apostrophecms/ai:usage': {
+                record(req, usage) {
+                  usageRecords.push(usage);
+                }
+              }
+            };
           }
         },
         'assistant-note': {
@@ -374,6 +386,26 @@ describe('Assistant: chats and the run', function () {
         await waitForEnd(req, renamed);
         assert.equal(calls.filter(call => call.schema).length, 2);
         assert.equal((await apos.assistant.getChat(req, renamed._id)).title, 'My summer');
+      } finally {
+        apos.assistant.options.titleEffort = 'none';
+      }
+    });
+
+    it('marks the usage of the request\'s run and of the title call by purpose', async function () {
+      const req = userReq(editor);
+      apos.assistant.options.titleEffort = 'low';
+      try {
+        script = (request) => (request.schema
+          ? titleTurn('Autumn sale')
+          : { text: 'Done.' });
+        usageRecords.length = 0;
+        const chat = await apos.assistant.createChat(req);
+        await runToEnd(req, chat, 'tab-1', 'Plan the autumn sale page');
+        await waitFor(() => usageRecords.length === 2);
+        assert.deepEqual(
+          usageRecords.map(record => record.metadata.purpose).sort(),
+          [ 'request', 'title' ]
+        );
       } finally {
         apos.assistant.options.titleEffort = 'none';
       }
@@ -868,9 +900,15 @@ describe('Assistant: chats and the run', function () {
       await assert.rejects(answer(req, chat, 'tab-2', 'shown'), conflict('otherBrowserTab'));
       await assert.rejects(answer(req, chat, 'tab-1', 42), { name: 'invalid' });
       assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest.status, 'waiting');
+      assert(Number.isFinite(waiting.workedMs));
 
+      // The editor takes a while to answer
+      await new Promise(resolve => setTimeout(resolve, 300));
       await answer(req, chat, 'tab-1', 'shown');
       const done = await waitForEnd(req, chat);
+      // The time the assistant worked leaves the wait out
+      assert(done.workedMs >= waiting.workedMs);
+      assert(done.workedMs - waiting.workedMs < 300);
       assert.equal(done._id, waiting._id);
       assert.equal(done.status, 'completed');
       assert.equal(done.asks, null);

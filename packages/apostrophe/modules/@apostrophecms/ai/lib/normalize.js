@@ -13,13 +13,19 @@ module.exports = (self) => {
     throw self.apos.error('invalid', message);
   }
 
+  function checkUsageMetadata(usageMetadata) {
+    if (usageMetadata !== undefined && !isObject(usageMetadata)) {
+      invalid('"usageMetadata" must be an object');
+    }
+  }
+
   return {
     // Parse and validate generate's `(stringOrOptions, options)`
     // arguments into the canonical options object every later stage
     // reads: `{ system, messages, tools, maxSteps, pending,
     // pendingCalls, toolInput, schema, validateObject, effort,
     // provider, model, reasoning, maxTokens, cache, signal, onMessage,
-    // onToolCall, onRetry, betweenSteps }`, with a positional prompt
+    // onToolCall, onRetry, betweenSteps, usageMetadata }`, with a positional prompt
     // string appended to `messages` as the final user turn, `tools`
     // names resolved to their activated definitions and unset options
     // left undefined.
@@ -54,7 +60,7 @@ module.exports = (self) => {
       const {
         system, effort, provider, model, reasoning,
         maxTokens, cache = 'short', signal, onMessage, onToolCall, onRetry,
-        betweenSteps, pending = 'refuse', toolInput
+        betweenSteps, pending = 'refuse', toolInput, usageMetadata
       } = options;
       for (const [ name, value ] of Object.entries({
         system,
@@ -87,6 +93,7 @@ module.exports = (self) => {
           invalid(`"${name}" must be a function`);
         }
       }
+      checkUsageMetadata(usageMetadata);
       if (!PENDING_POLICIES.includes(pending)) {
         invalid(`"pending" must be ${oneOf(PENDING_POLICIES)}`);
       }
@@ -155,7 +162,8 @@ module.exports = (self) => {
         onMessage,
         onToolCall,
         onRetry,
-        betweenSteps
+        betweenSteps,
+        usageMetadata
       };
 
       // The tools option → the activated definitions it names
@@ -415,7 +423,7 @@ module.exports = (self) => {
         }
       }
       const {
-        count = 1, aspect, quality, provider, model, signal
+        count = 1, aspect, quality, provider, model, signal, usageMetadata
       } = options;
       if (!Number.isInteger(count) || count < 1) {
         invalid('"count" must be a positive integer');
@@ -444,6 +452,7 @@ module.exports = (self) => {
       if (signal !== undefined && !(signal instanceof AbortSignal)) {
         invalid('"signal" must be an AbortSignal');
       }
+      checkUsageMetadata(usageMetadata);
       return {
         prompt,
         count,
@@ -452,7 +461,8 @@ module.exports = (self) => {
         images: imageSources(options.images),
         provider,
         model,
-        signal
+        signal,
+        usageMetadata
       };
 
       // The images option → normalized source refs, or undefined when

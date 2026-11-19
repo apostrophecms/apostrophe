@@ -107,6 +107,7 @@ import {
   computed, inject, nextTick, ref, watch
 } from 'vue';
 import { useAssistantStore, NEW_CHAT } from '../stores/assistant.js';
+import { getChatTitle } from '../lib/chat-title.js';
 
 // The chat tabs of this browser tab, with New chat and All chats
 const $t = inject('i18n');
@@ -163,7 +164,7 @@ function getTitle(id, chat) {
     return $t('apostrophe:assistantNewChat');
   }
   // A chat not read yet keeps the title it last showed
-  return store.getTabTitle(id) ||
+  return store.getTabTitle(id) || getChatTitle(chat, $t) ||
     $t(chat ? 'apostrophe:assistantNewChat' : 'apostrophe:assistantLoading');
 }
 </script>

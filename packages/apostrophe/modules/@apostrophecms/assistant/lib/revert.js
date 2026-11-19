@@ -469,6 +469,18 @@ module.exports = (self) => {
             revertedAt: now
           }
         });
+        const [ first ] = await self.requests
+          .find({
+            _id: { $in: stored.requestIds },
+            ownerId: stored.ownerId
+          })
+          .project({ sequence: 1 })
+          .sort({ sequence: 1 })
+          .limit(1)
+          .toArray();
+        if (first) {
+          await self.discardCheckpoints(chat, first.sequence);
+        }
       }
     }
     await freeChat(req, chat, record._id);

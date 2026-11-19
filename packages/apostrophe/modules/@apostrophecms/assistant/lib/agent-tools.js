@@ -285,6 +285,7 @@ module.exports = (self) => {
           let result;
           try {
             result = await self.apos.ai.generate(req, {
+              usageMetadata: { purpose: 'describe_images' },
               system: question ? QUESTION_SYSTEM : DESCRIBE_SYSTEM,
               messages: [ {
                 role: 'user',
@@ -355,6 +356,7 @@ module.exports = (self) => {
               .join('\n\n'),
             tools,
             maxSteps: self.options.delegationMaxSteps,
+            usageMetadata: { purpose: 'delegate' },
             ...(level && { effort: level }),
             ...(_context.signal && { signal: _context.signal })
           });

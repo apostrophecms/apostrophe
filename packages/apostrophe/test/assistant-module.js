@@ -203,7 +203,22 @@ describe('Assistant: module and options', function () {
       [ { maxSteps: 0 }, /maxSteps option must be a positive integer/ ],
       [ { screenWait: 1.5 }, /screenWait option must be a positive integer/ ],
       [ { usageDisplay: 'cost' }, /usageDisplay option must be one of: tokens, none/ ],
-      [ { titleEffort: '' }, /titleEffort option must be the name of an effort level/ ]
+      [ { titleEffort: '' }, /titleEffort option must be the name of an effort level/ ],
+      [ { contextLimit: 0 }, /contextLimit option must be a positive integer/ ],
+      [
+        { contextLimit: 26000 },
+        /contextLimit option times contextThreshold percent must be at least 20000 tokens/
+      ],
+      [
+        {
+          contextThreshold: 10,
+          contextLimit: 100000
+        },
+        /contextLimit option times contextThreshold percent must be at least 20000 tokens/
+      ],
+      [ { contextThreshold: 9 }, /contextThreshold option must be a whole number from 10 to 90/ ],
+      [ { contextThreshold: 91 }, /contextThreshold option must be a whole number from 10 to 90/ ],
+      [ { contextThreshold: 75.5 }, /contextThreshold option must be a whole number from 10 to 90/ ]
     ];
     for (const [ options, pattern ] of cases) {
       await assert.rejects(withApos(options, () => {}), pattern);

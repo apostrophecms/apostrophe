@@ -72,11 +72,14 @@ module.exports = (self) => {
           status: 'running',
           asks: null,
           updatedAt: new Date(),
+          workStartedAt: new Date(),
           ...(verified && { screen: verified })
         },
-        // The earlier run's job is over; this run's is stored by `startRun`.
-        // The run reads the screen as stored now, a shared one included
+        // The earlier run is over; this run's id and job are stored by
+        // `startRun`. The run reads the screen as stored now, a shared one
+        // included
         $unset: {
+          runId: 1,
           jobId: 1,
           prior: 1,
           screenChanged: 1
@@ -88,12 +91,7 @@ module.exports = (self) => {
       }
       await self.publishRequest(req, running);
       try {
-        const transcript = await self.getTranscript(chat, running);
-        await self.startRun(req, chat, running, {
-          messages: [ ...transcript, ...running.messages ],
-          prior: transcript.length,
-          toolInput: { [ask.callId]: input }
-        });
+        await self.continueRun(req, running, { toolInput: { [ask.callId]: input } });
       } catch (e) {
         await self.endRun(req, chat, running, { error: e });
         throw e;

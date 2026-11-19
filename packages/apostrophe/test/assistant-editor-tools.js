@@ -216,6 +216,35 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
       });
     });
 
+    it('counts the steps of a request across its answers', async function () {
+      apos.assistant.options.maxSteps = 2;
+      try {
+        const req = userReq(editor);
+        const chat = await apos.assistant.createChat(req);
+        script = sequence([
+          toolTurn('ask_editor', { questions }, 'ask'),
+          toolTurn('ask_editor', { questions }, 'again')
+        ]);
+        const waiting = await runToEnd(req, chat, 'Redo the hero');
+        assert.equal(waiting.status, 'waiting');
+        await apos.assistant.answer(req, chat._id, {
+          tabId: 'tab-1',
+          callId: 'call-ask',
+          answer: {
+            answers: [ { choice: 0 }, { choice: 0 }, { text: 'Hi' }, { choice: 0 } ]
+          }
+        });
+        // The run after the answer has the one step that was left: its
+        // question is never asked
+        const done = await waitForEnd(req, chat);
+        assert.equal(done.status, 'completed');
+        assert.equal(done.finishReason, 'maxSteps');
+        assert.equal(done.asks, null);
+      } finally {
+        apos.assistant.options.maxSteps = 30;
+      }
+    });
+
     it('refuses an incomplete or mistaken answer and keeps the question waiting', async function () {
       const req = userReq(editor);
       const chat = await apos.assistant.createChat(req);

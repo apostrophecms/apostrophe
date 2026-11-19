@@ -47,12 +47,14 @@ const PENDING_POLICIES = Object.freeze([ 'refuse', 'execute' ]);
 const GENERATE_OPTIONS = Object.freeze([
   'system', 'messages', 'tools', 'maxSteps', 'pending', 'toolInput',
   'schema', 'effort', 'provider', 'model', 'reasoning', 'maxTokens',
-  'cache', 'signal', 'onMessage', 'onToolCall', 'onRetry', 'betweenSteps'
+  'cache', 'signal', 'onMessage', 'onToolCall', 'onRetry', 'betweenSteps',
+  'usageMetadata'
 ]);
 
 // The options generateImage accepts
 const IMAGE_OPTIONS = Object.freeze([
-  'count', 'aspect', 'quality', 'images', 'provider', 'model', 'signal'
+  'count', 'aspect', 'quality', 'images', 'provider', 'model', 'signal',
+  'usageMetadata'
 ]);
 
 // The provider entry keys the engine itself reads. Any other key must

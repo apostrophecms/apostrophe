@@ -16,6 +16,7 @@
     >
       <div
         class="apos-assistant-request__message"
+        :class="{ 'apos-assistant-request__message--finished': finished }"
         data-apos-test="assistant-request-message"
       >
         <AposAssistantMessage
@@ -39,7 +40,25 @@
           />
         </button>
         <button
-          v-else-if="finished"
+          v-if="finished"
+          type="button"
+          class="apos-assistant-request__continue"
+          :aria-label="continueLabel"
+          :title="continueLabel"
+          :aria-disabled="revertBlocked ? 'true' : null"
+          data-apos-test="assistant-request-continue"
+          @click="continueInNewChat"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2M20 16H5.2L4 17.2V4H20V16M8 9V11H12.5L10.7 12.8L12 14L16 10L12 6L10.8 7.2L12.5 9H8Z" />
+          </svg>
+        </button>
+        <button
+          v-if="finished"
           ref="revertButton"
           type="button"
           class="apos-assistant-request__revert"
@@ -112,13 +131,62 @@
     >
       {{ $t(request.planCancelled ? 'apostrophe:assistantPlanCancelledNotice' : 'apostrophe:assistantStopped') }}
     </p>
-    <p
+    <div
       v-if="footer"
       class="apos-assistant-request__footer"
       data-apos-test="assistant-request-footer"
     >
-      {{ footer }}
-    </p>
+      <button
+        v-if="footer.rows.length"
+        type="button"
+        class="apos-assistant-request__footer-trigger"
+        :aria-expanded="footerOpen ? 'true' : 'false'"
+        :aria-controls="footerId"
+        data-apos-test="assistant-request-footer-trigger"
+        @click="footerOpen = !footerOpen"
+      >
+        <span>{{ footer.line }}</span>
+        <AposIndicator
+          class="apos-assistant-request__chevron"
+          :class="{ 'apos-assistant-request__chevron--open': footerOpen }"
+          icon="chevron-down-icon"
+          :icon-size="14"
+        />
+      </button>
+      <span
+        v-else
+        class="apos-assistant-request__footer-line"
+      >{{ footer.line }}</span>
+      <dl
+        v-if="footer.rows.length && footerOpen"
+        :id="footerId"
+        class="apos-assistant-request__footer-detail"
+        data-apos-test="assistant-request-footer-detail"
+      >
+        <div
+          v-for="row in footer.rows"
+          :key="row.label"
+        >
+          <dt>{{ row.label }}</dt>
+          <dd>{{ row.value }}</dd>
+        </div>
+      </dl>
+    </div>
+    <AposAssistantActivity
+      v-if="suggestion"
+      tone="general"
+      :title="$t('apostrophe:assistantSuggestTitle')"
+      :text="$t('apostrophe:assistantSuggestText')"
+      :actions="[ {
+        name: 'continueInNewChat',
+        label: $t('apostrophe:assistantContinueInNewChat'),
+        disabled: revertBlocked
+      } ]"
+      :dismiss-label="$t('apostrophe:assistantNotNow')"
+      data-apos-test="assistant-suggestion"
+      @action="onAction"
+      @dismiss="store.dismissSuggestion(request.chatId, suggestion._id)"
+    />
     <AposAssistantActivity
       v-if="confirmation"
       tone="warning"
@@ -185,6 +253,7 @@ import {
 } from 'vue';
 import { useAssistantStore } from '../stores/assistant.js';
 import { createChipIcon } from '../lib/chip.js';
+import { createId } from 'apostrophe/lib/beneath.js';
 import AposAssistantMessage from './AposAssistantMessage.vue';
 import {
   formatNames, getConfirmLines, getRevertFailure, getRevertStatus, splitCount
@@ -231,6 +300,12 @@ const props = defineProps({
   revert: {
     type: Object,
     default: null
+  },
+  // The suggestion to continue in a new chat shown under its reply
+  // (`{ _id, sequence }`)
+  suggestion: {
+    type: Object,
+    default: null
   }
 });
 
@@ -263,6 +338,8 @@ const store = useAssistantStore();
 const { usageDisplay, modelDisplay } = apos.modules['@apostrophecms/assistant'];
 const replyText = ref(null);
 const revertButton = ref(null);
+const footerOpen = ref(false);
+const footerId = `apos-assistant-usage-${createId()}`;
 
 const chat = computed(() => store.getChat(props.request.chatId));
 // An action of the editor's on its way
@@ -287,6 +364,17 @@ const checking = computed(() => store.isPending(props.request.chatId, 'revertChe
 // Revert waits for the chat's open request or revert to end
 const revertBlocked = computed(() => Boolean(chat.value?.openRequest ||
   chat.value?.openRevert));
+// Available exactly when Revert is: a new chat started during a run
+// wouldn't know the work in progress
+const continueLabel = computed(() => {
+  if (chat.value?.openRevert) {
+    return $t('apostrophe:assistantRevertBusy');
+  }
+  if (chat.value?.openRequest) {
+    return $t('apostrophe:assistantContinueUnavailable');
+  }
+  return $t('apostrophe:assistantContinueFrom');
+});
 const revertLabel = computed(() => {
   if (chat.value?.openRevert) {
     return $t('apostrophe:assistantRevertBusy');
@@ -486,31 +574,82 @@ const activities = computed(() => {
   return list;
 });
 
-// Once the request has ended: one waiting for an answer goes on after it
+// Once the request has ended: one waiting for an answer goes on after it.
+// The model and the token count open into their detail with the time the
+// assistant worked; without either, the time alone. `{ line, rows }`
 const footer = computed(() => {
   if (running.value || !reply.value || (props.request.status === 'waiting')) {
     return null;
   }
   const parts = [];
+  const rows = [];
   const {
-    provider, model, usage
+    provider, model, usage, workedMs
   } = props.request;
+  const format = new Intl.NumberFormat(apos.i18n.adminLocale, {
+    notation: 'compact',
+    maximumFractionDigits: 1
+  });
   if (modelDisplay && model) {
-    parts.push([ provider, model ].filter(Boolean).join(' - '));
+    const name = [ provider, model ].filter(Boolean).join(' - ');
+    parts.push(name);
+    rows.push({
+      label: $t('apostrophe:assistantUsageModel'),
+      value: name
+    });
   }
   if ((usageDisplay === 'tokens') && usage) {
-    const tokens = (usage.inputTokens || 0) + (usage.outputTokens || 0);
-    const format = new Intl.NumberFormat(apos.i18n.adminLocale, {
-      notation: 'compact',
-      maximumFractionDigits: 1
-    });
+    const input = usage.inputTokens || 0;
+    const output = usage.outputTokens || 0;
     parts.push($t('apostrophe:assistantTokens', {
-      count: tokens,
-      tokens: format.format(tokens)
+      count: input + output,
+      tokens: format.format(input + output)
     }));
+    rows.push({
+      label: $t('apostrophe:assistantUsageInput'),
+      value: usage.cacheReadTokens
+        ? $t('apostrophe:assistantUsageCached', {
+          input: format.format(input),
+          cached: format.format(usage.cacheReadTokens)
+        })
+        : format.format(input)
+    }, {
+      label: $t('apostrophe:assistantUsageOutput'),
+      value: format.format(output)
+    });
   }
-  return parts.join(' · ') || null;
+  const duration = Number.isFinite(workedMs) ? formatDuration(workedMs) : null;
+  if (!rows.length) {
+    return duration
+      ? {
+        line: duration,
+        rows
+      }
+      : null;
+  }
+  if (duration) {
+    rows.push({
+      label: $t('apostrophe:assistantUsageDuration'),
+      value: duration
+    });
+  }
+  return {
+    line: parts.join(' · '),
+    rows
+  };
 });
+
+function formatDuration(ms) {
+  const total = Math.round(ms / 1000);
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return minutes
+    ? $t('apostrophe:assistantDurationMinutes', {
+      minutes,
+      seconds
+    })
+    : $t('apostrophe:assistantDurationSeconds', { seconds });
+}
 
 function stop() {
   if (!stopping.value) {
@@ -581,6 +720,12 @@ function startRevert() {
   }
 }
 
+function continueInNewChat() {
+  if (!revertBlocked.value) {
+    store.continueInNewChat(props.request.chatId, props.request._id);
+  }
+}
+
 async function onAction(name) {
   if (name === 'confirmRevert') {
     store.confirmRevert(props.request.chatId);
@@ -594,6 +739,10 @@ async function onAction(name) {
   }
   if (name === 'retryRevert') {
     store.retryRevert(props.request.chatId, props.revert._id);
+    return;
+  }
+  if (name === 'continueInNewChat') {
+    continueInNewChat();
     return;
   }
   if ([ 'continue', 'notNow' ].includes(name)) {
@@ -713,6 +862,11 @@ function onChipClick(event) {
     }
   }
 
+  // Room for Continue in a new chat and Revert
+  .apos-assistant-request__message--finished {
+    padding-right: 75px;
+  }
+
   // Shown on hover and keyboard focus, as the prototype's Stop on a
   // running message
   .apos-assistant-request__stop {
@@ -797,8 +951,51 @@ function onChipClick(event) {
     }
   }
 
+  // Left of Revert, in its grey, its glyph a size down so the two weigh the
+  // same
+  .apos-assistant-request__continue {
+    @include apos-button-reset();
+
+    & {
+      position: absolute;
+      right: 40px;
+      bottom: 10px;
+      display: grid;
+      place-items: center;
+      width: 27px;
+      height: 27px;
+      border-radius: 50%;
+      color: var(--a-base-3);
+      opacity: 0;
+      transition: opacity 200ms, background-color 200ms, color 200ms;
+      pointer-events: none;
+    }
+
+    svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    &:hover:not([aria-disabled]) {
+      color: var(--a-text-primary);
+      background-color: var(--a-base-10);
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--a-base-7);
+      outline-offset: 1px;
+    }
+
+    &[aria-disabled] {
+      color: var(--a-base-6);
+      cursor: default;
+    }
+  }
+
   .apos-assistant-request__message:hover .apos-assistant-request__stop,
   .apos-assistant-request__message:focus-within .apos-assistant-request__stop,
+  .apos-assistant-request__message:hover .apos-assistant-request__continue,
+  .apos-assistant-request__message:focus-within .apos-assistant-request__continue,
   .apos-assistant-request__message:hover .apos-assistant-request__revert,
   .apos-assistant-request__message:focus-within .apos-assistant-request__revert {
     opacity: 1;
@@ -973,6 +1170,90 @@ function onChipClick(event) {
       margin: -4px 0 0;
       padding: 0 2px;
       color: var(--a-base-2);
+    }
+  }
+
+  .apos-assistant-request__footer-line {
+    display: inline-block;
+    padding: 2px 0;
+    line-height: var(--a-line-tall);
+  }
+
+  // The prototype's usage toggle
+  .apos-assistant-request__footer-trigger {
+    @include apos-button-reset();
+    @include type-small;
+
+    & {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 5px;
+      max-width: 100%;
+      padding: 2px 0;
+      border-radius: var(--a-border-radius);
+      color: var(--a-base-2);
+      line-height: var(--a-line-tall);
+      text-align: left;
+      transition: color 200ms;
+    }
+
+    &:hover,
+    &[aria-expanded='true'] {
+      color: var(--a-text-primary);
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--a-primary);
+      outline-offset: 2px;
+    }
+  }
+
+  .apos-assistant-request__chevron {
+    flex-shrink: 0;
+    color: var(--a-base-3);
+    opacity: 0;
+    transition: opacity 200ms ease, transform 200ms ease;
+    transform: rotate(-90deg);
+  }
+
+  .apos-assistant-request__chevron--open {
+    transform: rotate(0deg);
+  }
+
+  .apos-assistant-request__footer-trigger:hover .apos-assistant-request__chevron,
+  .apos-assistant-request__footer-trigger:focus-visible .apos-assistant-request__chevron,
+  .apos-assistant-request__footer-trigger[aria-expanded='true'] .apos-assistant-request__chevron {
+    opacity: 1;
+  }
+
+  .apos-assistant-request__footer-detail {
+    @include type-small;
+
+    & {
+      display: grid;
+      gap: 2px;
+      margin: 4px 0 0;
+      padding: 8px 10px;
+      border: 1px solid var(--a-base-8);
+      border-radius: var(--a-border-radius-large);
+      line-height: var(--a-line-tall);
+    }
+
+    div {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    dt {
+      color: var(--a-base-2);
+    }
+
+    dd {
+      margin: 0;
+      color: var(--a-text-primary);
+      text-align: right;
     }
   }
 
