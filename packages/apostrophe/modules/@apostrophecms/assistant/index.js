@@ -385,6 +385,7 @@ module.exports = {
     return {
       ...require('./lib/options')(self),
       ...require('./lib/store')(self),
+      ...require('./lib/files')(self),
       ...require('./lib/run')(self),
       ...require('./lib/asks')(self),
       ...require('./lib/browser-tools')(self),
