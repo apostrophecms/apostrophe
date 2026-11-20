@@ -384,7 +384,9 @@ module.exports = {
       },
       image: {
         icon: 'image-icon',
-        label: 'apostrophe:image',
+        // Not just "Image", which the image widget offered alongside it in
+        // the insert menu is called
+        label: 'apostrophe:richTextInlineImage',
         description: 'apostrophe:imageDescription',
         component: 'AposImageControlDialog'
       },
