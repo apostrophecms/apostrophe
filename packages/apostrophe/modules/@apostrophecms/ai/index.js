@@ -10,7 +10,9 @@ const Ajv = require('ajv/dist/2020').default;
 const {
   isObject, isAbort, stepUsage, startupFail
 } = require('./lib/util');
-const { DENIED_TYPES, USAGE_SHARE_KEYS } = require('./lib/constants');
+const {
+  DENIED_TYPES, USAGE_SHARE_KEYS, PART_CAPABILITIES
+} = require('./lib/constants');
 
 // The protocol shapes this surface hands out or takes in, named once so the
 // blocks below can use them bare. lib/types.js declares them and nothing else.
@@ -338,6 +340,10 @@ module.exports = {
           ...(reasoning !== undefined && { reasoning }),
           contextWindow: metadata.contextWindow,
           maxOutputTokens: metadata.maxOutputTokens,
+          ...(metadata.maxDocumentPages !== undefined &&
+            { maxDocumentPages: metadata.maxDocumentPages }),
+          ...(metadata.maxDocumentBytes !== undefined &&
+            { maxDocumentBytes: metadata.maxDocumentBytes }),
           capabilities: { ...record.capabilities }
         };
         if (options.capability === 'image') {
@@ -648,6 +654,13 @@ module.exports = {
           }
           if (canonical.schema) {
             self.checkCapability(provider, 'structured');
+          }
+          // Every media part the transcript carries, replayed ones too
+          for (const [ type, capability ] of Object.entries(PART_CAPABILITIES)) {
+            if (canonical.messages.some(({ content }) =>
+              content.some((part) => part.type === type))) {
+              self.checkCapability(provider, capability);
+            }
           }
         }
         const record = self.mockMode

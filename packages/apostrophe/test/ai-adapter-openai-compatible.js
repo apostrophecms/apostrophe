@@ -216,6 +216,55 @@ describe('AI adapter: openai-compatible', function() {
       ]);
     });
 
+    it('translates a document part to a file part, with a filename either way', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'user',
+          content: [
+            text('summarize these'),
+            {
+              type: 'document',
+              document: {
+                data: 'JVBERi0=',
+                mediaType: 'application/pdf',
+                name: 'brief.pdf'
+              }
+            },
+            {
+              type: 'document',
+              document: {
+                data: 'JVBERi0=',
+                mediaType: 'application/pdf'
+              }
+            }
+          ]
+        } ]
+      }));
+      assert.deepEqual(body.messages[0].content.slice(1), [
+        {
+          type: 'file',
+          file: {
+            filename: 'brief.pdf',
+            file_data: 'data:application/pdf;base64,JVBERi0='
+          }
+        },
+        {
+          type: 'file',
+          file: {
+            filename: 'document.pdf',
+            file_data: 'data:application/pdf;base64,JVBERi0='
+          }
+        }
+      ]);
+    });
+
+    it('declares no document input; an entry opts in', function() {
+      assert.equal(
+        apos.ai.getAdapter('openai-compatible').capabilities.documentInput,
+        false
+      );
+    });
+
     it('passes reasoning through as reasoning_effort', function() {
       assert.equal(adapter.buildBody(request()).reasoning_effort, undefined);
       assert.equal(
