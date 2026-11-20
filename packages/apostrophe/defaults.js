@@ -75,6 +75,7 @@ module.exports = {
     // Builds on @apostrophecms/ai and document-versions
     '@apostrophecms/ai-localize': {},
     '@apostrophecms/harness': {},
-    '@apostrophecms/assistant': {}
+    '@apostrophecms/assistant': {},
+    '@apostrophecms/mcp': {}
   }
 };
