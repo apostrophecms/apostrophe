@@ -14,6 +14,8 @@ module.exports = {
     // allowedOrigins: the hostnames a browser-sent `Origin` header may name.
     //   Requests with no `Origin` (every non-browser client) always pass.
     //   Defaults to the hostname of `baseUrl`, or localhost when unset.
+    // title: the server's display name in MCP clients. Defaults to the
+    //   site's `shortName`, which is always the server's `name`.
   },
   init(self) {
     self.validateOptions();
@@ -44,7 +46,7 @@ module.exports = {
         before: '@apostrophecms/express',
         middleware(req, res, next) {
           if (self.isRoute(req)) {
-            req.aposOwnBearerToken = true;
+            req.aposMcpBearerToken = true;
             req.csrfExempt = true;
           }
           return next();
@@ -72,7 +74,9 @@ module.exports = {
       ...require('./lib/tools')(self),
 
       validateOptions() {
-        const { enabled, allowedOrigins } = self.options;
+        const {
+          enabled, allowedOrigins, title
+        } = self.options;
         if (typeof enabled !== 'boolean') {
           throw new Error('The "@apostrophecms/mcp" module\'s enabled option must be a boolean.');
         }
@@ -81,6 +85,9 @@ module.exports = {
           allowedOrigins.every(name => (typeof name === 'string') && name.length)
         )) {
           throw new Error('The "@apostrophecms/mcp" module\'s allowedOrigins option must be an array of hostnames.');
+        }
+        if ((title != null) && !((typeof title === 'string') && title.length)) {
+          throw new Error('The "@apostrophecms/mcp" module\'s title option must be a non-empty string.');
         }
       }
     };

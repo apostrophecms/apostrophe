@@ -12,10 +12,10 @@
 //   SDK sees the request.
 // - Identity: the bearer token alone, checked by the route (lib/auth.js).
 // - The Apostrophe `req`: the SDK builds a server per request from a factory
-//   that only sees a web-standard `Request`, so the `req` travels to it in
-//   async-local storage.
+//   that only sees a web-standard `Request` and the request's `authInfo`.
+//   The adapter passes `req.auth` through as `authInfo`, so the route sets it
+//   once the token checks out, with the `req` in its `extra` field.
 
-const { AsyncLocalStorage } = require('node:async_hooks');
 const { createMcpHandler, McpServer } = require('@modelcontextprotocol/server');
 const { toNodeHandler, originValidation } = require('@modelcontextprotocol/node');
 const { version } = require('../../../../package.json');
@@ -25,13 +25,12 @@ const LOCALHOST = [ 'localhost', '127.0.0.1', '[::1]' ];
 module.exports = (self) => {
   return {
     enableHttp() {
-      self.requests = new AsyncLocalStorage();
       self.validateOrigin = originValidation(self.getAllowedOrigins());
       const onerror = (error) => self.logError('mcp-error', error.message, {
         stack: error.stack
       });
       self.httpHandler = toNodeHandler(
-        createMcpHandler(() => self.createServer(self.requests.getStore()), {
+        createMcpHandler(({ authInfo }) => self.createServer(authInfo.extra.req), {
           onerror
         }),
         { onerror }
@@ -50,7 +49,7 @@ module.exports = (self) => {
       // `_body` is body-parser's flag that it read and parsed the stream. With
       // no JSON content type it didn't, and the SDK reads the stream itself
       const parsedBody = req._body ? req.body : undefined;
-      return self.requests.run(req, () => self.httpHandler(req, res, parsedBody));
+      return self.httpHandler(req, res, parsedBody);
     },
 
     // Whether `req` is for the route. Express matches it with or without a
@@ -59,11 +58,12 @@ module.exports = (self) => {
       return req.path.replace(/\/$/, '') === self.action;
     },
 
-    // One server per request, as the SDK's handler asks
+    // One server per request, as the SDK's handler asks. Named for the site,
+    // so that a client connected to several sites can tell them apart
     createServer(req) {
       const server = new McpServer({
-        name: 'apostrophe',
-        title: 'Apostrophe',
+        name: self.apos.shortName,
+        title: self.options.title || self.apos.shortName,
         version
       }, {
         instructions: self.apos.harness.getInstructions(req),

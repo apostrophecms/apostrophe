@@ -48,7 +48,7 @@ describe('MCP: module and transport', function () {
     it('connects a 2026-07-28 client and sends the site guidance', async function () {
       await withClient(apos, 'auto', (client) => {
         assert.equal(client.getNegotiatedProtocolVersion(), '2026-07-28');
-        assert.equal(client.getServerVersion().name, 'apostrophe');
+        assert.equal(client.getServerVersion().name, apos.shortName);
         assert.equal(client.getInstructions(), expectedInstructions(apos));
       });
     });

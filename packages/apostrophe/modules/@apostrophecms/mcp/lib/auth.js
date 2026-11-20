@@ -4,7 +4,7 @@
 // nothing.
 //
 // The route's tokens are not Apostrophe login tokens, so the express
-// module's bearer token check skips this route (`req.aposOwnBearerToken`)
+// module's bearer token check skips this route (`req.aposMcpBearerToken`)
 // and the route checks the token here.
 //
 // The token is read from the `Authorization` header only, never from
@@ -62,6 +62,15 @@ module.exports = (self) => {
         return refuse('Bearer error="invalid_token"', 'bearer token invalid');
       }
       req.user = user;
+      // Read by the SDK's adapter, which hands it to the server factory as
+      // `authInfo` (see lib/http.js). OAuth (PRO-10455) fills in the client
+      // and scopes
+      req.auth = {
+        token,
+        clientId: 'apos-mcp-dev-token',
+        scopes: [],
+        extra: { req }
+      };
       return true;
 
       // OAuth (PRO-10455) adds the protected-resource metadata to the

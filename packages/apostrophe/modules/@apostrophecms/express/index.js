@@ -394,10 +394,10 @@ module.exports = {
         self.options.expressBearerToken || {}
       ),
       async bearerTokens(req, res, next) {
-        // A route that takes bearer tokens of its own kind (the MCP server's
-        // OAuth tokens) sets `req.aposOwnBearerToken` in a middleware that
-        // runs before this module's, and checks `req.token` itself
-        if (!req.token || req.aposOwnBearerToken) {
+        // The MCP route takes bearer tokens of its own kind (its
+        // OAuth tokens): it sets `req.aposMcpBearerToken` in a middleware that
+        // runs before this module's, and checks the token itself
+        if (!req.token || req.aposMcpBearerToken) {
           return next();
         }
         // The token can come from the query string, where qs
