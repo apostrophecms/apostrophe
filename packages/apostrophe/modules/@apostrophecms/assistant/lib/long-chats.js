@@ -41,6 +41,11 @@ const CLEARED_NOTE = 'This result was read when the call was made and later remo
   'chat to save space. What was concluded from it still holds; call the tool again only for ' +
   'detail that is no longer here.';
 const MEDIA_TYPES = [ 'image', 'document' ];
+// What providers bill for an image at the size the assistant sends, and
+// for a PDF page; a PDF's pages counted by its size when not known
+const IMAGE_TOKENS = 1600;
+const DOCUMENT_PAGE_TOKENS = 2000;
+const DOCUMENT_PAGE_BYTES = 100 * 1024;
 const MEDIA_NAMES = {
   image: 'An image',
   document: 'A document'
@@ -86,9 +91,27 @@ module.exports = (self) => {
       return tokens * CHARS_PER_TOKEN;
     },
 
+    // An image or a document counts as what a provider bills for it, not
+    // as its reference or its base64
     estimateTokens(value) {
-      const chars = (typeof value === 'string') ? value.length : JSON.stringify(value ?? '').length;
-      return Math.ceil(chars / CHARS_PER_TOKEN);
+      if (typeof value === 'string') {
+        return Math.ceil(value.length / CHARS_PER_TOKEN);
+      }
+      let media = 0;
+      const chars = JSON.stringify(value ?? '', (key, item) => {
+        if (!isMediaPart(item)) {
+          return item;
+        }
+        if (item.type === 'image') {
+          media += IMAGE_TOKENS;
+        } else {
+          const bytes = (item.document?.data?.length || 0) * 3 / 4;
+          media += DOCUMENT_PAGE_TOKENS *
+            (item.pages || Math.max(Math.ceil(bytes / DOCUMENT_PAGE_BYTES), 1));
+        }
+        return null;
+      }).length;
+      return Math.ceil(chars / CHARS_PER_TOKEN) + media;
     },
 
     /**
@@ -606,3 +629,11 @@ module.exports = (self) => {
     }
   };
 };
+
+// A content part carrying an image or a document, or naming a chat file
+// for one: not a widget or a document whose type is called `image`
+function isMediaPart(item) {
+  return Boolean(item) && (typeof item === 'object') && MEDIA_TYPES.includes(item.type) &&
+    ((typeof item.attachmentId === 'string') || (typeof item.image?.data === 'string') ||
+      (typeof item.image?.url === 'string') || (typeof item.document?.data === 'string'));
+}

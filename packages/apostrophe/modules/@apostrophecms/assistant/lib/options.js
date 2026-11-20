@@ -24,7 +24,9 @@ module.exports = (self) => {
       for (const [ name, value ] of Object.entries({
         maxSteps,
         delegationMaxSteps,
-        screenWait
+        screenWait,
+        attachmentMaxBytes: self.options.attachmentMaxBytes,
+        attachmentMaxCount: self.options.attachmentMaxCount
       })) {
         if (!Number.isInteger(value) || (value < 1)) {
           fail(name, 'must be a positive integer');

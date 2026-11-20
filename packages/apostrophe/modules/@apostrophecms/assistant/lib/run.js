@@ -56,10 +56,15 @@ module.exports = (self) => {
      * @param {boolean} [input.create] Create the chat under `chatId`
      *   first.
      * @param {string} [input.retryOf] The failed request this one retries.
+     * @param {string[]} [input.attachments] Ids of files attached to the
+     *   chat for this request (see attachments.js), in order.
+     * @param {object[]} [input.attached] A retry's: the files of the request
+     *   it retries, as that request describes them.
      * @returns {Promise<object>} The request record.
      */
     async send(req, chatId, {
-      message, screen, requestId: given, create = false, retryOf
+      message, screen, requestId: given, create = false, retryOf,
+      attachments = [], attached
     } = {}) {
       const _id = self.apos.launder.id(chatId);
       const requestId = given
@@ -76,6 +81,9 @@ module.exports = (self) => {
       if (!typed) {
         throw self.apos.error('invalid', 'the message is empty');
       }
+      const attachmentIds = [ ...new Set((Array.isArray(attachments) ? attachments : [])
+        .map(_id => self.apos.launder.id(_id))
+        .filter(Boolean)) ];
       const { message: text, mentions } = await self.verifyMentions(req, typed);
       const verified = await self.verifyScreen(req, screen);
       const { tabId } = verified;
@@ -94,6 +102,11 @@ module.exports = (self) => {
       });
       let stored = false;
       try {
+        const described = attached ||
+          await self.claimAttachments(claimed, request._id, attachmentIds);
+        if (described.length) {
+          request.attachments = described;
+        }
         const screenChanges = await self.getScreenChanges(
           claimed,
           request.sequence,
@@ -137,7 +150,8 @@ module.exports = (self) => {
         if (stored) {
           await self.endRun(req, claimed, request, { error: e });
         } else {
-          // Nothing stored: the chat is free again
+          // Nothing stored: the chat and its files are free again
+          await self.releaseAttachments(claimed, request._id);
           await self.chats.updateOne({
             _id: claimed._id,
             'openRequest._id': request._id
@@ -309,11 +323,15 @@ module.exports = (self) => {
         failed.revertId || (latest?._id !== failed._id)) {
         throw self.apos.error('invalid', 'only the latest request of this chat can be retried, once it failed');
       }
+      // A failed request the model never answered is not replayed: its
+      // files come with the retry
+      const replayed = (failed.messages || []).some(message => message.role === 'assistant');
       return self.send(req, chat._id, {
         message: failed.message,
         screen,
         requestId,
-        retryOf: failed._id
+        retryOf: failed._id,
+        ...(!replayed && failed.attachments && { attached: failed.attachments })
       });
     },
 
@@ -449,8 +467,9 @@ module.exports = (self) => {
     // request, the id `get_changes` reads a request's changes by, what
     // changed on the screen and what became of the model's changes to the
     // page since its last reply, and the screen as it is, and before the
-    // documents it mentions. Stored as sent, so the next request's prompt
-    // starts with this one's
+    // documents it mentions and the files attached to it. Stored as sent,
+    // the files by reference, so the next request's prompt starts with this
+    // one's
     getUserMessage(request) {
       return {
         role: 'user',
@@ -484,7 +503,8 @@ module.exports = (self) => {
               type: 'text',
               text: `${MENTIONS_INTRO} ${JSON.stringify(request.mentions)}`
             } ]
-            : [])
+            : []),
+          ...self.getAttachmentParts(request.attachments)
         ]
       };
     },
@@ -557,7 +577,7 @@ module.exports = (self) => {
         // change only once it is stored (see events.js)
         started = await self.apos.ai.generateJob(doorReq, {
           system,
-          messages,
+          messages: await self.addAttachmentBytes(request.ownerId, messages),
           tools: toolNames,
           // A request that waited or paused has a step left at least
           maxSteps: Math.max(self.options.maxSteps - taken, 1),
@@ -898,17 +918,28 @@ module.exports = (self) => {
 
       // A run reads the request's own results as the chat's checkpoint
       // shortens them; each result already stored is stored as it was
+      // The run's part as stored: tool results as first stored, and the
+      // request's message, its one user message, as sent, with no file's
+      // bytes and nothing a checkpoint shortened
       function restore(messages) {
         const stored = new Map((current.messages || [])
           .flatMap(message => (Array.isArray(message.content) ? message.content : []))
           .filter(part => part.type === 'toolResult')
           .map(part => [ part.toolCallId, part ]));
-        return messages.map(message => ((message.role === 'tool')
-          ? {
-            ...message,
-            content: message.content.map(part => stored.get(part.toolCallId) || part)
+        const sent = (current.messages?.[0]?.role === 'user')
+          ? current.messages[0]
+          : self.getUserMessage(request);
+        return messages.map(message => {
+          if (message.role === 'user') {
+            return sent;
           }
-          : message));
+          return (message.role === 'tool')
+            ? {
+              ...message,
+              content: message.content.map(part => stored.get(part.toolCallId) || part)
+            }
+            : message;
+        });
       }
     },
 

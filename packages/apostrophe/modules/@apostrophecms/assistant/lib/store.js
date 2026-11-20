@@ -39,6 +39,7 @@ module.exports = (self) => {
         chatId: 1,
         createdAt: 1
       });
+      await self.ensureAttachmentCollection();
     },
 
     // The owner of everything the assistant stores: a real user. A task's
@@ -216,7 +217,8 @@ module.exports = (self) => {
 
     /**
      * Deletes a chat with everything it owns: its requests and reverts, then
-     * its change log entries, then the chat. A chat whose request or revert
+     * its files (bytes before records), then its change log entries, then
+     * the chat. A chat whose request or revert
      * is running is refused (Stop first); one waiting for an answer is not,
      * since nothing runs. A chat being deleted takes no send or answer, and an
      * interrupted delete is finished by the next.
@@ -249,6 +251,7 @@ module.exports = (self) => {
         chatId: chat._id,
         ownerId: chat.ownerId
       });
+      await self.deleteChatAttachments(chat);
       await self.apos.harness.deleteChatChanges(req, chat._id);
       await self.chats.deleteOne({
         _id: chat._id,

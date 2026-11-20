@@ -48,7 +48,11 @@ module.exports = {
     contextLimit: 250000,
     // The percent of that budget past which a chat is shortened, 10 to 90,
     // and at least 20000 tokens of it
-    contextThreshold: 75
+    contextThreshold: 75,
+    // The largest file a request may carry, in bytes
+    attachmentMaxBytes: 8 * 1024 * 1024,
+    // The files a request may carry
+    attachmentMaxCount: 4
   },
   icons: {
     'creation-icon': 'Creation',
@@ -76,6 +80,7 @@ module.exports = {
     }
     self.addEditorTools();
     self.addAgentTools();
+    self.addAttachmentTools();
     self.enableBrowserData();
   },
   handlers(self) {
@@ -216,7 +221,8 @@ module.exports = {
         'chat/:_id/request/:requestId/step/:stepId': route(async (req) => {
           const request = await self.getChatRequest(req, req.params._id,
             req.params.requestId);
-          const step = self.renderStep(request, self.apos.launder.string(req.params.stepId));
+          const stepId = self.apos.launder.string(req.params.stepId);
+          const step = self.renderStep(request, stepId);
           if (!step) {
             throw self.apos.error('notfound');
           }
@@ -234,8 +240,13 @@ module.exports = {
             message: req.body.message,
             screen: req.body.screen,
             requestId: req.body.requestId,
-            create: req.body.create === true
+            create: req.body.create === true,
+            attachments: req.body.attachments
           }))
+        })),
+        // A file for the chat's next request, which may create the chat
+        'chat/:_id/attachment': route(async (req) => ({
+          attachment: await self.uploadAttachment(req, req.params._id)
         })),
         'chat/:_id/answer': route(async (req) => withChat(req, {
           request: self.renderRequest(await self.answer(req, req.params._id, {
@@ -343,6 +354,11 @@ module.exports = {
         'chat/:_id': route(async (req) => {
           await self.deleteChat(req, req.params._id);
           return {};
+        }),
+        // A file the composer dropped after its upload, never sent
+        'chat/:_id/attachment/:attachmentId': route(async (req) => {
+          await self.detach(req, req.params._id, req.params.attachmentId);
+          return {};
         })
       }
     };
@@ -378,6 +394,17 @@ module.exports = {
       };
     }
   },
+  routes(self) {
+    if (!self.options.enabled) {
+      return {};
+    }
+    return {
+      get: {
+        // A chat's file, for its owner only
+        'chat/:_id/attachment/:attachmentId': (req, res) => self.serveAttachment(req, res)
+      }
+    };
+  },
   tasks(self) {
     return require('./lib/tasks')(self);
   },
@@ -391,6 +418,8 @@ module.exports = {
       ...require('./lib/browser-tools')(self),
       ...require('./lib/editor-tools')(self),
       ...require('./lib/agent-tools')(self),
+      ...require('./lib/attachments')(self),
+      ...require('./lib/attachment-tools')(self),
       ...require('./lib/gates')(self),
       ...require('./lib/edit-mode')(self),
       ...require('./lib/open-editor')(self),
@@ -414,7 +443,12 @@ module.exports = {
           action: self.action,
           usageDisplay: self.options.usageDisplay,
           modelDisplay: self.options.modelDisplay,
-          screenWait: self.options.screenWait
+          screenWait: self.options.screenWait,
+          attachments: {
+            maxBytes: self.options.attachmentMaxBytes,
+            maxCount: self.options.attachmentMaxCount,
+            extensions: self.getAttachmentExtensions()
+          }
         };
       }
     };

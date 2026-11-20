@@ -60,6 +60,15 @@ describe('Assistant: module and options', function () {
         usageDisplay: 'tokens',
         modelDisplay: false,
         screenWait: 15000,
+        // With no provider routed, every kind of file
+        attachments: {
+          maxBytes: 8 * 1024 * 1024,
+          maxCount: 4,
+          extensions: [
+            'png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'heic', 'heif', 'svg', 'pdf',
+            'html', 'htm', 'css', 'json', 'tokens', 'md', 'markdown'
+          ]
+        },
         alias: 'assistant'
       });
       const anonymous = await apos.template.getBodyData(apos.task.getAnonReq());
@@ -202,6 +211,8 @@ describe('Assistant: module and options', function () {
       [ { modelDisplay: 1 }, /modelDisplay option must be a boolean/ ],
       [ { maxSteps: 0 }, /maxSteps option must be a positive integer/ ],
       [ { screenWait: 1.5 }, /screenWait option must be a positive integer/ ],
+      [ { attachmentMaxBytes: 0 }, /attachmentMaxBytes option must be a positive integer/ ],
+      [ { attachmentMaxCount: 'four' }, /attachmentMaxCount option must be a positive integer/ ],
       [ { usageDisplay: 'cost' }, /usageDisplay option must be one of: tokens, none/ ],
       [ { titleEffort: '' }, /titleEffort option must be the name of an effort level/ ],
       [ { contextLimit: 0 }, /contextLimit option must be a positive integer/ ],
