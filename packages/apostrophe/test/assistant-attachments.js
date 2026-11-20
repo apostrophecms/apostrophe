@@ -378,18 +378,17 @@ describe('Assistant: attachments', function () {
       assert(!svg.content.includes('<!--'));
     });
 
-    it('reads CSS whole, or searches it when it is too large', async function () {
+    it('reads CSS trimmed, a large stylesheet in parts ending on whole rules', async function () {
       const small = await readOne('site.css', '/* c */\n.button {\n  color: red;\n}\n');
       assert.equal(small.content, '.button{color: red;}');
       const rules = Array.from({ length: 3000 }, (item, index) =>
-        `.rule-${index} { margin: ${index}px; padding: 2px; }`).join('\n') +
-        '\n@media (min-width: 600px) { .hero { color: blue; } }';
-      const large = await readOne('big.css', rules);
-      assert.equal(large.content, undefined);
-      assert.match(large.note, /search/);
-      const found = await readOne('big.css', rules, { search: 'HERO' });
-      assert.deepEqual(found.matches, [ '@media (min-width: 600px){.hero{color: blue;}}' ]);
-      assert.equal(found.total, 1);
+        `.rule-${index} { margin: ${index}px; padding: 2px; }`).join('\n');
+      const first = await readOne('big.css', rules);
+      assert.equal(first.parts, 3);
+      assert(first.content.length <= 40000);
+      assert(first.content.endsWith('}'));
+      const last = await readOne('big.css', rules, { part: 3 });
+      assert(last.content.endsWith('.rule-2999{margin: 2999px;padding: 2px;}'));
     });
 
     it('reads token files by shape', async function () {
@@ -424,6 +423,15 @@ describe('Assistant: attachments', function () {
       } ]));
       assert.equal(list.format, 'list');
       assert.equal(list.tokens[0].description, 'Highlights only');
+      const noted = await readOne('noted.tokens', JSON.stringify(Array.from({ length: 300 },
+        (item, index) => ({
+          name: `color-${index}`,
+          value: '#000',
+          usage: 'Used for '.repeat(40)
+        }))));
+      assert.equal(noted.count, 300);
+      assert.equal(noted.parts, 4);
+      assert(JSON.stringify(noted.tokens).length <= 40000);
       const other = await readOne('data.json', '{"hello":"world"}');
       assert.equal(other.format, 'json');
       assert.equal(other.content, '{"hello":"world"}');

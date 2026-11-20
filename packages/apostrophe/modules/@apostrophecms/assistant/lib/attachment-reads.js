@@ -1,8 +1,7 @@
 // What `read_attachment` makes of a file's text: HTML and SVG trimmed of
 // noise only (scripts, path data, base64 data URLs, comments, extra
-// whitespace), CSS trimmed and searched when it is too large to read whole,
-// token files checked by shape, long text read in parts, and the main
-// colors of an image measured.
+// whitespace), CSS trimmed, token files checked by shape, long text and
+// long token lists read in parts, and the main colors of an image measured.
 
 const cheerio = require('cheerio');
 
@@ -11,7 +10,6 @@ const PART_CHARS = 40000;
 // Where a part may end early to end on whitespace
 const PART_SLACK = 2000;
 const TOKENS_PER_PART = 300;
-const SEARCH_MAX = 40;
 const COLORS_MAX = 8;
 // The least share of the pixels a main color covers
 const COLOR_MIN_SHARE = 0.02;
@@ -24,7 +22,6 @@ module.exports = {
   trimHtml,
   trimSvg,
   trimCss,
-  searchCss,
   readTokens,
   getPart,
   getTokensPart,
@@ -65,46 +62,6 @@ function trimCss(text) {
     .replace(/\s+/g, ' ')
     .replace(/\s*([{};])\s*/g, '$1')
     .trim();
-}
-
-/**
- * The rules of a stylesheet that mention `term`, case aside: whole
- * top-level rules, an at-rule with everything inside it.
- *
- * @param {string} css Trimmed (`trimCss`).
- * @param {string} term
- * @returns {{ matches: string[], total: number }}
- */
-function searchCss(css, term) {
-  const wanted = term.toLowerCase();
-  const found = splitRules(css).filter(rule => rule.toLowerCase().includes(wanted));
-  return {
-    matches: found.slice(0, SEARCH_MAX),
-    total: found.length
-  };
-}
-
-function splitRules(css) {
-  const rules = [];
-  let depth = 0;
-  let start = 0;
-  for (let i = 0; i < css.length; i++) {
-    const char = css[i];
-    if (char === '{') {
-      depth++;
-    } else if (char === '}') {
-      depth = Math.max(depth - 1, 0);
-      if (!depth) {
-        rules.push(css.slice(start, i + 1).trim());
-        start = i + 1;
-      }
-    } else if ((char === ';') && !depth) {
-      // @import, @charset
-      rules.push(css.slice(start, i + 1).trim());
-      start = i + 1;
-    }
-  }
-  return rules.filter(Boolean);
 }
 
 /**
@@ -174,15 +131,17 @@ function token(path, value, type, description) {
 }
 
 /**
- * One part of a long text, `part` from 1: parts end on whitespace where
- * they can.
+ * One part of a long text, `part` from 1: parts end just after the first
+ * of `breaks` found near the end, else wherever the size ends them.
  *
  * @param {string} text
  * @param {number} part
+ * @param {string[]} [breaks] For a stylesheet, a whole rule, else a whole
+ *   declaration.
  * @returns {{ content: string, part?: number, parts?: number }|null} `null`
  *   past the last part.
  */
-function getPart(text, part = 1) {
+function getPart(text, part = 1, breaks = [ ' ' ]) {
   if (text.length <= PART_CHARS) {
     return (part === 1) ? { content: text } : null;
   }
@@ -191,33 +150,55 @@ function getPart(text, part = 1) {
   while (start < text.length) {
     let end = Math.min(start + PART_CHARS, text.length);
     if (end < text.length) {
-      const space = text.lastIndexOf(' ', end);
-      if (space > end - PART_SLACK) {
-        end = space + 1;
+      const found = breaks
+        .map(char => text.lastIndexOf(char, end - 1))
+        .find(index => index >= end - PART_SLACK);
+      if (found !== undefined) {
+        end = found + 1;
       }
     }
     parts.push(text.slice(start, end));
     start = end;
   }
-  return (part <= parts.length)
-    ? {
-      content: parts[part - 1],
-      part,
-      parts: parts.length
-    }
-    : null;
+  return pickPart(parts, part, content => ({ content }));
 }
 
+/**
+ * One part of a token list, `part` from 1: at most `TOKENS_PER_PART`
+ * tokens and about `PART_CHARS` characters, so long usage notes never make
+ * a part too large.
+ *
+ * @param {object[]} tokens
+ * @param {number} part
+ * @returns {{ tokens: object[], part?: number, parts?: number }|null}
+ */
 function getTokensPart(tokens, part = 1) {
-  const parts = Math.max(Math.ceil(tokens.length / TOKENS_PER_PART), 1);
-  if (part > parts) {
+  const parts = [ [] ];
+  let chars = 0;
+  for (const item of tokens) {
+    const size = JSON.stringify(item).length + 1;
+    const current = parts.at(-1);
+    const full = (current.length >= TOKENS_PER_PART) || (chars + size > PART_CHARS);
+    if (current.length && full) {
+      parts.push([ item ]);
+      chars = size;
+    } else {
+      current.push(item);
+      chars += size;
+    }
+  }
+  return pickPart(parts, part, found => ({ tokens: found }));
+}
+
+function pickPart(parts, part, shape) {
+  if (part > parts.length) {
     return null;
   }
   return {
-    tokens: tokens.slice((part - 1) * TOKENS_PER_PART, part * TOKENS_PER_PART),
-    ...((parts > 1) && {
+    ...shape(parts[part - 1]),
+    ...((parts.length > 1) && {
       part,
-      parts
+      parts: parts.length
     })
   };
 }

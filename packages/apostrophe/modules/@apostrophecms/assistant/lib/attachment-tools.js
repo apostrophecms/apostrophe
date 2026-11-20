@@ -6,13 +6,10 @@
 
 const fs = require('node:fs/promises');
 const {
-  PART_CHARS, trimHtml, trimSvg, trimCss, searchCss, readTokens, getPart, getTokensPart,
+  PART_CHARS, trimHtml, trimSvg, trimCss, readTokens, getPart, getTokensPart,
   measureColors
 } = require('./attachment-reads');
 
-// A stylesheet larger than this, trimmed, is searched instead of read
-const CSS_WHOLE_CHARS = PART_CHARS;
-const SEARCH_MAX = 200;
 const ALT_MAX = 500;
 const TITLE_MAX = 200;
 const KIND_NAMES = {
@@ -40,10 +37,10 @@ module.exports = (self) => {
         name: 'read_attachment',
         label: 'apostrophe:aiToolReadAttachment',
         description: 'Read a file attached to this chat. HTML and SVG come trimmed of ' +
-          'scripts, path data, data URLs and comments; CSS whole, or searched with ' +
-          '"search" when too large; token files as a list of tokens; Markdown as text. ' +
-          'Long text comes in parts: read the next with "part". For an image, its size ' +
-          'and main colors; PDFs and images are already in the message that attached them.',
+          'scripts, path data, data URLs and comments; CSS trimmed of comments; token ' +
+          'files as a list of tokens; Markdown as text. A long file comes in parts: read ' +
+          'the next with "part". For an image, its size and main colors; PDFs and images ' +
+          'are already in the message that attached them.',
         kind: 'query',
         tags: [ 'assistant' ],
         input: {
@@ -54,13 +51,6 @@ module.exports = (self) => {
               type: 'integer',
               minimum: 1,
               description: 'Which part of a long file, from 1'
-            },
-            search: {
-              type: 'string',
-              minLength: 1,
-              maxLength: SEARCH_MAX,
-              description: 'For a stylesheet: the rules that mention this, such as a ' +
-                'selector, a class or a property'
             }
           },
           required: [ 'attachment' ],
@@ -99,9 +89,7 @@ module.exports = (self) => {
         handler: saveToMedia
       });
 
-      async function readAttachment(req, {
-        attachment, part = 1, search
-      }) {
+      async function readAttachment(req, { attachment, part = 1 }) {
         const record = await self.findChatAttachment(req, attachment);
         const kind = self.getAttachmentKind(record);
         const head = {
@@ -126,25 +114,9 @@ module.exports = (self) => {
         }
         const text = (await readFile(record)).toString('utf8');
         if (kind === 'css') {
-          const css = trimCss(text);
-          if (search) {
-            return {
-              ...head,
-              search,
-              ...searchCss(css, search)
-            };
-          }
-          if (css.length > CSS_WHOLE_CHARS) {
-            return {
-              ...head,
-              length: css.length,
-              note: 'Too large to read whole: call again with "search" for the rules ' +
-                'that mention a selector, class or property.'
-            };
-          }
           return {
             ...head,
-            content: css
+            ...pageOf(getPart(trimCss(text), part, [ '}', ';', ' ' ]))
           };
         }
         if (kind === 'tokens') {
