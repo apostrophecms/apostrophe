@@ -151,6 +151,9 @@ module.exports = {
       }
     }
   },
+  init(self) {
+    self.addMigrations();
+  },
   handlers(self, options) {
     return {
       beforeSave: {
@@ -204,6 +207,36 @@ module.exports = {
   },
   methods(self, options) {
     return {
+      addMigrations() {
+        self.apos.migration.add(`${self.__meta.name}:copy-series-link-to-published`, async () => {
+          // Before eventGroupId and isClone were schema fields, publishing
+          // dropped them. The drafts still have them, so copy them across.
+          return self.apos.migration.eachDoc(
+            {
+              type: self.name,
+              aposMode: 'draft',
+              $or: [
+                { eventGroupId: { $exists: 1 } },
+                { isClone: { $exists: 1 } }
+              ]
+            },
+            5,
+            async draft => {
+              const $set = {};
+              for (const name of [ 'eventGroupId', 'isClone' ]) {
+                if (draft[name] !== undefined) {
+                  $set[name] = draft[name];
+                }
+              }
+              // Drafts that were never published match nothing
+              await self.apos.doc.db.updateOne(
+                { _id: draft._id.replace(/:draft$/, ':published') },
+                { $set }
+              );
+            }
+          );
+        });
+      },
       denormalizeDatesAndTimes(piece) {
         // Parse our dates and times
         let startTime = piece.startTime;

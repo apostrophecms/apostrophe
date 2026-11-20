@@ -128,4 +128,58 @@ describe('@apostrophecms/event series link', function () {
     assert.equal(saved.eventGroupId, groupId);
     assert.notEqual(saved.isClone, true);
   });
+
+  describe('migration', function () {
+    // A new site marks every migration as done without running it, so
+    // runOne() would skip this one. Call it directly instead.
+    async function runMigration() {
+      const migration = apos.migration.migrations.find(
+        m => m.name === '@apostrophecms/event:copy-series-link-to-published'
+      );
+      assert.ok(migration);
+      await migration.fn();
+    }
+
+    // Published documents as they were stored before the fix: no series link
+    async function stripPublished() {
+      await apos.doc.db.updateMany(
+        {
+          type: '@apostrophecms/event',
+          aposMode: 'published'
+        },
+        {
+          $unset: {
+            eventGroupId: 1,
+            isClone: 1
+          }
+        }
+      );
+    }
+
+    it('copies eventGroupId to published events that lost it', async function () {
+      const published = await publishSeries();
+      const groupId = published[0].eventGroupId;
+      await stripPublished();
+      await runMigration();
+      assert.deepEqual(
+        (await occurrences('published')).map(event => event.eventGroupId),
+        published.map(() => groupId)
+      );
+    });
+
+    it('copies isClone to published copies that lost it', async function () {
+      await publishSeries();
+      await stripPublished();
+      await runMigration();
+      const [ original, ...copies ] = await occurrences('published');
+      assert.deepEqual(copies.map(event => event.isClone), [ true, true, true ]);
+      assert.notEqual(original.isClone, true);
+    });
+
+    it('leaves draft-only events without a published document alone', async function () {
+      await insertSeries();
+      await runMigration();
+      assert.equal((await occurrences('published')).length, 0);
+    });
+  });
 });
