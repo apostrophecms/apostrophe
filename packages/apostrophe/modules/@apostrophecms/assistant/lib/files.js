@@ -84,19 +84,17 @@ module.exports = (self) => {
       };
     },
 
-    // Writes a prepared chat file, an image with each of its sizes
+    // Writes a prepared chat file as given, an image with each of its sizes.
+    // The original is never re-encoded, so a save to Media encodes it once
     async writeChatFile(localPath, storage) {
       const { uploadfs } = self.apos.attachment;
       try {
+        await promisify(uploadfs.copyIn)(localPath, storage.path);
         if (storage.sizes) {
           await promisify(uploadfs.copyImageIn)(localPath, storage.path, {
             sizes: SIZES,
-            // The original is what the model reads, whatever the project
-            // keeps for Media
-            copyOriginal: true
+            copyOriginal: false
           });
-        } else {
-          await promisify(uploadfs.copyIn)(localPath, storage.path);
         }
       } catch (e) {
         throw storageError(e, 'The chat file could not be written.');

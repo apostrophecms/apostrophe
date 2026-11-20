@@ -54,7 +54,7 @@ for (const key of [ null, 'testkey' ]) {
       await apos.assistant.removeChatFile(prepared.storage);
     });
 
-    it('writes an image with its own sizes, under its true extension', async function () {
+    it('writes an image as given with its own sizes, under its true extension', async function () {
       const local = path.join(FIXTURES, 'crop_image.jpeg');
       const prepared = await apos.assistant.prepareChatFile(local, 'jpeg');
       assert.equal(prepared.extension, 'jpg');
@@ -71,10 +71,7 @@ for (const key of [ null, 'testkey' ]) {
       const small = await apos.assistant.readChatFile(storage, { size: 'thumbnail' });
       assert(small.length > 0);
       assert(small.length < original.length);
-      assert.deepEqual(
-        original,
-        await fs.readFile(path.join(UPLOADS, storage.path))
-      );
+      assert.deepEqual(original, await fs.readFile(local));
       await apos.assistant.removeChatFile(storage);
     });
 
