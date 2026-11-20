@@ -109,6 +109,13 @@ module.exports = (self) => {
           await self.claimAttachments(claimed, request._id, attachmentIds);
         if (described.length) {
           request.attachments = described;
+          // From now on the run tells the model how to build from a source
+          if (!claimed.hasAttachments) {
+            claimed.hasAttachments = true;
+            await self.chats.updateOne({ _id: claimed._id }, {
+              $set: { hasAttachments: true }
+            });
+          }
         }
         const screenChanges = await self.getScreenChanges(
           claimed,
@@ -680,12 +687,14 @@ module.exports = (self) => {
       });
     },
 
-    // A run's instructions, the chat's current summary, or the one it
-    // carried over, last
+    // A run's instructions, how to build from an attached source once the
+    // chat has files, the chat's current summary, or the one it carried
+    // over, last
     getRunInstructions(doorReq, chat) {
       return self.apos.harness.getInstructions(doorReq, [
         self.getReplySection(),
         self.getScreenSection(),
+        chat.hasAttachments ? self.getSourceSection() : null,
         self.getSummarySection(self.getCheckpoint(chat), chat)
       ]);
     },

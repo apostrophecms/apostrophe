@@ -86,6 +86,9 @@ module.exports = (self) => {
           : null,
         ...(continuedFrom && { continuedFrom }),
         requestCount: 0,
+        // Set once a request brings files: the model is told how to build
+        // from a source from then on
+        hasAttachments: false,
         // When its last request was sent, which retention counts from
         lastRequestAt: now,
         createdAt: now,

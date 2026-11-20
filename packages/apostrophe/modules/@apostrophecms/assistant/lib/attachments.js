@@ -17,9 +17,10 @@
 // or `candidate` for a file an image ask holds (its `callId`, `kept` when
 // picked on Refine; see image-tools.js); an attachment a picked image
 // became carries `replaces`, the Media image its save updates. `status` is
-// `writing` until the bytes are stored, then `stored`, or `orphan` once its
-// chat is deleted and a file could not be removed: an orphan keeps its
-// owner and its storage only, for a later removal.
+// `writing` until the bytes are stored, then `stored`, `missing` once a
+// read found its bytes gone from storage, or `orphan` once its chat is
+// deleted and a file could not be removed: an orphan keeps its owner and
+// its storage only, for a later removal.
 
 const fs = require('node:fs/promises');
 const os = require('node:os');
@@ -77,6 +78,19 @@ const TEXT_WHAT = {
   tokens: 'JSON',
   markdown: 'Markdown'
 };
+// How to build pages from a source the user attached
+const SOURCE_SECTION = [
+  'Building from an attached source. When the user asks for pages built from an attached ' +
+    'screenshot, HTML or CSS:',
+  '- Read the source first: a screenshot is in the message (describe_images reads it ' +
+    'again), HTML and CSS with read_attachment.',
+  '- Build only from this site\'s own page types and widgets: read the schema of each one ' +
+    'you use. Never invent a widget, markup or styles the site does not have.',
+  '- One page per source, unless the user asks otherwise. Pages are created as drafts.',
+  '- Match each part of the source to the closest widget. In your reply, name each page ' +
+    'you created, and each part no widget matched with what you used instead, or that you ' +
+    'left it out.'
+].join('\n');
 const KIND_NAMES = {
   image: 'image',
   svg: 'SVG',
@@ -101,15 +115,26 @@ module.exports = (self) => {
       });
     },
 
+    // The instructions' section on building pages from an attached source,
+    // in a chat that has files
+    getSourceSection() {
+      return SOURCE_SECTION;
+    },
+
     // The extensions a request may carry, by what the chat's route reads:
     // no PDF without `documentInput`, no image without `imageInput`
     getAttachmentExtensions() {
+      const unreadable = self.getUnreadableExtensions();
+      return Object.keys(TYPES).filter(extension => !unreadable[extension]);
+    },
+
+    // The extensions of the kinds the chat's route can't read, each with
+    // its kind, so the panel says why it refuses them
+    getUnreadableExtensions() {
       const route = self.getAttachmentRoute();
-      return Object.keys(TYPES).filter(extension => {
-        const kind = TYPES[extension];
-        return ((kind !== 'pdf') || route.documentInput) &&
-          ((kind !== 'image') || route.imageInput);
-      });
+      return Object.fromEntries(Object.entries(TYPES).filter(([ , kind ]) =>
+        ((kind === 'pdf') && !route.documentInput) ||
+        ((kind === 'image') && !route.imageInput)));
     },
 
     // What the chat's route reads: `{ imageInput, documentInput,
@@ -502,8 +527,37 @@ module.exports = (self) => {
       const known = [ 'thumbnail', 'preview' ].includes(size) ? size : null;
       return {
         record,
-        data: await self.readChatFile(record.storage, { size: known })
+        data: await self.readRecordFile(record, { size: known })
       };
+    },
+
+    /**
+     * Reads a chat file's record's bytes, as `readChatFile` does. Bytes no
+     * longer in storage (a database copied without its files, a file removed
+     * outside the assistant) mark the record `missing`, so the thread shows
+     * the file as no longer available from then on, and throw `notfound`.
+     *
+     * @param {object} record
+     * @param {object} [options] As `readChatFile` takes them.
+     * @returns {Promise<Buffer>}
+     */
+    async readRecordFile(record, options) {
+      try {
+        return await self.readChatFile(record.storage, options);
+      } catch (e) {
+        if (e.name === 'notfound') {
+          await self.attachments.updateOne({
+            _id: record._id,
+            status: 'stored'
+          }, {
+            $set: {
+              status: 'missing',
+              updatedAt: new Date()
+            }
+          });
+        }
+        throw e;
+      }
     },
 
     /**
@@ -681,7 +735,7 @@ module.exports = (self) => {
         }
         let data;
         try {
-          data = (await self.readChatFile(record.storage, {
+          data = (await self.readRecordFile(record, {
             size: (record.mediaType === 'application/pdf') ? null : 'preview'
           })).toString('base64');
         } catch (e) {
@@ -728,10 +782,15 @@ module.exports = (self) => {
         chatId: door.chat,
         kind: 'attachment',
         requestId: { $ne: null },
-        status: 'stored'
+        status: { $in: [ 'stored', 'missing' ] }
       });
       if (!record) {
         throw self.apos.error('aiToolError', 'No file attached to this chat has this id.');
+      }
+      if (record.status === 'missing') {
+        throw self.apos.error('aiToolError', `The file "${record.name}" is no longer available.`, {
+          reason: 'gone'
+        });
       }
       return record;
     },

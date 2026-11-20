@@ -199,7 +199,7 @@ module.exports = (self) => {
 
       async function readFile(record, options) {
         try {
-          return await self.readChatFile(record.storage, options);
+          return await self.readRecordFile(record, options);
         } catch (e) {
           if (e.name === 'notfound') {
             throw self.apos.error('aiToolError', `The file "${record.name}" is no longer available.`);
@@ -247,7 +247,7 @@ module.exports = (self) => {
       try {
         let data;
         try {
-          data = await self.readChatFile(record.storage);
+          data = await self.readRecordFile(record);
         } catch (e) {
           if (e.name === 'notfound') {
             throw self.apos.error('aiToolError', `The file "${record.name}" is no longer ` +
@@ -301,6 +301,7 @@ module.exports = (self) => {
         interpolate: { title: saved.title },
         link: {
           _id: saved._id,
+          type: '@apostrophecms/image',
           label: 'apostrophe:assistantOpenInMedia'
         }
       });

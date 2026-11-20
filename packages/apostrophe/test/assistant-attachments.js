@@ -166,6 +166,7 @@ describe('Assistant: attachments', function () {
           }
         });
         assert(!apos.assistant.getAttachmentExtensions().includes('pdf'));
+        assert.deepEqual(apos.assistant.getUnreadableExtensions(), { pdf: 'pdf' });
       } finally {
         capabilities.documentInput = true;
       }
@@ -319,8 +320,36 @@ describe('Assistant: attachments', function () {
       assert.equal(resultOf(request, 'call-read_attachment').error,
         'The file "page.html" is no longer available.');
       assert.equal(resultOf(request, 'call-describe').output.attachments[0].error,
-        'The file is no longer available.');
+        'The file "photo.png" is no longer available.');
       assert(!calls.some(call => call.caller === 'vision'));
+      // Found gone, each file is marked so, and the thread is told
+      const [ first ] = await apos.assistant.getChatRequests(req, chat._id);
+      const [ shown ] = await apos.assistant.presentRequests([ first ]);
+      assert.deepEqual(shown.unavailable.toSorted(), [ image._id, page._id ].toSorted());
+      const records = await apos.assistant.attachments
+        .find({ _id: { $in: [ image._id, page._id ] } })
+        .toArray();
+      assert(records.every(record => record.status === 'missing'));
+      // The owner's route answers not found
+      const jar = await login('editor');
+      const answer = await get(jar, `${BASE}/${chat._id}/attachment/${page._id}`);
+      assert.equal(answer.status, 404);
+    });
+
+    it('tells the model how to build from a source once the chat has files', async function () {
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      const system = () => calls.filter(call => call.caller === 'run').at(-1).request.system;
+      await runToEnd(req, chat, 'Hello');
+      assert(!system().includes('Building from an attached source'));
+      const page = await attach(req, chat._id, 'page.html', '<p>Hi</p>');
+      await runToEnd(req, chat, 'Build this', [ page._id ]);
+      assert(system().includes('Building from an attached source'));
+      assert(system().includes('One page per source'));
+      // And on, for the rest of the chat
+      await runToEnd(req, chat, 'Thanks');
+      assert(system().includes('Building from an attached source'));
+      assert.equal((await apos.assistant.getChat(req, chat._id)).hasAttachments, true);
     });
 
     it('brings the files of a retried request the model never answered', async function () {

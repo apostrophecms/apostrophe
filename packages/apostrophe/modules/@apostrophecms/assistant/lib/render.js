@@ -229,6 +229,41 @@ module.exports = (self) => {
     },
 
     /**
+     * Requests as a route answers with them: as `renderRequest` renders
+     * each, with `unavailable`, the ids of the chat files it names that are
+     * no longer stored (its attachments, the images its image asks kept),
+     * which the thread shows as no longer available.
+     *
+     * @param {object[]} requests
+     * @returns {Promise<object[]>}
+     */
+    async presentRequests(requests) {
+      const named = requests.map(request => [
+        ...(request.attachments || []).map(attachment => attachment._id),
+        ...(request.imageAsks || []).flatMap(ask => [
+          ...ask.rounds.map(round => round.kept),
+          ask.outcome?.attachmentId
+        ])
+      ].filter(Boolean));
+      const ids = [ ...new Set(named.flat()) ];
+      const stored = new Set(ids.length
+        ? (await self.attachments.find({
+          _id: { $in: ids },
+          status: 'stored'
+        }, { projection: { _id: 1 } }).toArray()).map(record => record._id)
+        : []);
+      return requests.map((request, i) => ({
+        ...self.renderRequest(request),
+        unavailable: named[i].filter(_id => !stored.has(_id))
+      }));
+    },
+
+    // One request as a route answers with it (see `presentRequests`)
+    async presentRequest(request) {
+      return (await self.presentRequests([ request ]))[0];
+    },
+
+    /**
      * One step of a request as the panel reads it once the editor opens it:
      * `{ input, output, error }`, the arguments and the result or error as
      * capped JSON text, `null` where there is none yet. `null` when the

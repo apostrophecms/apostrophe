@@ -217,7 +217,7 @@ module.exports = {
           const reverts = await self.getChatReverts(req, chat._id);
           return {
             chat,
-            requests: requests.map(self.renderRequest),
+            requests: await self.presentRequests(requests),
             reverts: reverts.map(self.renderRevert)
           };
         }),
@@ -228,7 +228,7 @@ module.exports = {
             req.params.requestId);
           return {
             chat,
-            request: self.renderRequest(request)
+            request: await self.presentRequest(request)
           };
         }),
         // A step's arguments and result, once the editor opens it
@@ -250,7 +250,7 @@ module.exports = {
         // A new chat is created by its first send, under the id the
         // browser named it by
         'chat/:_id/send': route(async (req) => withChat(req, {
-          request: self.renderRequest(await self.send(req, req.params._id, {
+          request: await self.presentRequest(await self.send(req, req.params._id, {
             message: req.body.message,
             screen: req.body.screen,
             requestId: req.body.requestId,
@@ -263,7 +263,7 @@ module.exports = {
           attachment: await self.uploadAttachment(req, req.params._id)
         })),
         'chat/:_id/answer': route(async (req) => withChat(req, {
-          request: self.renderRequest(await self.answer(req, req.params._id, {
+          request: await self.presentRequest(await self.answer(req, req.params._id, {
             tabId: req.body.tabId,
             callId: req.body.callId,
             answer: req.body.answer,
@@ -276,31 +276,33 @@ module.exports = {
           root: req.body.root
         })),
         'chat/:_id/skip': route(async (req) => withChat(req, {
-          request: self.renderRequest(await self.skip(req, req.params._id, {
+          request: await self.presentRequest(await self.skip(req, req.params._id, {
             tabId: req.body.tabId
           }))
         })),
         // A notice's button, run once as a request of its own
         'chat/:_id/notice-action': route(async (req) => withChat(req, {
-          request: self.renderRequest(await self.runNoticeAction(req, req.params._id, {
-            requestId: req.body.requestId,
-            noticeId: req.body.noticeId,
-            screen: req.body.screen
-          }))
+          request: await self.presentRequest(await self.runNoticeAction(req,
+            req.params._id, {
+              requestId: req.body.requestId,
+              noticeId: req.body.noticeId,
+              screen: req.body.screen
+            }))
         })),
         'chat/:_id/continue-here': route(async (req) => withChat(req, {
-          request: self.renderRequest(await self.continueHere(req, req.params._id, {
-            tabId: req.body.tabId,
-            screen: req.body.screen
-          }))
+          request: await self.presentRequest(await self.continueHere(req,
+            req.params._id, {
+              tabId: req.body.tabId,
+              screen: req.body.screen
+            }))
         })),
         'chat/:_id/stop': route(async (req) => withChat(req, {
-          request: self.renderRequest(await self.stop(req, req.params._id, {
+          request: await self.presentRequest(await self.stop(req, req.params._id, {
             planCancel: req.body.planCancel === true
           }))
         })),
         'chat/:_id/retry': route(async (req) => withChat(req, {
-          request: self.renderRequest(await self.retry(req, req.params._id, {
+          request: await self.presentRequest(await self.retry(req, req.params._id, {
             retryOf: req.body.retryOf,
             requestId: req.body.requestId,
             screen: req.body.screen
@@ -472,7 +474,8 @@ module.exports = {
           attachments: {
             maxBytes: self.options.attachmentMaxBytes,
             maxCount: self.options.attachmentMaxCount,
-            extensions: self.getAttachmentExtensions()
+            extensions: self.getAttachmentExtensions(),
+            unreadable: self.getUnreadableExtensions()
           }
         };
       }

@@ -19,6 +19,11 @@
         :class="{ 'apos-assistant-request__message--finished': finished }"
         data-apos-test="assistant-request-message"
       >
+        <AposAssistantFiles
+          v-if="sentFiles.length"
+          class="apos-assistant-request__files"
+          :files="sentFiles"
+        />
         <AposAssistantMessage
           class="apos-assistant-request__text"
           :text="request.message"
@@ -88,6 +93,26 @@
     >
       {{ $t(running ? 'apostrophe:assistantRetrying' : 'apostrophe:assistantRetried') }}
     </p>
+    <AposAssistantSteps
+      v-if="!running && request.steps?.length"
+      :request="request"
+    />
+    <!-- What the model wrote before an ask comes before what came of it -->
+    <!-- eslint-disable vue/no-v-html -- sanitized on the server -->
+    <div
+      v-if="reply && (request.status === 'waiting')"
+      ref="replyText"
+      class="apos-assistant-request__reply"
+      data-apos-test="assistant-request-reply"
+      @click="onChipClick"
+      v-html="reply"
+    />
+    <!-- eslint-enable vue/no-v-html -->
+    <AposAssistantImageRounds
+      v-if="request.imageAsks?.length"
+      :request="request"
+    />
+    <!-- Below what the editor answered an image round with -->
     <p
       v-if="running"
       class="apos-assistant-request__status"
@@ -104,13 +129,13 @@
         </Transition>
       </span>
     </p>
-    <AposAssistantSteps
-      v-if="!running && request.steps?.length"
+    <AposAssistantNotices
+      v-if="!running"
       :request="request"
     />
     <!-- eslint-disable vue/no-v-html -- sanitized on the server -->
     <div
-      v-if="reply"
+      v-if="reply && (request.status !== 'waiting')"
       ref="replyText"
       class="apos-assistant-request__reply"
       data-apos-test="assistant-request-reply"
@@ -255,6 +280,10 @@ import { useAssistantStore } from '../stores/assistant.js';
 import { createChipIcon } from '../lib/chip.js';
 import { createId } from 'apostrophe/lib/beneath.js';
 import AposAssistantMessage from './AposAssistantMessage.vue';
+import AposAssistantFiles from './AposAssistantFiles.vue';
+import AposAssistantNotices from './AposAssistantNotices.vue';
+import AposAssistantImageRounds from './AposAssistantImageRounds.vue';
+import { getFileUrl, isPicture } from '../lib/attachments.js';
 import {
   formatNames, getConfirmLines, getRevertFailure, getRevertStatus, splitCount
 } from '../lib/revert.js';
@@ -445,6 +474,27 @@ const status = computed(() => {
   return progress?.label
     ? `${$t(progress.label)}...`
     : $t('apostrophe:assistantThinking');
+});
+
+// The files sent with the message: an image's thumbnail shown from the
+// browser while this page has it, opening large; any other file
+// downloading; one no longer stored as such
+const sentFiles = computed(() => {
+  const { chatId, unavailable = [] } = props.request;
+  return (props.request.attachments || []).map((file) => {
+    const picture = isPicture(file.name);
+    return {
+      key: file._id,
+      name: file.name,
+      size: file.size,
+      gone: unavailable.includes(file._id),
+      src: picture
+        ? (store.previews[file._id] || getFileUrl(chatId, file._id, 'thumbnail'))
+        : null,
+      large: picture ? getFileUrl(chatId, file._id, 'preview') : null,
+      href: picture ? null : getFileUrl(chatId, file._id)
+    };
+  });
 });
 
 // The run's last words to the editor
@@ -1065,6 +1115,10 @@ function onChipClick(event) {
   }
 
   // Markdown, the message's and the reply's
+  .apos-assistant-request__files {
+    margin-bottom: 10px;
+  }
+
   .apos-assistant-request__text,
   .apos-assistant-request__reply {
     @include type-label;

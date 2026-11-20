@@ -13,9 +13,10 @@
 // The request keeps what the thread shows of each ask in `imageAsks`:
 // `{ callId, title, replaces, rounds, outcome }`, each answered round
 // `{ action, notes, kept }` (`kept`, the candidate picked on Refine, which
-// stays with the chat), and `outcome` `{ action, option, attachmentId }`
-// once it resolves (`attachmentId`, a picked image Media didn't take,
-// which its notice's Retry saves again; see notices.js).
+// stays with the chat), and `outcome` `{ action, option, imageId,
+// attachmentId }` once it resolves: `imageId`, the Media image the picked
+// one became, or `attachmentId`, a picked image Media didn't take, which
+// its notice's Retry saves again (see notices.js).
 
 const fs = require('node:fs/promises');
 const { promisify } = require('node:util');
@@ -248,7 +249,7 @@ module.exports = (self) => {
               ...(args.aspect && { aspect: args.aspect }),
               ...(source && {
                 images: [ {
-                  data: (await self.readChatFile(source.storage, { size: 'preview' }))
+                  data: (await self.readRecordFile(source, { size: 'preview' }))
                     .toString('base64'),
                   mediaType: source.mediaType
                 } ]
@@ -316,7 +317,11 @@ module.exports = (self) => {
           const { result, failure } = await self.saveKeptImage(req, record, {
             title: args.title,
             alt: args.alt,
-            callId
+            callId,
+            ask: {
+              requestId,
+              callId
+            }
           });
           if (!failure) {
             return {
@@ -326,7 +331,6 @@ module.exports = (self) => {
               ...result
             };
           }
-          await setOutcome(req, callId, { attachmentId: record._id });
           return {
             answered: true,
             used: true,
@@ -422,16 +426,6 @@ module.exports = (self) => {
           }));
       }
 
-      function setOutcome(req, callId, fields) {
-        return self.changeImageAsk(req, self.apos.harness.getDoor(req).requestId, callId,
-          ask => ({
-            ...ask,
-            outcome: {
-              ...ask.outcome,
-              ...fields
-            }
-          }));
-      }
     },
 
     /**
@@ -443,7 +437,9 @@ module.exports = (self) => {
      * @param {object} req The door's `req`.
      * @param {object} record The kept image's record.
      * @param {object} [options] `title`, `alt` and `callId`, as the one
-     *   save takes them.
+     *   save takes them, and `ask`, `{ requestId, callId }`, the image ask
+     *   the image was picked in, whose outcome notes the Media image it
+     *   became, or the kept image while it isn't one.
      * @returns {Promise<{ result?: object, failure?: object }>} The save's
      *   result, or `{ reason, message }`.
      */
@@ -462,6 +458,18 @@ module.exports = (self) => {
           message: e.message,
           ...(e.data?.title && { title: e.data.title })
         };
+      }
+      const saved = !failure && result.written[0];
+      if (options.ask) {
+        const { requestId, callId } = options.ask;
+        await self.changeImageAsk(req, requestId, callId, ask => ({
+          ...ask,
+          outcome: {
+            ...ask.outcome,
+            imageId: saved ? saved._id : null,
+            attachmentId: saved ? null : record._id
+          }
+        }));
       }
       if (!failure) {
         await self.removeAttachmentRecord(record);
@@ -491,7 +499,10 @@ module.exports = (self) => {
           : {
             name: 'saveToMedia',
             label: 'apostrophe:assistantRetry',
-            data: { attachmentId: record._id }
+            data: {
+              attachmentId: record._id,
+              ask: options.ask || null
+            }
           }
       });
       return { failure };
@@ -502,7 +513,7 @@ module.exports = (self) => {
     // `save_attachment_to_media` call would
     async retryKeptImage(req, notice) {
       const callId = `retry-${self.apos.util.generateId()}`;
-      const { attachmentId } = notice.action.data;
+      const { attachmentId, ask } = notice.action.data;
       const record = await self.attachments.findOne({
         _id: attachmentId,
         ownerId: self.getOwnerId(req),
@@ -517,7 +528,10 @@ module.exports = (self) => {
       };
       let outcome;
       if (record) {
-        const { result, failure } = await self.saveKeptImage(req, record, { callId });
+        const { result, failure } = await self.saveKeptImage(req, record, {
+          callId,
+          ask
+        });
         outcome = failure
           ? { error: failure.message }
           : { output: result };

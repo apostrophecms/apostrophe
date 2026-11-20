@@ -48,9 +48,11 @@
         class="apos-assistant-activity__action"
         :class="`apos-assistant-activity__action--${action.kind || 'text'}`"
         :aria-disabled="action.disabled ? 'true' : null"
+        :aria-busy="action.busy ? 'true' : null"
         :data-apos-test="`assistant-activity-${action.name}`"
         @click="!action.disabled && emit('action', action.name)"
       >
+        <AposAssistantThinking v-if="action.busy" />
         {{ action.label }}
       </button>
     </div>
@@ -78,9 +80,10 @@ defineProps({
     type: String,
     default: null
   },
-  // `{ name, label, kind?, disabled?, focus? }`, kind 'text' (the
-  // default), or 'primary' and 'quiet' for a decision; `focus` takes the
-  // focus when the slot appears
+  // `{ name, label, kind?, disabled?, busy?, focus? }`, kind 'text' (the
+  // default), or 'primary' and 'quiet' for a decision; `busy` while what
+  // it started is on its way; `focus` takes the focus when the slot
+  // appears
   actions: {
     type: Array,
     default: () => []
@@ -199,6 +202,9 @@ onMounted(() => focused.value?.focus());
     @include type-base;
 
     & {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       border-radius: var(--a-border-radius);
       color: var(--apos-assistant-activity-action);
     }

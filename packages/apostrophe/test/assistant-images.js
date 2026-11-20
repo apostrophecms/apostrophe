@@ -138,7 +138,9 @@ describe('Assistant: images', function () {
       rounds: [],
       outcome: {
         action: 'use',
-        option: 2
+        option: 2,
+        imageId: image._id,
+        attachmentId: null
       }
     } ]);
     assert.equal(done.notices.length, 1);
@@ -152,6 +154,7 @@ describe('Assistant: images', function () {
       interpolate: { title: 'Night launch' },
       link: {
         _id: image._id,
+        type: '@apostrophecms/image',
         label: 'apostrophe:assistantOpenInMedia'
       },
       action: null
@@ -344,6 +347,7 @@ describe('Assistant: images', function () {
     assert.deepEqual(done.imageAsks[0].outcome, {
       action: 'use',
       option: 1,
+      imageId: null,
       attachmentId: kept._id
     });
     const [ failed ] = done.notices;
@@ -386,6 +390,10 @@ describe('Assistant: images', function () {
     // Named after the image it replaced
     assert.match(updated.attachment.name, /^locked-hero/);
     assert.equal(await apos.assistant.attachments.countDocuments({ _id: kept._id }), 0);
+    // The round it was picked in shows the Media image now
+    const picked = await apos.assistant.getRequest(req, done._id);
+    assert.equal(picked.imageAsks[0].outcome.imageId, updated._id);
+    assert.equal(picked.imageAsks[0].outcome.attachmentId, null);
     // What the model replays: the user's line, the save's call and its result
     const [ user, call, tool ] = saved.messages;
     assert.equal(user.role, 'user');

@@ -2,9 +2,10 @@
 // step: "Saved to Media", "Not saved to Media". A notice is
 // `{ _id, callId, tone, title, text, interpolate, link, action }`: `tone`
 // `success` or `error`, `title` and `text` i18n keys with `interpolate`'s
-// values, `link` a document the editor can open (`{ _id, label }`), and
-// `action` what its button does (`{ name, label }`), or `null`. The panel
-// shows every notice the same way and knows nothing of the tool behind it.
+// values, `link` a document the editor can open (`{ _id, type, label }`),
+// and `action` what its button does (`{ name, label }`), or `null`. The
+// panel shows every notice the same way and knows nothing of the tool
+// behind it.
 //
 // An action is registered here by name with its handler, as ask kinds are;
 // its data stays on the stored notice and never reaches the browser. The
@@ -120,6 +121,8 @@ module.exports = (self) => {
         });
         throw self.apos.error('invalid', 'this notice has no action to run');
       }
+      // Every browser tab's button goes
+      await self.publishRequest(req, source);
       const request = {
         ...self.newRequest(claimed, {
           _id: newId,

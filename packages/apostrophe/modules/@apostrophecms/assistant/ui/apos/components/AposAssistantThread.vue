@@ -69,8 +69,12 @@
       v-for="item in items"
       :key="item.key"
     >
+      <AposAssistantActionRequest
+        v-if="item.message?.request.action"
+        :request="item.message.request"
+      />
       <AposAssistantRequest
-        v-if="item.message"
+        v-else-if="item.message"
         ref="messageItems"
         :request="item.message.request"
         :retried="item.message.retried"

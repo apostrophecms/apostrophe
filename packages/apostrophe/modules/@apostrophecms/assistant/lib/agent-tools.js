@@ -346,7 +346,7 @@ module.exports = (self) => {
           }
           let data;
           try {
-            data = (await self.readChatFile(record.storage, { size: 'preview' }))
+            data = (await self.readRecordFile(record, { size: 'preview' }))
               .toString('base64');
           } catch (e) {
             return {

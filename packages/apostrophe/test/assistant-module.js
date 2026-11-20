@@ -67,7 +67,8 @@ describe('Assistant: module and options', function () {
           extensions: [
             'png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'heic', 'heif', 'svg', 'pdf',
             'html', 'htm', 'css', 'json', 'tokens', 'md', 'markdown'
-          ]
+          ],
+          unreadable: {}
         },
         alias: 'assistant'
       });

@@ -218,7 +218,7 @@ module.exports = (self) => {
           ...(locale && { locale })
         });
         if (!self.apos.ai.can(draftReq, 'create', type, 'draft')) {
-          throw self.apos.error('forbidden');
+          throw self.apos.error('forbidden', { create: true });
         }
         const schema = self.getAiSchemaOf(draftReq, manager);
         const input = {};
@@ -384,11 +384,17 @@ module.exports = (self) => {
           ...(fields.length && { fields })
         };
       }
+      if (error.name === 'forbidden') {
+        return {
+          reason: 'forbidden',
+          message: error.data?.create
+            ? 'The user may not create a document of this type.'
+            : 'The user may not edit this document.'
+        };
+      }
       return {
         reason: error.name,
-        message: (error.name === 'forbidden')
-          ? 'The user may not edit this document.'
-          : 'No such document.'
+        message: 'No such document.'
       };
 
       // `{ path, reason }` for every field the error names: what the save
