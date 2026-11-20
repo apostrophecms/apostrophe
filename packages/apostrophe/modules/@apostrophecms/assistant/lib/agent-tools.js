@@ -236,7 +236,7 @@ module.exports = (self) => {
             results[index] = await jobs[index]();
           }
         }));
-        await addAgentUsage(req, usages);
+        await self.addAgentUsage(req, usages);
         return {
           ...(images.length && { images: results.slice(0, images.length) }),
           ...(attachments.length && { attachments: results.slice(images.length) })
@@ -446,34 +446,34 @@ module.exports = (self) => {
           if (!error) {
             throw e;
           }
-          await addAgentUsage(req, [ e.aposAiPartial?.usage ]);
+          await self.addAgentUsage(req, [ e.aposAiPartial?.usage ]);
           throw self.apos.error('aiToolError', `${error} Narrow the task or read yourself.`);
         }
-        await addAgentUsage(req, [ result.usage ]);
+        await self.addAgentUsage(req, [ result.usage ]);
         return {
           answer: result.text || '',
           finishReason: result.finishReason
         };
       }
+    },
 
-      // Adds what the agent tools spent to the request's `agentUsage`, which
-      // the panel counts with the run's own
-      async function addAgentUsage(req, usages) {
-        const door = self.apos.harness.getDoor(req);
-        if (!door?.requestId) {
-          return;
-        }
-        const $inc = {};
-        for (const usage of usages) {
-          for (const [ key, value ] of Object.entries(usage || {})) {
-            if (typeof value === 'number') {
-              $inc[`agentUsage.${key}`] = ($inc[`agentUsage.${key}`] || 0) + value;
-            }
+    // Adds what the agent tools spent to the request's `agentUsage`, which
+    // the panel counts with the run's own
+    async addAgentUsage(req, usages) {
+      const door = self.apos.harness.getDoor(req);
+      if (!door?.requestId) {
+        return;
+      }
+      const $inc = {};
+      for (const usage of usages) {
+        for (const [ key, value ] of Object.entries(usage || {})) {
+          if (typeof value === 'number') {
+            $inc[`agentUsage.${key}`] = ($inc[`agentUsage.${key}`] || 0) + value;
           }
         }
-        if (Object.keys($inc).length) {
-          await self.requests.updateOne({ _id: door.requestId }, { $inc });
-        }
+      }
+      if (Object.keys($inc).length) {
+        await self.requests.updateOne({ _id: door.requestId }, { $inc });
       }
     }
   };

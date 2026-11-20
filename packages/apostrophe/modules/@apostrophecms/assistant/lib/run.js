@@ -267,6 +267,7 @@ module.exports = (self) => {
               tabId,
               status: 'running'
             },
+            lastRequestAt: new Date(),
             updatedAt: new Date()
           },
           $inc: { requestCount: 1 }

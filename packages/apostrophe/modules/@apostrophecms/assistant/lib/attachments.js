@@ -13,11 +13,13 @@
 //
 // A record: `{ _id, schemaVersion, ownerId, chatId, requestId, kind,
 // status, name, extension, mediaType, size, width, height, pages,
-// convertedFrom, storage, createdAt, updatedAt }`. `kind` is `attachment`
-// (a candidate of image generation later); `status` is `writing` until the
-// bytes are stored, then `stored`, or `orphan` once its chat is deleted and
-// a file could not be removed: an orphan keeps its owner and its storage
-// only, for a later removal.
+// convertedFrom, storage, createdAt, updatedAt }`. `kind` is `attachment`,
+// or `candidate` for a file an image ask holds (its `callId`, `kept` when
+// picked on Refine; see image-tools.js); an attachment a picked image
+// became carries `replaces`, the Media image its save updates. `status` is
+// `writing` until the bytes are stored, then `stored`, or `orphan` once its
+// chat is deleted and a file could not be removed: an orphan keeps its
+// owner and its storage only, for a later removal.
 
 const fs = require('node:fs/promises');
 const os = require('node:os');
@@ -187,48 +189,18 @@ module.exports = (self) => {
       const temp = [];
       try {
         const intake = await readFile();
-        const prepared = await self.prepareChatFile(intake.path, intake.extension);
-        const now = new Date();
-        const record = {
-          _id: self.apos.util.generateId(),
-          schemaVersion: SCHEMA_VERSION,
+        const record = await self.storeChatFile(intake.path, intake.extension, {
           ownerId,
           chatId: _id,
           requestId: null,
           kind: 'attachment',
-          status: 'writing',
           name: intake.name,
-          extension: prepared.extension,
-          mediaType: intake.mediaType ||
-            IMAGE_TYPES[prepared.extension] || 'application/octet-stream',
+          mediaType: intake.mediaType,
           size: intake.size,
-          ...(prepared.width && {
-            width: prepared.width,
-            height: prepared.height
-          }),
           ...(intake.pages && { pages: intake.pages }),
-          ...(intake.convertedFrom && { convertedFrom: intake.convertedFrom }),
-          storage: prepared.storage,
-          createdAt: now,
-          updatedAt: now
-        };
-        await self.attachments.insertOne(record);
-        try {
-          await self.writeChatFile(intake.path, record.storage);
-        } catch (e) {
-          await self.removeAttachmentRecord(record);
-          throw e;
-        }
-        await self.attachments.updateOne({ _id: record._id }, {
-          $set: {
-            status: 'stored',
-            updatedAt: new Date()
-          }
+          ...(intake.convertedFrom && { convertedFrom: intake.convertedFrom })
         });
-        return self.renderAttachment({
-          ...record,
-          status: 'stored'
-        });
+        return self.renderAttachment(record);
       } finally {
         for (const file of temp) {
           await fs.rm(file, { force: true });
@@ -355,6 +327,57 @@ module.exports = (self) => {
           });
         }
       }
+    },
+
+    /**
+     * Stores a chat file and its record: the record first, as `writing`,
+     * then the bytes, then `stored`, so no bytes are ever stored without a
+     * record naming them. A write that fails removes what was written.
+     *
+     * @param {string} localPath
+     * @param {string} extension As checked at intake.
+     * @param {object} fields The record's own: `ownerId`, `chatId`,
+     *   `requestId`, `kind`, `name`, and any others; `mediaType` from the
+     *   image's real format when unset.
+     * @returns {Promise<object>} The stored record.
+     */
+    async storeChatFile(localPath, extension, fields) {
+      const prepared = await self.prepareChatFile(localPath, extension);
+      const now = new Date();
+      const record = {
+        _id: self.apos.util.generateId(),
+        schemaVersion: SCHEMA_VERSION,
+        ...fields,
+        status: 'writing',
+        extension: prepared.extension,
+        mediaType: fields.mediaType ||
+          IMAGE_TYPES[prepared.extension] || 'application/octet-stream',
+        size: fields.size ?? (await fs.stat(localPath)).size,
+        ...(prepared.width && {
+          width: prepared.width,
+          height: prepared.height
+        }),
+        storage: prepared.storage,
+        createdAt: now,
+        updatedAt: now
+      };
+      await self.attachments.insertOne(record);
+      try {
+        await self.writeChatFile(localPath, record.storage);
+      } catch (e) {
+        await self.removeAttachmentRecord(record);
+        throw e;
+      }
+      await self.attachments.updateOne({ _id: record._id }, {
+        $set: {
+          status: 'stored',
+          updatedAt: new Date()
+        }
+      });
+      return {
+        ...record,
+        status: 'stored'
+      };
     },
 
     /**
@@ -703,6 +726,7 @@ module.exports = (self) => {
         _id: self.apos.launder.id(_id),
         ownerId: self.getOwnerId(req),
         chatId: door.chat,
+        kind: 'attachment',
         requestId: { $ne: null },
         status: 'stored'
       });

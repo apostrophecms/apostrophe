@@ -52,7 +52,12 @@ module.exports = {
     // The largest file a request may carry, in bytes
     attachmentMaxBytes: 8 * 1024 * 1024,
     // The files a request may carry
-    attachmentMaxCount: 4
+    attachmentMaxCount: 4,
+    // The images each round of generate_image offers to pick from
+    genImageCount: 4,
+    // Seconds after a chat's last request until it is deleted; 0 keeps
+    // chats until their owner deletes them
+    chatExpireAfter: 0
   },
   icons: {
     'creation-icon': 'Creation',
@@ -81,6 +86,7 @@ module.exports = {
     self.addEditorTools();
     self.addAgentTools();
     self.addAttachmentTools();
+    self.addImageTools();
     self.enableBrowserData();
   },
   handlers(self) {
@@ -142,6 +148,11 @@ module.exports = {
           }
         }
       },
+      'apostrophe:destroy': {
+        stopSweeps() {
+          self.stopSweeps();
+        }
+      },
       'apostrophe:ready': {
         // After the AI engine's own activation, which comes first in the
         // module order
@@ -153,6 +164,7 @@ module.exports = {
           await self.ensureCollections();
           await self.loadMarkdown();
           self.active = true;
+          self.startSweeps();
           self.apos.modal.addTrigger('assistant', {
             componentName: 'AposAssistant',
             label: 'apostrophe:assistantOpen',
@@ -420,6 +432,8 @@ module.exports = {
       ...require('./lib/agent-tools')(self),
       ...require('./lib/attachments')(self),
       ...require('./lib/attachment-tools')(self),
+      ...require('./lib/image-tools')(self),
+      ...require('./lib/retention')(self),
       ...require('./lib/gates')(self),
       ...require('./lib/edit-mode')(self),
       ...require('./lib/open-editor')(self),

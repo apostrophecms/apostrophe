@@ -26,7 +26,8 @@ module.exports = (self) => {
         delegationMaxSteps,
         screenWait,
         attachmentMaxBytes: self.options.attachmentMaxBytes,
-        attachmentMaxCount: self.options.attachmentMaxCount
+        attachmentMaxCount: self.options.attachmentMaxCount,
+        genImageCount: self.options.genImageCount
       })) {
         if (!Number.isInteger(value) || (value < 1)) {
           fail(name, 'must be a positive integer');
@@ -35,6 +36,10 @@ module.exports = (self) => {
       if (!Number.isInteger(self.options.maxDocsWithoutConfirm) ||
         (self.options.maxDocsWithoutConfirm < 0)) {
         fail('maxDocsWithoutConfirm', 'must be a whole number, 0 or more');
+      }
+      if (!Number.isInteger(self.options.chatExpireAfter) ||
+        (self.options.chatExpireAfter < 0)) {
+        fail('chatExpireAfter', 'must be a whole number of seconds, 0 or more');
       }
       if (!Number.isInteger(contextLimit) || (contextLimit < 1)) {
         fail('contextLimit', 'must be a positive integer');

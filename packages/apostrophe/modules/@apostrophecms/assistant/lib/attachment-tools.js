@@ -63,7 +63,9 @@ module.exports = (self) => {
         name: 'save_attachment_to_media',
         label: 'apostrophe:aiToolSaveAttachmentToMedia',
         description: 'Save an image attached to this chat to Media, unchanged, when the ' +
-          'user asks for it. It becomes a new Media image the site can use.',
+          'user asks for it. It becomes a new Media image the site can use, or, with ' +
+          '"replaces", the new file of that Media image, which keeps its title and alt ' +
+          'and changes on every page that uses it.',
         kind: 'action',
         tags: [ 'assistant' ],
         input: {
@@ -81,6 +83,12 @@ module.exports = (self) => {
               minLength: 1,
               maxLength: ALT_MAX,
               description: 'Alt text: what the image shows'
+            },
+            replaces: {
+              type: 'string',
+              minLength: 1,
+              description: 'A Media image\'s _id: save the file into that image in place ' +
+                'of a new one. Only when the user asks to replace or update it'
             }
           },
           required: [ 'attachment' ],
@@ -173,7 +181,7 @@ module.exports = (self) => {
       }
 
       async function saveToMedia(req, {
-        attachment, title, alt
+        attachment, title, alt, replaces, _context
       }) {
         const record = await self.findChatAttachment(req, attachment);
         const kind = self.getAttachmentKind(record);
@@ -183,7 +191,9 @@ module.exports = (self) => {
         }
         return self.saveAttachmentToMedia(req, record, {
           title,
-          alt
+          alt,
+          ...(replaces && { replaces }),
+          callId: _context?.call?.id || null
         });
       }
 
@@ -200,27 +210,31 @@ module.exports = (self) => {
     },
 
     /**
-     * Saves a chat file to Media as a new image, through the harness's
-     * create path: a site attachment made from the file as stored, then the
-     * image, so the save is logged and reverted like any other. Refused as a
-     * tool error when the user may not upload or create images, or when the
-     * file is gone.
+     * The one save of a chat file into Media, through the harness's write
+     * path, so it is logged and reverted like any other: a site attachment
+     * made from the file as stored, then a new image, or, with `replaces`,
+     * that image's file swapped under its lock, as Media's own Replace does;
+     * its title and alt stay. Refused as a tool error when the user may not
+     * upload images or edit the one replaced, or when the file is gone. A
+     * save that lands is noted on the request, for the panel's message.
      *
      * @param {object} req The door's `req`.
      * @param {object} record The chat file's record.
      * @param {object} [options]
-     * @param {string} [options.title] The file name without its extension
-     *   when unset.
-     * @param {string} [options.alt]
-     * @returns {Promise<object>} The harness's write result.
+     * @param {string} [options.title] A new image's title; the file name
+     *   without its extension when unset.
+     * @param {string} [options.alt] A new image's alt text.
+     * @param {string|null} [options.replaces] The Media image to update;
+     *   the record's own when unset.
+     * @param {string} [options.callId] The tool call that saves.
+     * @returns {Promise<object>} The harness's write result, `media` the
+     *   sentence saying where the image is when it landed.
      */
-    async saveAttachmentToMedia(req, record, { title, alt } = {}) {
-      const type = '@apostrophecms/image';
-      if (!self.apos.permission.can(req, 'upload-attachment') ||
-        !self.apos.ai.can(req.clone({ mode: 'draft' }), 'create', type, 'draft')) {
-        throw self.apos.error('aiToolError', 'The user may not upload images, so nothing ' +
-          'was saved.');
-      }
+    async saveAttachmentToMedia(req, record, {
+      title, alt, replaces = record.replaces || null, callId = null
+    } = {}) {
+      const target = replaces && await self.findMediaImage(req, replaces);
+      self.checkMediaSave(req, target, 'nothing was saved');
       const base = record.name.replace(/\.[^.]*$/, '') || 'image';
       const { uploadfs } = self.apos.attachment;
       const temp = `${uploadfs.getTempPath()}/${self.apos.util.generateId()}.${record.extension}`;
@@ -250,14 +264,90 @@ module.exports = (self) => {
       } finally {
         await fs.rm(temp, { force: true });
       }
-      return self.apos.harness.createPiece(req, {
-        type,
-        title: title || base,
-        values: {
-          attachment: { _id: attachment._id },
-          ...(alt && { alt })
-        }
+      const result = target
+        ? await self.apos.harness.updateDocument(req, {
+          targets: [ {
+            _id: target.doc._id,
+            values: { attachment: { _id: attachment._id } }
+          } ]
+        })
+        : await self.apos.harness.createPiece(req, {
+          type: '@apostrophecms/image',
+          title: title || base,
+          values: {
+            attachment: { _id: attachment._id },
+            ...(alt && { alt })
+          }
+        });
+      const saved = result.written[0];
+      if (!saved) {
+        return result;
+      }
+      await self.noteMediaSave(req, {
+        callId,
+        status: target ? 'updated' : 'created',
+        _id: saved._id,
+        title: saved.title
       });
+      return {
+        ...result,
+        media: target
+          ? `"${saved.title}" was updated in the Media library; every page that uses it ` +
+            'shows the new file.'
+          : `"${saved.title}" is in the Media library, ready to place on a page.`
+      };
+    },
+
+    /**
+     * A Media image a tool names by id, `{ doc, draftReq }`, its draft in
+     * its own locale. Throws `aiToolError` when it is not one the user can
+     * read.
+     *
+     * @param {object} req The door's `req`.
+     * @param {string} _id
+     * @returns {Promise<object>}
+     */
+    async findMediaImage(req, _id) {
+      let found;
+      try {
+        found = await self.apos.harness.findReadable(req, _id);
+      } catch (e) {
+        if (e.name !== 'aiToolError') {
+          throw e;
+        }
+      }
+      if (found?.doc.type !== '@apostrophecms/image') {
+        throw self.apos.error('aiToolError', 'No Media image the user can see has this id.');
+      }
+      return found;
+    },
+
+    /**
+     * Notes on the door's request what happened to a save into Media, which
+     * the panel shows as a message after the step: `created` or `updated`
+     * (`_id`, `title`), or `failed` (`reason`, `message`, and `attachmentId`,
+     * the chat file kept to save again).
+     *
+     * @param {object} req The door's `req`.
+     * @param {object} save
+     */
+    async noteMediaSave(req, save) {
+      const door = self.apos.harness.getDoor(req);
+      if (!door?.requestId) {
+        return;
+      }
+      const request = {
+        _id: door.requestId,
+        chatId: door.chat,
+        ownerId: self.getOwnerId(req)
+      };
+      await self.requests.updateOne({
+        _id: request._id,
+        ownerId: request.ownerId
+      }, {
+        $push: { mediaSaves: save }
+      });
+      await self.publishRequest(req, request);
     }
   };
 };

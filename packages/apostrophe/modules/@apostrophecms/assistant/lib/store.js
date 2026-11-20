@@ -39,6 +39,7 @@ module.exports = (self) => {
         chatId: 1,
         createdAt: 1
       });
+      await self.chats.createIndex({ lastRequestAt: 1 });
       await self.ensureAttachmentCollection();
     },
 
@@ -85,6 +86,8 @@ module.exports = (self) => {
           : null,
         ...(continuedFrom && { continuedFrom }),
         requestCount: 0,
+        // When its last request was sent, which retention counts from
+        lastRequestAt: now,
         createdAt: now,
         updatedAt: now
       };
@@ -216,18 +219,28 @@ module.exports = (self) => {
     },
 
     /**
-     * Deletes a chat with everything it owns: its requests and reverts, then
-     * its files (bytes before records), then its change log entries, then
-     * the chat. A chat whose request or revert
-     * is running is refused (Stop first); one waiting for an answer is not,
-     * since nothing runs. A chat being deleted takes no send or answer, and an
-     * interrupted delete is finished by the next.
+     * Deletes a chat of the user with everything it owns
+     * (`deleteChatRecords`).
      *
      * @param {object} req
      * @param {string} _id The chat's id.
      */
     async deleteChat(req, _id) {
-      const chat = await self.getChat(req, _id);
+      await self.deleteChatRecords(req, await self.getChat(req, _id));
+    },
+
+    /**
+     * Deletes a chat with everything it owns: its requests and reverts, then
+     * its files (bytes before records), then its change log entries, then
+     * the chat. A chat whose request or revert is running is refused (Stop
+     * first); one waiting for an answer is not, since nothing runs. A chat
+     * being deleted takes no send or answer, and an interrupted delete is
+     * finished by the next.
+     *
+     * @param {object} req A request of the chat's owner.
+     * @param {object} chat The chat record.
+     */
+    async deleteChatRecords(req, chat) {
       const { matchedCount } = await self.chats.updateOne({
         _id: chat._id,
         ownerId: chat.ownerId,

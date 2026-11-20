@@ -17,6 +17,7 @@
   "aiToolDescribeImages": "Look at images",
   "aiToolEditOpenDocument": "Work in the open editor",
   "aiToolFindReferences": "Find where something is used",
+  "aiToolGenerateImage": "Generate images",
   "aiToolGetChanges": "Read the changes",
   "aiToolGetDocument": "Read a document",
   "aiToolGetGuidance": "Read the rules for a type",
