@@ -73,6 +73,8 @@ module.exports = {
     // Set once the AI engine is active too
     self.active = false;
     self.askKinds = {};
+    // What a notice's button does, by name (see lib/notices.js)
+    self.noticeActions = {};
     // Browser tools that turn the answer into their result, by name
     self.browserToolAccepts = {};
     // Gates added by name, and the tools whose gates were all taken off
@@ -278,6 +280,14 @@ module.exports = {
             tabId: req.body.tabId
           }))
         })),
+        // A notice's button, run once as a request of its own
+        'chat/:_id/notice-action': route(async (req) => withChat(req, {
+          request: self.renderRequest(await self.runNoticeAction(req, req.params._id, {
+            requestId: req.body.requestId,
+            noticeId: req.body.noticeId,
+            screen: req.body.screen
+          }))
+        })),
         'chat/:_id/continue-here': route(async (req) => withChat(req, {
           request: self.renderRequest(await self.continueHere(req, req.params._id, {
             tabId: req.body.tabId,
@@ -427,6 +437,7 @@ module.exports = {
       ...require('./lib/files')(self),
       ...require('./lib/run')(self),
       ...require('./lib/asks')(self),
+      ...require('./lib/notices')(self),
       ...require('./lib/browser-tools')(self),
       ...require('./lib/editor-tools')(self),
       ...require('./lib/agent-tools')(self),

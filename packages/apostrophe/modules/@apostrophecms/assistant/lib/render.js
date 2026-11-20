@@ -128,7 +128,9 @@ module.exports = (self) => {
      * (`renderStep`); `locked` lists the documents a write was refused for a
      * lock and no later write of the request reached, `{ _id, title,
      * lockedBy }`, `lockedBy` the holder's name, `null` for the editor's own
-     * other browser tab or chat. The vendor and model are left out unless
+     * other browser tab or chat; `notices` the messages its tools posted
+     * (see notices.js), each `action` without its data, `null` once run.
+     * The vendor and model are left out unless
      * `modelDisplay` is set, and the screen it was sent with and what the
      * model was told of its changes to the page always. `usage` includes
      * what the agent tools spent.
@@ -140,13 +142,25 @@ module.exports = (self) => {
       const {
         provider, model, pageChanges, pageRows, agentUsage, messages = [],
         replyMentions, screen, screenChanged, prior, jobId, ownerId,
-        schemaVersion, ...rest
+        schemaVersion, takenActions, ...rest
       } = request;
       return {
         ...rest,
         // A result an ask keeps for the model is not the panel's
         ...(rest.asks && {
           asks: rest.asks.map(({ result, ...ask }) => ask)
+        }),
+        // An action's data is the server's, and an action runs once
+        ...(rest.notices && {
+          notices: rest.notices.map(notice => ({
+            ...notice,
+            action: (notice.action && !(takenActions || []).includes(notice._id))
+              ? {
+                name: notice.action.name,
+                label: notice.action.label
+              }
+              : null
+          }))
         }),
         ...(self.options.modelDisplay && {
           provider,

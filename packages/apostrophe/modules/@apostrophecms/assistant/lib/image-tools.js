@@ -14,7 +14,8 @@
 // `{ callId, title, replaces, rounds, outcome }`, each answered round
 // `{ action, notes, kept }` (`kept`, the candidate picked on Refine, which
 // stays with the chat), and `outcome` `{ action, option, attachmentId }`
-// once it resolves (`attachmentId`, a picked image Media didn't take).
+// once it resolves (`attachmentId`, a picked image Media didn't take,
+// which its notice's Retry saves again; see notices.js).
 
 const fs = require('node:fs/promises');
 const { promisify } = require('node:util');
@@ -47,6 +48,7 @@ module.exports = (self) => {
           return self.endImageAsk(req, request._id, ask.callId, { action: status });
         }
       });
+      self.addNoticeAction('saveToMedia', { run: self.retryKeptImage });
       self.apos.ai.addTool({
         name: 'generate_image',
         label: 'apostrophe:aiToolGenerateImage',
@@ -311,26 +313,12 @@ module.exports = (self) => {
             option
           });
           const record = await self.attachments.findOne({ _id: candidate });
-          let result;
-          let failure;
-          try {
-            result = await self.saveAttachmentToMedia(req, record, {
-              title: args.title,
-              alt: args.alt,
-              callId
-            });
-            failure = result.refused?.[0];
-          } catch (e) {
-            if (e.name !== 'aiToolError') {
-              throw e;
-            }
-            failure = {
-              reason: 'refused',
-              message: e.message
-            };
-          }
+          const { result, failure } = await self.saveKeptImage(req, record, {
+            title: args.title,
+            alt: args.alt,
+            callId
+          });
           if (!failure) {
-            await self.removeAttachmentRecord(record);
             return {
               answered: true,
               used: true,
@@ -338,14 +326,6 @@ module.exports = (self) => {
               ...result
             };
           }
-          await self.noteMediaSave(req, {
-            callId,
-            status: 'failed',
-            reason: failure.reason,
-            message: failure.message,
-            ...(failure.lockedBy !== undefined && { lockedBy: failure.lockedBy }),
-            attachmentId: record._id
-          });
           await setOutcome(req, callId, { attachmentId: record._id });
           return {
             answered: true,
@@ -455,6 +435,118 @@ module.exports = (self) => {
     },
 
     /**
+     * Saves an image the chat keeps for Media, the image picked on Use,
+     * through the one save. Saved, the chat's copy goes: Media holds it.
+     * Refused, it stays, and an error notice says why, with Retry
+     * (`saveToMedia`).
+     *
+     * @param {object} req The door's `req`.
+     * @param {object} record The kept image's record.
+     * @param {object} [options] `title`, `alt` and `callId`, as the one
+     *   save takes them.
+     * @returns {Promise<{ result?: object, failure?: object }>} The save's
+     *   result, or `{ reason, message }`.
+     */
+    async saveKeptImage(req, record, options = {}) {
+      let result;
+      let failure;
+      try {
+        result = await self.saveAttachmentToMedia(req, record, options);
+        failure = result.refused?.[0];
+      } catch (e) {
+        if (e.name !== 'aiToolError') {
+          throw e;
+        }
+        failure = {
+          reason: e.data?.reason || 'invalid',
+          message: e.message,
+          ...(e.data?.title && { title: e.data.title })
+        };
+      }
+      if (!failure) {
+        await self.removeAttachmentRecord(record);
+        return { result };
+      }
+      const named = Boolean(failure.title);
+      const locked = (failure.reason === 'locked') && (failure.lockedBy
+        ? 'apostrophe:assistantSaveLocked'
+        : 'apostrophe:assistantSaveLockedSelf');
+      await self.addNotice(req, {
+        callId: options.callId,
+        tone: 'error',
+        title: 'apostrophe:assistantNotSavedToMedia',
+        text: locked || {
+          forbidden: named
+            ? 'apostrophe:assistantSaveForbiddenImage'
+            : 'apostrophe:assistantSaveForbidden',
+          gone: 'apostrophe:assistantSaveGone',
+          changed: 'apostrophe:assistantSaveChanged'
+        }[failure.reason] || 'apostrophe:assistantSaveRefused',
+        interpolate: {
+          title: failure.title || '',
+          name: failure.lockedBy || ''
+        },
+        action: (failure.reason === 'gone')
+          ? null
+          : {
+            name: 'saveToMedia',
+            label: 'apostrophe:assistantRetry',
+            data: { attachmentId: record._id }
+          }
+      });
+      return { failure };
+    },
+
+    // The `saveToMedia` action, Retry on a save that failed: the same kept
+    // image saved again, into the same image, as the model's own
+    // `save_attachment_to_media` call would
+    async retryKeptImage(req, notice) {
+      const callId = `retry-${self.apos.util.generateId()}`;
+      const { attachmentId } = notice.action.data;
+      const record = await self.attachments.findOne({
+        _id: attachmentId,
+        ownerId: self.getOwnerId(req),
+        kind: 'attachment',
+        status: 'stored'
+      });
+      const call = {
+        type: 'toolCall',
+        id: callId,
+        name: 'save_attachment_to_media',
+        input: { attachment: attachmentId }
+      };
+      let outcome;
+      if (record) {
+        const { result, failure } = await self.saveKeptImage(req, record, { callId });
+        outcome = failure
+          ? { error: failure.message }
+          : { output: result };
+      } else {
+        await self.addNotice(req, {
+          callId,
+          tone: 'error',
+          title: 'apostrophe:assistantNotSavedToMedia',
+          text: 'apostrophe:assistantSaveGone'
+        });
+        outcome = { error: 'The picked image is no longer available.' };
+      }
+      return [
+        {
+          role: 'assistant',
+          content: [ call ]
+        },
+        {
+          role: 'tool',
+          content: [ {
+            type: 'toolResult',
+            toolCallId: callId,
+            ...outcome
+          } ]
+        }
+      ];
+    },
+
+    /**
      * Turns the editor's answer to an `images` ask into the tool's input:
      * `{ action: 'use', candidate }`, `{ action: 'again' }`, `{ action:
      * 'refine', notes, candidate? }` or `{ action: 'cancel' }`, a candidate
@@ -520,7 +612,10 @@ module.exports = (self) => {
       if (!allowed) {
         throw self.apos.error('aiToolError', target
           ? `The user may not change the Media image "${target.doc.title}", so ${what}.`
-          : `The user may not upload images, so ${what}.`);
+          : `The user may not upload images, so ${what}.`, {
+          reason: 'forbidden',
+          ...(target && { title: target.doc.title })
+        });
       }
     },
 

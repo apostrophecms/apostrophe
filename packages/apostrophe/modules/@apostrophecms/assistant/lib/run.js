@@ -90,7 +90,10 @@ module.exports = (self) => {
       if (create) {
         await self.createChat(req, { _id: chatId });
       }
-      const claimed = await claim();
+      const claimed = await self.claimChat(req, _id, {
+        requestId,
+        tabId
+      });
       const request = self.newRequest(claimed, {
         _id: requestId,
         sequence: claimed.requestCount,
@@ -247,42 +250,6 @@ module.exports = (self) => {
         })) {
           await jobs.requestCancel(started.jobId);
         }
-      }
-
-      // The chat's one request at a time. A refusal is checked against a
-      // request left behind by a process that died, once
-      async function claim(reconciled = false) {
-        const { matchedCount } = await self.chats.updateOne({
-          _id,
-          ownerId: self.getOwnerId(req),
-          openRequest: null,
-          openRevert: null,
-          // A continued chat takes its first message once its carry is done
-          carry: null,
-          deleting: { $ne: true }
-        }, {
-          $set: {
-            openRequest: {
-              _id: requestId,
-              tabId,
-              status: 'running'
-            },
-            lastRequestAt: new Date(),
-            updatedAt: new Date()
-          },
-          $inc: { requestCount: 1 }
-        });
-        const chat = await self.getChat(req, _id);
-        if (matchedCount) {
-          return chat;
-        }
-        if (!reconciled) {
-          const now = await self.reconcileChat(req, chat);
-          if (!now.openRequest && !now.openRevert) {
-            return claim(true);
-          }
-        }
-        throw self.getRefusal(chat, { tabId });
       }
     },
 
@@ -637,6 +604,56 @@ module.exports = (self) => {
         status: 'stopping'
       })) {
         await started.cancel();
+      }
+    },
+
+    /**
+     * Claims a chat's one request slot for a new request, refused with the
+     * reason while another request or a revert holds it. A refusal is
+     * checked once against a request left behind by a process that died.
+     *
+     * @param {object} req
+     * @param {string} _id The chat's id.
+     * @param {object} options
+     * @param {string} options.requestId
+     * @param {string} options.tabId The browser tab that owns the request.
+     * @returns {Promise<object>} The chat as claimed.
+     */
+    async claimChat(req, _id, { requestId, tabId }) {
+      return attempt(false);
+
+      async function attempt(reconciled) {
+        const { matchedCount } = await self.chats.updateOne({
+          _id,
+          ownerId: self.getOwnerId(req),
+          openRequest: null,
+          openRevert: null,
+          // A continued chat takes its first message once its carry is done
+          carry: null,
+          deleting: { $ne: true }
+        }, {
+          $set: {
+            openRequest: {
+              _id: requestId,
+              tabId,
+              status: 'running'
+            },
+            lastRequestAt: new Date(),
+            updatedAt: new Date()
+          },
+          $inc: { requestCount: 1 }
+        });
+        const chat = await self.getChat(req, _id);
+        if (matchedCount) {
+          return chat;
+        }
+        if (!reconciled) {
+          const now = await self.reconcileChat(req, chat);
+          if (!now.openRequest && !now.openRevert) {
+            return attempt(true);
+          }
+        }
+        throw self.getRefusal(chat, { tabId });
       }
     },
 

@@ -214,9 +214,11 @@ module.exports = (self) => {
      * path, so it is logged and reverted like any other: a site attachment
      * made from the file as stored, then a new image, or, with `replaces`,
      * that image's file swapped under its lock, as Media's own Replace does;
-     * its title and alt stay. Refused as a tool error when the user may not
-     * upload images or edit the one replaced, or when the file is gone. A
-     * save that lands is noted on the request, for the panel's message.
+     * its title and alt stay, and the file is named after it. Refused as a
+     * tool error, with `data.reason` (`forbidden`, `gone` or `invalid`),
+     * when the user may not upload images or edit the one replaced, when the
+     * file is gone, or when Media refuses it. A save that lands posts its
+     * notice.
      *
      * @param {object} req The door's `req`.
      * @param {object} record The chat file's record.
@@ -235,7 +237,10 @@ module.exports = (self) => {
     } = {}) {
       const target = replaces && await self.findMediaImage(req, replaces);
       self.checkMediaSave(req, target, 'nothing was saved');
-      const base = record.name.replace(/\.[^.]*$/, '') || 'image';
+      // A replaced image keeps its own name
+      const base = (target
+        ? self.apos.util.slugify(target.doc.title)
+        : record.name.replace(/\.[^.]*$/, '')) || 'image';
       const { uploadfs } = self.apos.attachment;
       const temp = `${uploadfs.getTempPath()}/${self.apos.util.generateId()}.${record.extension}`;
       let attachment;
@@ -245,7 +250,8 @@ module.exports = (self) => {
           data = await self.readChatFile(record.storage);
         } catch (e) {
           if (e.name === 'notfound') {
-            throw self.apos.error('aiToolError', `The file "${record.name}" is no longer available.`);
+            throw self.apos.error('aiToolError', `The file "${record.name}" is no longer ` +
+              'available.', { reason: 'gone' });
           }
           throw e;
         }
@@ -259,7 +265,9 @@ module.exports = (self) => {
           if (e.name !== 'invalid') {
             throw e;
           }
-          throw self.apos.error('aiToolError', `Media refused the file: ${e.message}`);
+          throw self.apos.error('aiToolError', `Media refused the file: ${e.message}`, {
+            reason: 'invalid'
+          });
         }
       } finally {
         await fs.rm(temp, { force: true });
@@ -283,11 +291,18 @@ module.exports = (self) => {
       if (!saved) {
         return result;
       }
-      await self.noteMediaSave(req, {
+      await self.addNotice(req, {
         callId,
-        status: target ? 'updated' : 'created',
-        _id: saved._id,
-        title: saved.title
+        tone: 'success',
+        title: target ? 'apostrophe:assistantUpdatedInMedia' : 'apostrophe:assistantSavedToMedia',
+        text: target
+          ? 'apostrophe:assistantUpdatedInMediaText'
+          : 'apostrophe:assistantSavedToMediaText',
+        interpolate: { title: saved.title },
+        link: {
+          _id: saved._id,
+          label: 'apostrophe:assistantOpenInMedia'
+        }
       });
       return {
         ...result,
@@ -320,34 +335,6 @@ module.exports = (self) => {
         throw self.apos.error('aiToolError', 'No Media image the user can see has this id.');
       }
       return found;
-    },
-
-    /**
-     * Notes on the door's request what happened to a save into Media, which
-     * the panel shows as a message after the step: `created` or `updated`
-     * (`_id`, `title`), or `failed` (`reason`, `message`, and `attachmentId`,
-     * the chat file kept to save again).
-     *
-     * @param {object} req The door's `req`.
-     * @param {object} save
-     */
-    async noteMediaSave(req, save) {
-      const door = self.apos.harness.getDoor(req);
-      if (!door?.requestId) {
-        return;
-      }
-      const request = {
-        _id: door.requestId,
-        chatId: door.chat,
-        ownerId: self.getOwnerId(req)
-      };
-      await self.requests.updateOne({
-        _id: request._id,
-        ownerId: request.ownerId
-      }, {
-        $push: { mediaSaves: save }
-      });
-      await self.publishRequest(req, request);
     }
   };
 };

@@ -141,12 +141,21 @@ describe('Assistant: images', function () {
         option: 2
       }
     } ]);
-    assert.deepEqual(done.mediaSaves, [ {
+    assert.equal(done.notices.length, 1);
+    const { _id: noticeId, ...notice } = done.notices[0];
+    assert(noticeId);
+    assert.deepEqual(notice, {
       callId: 'call-gen',
-      status: 'created',
-      _id: image._id,
-      title: 'Night launch'
-    } ]);
+      tone: 'success',
+      title: 'apostrophe:assistantSavedToMedia',
+      text: 'apostrophe:assistantSavedToMediaText',
+      interpolate: { title: 'Night launch' },
+      link: {
+        _id: image._id,
+        label: 'apostrophe:assistantOpenInMedia'
+      },
+      action: null
+    });
 
     await revert(req, chat, done);
     const reverted = await apos.image.find(apos.task.getReq({ mode: 'draft' }), {
@@ -298,7 +307,7 @@ describe('Assistant: images', function () {
     // The image keeps its own title and alt
     assert.equal(updated.title, 'Hero product shot');
     assert.equal(updated.alt, 'The hero');
-    assert.equal(done.mediaSaves[0].status, 'updated');
+    assert.equal(done.notices[0].title, 'apostrophe:assistantUpdatedInMedia');
     // The copy went with the ask
     assert.equal(await countRequestFiles(done), 0);
 
@@ -306,7 +315,7 @@ describe('Assistant: images', function () {
     assert.equal((await findImage(hero)).attachment._id, hero.attachment._id);
   });
 
-  it('keeps the picked image when the save is refused, and saves it into the same image later', async function () {
+  it('keeps the picked image when the save is refused, and Retry saves it into the same image', async function () {
     const req = userReq(editor);
     const hero = await insertImage('Locked hero');
     const draft = await findImage(hero);
@@ -337,20 +346,64 @@ describe('Assistant: images', function () {
       option: 1,
       attachmentId: kept._id
     });
-    assert.equal(done.mediaSaves[0].status, 'failed');
-    assert.equal(done.mediaSaves[0].reason, 'locked');
-    assert.equal(done.mediaSaves[0].attachmentId, kept._id);
+    const [ failed ] = done.notices;
+    assert.equal(failed.tone, 'error');
+    assert.equal(failed.title, 'apostrophe:assistantNotSavedToMedia');
+    assert.equal(failed.text, 'apostrophe:assistantSaveLocked');
+    assert.deepEqual(failed.interpolate, {
+      title: 'Locked hero',
+      name: 'other'
+    });
+    assert.equal(failed.action.name, 'saveToMedia');
+    // The action's data is the server's
+    assert.deepEqual(apos.assistant.renderRequest(done).notices[0].action, {
+      name: 'saveToMedia',
+      label: 'apostrophe:assistantRetry'
+    });
     assert.equal((await findImage(hero)).attachment._id, hero.attachment._id);
 
+    // Retry while still locked: refused again, with Retry again
+    const again = await retry(req, chat, done, failed);
+    assert.equal(again.status, 'completed');
+    assert.deepEqual(again.action, {
+      name: 'saveToMedia',
+      requestId: done._id,
+      noticeId: failed._id
+    });
+    assert.equal(again.notices[0].text, 'apostrophe:assistantSaveLocked');
+    assert.equal(again.notices[0].action.name, 'saveToMedia');
+    // Run once: a second click finds it gone
+    await assert.rejects(retry(req, chat, done, failed), { name: 'invalid' });
+    const first = await apos.assistant.getRequest(req, done._id);
+    assert.equal(apos.assistant.renderRequest(first).notices[0].action, null);
+
     await apos.doc.unlock(userReq(other), draft, 'other-tab');
-    script = sequence([
-      toolTurn('save_attachment_to_media', { attachment: kept._id }, 'save'),
-      { text: 'Done.' }
-    ]);
-    const saved = await runToEnd(req, chat, 'Try saving it again');
-    assert.equal(resultOf(saved, 'call-save').output.written.length, 1);
-    assert.notEqual((await findImage(hero)).attachment._id, hero.attachment._id);
-    assert.equal(saved.mediaSaves[0].status, 'updated');
+    const saved = await retry(req, chat, again, again.notices[0]);
+    assert.equal(saved.status, 'completed');
+    assert.equal(saved.notices[0].title, 'apostrophe:assistantUpdatedInMedia');
+    const updated = await findImage(hero);
+    assert.notEqual(updated.attachment._id, hero.attachment._id);
+    // Named after the image it replaced
+    assert.match(updated.attachment.name, /^locked-hero/);
+    assert.equal(await apos.assistant.attachments.countDocuments({ _id: kept._id }), 0);
+    // What the model replays: the user's line, the save's call and its result
+    const [ user, call, tool ] = saved.messages;
+    assert.equal(user.role, 'user');
+    assert.equal(call.content[0].name, 'save_attachment_to_media');
+    assert.deepEqual(call.content[0].input, { attachment: kept._id });
+    assert.equal(tool.content[0].output.written[0].title, 'Locked hero');
+    let replayed;
+    script = (scriptReq, request) => {
+      replayed = request.messages;
+      return { text: 'Good.' };
+    };
+    await runToEnd(req, chat, 'Thanks');
+    assert(replayed.some(message => (message.role === 'assistant') &&
+      message.content.some?.(part => part.id === call.content[0].id)));
+
+    // The retry is a request like any other: its revert puts the file back
+    await revert(req, chat, saved);
+    assert.equal((await findImage(hero)).attachment._id, hero.attachment._id);
   });
 
   it('saves an attached image into a Media image it replaces', async function () {
@@ -481,6 +534,15 @@ describe('Assistant: images', function () {
 
   function answerAndWait(req, chat, value) {
     return answer(req, chat, 'call-gen', value);
+  }
+
+  async function retry(req, chat, request, notice) {
+    const started = await apos.assistant.runNoticeAction(req, chat._id, {
+      requestId: request._id,
+      noticeId: notice._id,
+      screen: { tabId: 'tab-1' }
+    });
+    return waitForEnd(req, chat).then(() => apos.assistant.getRequest(req, started._id));
   }
 
   async function waitForEnd(req, chat) {
