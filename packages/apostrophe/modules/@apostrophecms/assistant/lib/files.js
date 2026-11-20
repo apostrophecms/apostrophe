@@ -12,7 +12,9 @@
 //
 // A file is prepared, its record stored, then it is written, so no bytes
 // are ever stored without a record naming them. A write that fails leaves
-// the record; removing the file clears whatever was written.
+// the record; removing the file clears whatever was written. A removal
+// never fails, and says whether anything was left, so the record can stay
+// to name it.
 
 const crypto = require('crypto');
 const fs = require('fs/promises');
@@ -124,24 +126,32 @@ module.exports = (self) => {
       }
     },
 
-    // Removes a chat file and its image sizes. A file already gone counts
-    // as removed, so an interrupted removal is finished by the next one
+    /**
+     * Removes a chat file and its image sizes. Never fails, so deleting a
+     * chat never does: a file that can't be removed is logged by its
+     * error's code and left, private by its path. A file already gone
+     * counts as removed, so removing again retries only what was left.
+     *
+     * @param {object} storage
+     * @returns {Promise<boolean>} Whether nothing of the file is left.
+     */
     async removeChatFile(storage) {
       const { uploadfs } = self.apos.attachment;
       const remove = promisify(uploadfs.remove);
-      let failed = null;
+      let removed = true;
       for (const path of [ storage.path, ...Object.values(storage.sizes || {}) ]) {
         try {
           await remove(path);
         } catch (e) {
           if (!isGone(e)) {
-            failed = failed || e;
+            removed = false;
+            self.logError('chat-file-remove', 'A chat file could not be removed.', {
+              code: getCode(e)
+            });
           }
         }
       }
-      if (failed) {
-        throw storageError(failed, 'The chat file could not be removed.');
-      }
+      return removed;
     }
   };
 
@@ -157,7 +167,7 @@ module.exports = (self) => {
   }
 
   // Local storage: ENOENT; GCS and Azure: 404; S3: a 404 response, or
-  // NoSuchKey (S3 and Azure removes never fail for a missing file)
+  // NoSuchKey
   function isGone(e) {
     return [ 'ENOENT', 'NoSuchKey', 'BlobNotFound', 404 ].includes(getCode(e)) ||
       (e?.statusCode === 404) || (e?.$metadata?.httpStatusCode === 404);

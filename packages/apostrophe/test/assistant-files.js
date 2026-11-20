@@ -93,46 +93,64 @@ for (const key of [ null, 'testkey' ]) {
       const local = path.join(FIXTURES, 'upload_image.png');
       const { storage } = await apos.assistant.prepareChatFile(local, 'png');
       await apos.assistant.writeChatFile(local, storage);
-      await apos.assistant.removeChatFile(storage);
+      assert.equal(await apos.assistant.removeChatFile(storage), true);
       for (const stored of getPaths(storage)) {
         await assert.rejects(fs.access(path.join(UPLOADS, stored)), { code: 'ENOENT' });
       }
       // An interrupted removal is finished by the next one
-      await apos.assistant.removeChatFile(storage);
+      assert.equal(await apos.assistant.removeChatFile(storage), true);
       const error = await getError(apos.assistant.readChatFile(storage));
       assert.equal(error.name, 'notfound');
       assertNoPath(error, storage);
     });
 
-    it('keeps the path out of a failed write and a failed remove', async function () {
+    it('keeps the path out of a failed write', async function () {
       const local = path.join(FIXTURES, 'clone.txt');
       const { storage } = await apos.assistant.prepareChatFile(local, 'md');
       const { uploadfs } = apos.attachment;
-      const { copyIn, remove } = uploadfs;
-      const tried = [];
+      const { copyIn } = uploadfs;
       uploadfs.copyIn = (from, to, callback) => callback(failure(to));
+      try {
+        const error = await getError(apos.assistant.writeChatFile(local, storage));
+        assert.equal(error.name, 'error');
+        assert.deepEqual(error.data, { code: 'EACCES' });
+        assertNoPath(error, storage);
+      } finally {
+        uploadfs.copyIn = copyIn;
+      }
+    });
+
+    it('never fails a remove, and logs a failure without the path', async function () {
+      const local = path.join(FIXTURES, 'clone.txt');
+      const { storage } = await apos.assistant.prepareChatFile(local, 'md');
+      const { uploadfs } = apos.attachment;
+      const { remove } = uploadfs;
+      const { logError } = apos.assistant;
+      const tried = [];
+      const logged = [];
       uploadfs.remove = (stored, callback) => {
         tried.push(stored);
         return callback(failure(stored));
       };
+      apos.assistant.logError = (...args) => logged.push(args);
       try {
-        const written = await getError(apos.assistant.writeChatFile(local, storage));
-        assert.equal(written.name, 'error');
-        assert.deepEqual(written.data, { code: 'EACCES' });
-        assertNoPath(written, storage);
-        const removed = await getError(apos.assistant.removeChatFile({
+        assert.equal(await apos.assistant.removeChatFile({
           ...storage,
-          sizes: { small: '/apos-ai/other.small.jpg' }
-        }));
-        assert.equal(removed.name, 'error');
-        assertNoPath(removed, storage);
-        // Every path is tried before the failure is reported
-        assert.deepEqual(tried, [ storage.path, '/apos-ai/other.small.jpg' ]);
+          sizes: { thumbnail: '/apos-ai/other.thumbnail.jpg' }
+        }), false);
+        assert.deepEqual(tried, [ storage.path, '/apos-ai/other.thumbnail.jpg' ]);
+        assert.equal(logged.length, 2);
+        for (const [ type, message, data ] of logged) {
+          assert.equal(type, 'chat-file-remove');
+          assertNoPath({
+            message,
+            data
+          }, storage);
+          assert.deepEqual(data, { code: 'EACCES' });
+        }
       } finally {
-        Object.assign(uploadfs, {
-          copyIn,
-          remove
-        });
+        uploadfs.remove = remove;
+        apos.assistant.logError = logError;
       }
     });
   });
