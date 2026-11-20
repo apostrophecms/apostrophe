@@ -124,17 +124,25 @@ module.exports = {
       }
     };
   },
-  helpers() {
+  helpers(self) {
     return {
       toCss(value, property, unit = 'px') {
+        if (typeof property !== 'string' || !property) {
+          self.apos.util.warnDevOnce(
+            'box-field-toCss-property',
+            'apos.boxField.toCss requires a CSS property (e.g. "margin" or "padding-%key%").'
+          );
+          return '';
+        }
+
         const {
           top, right, bottom, left
-        } = value;
+        } = value || {};
         const vals = [ top, right, bottom, left ];
 
         if (vals.every(v => v == null)) {
           return '';
-        };
+        }
 
         if (vals.every(v => v === top && v != null)) {
           const normalizedProperty = property
@@ -161,12 +169,12 @@ module.exports = {
             ? property
               .replaceAll('-%key%', `-${side}`)
               .replaceAll('%key%-', `${side}-`)
-            : `property-${side}`;
+            : `${property}-${side}`;
 
           parts.push(`${normalizedProperty}: ${val}${unit}`);
         }
 
-        return parts.join(' ');
+        return parts.join(';') + ';';
       }
     };
   }
