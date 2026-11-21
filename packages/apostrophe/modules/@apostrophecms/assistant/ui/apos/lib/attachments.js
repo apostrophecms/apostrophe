@@ -89,6 +89,12 @@ export function createAttachments({ getChatId, report }) {
     return apos.modules['@apostrophecms/assistant'].attachments;
   }
 
+  // Whether the user may attach files at all: the right to upload, which
+  // never changes while the page lives
+  function canUpload() {
+    return getConfig().canUpload;
+  }
+
   function getAttached(id) {
     return attached.value[id] || [];
   }
@@ -356,6 +362,7 @@ export function createAttachments({ getChatId, report }) {
     attached,
     attachRefusals,
     previews,
+    canUpload,
     getAttached,
     isUploading,
     isFull,

@@ -5,6 +5,7 @@ const path = require('path');
 const FormData = require('form-data');
 const { createReadStream } = require('fs');
 const t = require('../test-lib/test.js');
+const reads = require('../modules/@apostrophecms/assistant/lib/attachment-reads.js');
 
 // Files attached to a request, on the scripted mock: what is accepted and
 // refused before anything is stored, the owner-checked read, the reference
@@ -131,6 +132,14 @@ describe('Assistant: attachments', function () {
       assert.equal(records.length, 9);
       assert(records.every(record => record.status === 'stored'));
       assert(records.every(record => record.requestId === null));
+    });
+
+    it('refuses a user who may not upload files, storing nothing', async function () {
+      await assert.rejects(attach(userReq(guest), 'guest-chat', 'note.md', 'Hi'), {
+        name: 'forbidden'
+      });
+      const { attachments } = apos.assistant;
+      assert.equal(await attachments.countDocuments({ ownerId: guest._id }), 0);
     });
 
     it('refuses a type, a size, a count, unreadable content and a route that can\'t read it, storing nothing', async function () {
@@ -275,6 +284,14 @@ describe('Assistant: attachments', function () {
         .find({ requestId: request._id })
         .toArray();
       assert.equal(records.length, 3);
+
+      // Nor does the run's job record
+      const job = await apos.modules['@apostrophecms/job'].db.findOne({ _id: request.jobId });
+      assert.equal(job.status, 'completed');
+      assert.equal(job.results.text, 'Done.');
+      const kept = JSON.stringify(job);
+      assert(!kept.includes(media[0].image.data.slice(0, 200)));
+      assert(!kept.includes(media[1].document.data));
     });
 
     it('refuses a file of another chat, one sent already, and too many', async function () {
@@ -466,6 +483,68 @@ describe('Assistant: attachments', function () {
       assert.equal(other.content, '{"hello":"world"}');
     });
 
+    it('reads a hostile file in one pass', async function () {
+      // A data URL header that never reaches its comma, a comment never
+      // closed
+      const css = await readOne('hostile.css', `a{b:url(data:${
+        ';aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'.repeat(40)})} /* c */ d{e:f} /* open g{h:i}`);
+      assert(css.content.endsWith('d{e:f}'));
+      assert(css.content.includes('url(data:;aaaa'));
+
+      // Each of these took minutes at this size when matched more than once
+      const within = (limit, work, refused = null) => {
+        const started = Date.now();
+        let result;
+        if (refused) {
+          assert.throws(work, { name: refused });
+        } else {
+          result = work();
+        }
+        assert(Date.now() - started < limit, `took ${Date.now() - started} ms`);
+        return result;
+      };
+      assert.equal(within(5000, () => reads.trimCss('/* '.repeat(350000))), '');
+      const section = '<section><div><h2>Title</h2><p>Copy with <a href="/x">a link</a>.</p>' +
+        '<!-- c --><script>x()</script><svg><path d="M0 0"/></svg></div></section>\n';
+      const page = within(5000, () => reads.trimHtml(
+        `<!doctype html><html><body>${section.repeat(30000)}</body></html>`
+      ));
+      assert(!page.includes('<!--') && !page.includes('<script') && !page.includes('M0 0'));
+      assert.equal(page.match(/<section>/g).length, 30000);
+      // Not a whole page: the same elements side by side, and never closed
+      const list = within(5000, () => reads.trimHtml('<p>a</p>'.repeat(200000)));
+      assert.equal(list.length, 1600000);
+      within(5000, () => reads.trimHtml('<li>a'.repeat(300000)));
+      within(5000, () => reads.trimHtml('<div>'.repeat(1000000)).length, 'nesting');
+      const text = 'x'.repeat(4000000);
+      within(5000, () => {
+        let part = 1;
+        while (reads.getPart(text, part)) {
+          part++;
+        }
+      });
+
+      const req = userReq(editor);
+      const hostile = await within(5000, () => attach(req, 'hostile-pdf', 'hostile.pdf',
+        `%PDF-1.4\n${'/Count 1 '.repeat(120000)}`));
+      assert.equal(hostile.pages, undefined);
+      // A page tree node is found whatever its dictionary holds before its count
+      const nested = await attach(req, 'hostile-pdf', 'nested.pdf', '%PDF-1.4\n' +
+        '2 0 obj << /Type /Pages /Resources << /Font << /F1 5 0 R >> >> /Kids [3 0 R] ' +
+        '/Count 4 >> endobj\n9 0 obj << /Type /Outlines /Count 9 >> endobj');
+      assert.equal(nested.pages, 4);
+    });
+
+    it('refuses markup nested too deeply to read, whatever its size', async function () {
+      const deep = await readOne('deep.html', `${'<div>'.repeat(600)}Hi`);
+      assert.match(deep.error, /nested too deeply to read/);
+      const svg = await readOne('deep.svg',
+        `<svg xmlns="http://www.w3.org/2000/svg">${'<g>'.repeat(600)}</svg>`);
+      assert.match(svg.error, /nested too deeply to read/);
+      const fine = await readOne('fine.html', `${'<div>'.repeat(400)}Hi`);
+      assert(fine.content.endsWith(`Hi${'</div>'.repeat(400)}`));
+    });
+
     it('reads Markdown in parts', async function () {
       const text = 'word '.repeat(20000);
       const first = await readOne('notes.md', text);
@@ -538,7 +617,18 @@ describe('Assistant: attachments', function () {
     it('refuses to save for a user who may not upload', async function () {
       const req = userReq(guest);
       const chat = await apos.assistant.createChat(req);
-      const image = await attach(req, chat._id, 'photo.png', fixture('upload_image.png'));
+      // Attaching takes the same right: a file of theirs from before they lost it
+      const image = await apos.assistant.storeChatFile(
+        path.join(FIXTURES, 'upload_image.png'),
+        'png',
+        {
+          ownerId: guest._id,
+          chatId: chat._id,
+          requestId: null,
+          kind: 'attachment',
+          name: 'photo.png'
+        }
+      );
       script = {
         run: sequence([
           toolTurn('save_attachment_to_media', { attachment: image._id }, 'save'),

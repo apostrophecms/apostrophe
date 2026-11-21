@@ -62,6 +62,7 @@ describe('Assistant: module and options', function () {
         screenWait: 15000,
         // With no provider routed, every kind of file
         attachments: {
+          canUpload: true,
           maxBytes: 8 * 1024 * 1024,
           maxCount: 4,
           extensions: [
@@ -72,6 +73,14 @@ describe('Assistant: module and options', function () {
         },
         alias: 'assistant'
       });
+      // Attaching takes the right to upload a file
+      const guest = await apos.template.getBodyData(apos.task.getReq({
+        user: {
+          _id: 'guest',
+          role: 'guest'
+        }
+      }));
+      assert.equal(guest.modules['@apostrophecms/assistant'].attachments.canUpload, false);
       const anonymous = await apos.template.getBodyData(apos.task.getAnonReq());
       assert.equal(anonymous.modules['@apostrophecms/modal'], undefined);
       assert.equal(anonymous.modules['@apostrophecms/assistant'], undefined);

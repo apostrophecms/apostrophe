@@ -9,7 +9,8 @@
 // message a reference line per file plus, for an image or a PDF, a part
 // naming the file (`{ type, attachmentId, name, mediaType }`). The bytes
 // are built into those parts just before a call (`addAttachmentBytes`) and
-// never stored: what a run stores keeps the references.
+// never stored: what a run stores keeps the references, and its job record
+// keeps neither (`dropAttachmentBytes`).
 //
 // A record: `{ _id, schemaVersion, ownerId, chatId, requestId, kind,
 // status, name, extension, mediaType, size, width, height, pages,
@@ -159,8 +160,9 @@ module.exports = (self) => {
 
     /**
      * Stores a file attached to a chat's next request. The chat may not
-     * exist yet; one of someone else is not found. Refused with `invalid`
-     * and `data.reason`, before anything is stored: `type`, `route` (the
+     * exist yet; one of someone else is not found. `forbidden` for a user
+     * who may not upload files. Refused with `invalid` and `data.reason`,
+     * before anything is stored: `type`, `route` (the
      * chat's route can't read its `kind`), `size` (`size`, `limit`),
      * `pages` (`pages`, `limit`), `count` (`limit`) or `unreadable` (not a
      * file of its type). An image in a format no provider takes is
@@ -174,6 +176,9 @@ module.exports = (self) => {
      */
     async attach(req, chatId, file) {
       const ownerId = self.getOwnerId(req);
+      if (!self.apos.permission.can(req, 'upload-attachment')) {
+        throw self.apos.error('forbidden');
+      }
       const _id = self.apos.launder.id(chatId);
       if (!_id) {
         throw self.apos.error('invalid', 'the chat id is not valid');
@@ -767,6 +772,31 @@ module.exports = (self) => {
     },
 
     /**
+     * Messages as a run's job record keeps them: every part carrying a
+     * file's bytes replaced by a line. A request's own record never reads
+     * that line: its user message is stored as sent, by reference.
+     *
+     * @param {object[]} messages
+     * @returns {object[]} Copies where a part changed.
+     */
+    dropAttachmentBytes(messages) {
+      return messages.map(message => {
+        if (!Array.isArray(message.content) || !message.content.some(hasBytes)) {
+          return message;
+        }
+        return {
+          ...message,
+          content: message.content.map(part => (hasBytes(part)
+            ? {
+              type: 'text',
+              text: `[${part.type === 'document' ? 'A document' : 'An image'} was sent here.]`
+            }
+            : part))
+        };
+      });
+    },
+
+    /**
      * A chat file a tool of the door's chat names, by id: one of the
      * chat's attached files that is stored. Throws `aiToolError` otherwise.
      *
@@ -869,18 +899,41 @@ function isReference(part) {
     !part.image && !part.document;
 }
 
+function hasBytes(part) {
+  return (typeof part?.image?.data === 'string') || (typeof part?.document?.data === 'string');
+}
+
 // A PDF's pages as its page tree counts them, or its page objects; `null`
-// when neither is readable (compressed object streams)
+// when neither is readable (compressed object streams). One pass over the
+// file's dictionaries: a page tree node is a dictionary holding both
+// `/Type /Pages` and `/Count`
 function countPdfPages(bytes) {
   const text = bytes.toString('latin1');
+  const open = [];
   let count = 0;
-  for (const match of text.matchAll(/\/Type\s*\/Pages\b[^>]*?\/Count\s+(\d+)|\/Count\s+(\d+)[^>]*?\/Type\s*\/Pages\b/g)) {
-    count = Math.max(count, Number(match[1] || match[2]));
+  let pages = 0;
+  const tokens = /<<|>>|\/Type\s*\/Page(s?)(?![a-zA-Z])|\/Count\s+(\d+)/g;
+  for (const [ token, tree, counted ] of text.matchAll(tokens)) {
+    if (token === '<<') {
+      open.push({});
+    } else if (token === '>>') {
+      const dictionary = open.pop();
+      if (dictionary?.tree && dictionary.count) {
+        count = Math.max(count, dictionary.count);
+      }
+    } else if (counted !== undefined) {
+      if (open.length) {
+        open.at(-1).count = Number(counted);
+      }
+    } else if (tree) {
+      if (open.length) {
+        open.at(-1).tree = true;
+      }
+    } else {
+      pages++;
+    }
   }
-  if (!count) {
-    count = [ ...text.matchAll(/\/Type\s*\/Page(?![a-zA-Z])/g) ].length;
-  }
-  return count || null;
+  return count || pages || null;
 }
 
 function megabytes(size) {

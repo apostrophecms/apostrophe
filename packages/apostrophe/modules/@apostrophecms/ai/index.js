@@ -1123,6 +1123,11 @@ module.exports = {
        *   'cancel'). Its own throw is logged, never recorded on the job.
        * @property {number} [expireAfter] Seconds the job record is kept,
        *   defaulting to the `jobExpireAfter` option; 0 keeps it forever.
+       * @property {(result: AiResult) => object} [jobResults] What the job
+       *   record keeps as `results`, from the run's result; the result itself
+       *   by default. For a run whose transcript should not be stored whole:
+       *   one carrying images or documents holds their bytes. `onEnd` still
+       *   gets the result as it is.
        * @property {boolean} [notify] Publish the run's progress to the caller's
        *   browser (see publishJobEvent); true by default. 'started' once the
        *   record exists, 'message' per intermediate assistant turn with the
@@ -1144,7 +1149,8 @@ module.exports = {
        * `@apostrophecms/job`. The `await` covers job creation only — the method
        * returns as soon as the job record exists, the run continues in the
        * background, and the exact object generate would have returned is stored
-       * on the record as `results` (a failure stores its error instead),
+       * on the record as `results`, or what `jobResults` makes of it (a
+       * failure stores its error instead),
        * readable via the job module's status route. The job has a heartbeat,
        * so a run whose process died reads as `abandoned` there.
        *
@@ -1180,10 +1186,13 @@ module.exports = {
           self.normalizeGenerateOptions(stringOrOptions, options);
         }
         const {
-          onEnd, expireAfter, notify = true, ...generateOptions
+          onEnd, expireAfter, notify = true, jobResults, ...generateOptions
         } = source;
         if (onEnd !== undefined && typeof onEnd !== 'function') {
           throw self.apos.error('invalid', '"onEnd" must be a function');
+        }
+        if (jobResults !== undefined && typeof jobResults !== 'function') {
+          throw self.apos.error('invalid', '"jobResults" must be a function');
         }
         if (typeof notify !== 'boolean') {
           throw self.apos.error('invalid', '"notify" must be a boolean');
@@ -1281,7 +1290,7 @@ module.exports = {
             const result = isPrompt
               ? await self.generate(workReq, stringOrOptions, backgroundOptions)
               : await self.generate(workReq, backgroundOptions);
-            reporting.setResults(result);
+            reporting.setResults(jobResults ? jobResults(result) : result);
             await report(null, result);
           } catch (error) {
             await report(error, undefined);

@@ -6,8 +6,7 @@
 
 const fs = require('node:fs/promises');
 const {
-  PART_CHARS, trimHtml, trimSvg, trimCss, readTokens, getPart, getTokensPart,
-  measureColors
+  PART_CHARS, prepare, getPart, getTokensPart, measureColors
 } = require('./attachment-reads');
 
 const ALT_MAX = 500;
@@ -121,40 +120,31 @@ module.exports = (self) => {
           };
         }
         const text = (await readFile(record)).toString('utf8');
-        if (kind === 'css') {
+        let prepared;
+        try {
+          prepared = prepare(kind, text);
+        } catch (e) {
+          const message = {
+            SyntaxError: 'The file is not valid JSON.',
+            nesting: `The file "${record.name}" is nested too deeply to read.`
+          }[e.name];
+          if (!message) {
+            throw e;
+          }
+          throw self.apos.error('aiToolError', message);
+        }
+        if (prepared.tokens) {
           return {
             ...head,
-            ...pageOf(getPart(trimCss(text), part, [ '}', ';', ' ' ]))
+            format: prepared.format,
+            count: prepared.tokens.length,
+            ...pageOf(getTokensPart(prepared.tokens, part))
           };
         }
-        if (kind === 'tokens') {
-          let parsed;
-          try {
-            parsed = JSON.parse(text);
-          } catch (e) {
-            throw self.apos.error('aiToolError', 'The file is not valid JSON.');
-          }
-          const tokens = readTokens(parsed);
-          if (tokens) {
-            return {
-              ...head,
-              format: tokens.format,
-              count: tokens.tokens.length,
-              ...pageOf(getTokensPart(tokens.tokens, part))
-            };
-          }
-          return {
-            ...head,
-            format: 'json',
-            ...pageOf(getPart(JSON.stringify(parsed), part))
-          };
-        }
-        const content = (kind === 'html')
-          ? trimHtml(text)
-          : (kind === 'svg') ? trimSvg(text) : text;
         return {
           ...head,
-          ...pageOf(getPart(content, part))
+          ...(prepared.format && { format: prepared.format }),
+          ...pageOf(getPart(prepared.text, part, (kind === 'css') ? [ '}', ';', ' ' ] : [ ' ' ]))
         };
 
         function pageOf(found) {

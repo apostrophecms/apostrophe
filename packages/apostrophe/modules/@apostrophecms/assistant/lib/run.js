@@ -562,6 +562,11 @@ module.exports = (self) => {
             toolInput
           }),
           notify: false,
+          // The job record keeps the run's result without any file's bytes
+          jobResults: result => ({
+            ...result,
+            messages: self.dropAttachmentBytes(result.messages)
+          }),
           usageMetadata: { purpose: 'request' },
           ...self.getProgressHooks(doorReq, request, tools),
           // Due a shortening, the run pauses for it and the request

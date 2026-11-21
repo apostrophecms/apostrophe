@@ -1428,17 +1428,18 @@ export const useAssistantStore = defineStore('assistant', () => {
   }
 
   /**
-   * Whether files may be attached in a chat tab now: never while its chat
-   * has a request or a revert open, waits for what it carries over, or a
-   * revert waits on its confirmation, nor past `attachmentMaxCount`.
+   * Whether files may be attached in a chat tab now: never by a user who
+   * may not upload files, nor while its chat has a request or a revert
+   * open, waits for what it carries over, or a revert waits on its
+   * confirmation, nor past `attachmentMaxCount`.
    *
    * @param {string} id
    * @returns {boolean}
    */
   function canAttach(id) {
     const chat = getChat(id);
-    return (getOwner(chat) === 'none') && !chat?.openRevert && !chat?.carry &&
-      !confirmations.value[id] && !attachments.isFull(id);
+    return attachments.canUpload() && (getOwner(chat) === 'none') && !chat?.openRevert &&
+      !chat?.carry && !confirmations.value[id] && !attachments.isFull(id);
   }
 
   function getUploadChatId(id) {
@@ -2468,6 +2469,7 @@ export const useAssistantStore = defineStore('assistant', () => {
     setDraft,
     runNoticeAction,
     canAttach,
+    canUpload: attachments.canUpload,
     getAttached: attachments.getAttached,
     isUploading: attachments.isUploading,
     isFull: attachments.isFull,

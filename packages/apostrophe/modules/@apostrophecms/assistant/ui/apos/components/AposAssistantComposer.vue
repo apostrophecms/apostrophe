@@ -122,6 +122,7 @@
       <div class="apos-assistant-composer__actions">
         <div class="apos-assistant-composer__tools">
           <button
+            v-if="canUpload"
             type="button"
             class="apos-assistant-composer__tool"
             :aria-label="attachTitle"
@@ -139,6 +140,7 @@
             </svg>
           </button>
           <input
+            v-if="canUpload"
             ref="picker"
             class="apos-assistant-composer__picker"
             type="file"
@@ -266,6 +268,8 @@ const running = computed(() => [ 'running', 'stopping' ].includes(chat.value?.op
 const stopping = computed(() => chat.value?.openRequest?.status === 'stopping');
 const stopShown = computed(() => running.value && !draft.value.trim());
 const uploading = computed(() => store.isUploading(props.chatId));
+// A user who may not upload files has no attach button
+const canUpload = store.canUpload();
 const canAttach = computed(() => store.canAttach(props.chatId));
 const attachRefusal = computed(() => store.attachRefusals[props.chatId] || null);
 const attachTitle = computed(() => (store.isFull(props.chatId)

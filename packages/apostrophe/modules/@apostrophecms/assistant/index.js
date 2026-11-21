@@ -472,6 +472,8 @@ module.exports = {
           modelDisplay: self.options.modelDisplay,
           screenWait: self.options.screenWait,
           attachments: {
+            // Attaching a file takes the right to upload one
+            canUpload: self.apos.permission.can(req, 'upload-attachment'),
             maxBytes: self.options.attachmentMaxBytes,
             maxCount: self.options.attachmentMaxCount,
             extensions: self.getAttachmentExtensions(),

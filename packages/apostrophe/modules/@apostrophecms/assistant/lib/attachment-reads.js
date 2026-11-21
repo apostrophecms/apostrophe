@@ -2,9 +2,19 @@
 // noise only (scripts, path data, base64 data URLs, comments, extra
 // whitespace), CSS trimmed, token files checked by shape, long text and
 // long token lists read in parts, and the main colors of an image measured.
+//
+// A file is attached by anyone who may upload, and is read on the thread
+// that serves the site, so nothing here takes more than one pass over it:
+// no pattern that can be matched in more than one way, no search that
+// starts over from each match, and markup parsed as written, by a parser
+// whose one costly case, nesting, is refused past `MAX_DEPTH`.
 
-const cheerio = require('cheerio');
+const {
+  Parser, DomHandler, DomUtils
+} = require('htmlparser2');
 
+// Elements inside one another in markup: far past any real page
+const MAX_DEPTH = 512;
 // About 20,000 tokens of markup
 const PART_CHARS = 40000;
 // Where a part may end early to end on whitespace
@@ -13,12 +23,19 @@ const TOKENS_PER_PART = 300;
 const COLORS_MAX = 8;
 // The least share of the pixels a main color covers
 const COLOR_MIN_SHARE = 0.02;
-const DATA_URL = /data:([\w.+-]+\/[\w.+-]+)?((?:;[\w.+-]+=?[\w.+-]*)*),[^"'()\s]+/g;
-// Attributes holding shapes as numbers
-const SHAPE_ATTRIBUTES = [ [ 'path', 'd' ], [ 'polygon', 'points' ], [ 'polyline', 'points' ] ];
+// A parameter's name and value are told apart by its `=` alone, so a
+// header with no comma is given up in one pass
+const DATA_URL = /data:([\w.+-]+\/[\w.+-]+)?((?:;[\w.+-]+(?:=[\w.+-]*)?)*),[^"'()\s]+/g;
+// Attributes holding shapes as numbers, by element
+const SHAPE_ATTRIBUTES = {
+  path: 'd',
+  polygon: 'points',
+  polyline: 'points'
+};
 
 module.exports = {
   PART_CHARS,
+  prepare,
   trimHtml,
   trimSvg,
   trimCss,
@@ -28,40 +45,129 @@ module.exports = {
   measureColors
 };
 
+/**
+ * What the part reads of a file work from: its text trimmed by its kind,
+ * or the tokens of a token file.
+ *
+ * @param {string} kind `html`, `svg`, `css`, `tokens` or `markdown`.
+ * @param {string} text The file as stored.
+ * @returns {{ text: string, format?: string }|{ format: string, tokens:
+ *   object[] }} `format` for a token file: its shape, or `json` with the
+ *   file's text when it has none. Throws a `SyntaxError` for a token file
+ *   that is not JSON, and an error named `nesting` for markup nested too
+ *   deeply to read.
+ */
+function prepare(kind, text) {
+  if (kind === 'html') {
+    return { text: trimHtml(text) };
+  }
+  if (kind === 'svg') {
+    return { text: trimSvg(text) };
+  }
+  if (kind === 'css') {
+    return { text: trimCss(text) };
+  }
+  if (kind === 'tokens') {
+    const parsed = JSON.parse(text);
+    return readTokens(parsed) || {
+      format: 'json',
+      text: JSON.stringify(parsed)
+    };
+  }
+  return { text };
+}
+
 // A page as markup without what only a browser needs
 function trimHtml(text) {
-  const isDocument = /<!doctype|<html[\s>]/i.test(text);
-  const $ = cheerio.load(text, null, isDocument);
-  $('script').remove();
-  return collapse(trimMarkup($, $.html()));
+  return trimMarkup(text, { xmlMode: false });
 }
 
 function trimSvg(text) {
-  const $ = cheerio.load(text, {
-    xml: {
-      xmlMode: true,
-      decodeEntities: false
-    }
-  });
-  $('script').remove();
-  return collapse(trimMarkup($, $.xml()));
+  return trimMarkup(text, { xmlMode: true });
 }
 
-// Comments and shape data out, data URLs shortened, of markup loaded in `$`
-function trimMarkup($, fallback) {
-  $('*').contents().filter((index, node) => node.type === 'comment').remove();
-  $.root().contents().filter((index, node) => node.type === 'comment').remove();
-  for (const [ element, attribute ] of SHAPE_ATTRIBUTES) {
-    $(`${element}[${attribute}]`).attr(attribute, '…');
+// Scripts, comments, the XML declaration and shape data out, data URLs
+// shortened and whitespace collapsed, of markup kept as it is written:
+// nothing is repaired or decoded. One walk of the tree, each node met
+// once. Throws an error named `nesting` for markup nested past `MAX_DEPTH`
+function trimMarkup(text, { xmlMode }) {
+  const options = {
+    xmlMode,
+    decodeEntities: false
+  };
+  const handler = new BoundedHandler();
+  const parser = new Parser(handler, options);
+  parser.write(text);
+  parser.end();
+  const open = [ handler.root ];
+  while (open.length) {
+    const node = open.pop();
+    if (!node.children?.length) {
+      continue;
+    }
+    const kept = node.children.filter(child => (child.type !== 'comment') &&
+      (child.name !== 'script') && !child.name?.startsWith('?'));
+    if (kept.length !== node.children.length) {
+      kept.forEach((child, index) => {
+        child.prev = kept[index - 1] || null;
+        child.next = kept[index + 1] || null;
+      });
+      node.children = kept;
+    }
+    for (const child of kept) {
+      const attribute = SHAPE_ATTRIBUTES[child.name];
+      if (attribute && (child.attribs?.[attribute] !== undefined)) {
+        child.attribs[attribute] = '…';
+      }
+      open.push(child);
+    }
   }
-  return shortenDataUrls(($.root().html() ?? fallback));
+  return collapse(shortenDataUrls(DomUtils.getInnerHTML(handler.root, options)));
+}
+
+// The parser keeps every open element in a list it searches, and the
+// markup is written back by recursion: both are bounded by the depth
+class BoundedHandler extends DomHandler {
+  depth = 0;
+
+  onopentag(name, attribs) {
+    if (++this.depth > MAX_DEPTH) {
+      throw Object.assign(new Error('markup nested too deeply'), { name: 'nesting' });
+    }
+    super.onopentag(name, attribs);
+  }
+
+  onclosetag() {
+    this.depth--;
+    super.onclosetag();
+  }
 }
 
 function trimCss(text) {
-  return shortenDataUrls(text.replace(/\/\*[\s\S]*?\*\//g, ''))
+  return shortenDataUrls(dropCssComments(text))
     .replace(/\s+/g, ' ')
     .replace(/\s*([{};])\s*/g, '$1')
     .trim();
+}
+
+// A comment never closed runs to the end of the stylesheet
+function dropCssComments(text) {
+  const kept = [];
+  let from = 0;
+  for (;;) {
+    const start = text.indexOf('/*', from);
+    if (start === -1) {
+      kept.push(text.slice(from));
+      break;
+    }
+    kept.push(text.slice(from, start));
+    const end = text.indexOf('*/', start + 2);
+    if (end === -1) {
+      break;
+    }
+    from = end + 2;
+  }
+  return kept.join('');
 }
 
 /**
@@ -150,11 +256,12 @@ function getPart(text, part = 1, breaks = [ ' ' ]) {
   while (start < text.length) {
     let end = Math.min(start + PART_CHARS, text.length);
     if (end < text.length) {
+      const tail = text.slice(end - PART_SLACK, end);
       const found = breaks
-        .map(char => text.lastIndexOf(char, end - 1))
-        .find(index => index >= end - PART_SLACK);
+        .map(char => tail.lastIndexOf(char))
+        .find(index => index !== -1);
       if (found !== undefined) {
-        end = found + 1;
+        end = end - PART_SLACK + found + 1;
       }
     }
     parts.push(text.slice(start, end));
