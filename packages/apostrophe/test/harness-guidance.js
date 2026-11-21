@@ -156,6 +156,8 @@ describe('Harness: guidance and language', function () {
       assert.deepEqual(types.split('\n'), [
         'When to use each type. A type marked "(aiHow)" has rules for working with it: ' +
           'read them with get_guidance first.',
+        // Core's own guidance
+        '@apostrophecms/layout (aiHow)',
         'guide-article: Guides and how-tos. (aiHow)',
         'guide-banner: A banner at the top of a landing page.',
         'guide-event (aiHow)',
@@ -189,7 +191,9 @@ describe('Harness: guidance and language', function () {
       assert.equal(instructions.includes('Give every event a start date.'), false);
       assert.equal(instructions.includes('Open with what the reader'), false);
       assert.equal(instructions.includes('guide-secret'), false);
-      assert.deepEqual(input.properties.types.items.enum, [ 'guide-article', 'guide-event' ]);
+      assert.deepEqual(input.properties.types.items.enum, [
+        '@apostrophecms/layout', 'guide-article', 'guide-event'
+      ]);
       assert.deepEqual(await run('get_guidance', { types: [ 'guide-event' ] }), {
         guidance: [ {
           type: 'guide-event',

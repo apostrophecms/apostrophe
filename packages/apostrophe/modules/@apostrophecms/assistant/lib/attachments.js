@@ -94,9 +94,13 @@ const SOURCE_SECTION = [
   '- Build only from this site\'s own page types and widgets: read the schema of each one ' +
     'you use. Never invent a widget, markup or styles the site does not have.',
   '- One page per source, unless the user asks otherwise. Pages are created as drafts.',
-  '- Match each part of the source to the closest widget. In your reply, name each page ' +
-    'you created, and each part no widget matched with what you used instead, or that you ' +
-    'left it out.'
+  '- Match each part of the source to the closest widget.',
+  '- Give each picture in the source an image from Media that fits its subject, found with ' +
+    'search_content: it need not be the same image, only a fitting one. Point links and ' +
+    'buttons to the site\'s own pages and documents that fit, found the same way.',
+  '- In your reply, name each page you created, each part no widget matched with what you ' +
+    'used instead or that you left it out, and each picture or link you found nothing ' +
+    'fitting for.'
 ].join('\n');
 const KIND_NAMES = {
   image: 'image',
