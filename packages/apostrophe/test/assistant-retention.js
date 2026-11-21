@@ -123,6 +123,12 @@ describe('Assistant: retention', function () {
     await apos.assistant.chats.updateOne({ _id: old._id }, {
       $set: { lastRequestAt: new Date(Date.now() - 2 * DAY) }
     });
+    // A chat from before the last request's time was written
+    const older = await apos.assistant.createChat(req);
+    await apos.assistant.chats.updateOne({ _id: older._id }, {
+      $set: { updatedAt: new Date(Date.now() - 2 * DAY) },
+      $unset: { lastRequestAt: 1 }
+    });
 
     assert.deepEqual(await apos.assistant.expireChats(), {
       chats: 0,
@@ -132,8 +138,9 @@ describe('Assistant: retention', function () {
 
     apos.assistant.options.chatExpireAfter = DAY / 1000;
     const swept = await apos.assistant.expireChats();
-    assert.equal(swept.chats, 1);
+    assert.equal(swept.chats, 2);
     assert.equal(await apos.assistant.chats.countDocuments({ _id: old._id }), 0);
+    assert.equal(await apos.assistant.chats.countDocuments({ _id: older._id }), 0);
     assert.equal(await apos.assistant.requests.countDocuments({ chatId: old._id }), 0);
     assert.equal(await apos.assistant.attachments.countDocuments({ chatId: old._id }), 0);
     assert(await apos.assistant.chats.findOne({ _id: fresh._id }));
@@ -176,17 +183,29 @@ describe('Assistant: retention', function () {
     await apos.assistant.deleteChat(req, left._id);
   });
 
-  it('removes a file never sent once it is a day old', async function () {
+  it('removes a file never sent once it is a day old, one left writing or missing too', async function () {
     const req = userReq(editor);
     const chat = await apos.assistant.createChat(req);
     const stale = await attach(req, chat, 'stale.png');
     const recent = await attach(req, chat, 'recent.png');
-    await apos.assistant.attachments.updateOne({ _id: stale._id }, {
+    // A crash between the record and the bytes, and bytes gone from storage
+    const writing = await attach(req, chat, 'writing.png');
+    const missing = await attach(req, chat, 'missing.png');
+    const leftovers = [ stale, writing, missing ].map(({ _id }) => _id);
+    await apos.assistant.attachments.updateMany({ _id: { $in: leftovers } }, {
       $set: { createdAt: new Date(Date.now() - 2 * DAY) }
     });
+    await apos.assistant.attachments.updateOne({ _id: writing._id }, {
+      $set: { status: 'writing' }
+    });
+    await apos.assistant.attachments.updateOne({ _id: missing._id }, {
+      $set: { status: 'missing' }
+    });
     const storage = await storageOf(stale);
-    assert.equal((await apos.assistant.expireChats()).files, 1);
-    assert.equal(await apos.assistant.attachments.countDocuments({ _id: stale._id }), 0);
+    assert.equal((await apos.assistant.expireChats()).files, 3);
+    assert.equal(await apos.assistant.attachments.countDocuments({
+      _id: { $in: leftovers }
+    }), 0);
     await assertGone(storage);
     assert(await apos.assistant.attachments.findOne({ _id: recent._id }));
     await apos.assistant.deleteChat(req, chat._id);

@@ -57,11 +57,19 @@ module.exports = (self) => {
       }
       try {
         const expireAfter = self.options.chatExpireAfter;
+        const before = new Date(Date.now() - expireAfter * 1000);
         const chats = await self.chats.find({
           $or: [
             { deleting: true },
             ...(expireAfter
-              ? [ { lastRequestAt: { $lt: new Date(Date.now() - expireAfter * 1000) } } ]
+              ? [
+                { lastRequestAt: { $lt: before } },
+                // A chat from before the field was written
+                {
+                  lastRequestAt: { $exists: false },
+                  updatedAt: { $lt: before }
+                }
+              ]
               : [])
           ]
         }).toArray();
@@ -71,10 +79,11 @@ module.exports = (self) => {
             deleted++;
           }
         }
+        // A file still writing after a day was left by a crash
         const unsent = await self.attachments.find({
           kind: 'attachment',
           requestId: null,
-          status: 'stored',
+          status: { $ne: 'orphan' },
           createdAt: { $lt: new Date(Date.now() - UNSENT_FOR) }
         }).toArray();
         let files = 0;

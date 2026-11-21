@@ -42,6 +42,8 @@
           class="apos-assistant-image-rounds__image"
           :src="ask.image.src"
           alt=""
+          loading="lazy"
+          decoding="async"
         >
         <span
           v-else

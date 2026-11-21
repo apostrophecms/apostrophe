@@ -53,6 +53,8 @@
         class="apos-assistant-file__image"
         :src="src"
         alt=""
+        loading="lazy"
+        decoding="async"
         @error="broken = true"
       >
       <span

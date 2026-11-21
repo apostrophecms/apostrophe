@@ -5,10 +5,12 @@ import { createId } from 'apostrophe/lib/beneath.js';
 // them. A file shows at once and uploads to the chat, under the id the
 // browser named it by; the send names the stored ones. One the editor
 // removes is deleted on the server once its upload has succeeded, so no
-// unsent file is left. What the panel can check on its own (type, size,
-// count) is refused before anything is uploaded; the server's refusals
-// and an upload that got no answer join the same message, one per paste,
-// drop or pick (see `attachRefusals`).
+// unsent file is left. The server keeps the unsent files across a page
+// load: a chat tab reads them back once per page (`loadAttached`). What the
+// panel can check on its own (type, size, count) is refused before
+// anything is uploaded; the server's refusals and an upload that got no
+// answer join the same message, one per paste, drop or pick (see
+// `attachRefusals`).
 
 const IMAGE_EXTENSIONS = [ 'png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'heic', 'heif' ];
 // What the browser can show before the server converts it
@@ -61,8 +63,9 @@ export function getFileUrl(chatId, attachmentId, size = null) {
  * The attachment state and actions the store spreads into its own.
  *
  * @param {object} options
- * @param {(id: string) => string} options.getChatId The chat a chat tab's
- *   files upload to, a new chat's named before it exists.
+ * @param {(id: string, options?: { create?: boolean }) => string|null}
+ *   options.getChatId The chat a chat tab's files upload to, a new chat's
+ *   named before it exists; `null` with `create: false` before it is.
  * @param {(e: Error) => void} options.report
  * @returns {object}
  */
@@ -84,6 +87,11 @@ export function createAttachments({ getChatId, report }) {
   const removed = new Set();
   // Sends waiting for their chat tab's uploads, by chat tab
   const waiters = new Map();
+  // The chat tabs whose unsent files were read on this page, each with the
+  // token of its latest read
+  const loaded = new Map();
+  // The files deleted on the server from this page, by attachment id
+  const detached = new Set();
 
   function getConfig() {
     return apos.modules['@apostrophecms/assistant'].attachments;
@@ -126,10 +134,10 @@ export function createAttachments({ getChatId, report }) {
         lines.push(line(kind === 'pdf' ? 'apostrophe:assistantAttachNoPdf' : 'apostrophe:assistantAttachNoImages', file));
       } else if (!config.extensions.includes(extension)) {
         lines.push(line('apostrophe:assistantAttachType', file));
-      } else if (file.size > config.maxBytes) {
+      } else if (file.size > getMaxBytes(extension)) {
         lines.push(line('apostrophe:assistantAttachSize', file, {
           size: formatSize(file.size),
-          limit: formatSize(config.maxBytes)
+          limit: formatSize(getMaxBytes(extension))
         }));
       } else if (count >= config.maxCount) {
         lines.push(line('apostrophe:assistantAttachCount', file, { count: config.maxCount }));
@@ -144,6 +152,13 @@ export function createAttachments({ getChatId, report }) {
         lines
       };
     }
+  }
+
+  function getMaxBytes(extension) {
+    const config = getConfig();
+    return config.textExtensions.includes(extension)
+      ? config.maxTextBytes
+      : config.maxBytes;
   }
 
   async function upload(id, batch, file) {
@@ -284,6 +299,7 @@ export function createAttachments({ getChatId, report }) {
 
   // A failed delete leaves the file to the sweep of unsent files
   function detach(chatId, attachmentId) {
+    detached.add(attachmentId);
     apos.http.delete(
       `${apos.modules['@apostrophecms/assistant'].action}/chat/${chatId}/attachment/${attachmentId}`,
       {}
@@ -333,6 +349,10 @@ export function createAttachments({ getChatId, report }) {
     const taken = getAttached(id).filter(file => file.status === 'stored');
     delete attached.value[id];
     delete attachRefusals.value[id];
+    // A read still on the wire would bring them back
+    if (loaded.has(id)) {
+      loaded.set(id, {});
+    }
     for (const file of taken) {
       if (file.preview) {
         previews.value[file.attachment._id] = file.preview;
@@ -356,6 +376,114 @@ export function createAttachments({ getChatId, report }) {
     }
     delete attached.value[id];
     delete attachRefusals.value[id];
+    loaded.delete(id);
+  }
+
+  /**
+   * Reads a chat tab's unsent files from the server into its composer: once
+   * per page, or `again` when a send found one gone. The server's list
+   * wins over the composer's stored files it already held; files uploading
+   * or stored since the read began are kept. A read that fails is tried
+   * again the next time the chat tab opens.
+   *
+   * @param {string} id The chat tab.
+   * @param {object} [options]
+   * @param {boolean} [options.again]
+   */
+  async function loadAttached(id, { again = false } = {}) {
+    if (loaded.has(id) && !again) {
+      return;
+    }
+    const chatId = getChatId(id, { create: false });
+    if (!chatId) {
+      return;
+    }
+    const token = {};
+    loaded.set(id, token);
+    const held = new Set(getAttached(id)
+      .filter(file => file.status === 'stored')
+      .map(file => file.key));
+    let listed;
+    try {
+      listed = await listUnsent(chatId);
+    } catch (e) {
+      if (loaded.get(id) === token) {
+        loaded.delete(id);
+      }
+      return;
+    }
+    // Closed, sent or read again meanwhile
+    if ((loaded.get(id) !== token) || (getChatId(id, { create: false }) !== chatId)) {
+      return;
+    }
+    const current = getAttached(id);
+    const byId = new Map(current
+      .filter(file => file.attachment)
+      .map(file => [ file.attachment._id, file ]));
+    const kept = listed
+      .filter(attachment => !detached.has(attachment._id))
+      .map(attachment => byId.get(attachment._id) || {
+        key: createId(),
+        chatId,
+        name: attachment.name,
+        size: attachment.size,
+        status: 'stored',
+        attachment,
+        preview: null
+      });
+    const listedIds = new Set(listed.map(attachment => attachment._id));
+    const later = current.filter(file => !held.has(file.key) &&
+      !(file.attachment && listedIds.has(file.attachment._id)));
+    for (const file of current) {
+      if (held.has(file.key) && !listedIds.has(file.attachment._id)) {
+        revoke(file);
+      }
+    }
+    const files = [ ...kept, ...later ];
+    if (files.length) {
+      attached.value[id] = files;
+    } else {
+      delete attached.value[id];
+    }
+  }
+
+  async function listUnsent(chatId) {
+    const { attachments } = await apos.http.get(
+      `${apos.modules['@apostrophecms/assistant'].action}/chat/${chatId}/attachment`,
+      {}
+    );
+    return attachments;
+  }
+
+  /**
+   * Drops a chat tab's files and deletes them on the server, those the
+   * composer never read back included: closing the New chat tab.
+   *
+   * @param {string} id
+   */
+  async function discardAttached(id) {
+    const chatId = getChatId(id, { create: false });
+    const stored = getAttached(id).filter(file => file.status === 'stored');
+    forgetAttached(id);
+    for (const file of stored) {
+      detach(file.chatId, file.attachment._id);
+      revoke(file);
+    }
+    if (!chatId) {
+      return;
+    }
+    let listed;
+    try {
+      listed = await listUnsent(chatId);
+    } catch (e) {
+      // Left to the sweep of unsent files
+      return;
+    }
+    for (const attachment of listed) {
+      if (!detached.has(attachment._id)) {
+        detach(chatId, attachment._id);
+      }
+    }
   }
 
   return {
@@ -372,6 +500,8 @@ export function createAttachments({ getChatId, report }) {
     whenUploaded,
     takeAttached,
     giveBack,
-    forgetAttached
+    forgetAttached,
+    loadAttached,
+    discardAttached
   };
 }

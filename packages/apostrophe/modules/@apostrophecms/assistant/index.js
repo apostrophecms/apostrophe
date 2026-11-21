@@ -51,6 +51,8 @@ module.exports = {
     contextThreshold: 75,
     // The largest file a request may carry, in bytes
     attachmentMaxBytes: 8 * 1024 * 1024,
+    // The largest CSS, JSON, tokens or Markdown file, in bytes
+    attachmentMaxTextBytes: 2 * 1024 * 1024,
     // The files a request may carry
     attachmentMaxCount: 4,
     // The images each round of generate_image offers to pick from
@@ -244,6 +246,10 @@ module.exports = {
         }),
         mention: route(async (req) => ({
           results: await self.findMentions(req, req.query.q)
+        })),
+        // The chat's files not sent yet, which may be before the chat exists
+        'chat/:_id/attachment': route(async (req) => ({
+          attachments: await self.listUnsent(req, req.params._id)
         }))
       },
       post: {
@@ -475,6 +481,8 @@ module.exports = {
             // Attaching a file takes the right to upload one
             canUpload: self.apos.permission.can(req, 'upload-attachment'),
             maxBytes: self.options.attachmentMaxBytes,
+            maxTextBytes: self.options.attachmentMaxTextBytes,
+            textExtensions: self.getTextExtensions(),
             maxCount: self.options.attachmentMaxCount,
             extensions: self.getAttachmentExtensions(),
             unreadable: self.getUnreadableExtensions()

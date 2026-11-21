@@ -414,6 +414,53 @@ describe('Assistant: images', function () {
     assert.equal((await findImage(hero)).attachment._id, hero.attachment._id);
   });
 
+  it('gives a notice its button back when its action throws, to run it again', async function () {
+    const req = userReq(editor);
+    const chat = await apos.assistant.createChat(req);
+    const done = await runToEnd(req, chat, 'Hello');
+    let throws = true;
+    apos.assistant.addNoticeAction('flaky', {
+      async run() {
+        if (throws) {
+          throws = false;
+          throw new Error('Storage is down');
+        }
+        return [];
+      }
+    });
+    const notice = {
+      _id: apos.util.generateId(),
+      callId: null,
+      tone: 'error',
+      title: 'apostrophe:assistantNotSavedToMedia',
+      text: null,
+      interpolate: {},
+      link: null,
+      action: {
+        name: 'flaky',
+        label: 'apostrophe:assistantRetry'
+      }
+    };
+    await apos.assistant.requests.updateOne({ _id: done._id }, {
+      $push: { notices: notice }
+    });
+    try {
+      const failed = await retry(req, chat, done, notice);
+      assert.equal(failed.status, 'failed');
+      const source = await apos.assistant.getRequest(req, done._id);
+      assert.deepEqual(apos.assistant.renderRequest(source).notices[0].action, {
+        name: 'flaky',
+        label: 'apostrophe:assistantRetry'
+      });
+      const ran = await retry(req, chat, done, notice);
+      assert.equal(ran.status, 'completed');
+      const taken = await apos.assistant.getRequest(req, done._id);
+      assert.equal(apos.assistant.renderRequest(taken).notices[0].action, null);
+    } finally {
+      delete apos.assistant.noticeActions.flaky;
+    }
+  });
+
   it('saves an attached image into a Media image it replaces', async function () {
     const req = userReq(editor);
     const hero = await insertImage('Team photo');

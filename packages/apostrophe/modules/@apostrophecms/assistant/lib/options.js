@@ -26,6 +26,7 @@ module.exports = (self) => {
         delegationMaxSteps,
         screenWait,
         attachmentMaxBytes: self.options.attachmentMaxBytes,
+        attachmentMaxTextBytes: self.options.attachmentMaxTextBytes,
         attachmentMaxCount: self.options.attachmentMaxCount,
         genImageCount: self.options.genImageCount
       })) {

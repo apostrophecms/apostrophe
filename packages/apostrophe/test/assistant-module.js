@@ -64,6 +64,8 @@ describe('Assistant: module and options', function () {
         attachments: {
           canUpload: true,
           maxBytes: 8 * 1024 * 1024,
+          maxTextBytes: 2 * 1024 * 1024,
+          textExtensions: [ 'css', 'json', 'tokens', 'md', 'markdown' ],
           maxCount: 4,
           extensions: [
             'png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'heic', 'heif', 'svg', 'pdf',
@@ -222,6 +224,7 @@ describe('Assistant: module and options', function () {
       [ { maxSteps: 0 }, /maxSteps option must be a positive integer/ ],
       [ { screenWait: 1.5 }, /screenWait option must be a positive integer/ ],
       [ { attachmentMaxBytes: 0 }, /attachmentMaxBytes option must be a positive integer/ ],
+      [ { attachmentMaxTextBytes: -1 }, /attachmentMaxTextBytes option must be a positive integer/ ],
       [ { attachmentMaxCount: 'four' }, /attachmentMaxCount option must be a positive integer/ ],
       [ { usageDisplay: 'cost' }, /usageDisplay option must be one of: tokens, none/ ],
       [ { titleEffort: '' }, /titleEffort option must be the name of an effort level/ ],

@@ -27,7 +27,7 @@ module.exports = (self) => {
      *   notice with its `action.data`; returns the messages the model reads
      *   after the request's user line, an assistant tool call and its
      *   result as a run would have stored them. It may post notices; an
-     *   error fails the request.
+     *   error fails the request and gives the notice its button back.
      */
     addNoticeAction(name, { run }) {
       self.noticeActions[name] = { run };
@@ -151,6 +151,14 @@ module.exports = (self) => {
           prior: 0
         });
       } catch (e) {
+        // Its button comes back, to try again
+        await self.requests.updateOne({
+          _id: source._id,
+          ownerId: source.ownerId
+        }, {
+          $pull: { takenActions: _id }
+        });
+        await self.publishRequest(req, source);
         await self.endRun(doorReq, claimed, request, { error: e });
       }
       return self.getRequest(req, request._id);

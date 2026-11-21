@@ -149,7 +149,8 @@ export const useAssistantStore = defineStore('assistant', () => {
   const served = new Map();
   // The reverts this page started, whose message returns once done
   const returning = new Set();
-  // The id the new chat's files upload to, named before the chat exists
+  // The id the new chat's files upload to, named before the chat exists and
+  // kept with the chat tabs, so a page load finds its files
   let newChatId = null;
   const attachments = createAttachments({
     getChatId: getUploadChatId,
@@ -638,6 +639,7 @@ export const useAssistantStore = defineStore('assistant', () => {
     if (!started) {
       started = true;
       restoreTabs();
+      attachments.loadAttached(activeId.value);
       apos.bus.$on('assistant-chat', onEvent);
       document.addEventListener('visibilitychange', onVisibilityChange);
       // Back from another window (a terminal, say) is a focus with no
@@ -1442,11 +1444,14 @@ export const useAssistantStore = defineStore('assistant', () => {
       !chat?.carry && !confirmations.value[id] && !attachments.isFull(id);
   }
 
-  function getUploadChatId(id) {
+  function getUploadChatId(id, { create = true } = {}) {
     if (id !== NEW_CHAT) {
       return id;
     }
-    newChatId = newChatId || createId();
+    if (!newChatId && create) {
+      newChatId = createId();
+      rememberTabs();
+    }
     return newChatId;
   }
 
@@ -1454,7 +1459,8 @@ export const useAssistantStore = defineStore('assistant', () => {
   // it. One already open stays where it is
   function openChat(id) {
     if (!tabs.value.includes(id)) {
-      const blank = (activeId.value === NEW_CHAT) && !drafts.value[NEW_CHAT]?.trim();
+      const blank = (activeId.value === NEW_CHAT) && !drafts.value[NEW_CHAT]?.trim() &&
+        !attachments.getAttached(NEW_CHAT).length;
       if (blank) {
         tabs.value.splice(tabs.value.indexOf(NEW_CHAT), 1);
         delete refusals.value[NEW_CHAT];
@@ -1474,6 +1480,7 @@ export const useAssistantStore = defineStore('assistant', () => {
   function activate(id) {
     activeId.value = id;
     rememberTabs();
+    attachments.loadAttached(id);
     if (id !== NEW_CHAT) {
       loadChat(id);
     }
@@ -1495,6 +1502,8 @@ export const useAssistantStore = defineStore('assistant', () => {
     if (id === NEW_CHAT) {
       delete drafts.value[NEW_CHAT];
       delete refusals.value[NEW_CHAT];
+      attachments.discardAttached(NEW_CHAT);
+      newChatId = null;
     } else if (getOwner(getChatRecord(id)) !== 'here') {
       // Its thread is read again when it opens; a request this browser tab
       // runs keeps it meanwhile
@@ -1838,6 +1847,9 @@ export const useAssistantStore = defineStore('assistant', () => {
         }
         if (given === null) {
           prependDraft(target, message);
+        }
+        if (e.body?.data?.reason === 'gone') {
+          attachments.loadAttached(target, { again: true });
         }
         refuse(target, e);
       }
@@ -2383,6 +2395,7 @@ export const useAssistantStore = defineStore('assistant', () => {
     tabTitles.value = (stored.titles && (typeof stored.titles === 'object'))
       ? stored.titles
       : {};
+    newChatId = (typeof stored.newChatId === 'string') ? stored.newChatId : null;
   }
 
   // The chat tabs, and their titles as shown now
@@ -2399,7 +2412,8 @@ export const useAssistantStore = defineStore('assistant', () => {
       window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
         tabs: tabs.value,
         activeId: activeId.value,
-        titles
+        titles,
+        newChatId
       }));
     } catch (e) {
       // The chat tabs last as long as the page

@@ -57,6 +57,8 @@
               class="apos-assistant-image-ask__image"
               :src="getFileUrl(chatId, candidate._id, 'thumbnail')"
               alt=""
+              loading="lazy"
+              decoding="async"
             >
             <span
               class="apos-assistant-image-ask__number"
