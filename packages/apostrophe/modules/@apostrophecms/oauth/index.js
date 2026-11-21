@@ -1,6 +1,9 @@
-// This module provides `apos.oauth`, the site's OAuth 2.1 authorization
+// This module provides the site's OAuth 2.1 authorization
 // server: an outside tool (an AI client such as Claude or ChatGPT) asks the
 // user's approval here, then acts as that user with the tokens it issues.
+//
+// It has no alias (new core modules can't add one): reach it as
+// `apos.modules['@apostrophecms/oauth']`.
 //
 // It's site-wide, not part of any one feature. A module that accepts its
 // tokens is a "protected resource" (RFC 9728): it registers its route with
@@ -28,7 +31,6 @@ const BODY_LIMIT = '16kb';
 
 module.exports = {
   options: {
-    alias: 'oauth',
     // enabled: true turns the server on with no resource registered,
     //   false keeps it off. Unset, it's on once a resource registers.
     //

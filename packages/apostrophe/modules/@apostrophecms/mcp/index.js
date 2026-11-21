@@ -1,4 +1,4 @@
-// This module provides `apos.mcp`, the site's MCP server: an outside AI
+// This module is the site's MCP server: an outside AI
 // tool (Claude, ChatGPT, an IDE) connects to it and works on the site's
 // content with the harness's tools, through the `mcp` door. The outside tool
 // brings its own model; this module never calls Apostrophe's AI.
@@ -13,7 +13,6 @@
 
 module.exports = {
   options: {
-    alias: 'mcp',
     enabled: false,
     // How many documents each connection remembers for the stale-write
     // guard: the most recently read or written. A write to a document it no
@@ -24,6 +23,10 @@ module.exports = {
     //   Defaults to the hostname of `baseUrl`, or localhost when unset.
   },
   async init(self) {
+    // New core modules can't have an alias, so @apostrophecms/oauth has none
+    Object.defineProperty(self, 'oauth', {
+      get: () => self.apos.modules['@apostrophecms/oauth']
+    });
     self.validateOptions();
     if (!self.options.enabled) {
       return;
@@ -31,7 +34,7 @@ module.exports = {
     self.devToken = self.getDevToken();
     // Turns the OAuth server on, unless the site turned it off. Then only
     // the development token works
-    self.oauthResource = self.apos.oauth.addResource(self.action, {
+    self.oauthResource = self.oauth.addResource(self.action, {
       name: 'Apostrophe MCP server',
       description: req => req.t('apostrophe:mcpOauthDescription')
     });

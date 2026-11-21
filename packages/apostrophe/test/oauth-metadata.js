@@ -42,7 +42,7 @@ describe('OAuth: metadata and the challenge', function () {
 
     it('turns on when a resource registers', function () {
       assert.equal(apos.modules['oauth-test-resource'].registered, true);
-      assert.equal(apos.oauth.isEnabled(), true);
+      assert.equal(apos.modules['@apostrophecms/oauth'].isEnabled(), true);
     });
 
     it('serves the authorization server metadata', async function () {
@@ -153,14 +153,14 @@ describe('OAuth: metadata and the challenge', function () {
 
     it('refuses a resource description that is not a string or a function', function () {
       assert.throws(
-        () => apos.oauth.addResource('/api/v1/other', { description: 42 }),
+        () => apos.modules['@apostrophecms/oauth'].addResource('/api/v1/other', { description: 42 }),
         /description must be a string or a function of req/
       );
     });
 
     it('refuses a resource path that does not start with / or ends with /', function () {
       for (const path of [ 'api/v1/x', '/api/v1/x/', '', null ]) {
-        assert.throws(() => apos.oauth.addResource(path), /must start with \//);
+        assert.throws(() => apos.modules['@apostrophecms/oauth'].addResource(path), /must start with \//);
       }
     });
   });
@@ -178,7 +178,7 @@ describe('OAuth: metadata and the challenge', function () {
         resource: false,
         baseUrl: null
       });
-      assert.equal(apos.oauth.isEnabled(), false);
+      assert.equal(apos.modules['@apostrophecms/oauth'].isEnabled(), false);
       const response = await get(apos, '/.well-known/oauth-authorization-server');
       assert.equal(response.status, 404);
     });
@@ -197,7 +197,7 @@ describe('OAuth: metadata and the challenge', function () {
 
     it('ignores a resource that registers', function () {
       assert.equal(apos.modules['oauth-test-resource'].registered, false);
-      assert.equal(apos.oauth.isEnabled(), false);
+      assert.equal(apos.modules['@apostrophecms/oauth'].isEnabled(), false);
     });
 
     it('serves no metadata', async function () {
@@ -263,27 +263,27 @@ describe('OAuth: metadata and the challenge', function () {
 
     it('requires baseUrl while on', function () {
       withOption(apos, 'baseUrl', undefined, () => {
-        assert.throws(() => apos.oauth.validateBaseUrl(), /OAuth is on because these routes accept its tokens: \/api\/v1\/oauth-test-resource. It needs the site's baseUrl/);
+        assert.throws(() => apos.modules['@apostrophecms/oauth'].validateBaseUrl(), /OAuth is on because these routes accept its tokens: \/api\/v1\/oauth-test-resource. It needs the site's baseUrl/);
       });
     });
 
     it('refuses a site with a prefix while on', function () {
       withOption(apos, 'prefix', '/cms', () => {
-        assert.throws(() => apos.oauth.validatePrefix(), /doesn't support a site with a prefix \("\/cms"\) yet/);
+        assert.throws(() => apos.modules['@apostrophecms/oauth'].validatePrefix(), /doesn't support a site with a prefix \("\/cms"\) yet/);
       });
     });
 
     it('leaves a site with a prefix alone while off', function () {
-      withOption(apos.oauth.options, 'enabled', false, () => {
+      withOption(apos.modules['@apostrophecms/oauth'].options, 'enabled', false, () => {
         withOption(apos, 'prefix', '/cms', () => {
-          apos.oauth.validatePrefix();
+          apos.modules['@apostrophecms/oauth'].validatePrefix();
         });
       });
     });
 
     it('refuses an enabled option that is not a boolean', function () {
-      withOption(apos.oauth.options, 'enabled', 'yes', () => {
-        assert.throws(() => apos.oauth.validateOptions(), /must be a boolean/);
+      withOption(apos.modules['@apostrophecms/oauth'].options, 'enabled', 'yes', () => {
+        assert.throws(() => apos.modules['@apostrophecms/oauth'].validateOptions(), /must be a boolean/);
       });
     });
   });

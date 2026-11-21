@@ -30,7 +30,7 @@ describe('MCP: module and transport', function () {
     it('has no route', async function () {
       const response = await fetch(getUrl(apos));
       assert.equal(response.status, 404);
-      assert.equal(apos.mcp.httpHandler, undefined);
+      assert.equal(apos.modules['@apostrophecms/mcp'].httpHandler, undefined);
     });
   });
 

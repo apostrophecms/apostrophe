@@ -10,7 +10,7 @@ const ACTION = '/api/v1/@apostrophecms/oauth';
 
 const resourceModule = {
   init(self) {
-    self.registered = self.apos.oauth.addResource(RESOURCE, {
+    self.registered = self.apos.modules['@apostrophecms/oauth'].addResource(RESOURCE, {
       name: 'Test resource',
       // As the MCP module will, through req.t
       description: (req) => `It can read <your> content (${req.locale}).`
@@ -23,9 +23,9 @@ const resourceModule = {
           // Core's login-token check answers any bearer header on this
           // route itself, so the refusal is asked for with a flag
           if (req.query.refuse) {
-            return self.apos.oauth.challenge(res, RESOURCE, { error: 'invalid_token' });
+            return self.apos.modules['@apostrophecms/oauth'].challenge(res, RESOURCE, { error: 'invalid_token' });
           }
-          return self.apos.oauth.challenge(res, RESOURCE);
+          return self.apos.modules['@apostrophecms/oauth'].challenge(res, RESOURCE);
         }
       }
     };

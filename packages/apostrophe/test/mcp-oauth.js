@@ -40,7 +40,7 @@ describe('MCP: OAuth', function () {
         // Another resource, whose tokens the MCP route must refuse
         'mcp-other-resource': {
           init(self) {
-            self.apos.oauth.addResource(OTHER, { name: 'Other' });
+            self.apos.modules['@apostrophecms/oauth'].addResource(OTHER, { name: 'Other' });
           }
         }
       }
@@ -51,12 +51,12 @@ describe('MCP: OAuth', function () {
       title: 'Bob'
     });
     cookie = (await t.loginAs(apos, USERNAME)).getCookieStringSync(apos.http.getBase());
-    client = await apos.oauth.registerClient({
+    client = await apos.modules['@apostrophecms/oauth'].registerClient({
       client_name: 'Test tool',
       redirect_uris: [ REDIRECT_URI ]
     });
-    const createServer = apos.mcp.createServer;
-    apos.mcp.createServer = (req) => {
+    const createServer = apos.modules['@apostrophecms/mcp'].createServer;
+    apos.modules['@apostrophecms/mcp'].createServer = (req) => {
       users.push(req.user);
       return createServer(req);
     };
@@ -72,7 +72,7 @@ describe('MCP: OAuth', function () {
 
   describe('tokens', function () {
     it('turns the OAuth server on, and publishes the route\'s metadata', async function () {
-      assert.equal(apos.oauth.isEnabled(), true);
+      assert.equal(apos.modules['@apostrophecms/oauth'].isEnabled(), true);
       const response = await fetch(getUrl(apos, `/.well-known/oauth-protected-resource${PATH}`));
       assert.equal(response.status, 200);
       const metadata = await response.json();
@@ -82,7 +82,7 @@ describe('MCP: OAuth', function () {
     });
 
     it('says what a connected tool can do on the approval page', async function () {
-      const description = apos.oauth.getResourceDescription(
+      const description = apos.modules['@apostrophecms/oauth'].getResourceDescription(
         apos.task.getReq(),
         RESOURCE_URL
       );
@@ -123,8 +123,8 @@ describe('MCP: OAuth', function () {
 
     it('refuses an expired token', async function () {
       const tokens = await connectTool();
-      await apos.oauth.tokens.updateOne(
-        { _id: apos.oauth.hashSecret(tokens.access_token) },
+      await apos.modules['@apostrophecms/oauth'].tokens.updateOne(
+        { _id: apos.modules['@apostrophecms/oauth'].hashSecret(tokens.access_token) },
         { $set: { expiresAt: new Date(Date.now() - 1000) } }
       );
       await assertRefused(tokens.access_token);
@@ -146,10 +146,10 @@ describe('MCP: OAuth', function () {
 
     it('refuses a token of a connection the user ended', async function () {
       const tokens = await connectTool();
-      const { connectionId } = await apos.oauth.verifyAccessToken(tokens.access_token, {
+      const { connectionId } = await apos.modules['@apostrophecms/oauth'].verifyAccessToken(tokens.access_token, {
         resource: RESOURCE_URL
       });
-      assert.equal(await apos.oauth.disconnect(userReq(), connectionId), true);
+      assert.equal(await apos.modules['@apostrophecms/oauth'].disconnect(userReq(), connectionId), true);
       await assertRefused(tokens.access_token);
     });
 
@@ -228,7 +228,7 @@ describe('MCP: OAuth', function () {
 
     it('remembers only the seenLimit most recently seen documents', async function () {
       const { access_token: token } = await connectTool();
-      const { connectionId } = await apos.oauth.verifyAccessToken(token, {
+      const { connectionId } = await apos.modules['@apostrophecms/oauth'].verifyAccessToken(token, {
         resource: RESOURCE_URL
       });
       const [ oldest, middle, newest ] = [
@@ -236,7 +236,7 @@ describe('MCP: OAuth', function () {
         await insertArticle(),
         await insertArticle()
       ];
-      apos.mcp.options.seenLimit = 2;
+      apos.modules['@apostrophecms/mcp'].options.seenLimit = 2;
       try {
         for (const article of [ oldest, middle, newest ]) {
           await read(token, article._id);
@@ -249,28 +249,28 @@ describe('MCP: OAuth', function () {
         assert.equal(refused.refused[0].reason, 'changed');
         // The oldest's write made it the most recent; the next call dropped
         // the middle one
-        const rows = await apos.mcp.seen.find({ connection: connectionId }).toArray();
+        const rows = await apos.modules['@apostrophecms/mcp'].seen.find({ connection: connectionId }).toArray();
         assert.deepEqual(
           rows.map(row => row.docId).sort(),
           [ oldest._id, newest._id ].sort()
         );
         assert(!rows.some(row => row.docId === middle._id));
       } finally {
-        apos.mcp.options.seenLimit = 100;
+        apos.modules['@apostrophecms/mcp'].options.seenLimit = 100;
       }
     });
 
     it('keeps a row per document read, ending with the connection lifetime', async function () {
       const { access_token: token } = await connectTool();
-      const { connectionId } = await apos.oauth.verifyAccessToken(token, {
+      const { connectionId } = await apos.modules['@apostrophecms/oauth'].verifyAccessToken(token, {
         resource: RESOURCE_URL
       });
       const article = await insertArticle();
       await read(token, article._id);
-      const rows = await apos.mcp.seen.find({ connection: connectionId }).toArray();
+      const rows = await apos.modules['@apostrophecms/mcp'].seen.find({ connection: connectionId }).toArray();
       assert.equal(rows.length, 1);
       assert.equal(rows[0].docId, article._id);
-      const lifetime = apos.oauth.options.connectionLifetime * 1000;
+      const lifetime = apos.modules['@apostrophecms/oauth'].options.connectionLifetime * 1000;
       const left = rows[0].expiresAt.getTime() - Date.now();
       assert(left > lifetime - 60 * 1000 && left <= lifetime);
     });
@@ -382,8 +382,8 @@ describe('MCP: with the OAuth server turned off', function () {
   });
 
   it('takes the development token, and answers others with a plain challenge', async function () {
-    assert.equal(apos.oauth.isEnabled(), false);
-    assert.equal(apos.mcp.oauthResource, false);
+    assert.equal(apos.modules['@apostrophecms/oauth'].isEnabled(), false);
+    assert.equal(apos.modules['@apostrophecms/mcp'].oauthResource, false);
     assert.equal((await post(apos)).status, 200);
     const response = await post(apos, { authorization: 'Bearer some-other-token' });
     assert.equal(response.status, 401);

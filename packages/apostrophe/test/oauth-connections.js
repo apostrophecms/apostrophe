@@ -26,11 +26,11 @@ describe('OAuth: connections', function () {
     await t.createUser(apos, 'editor', { username: 'other' });
     editor = await login('editor');
     other = await login('other');
-    client = await apos.oauth.registerClient({
+    client = await apos.modules['@apostrophecms/oauth'].registerClient({
       client_name: 'Test <b>tool</b>',
       redirect_uris: [ 'https://tool.example.com/callback' ]
     });
-    otherClient = await apos.oauth.registerClient({
+    otherClient = await apos.modules['@apostrophecms/oauth'].registerClient({
       client_name: 'Other tool',
       redirect_uris: [ 'http://127.0.0.1/callback' ]
     });
@@ -65,7 +65,7 @@ describe('OAuth: connections', function () {
   }
 
   function verify(token) {
-    return apos.oauth.verifyAccessToken(token, { resource: RESOURCE_URL });
+    return apos.modules['@apostrophecms/oauth'].verifyAccessToken(token, { resource: RESOURCE_URL });
   }
 
   function refresh(tokens, tool = client) {
@@ -82,15 +82,15 @@ describe('OAuth: connections', function () {
 
   // The connection a token belongs to
   async function getConnectionId(tokens) {
-    const doc = await apos.oauth.tokens.findOne({
-      _id: apos.oauth.hashSecret(tokens.access_token)
+    const doc = await apos.modules['@apostrophecms/oauth'].tokens.findOne({
+      _id: apos.modules['@apostrophecms/oauth'].hashSecret(tokens.access_token)
     });
     return doc.grantId;
   }
 
   async function clear() {
-    await apos.oauth.connections.deleteMany({});
-    await apos.oauth.tokens.deleteMany({});
+    await apos.modules['@apostrophecms/oauth'].connections.deleteMany({});
+    await apos.modules['@apostrophecms/oauth'].tokens.deleteMany({});
   }
 
   describe('the list', function () {
@@ -141,12 +141,12 @@ describe('OAuth: connections', function () {
 
     it('keeps the tool\'s name after the site forgets the tool', async function () {
       // As a cached client metadata document expires
-      const passing = await apos.oauth.registerClient({
+      const passing = await apos.modules['@apostrophecms/oauth'].registerClient({
         client_name: 'Passing tool',
         redirect_uris: [ 'https://passing.example.com/callback' ]
       });
       await connectAs(editor, passing);
-      await apos.oauth.clients.deleteOne({ _id: passing.client_id });
+      await apos.modules['@apostrophecms/oauth'].clients.deleteOne({ _id: passing.client_id });
       assert.equal((await list(editor))[0].clientName, 'Passing tool');
     });
 
@@ -154,7 +154,7 @@ describe('OAuth: connections', function () {
       const tokens = await connectAs(editor);
       const id = await getConnectionId(tokens);
       const long = new Date(Date.now() - (24 * 60 * 60 * 1000));
-      await apos.oauth.connections.updateOne({ _id: id }, { $set: { lastUsedAt: long } });
+      await apos.modules['@apostrophecms/oauth'].connections.updateOne({ _id: id }, { $set: { lastUsedAt: long } });
       const refreshed = await refresh(tokens);
       assert.ok(refreshed.access_token);
       const [ connection ] = await list(editor);
@@ -163,7 +163,7 @@ describe('OAuth: connections', function () {
 
     it('leaves out a connection that has ended', async function () {
       const tokens = await connectAs(editor);
-      await apos.oauth.connections.updateOne(
+      await apos.modules['@apostrophecms/oauth'].connections.updateOne(
         { _id: await getConnectionId(tokens) },
         { $set: { expiresAt: new Date(Date.now() - 1000) } }
       );
@@ -216,15 +216,15 @@ describe('OAuth: connections', function () {
     it('logs the disconnection', async function () {
       const tokens = await connectAs(editor);
       const entries = [];
-      const original = apos.oauth.logInfo;
-      apos.oauth.logInfo = (req, type, data) => entries.push({
+      const original = apos.modules['@apostrophecms/oauth'].logInfo;
+      apos.modules['@apostrophecms/oauth'].logInfo = (req, type, data) => entries.push({
         type,
         data
       });
       try {
         await disconnect(editor, await getConnectionId(tokens));
       } finally {
-        apos.oauth.logInfo = original;
+        apos.modules['@apostrophecms/oauth'].logInfo = original;
       }
       assert.deepEqual(entries, [ {
         type: 'connection-removed',
@@ -244,11 +244,11 @@ describe('OAuth: connections', function () {
       const tokens = await connectAs(editor);
       const id = await getConnectionId(tokens);
       // As if deleting the tokens had failed partway
-      await apos.oauth.connections.deleteOne({ _id: id });
+      await apos.modules['@apostrophecms/oauth'].connections.deleteOne({ _id: id });
       assert.equal(await verify(tokens.access_token), null);
       assert.equal((await refresh(tokens)).error, 'invalid_grant');
       // The refresh found them, and finished the job
-      assert.equal(await apos.oauth.tokens.countDocuments({ grantId: id }), 0);
+      assert.equal(await apos.modules['@apostrophecms/oauth'].tokens.countDocuments({ grantId: id }), 0);
     });
 
     it('ends a connection whose code or refresh token was used twice', async function () {
@@ -280,10 +280,10 @@ describe('OAuth: connections', function () {
       const leaving = await login('leaving');
       const tokens = await connectAs(leaving);
       const user = await apos.user.find(apos.task.getReq(), { username: 'leaving' }).toObject();
-      assert.equal(await apos.oauth.connections.countDocuments({ userId: user._id }), 1);
+      assert.equal(await apos.modules['@apostrophecms/oauth'].connections.countDocuments({ userId: user._id }), 1);
       await apos.user.delete(apos.task.getReq(), user);
-      assert.equal(await apos.oauth.connections.countDocuments({ userId: user._id }), 0);
-      assert.equal(await apos.oauth.tokens.countDocuments({ userId: user._id }), 0);
+      assert.equal(await apos.modules['@apostrophecms/oauth'].connections.countDocuments({ userId: user._id }), 0);
+      assert.equal(await apos.modules['@apostrophecms/oauth'].tokens.countDocuments({ userId: user._id }), 0);
       assert.equal(await verify(tokens.access_token), null);
     });
   });

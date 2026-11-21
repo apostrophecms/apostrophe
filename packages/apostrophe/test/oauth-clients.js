@@ -70,15 +70,15 @@ describe('OAuth: clients', function () {
       });
       assert.equal(body.client_secret, undefined);
 
-      const client = await apos.oauth.getClient(clientId);
+      const client = await apos.modules['@apostrophecms/oauth'].getClient(clientId);
       assert.equal(client.source, 'dcr');
       assert.deepEqual(client.metadata, metadata);
     });
 
     it('records a registration', async function () {
-      const logInfo = apos.oauth.logInfo;
+      const logInfo = apos.modules['@apostrophecms/oauth'].logInfo;
       const entries = [];
-      apos.oauth.logInfo = (...args) => entries.push(args);
+      apos.modules['@apostrophecms/oauth'].logInfo = (...args) => entries.push(args);
       let body;
       try {
         body = await (await register(apos, {
@@ -86,7 +86,7 @@ describe('OAuth: clients', function () {
           redirect_uris: [ 'https://tool.example.com/callback' ]
         })).json();
       } finally {
-        apos.oauth.logInfo = logInfo;
+        apos.modules['@apostrophecms/oauth'].logInfo = logInfo;
       }
       const entry = entries.find(args => args[1] === 'client-registered');
       assert.ok(entry, JSON.stringify(entries.map(args => args.slice(1))));
@@ -223,7 +223,7 @@ describe('OAuth: clients', function () {
     };
 
     it('matches exactly', function () {
-      assert.equal(apos.oauth.matchesRedirectUri(client, 'https://tool.example.com/callback'), true);
+      assert.equal(apos.modules['@apostrophecms/oauth'].matchesRedirectUri(client, 'https://tool.example.com/callback'), true);
       for (const uri of [
         'https://tool.example.com/callback/',
         'https://tool.example.com/callback/more',
@@ -233,20 +233,20 @@ describe('OAuth: clients', function () {
         'http://tool.example.com/callback',
         null
       ]) {
-        assert.equal(apos.oauth.matchesRedirectUri(client, uri), false, uri);
+        assert.equal(apos.modules['@apostrophecms/oauth'].matchesRedirectUri(client, uri), false, uri);
       }
     });
 
     it('takes any port on a loopback URI, and nothing else', function () {
-      assert.equal(apos.oauth.matchesRedirectUri(client, 'http://127.0.0.1:51234/callback'), true);
-      assert.equal(apos.oauth.matchesRedirectUri(client, 'http://localhost:1234/cb?x=1'), true);
+      assert.equal(apos.modules['@apostrophecms/oauth'].matchesRedirectUri(client, 'http://127.0.0.1:51234/callback'), true);
+      assert.equal(apos.modules['@apostrophecms/oauth'].matchesRedirectUri(client, 'http://localhost:1234/cb?x=1'), true);
       for (const uri of [
         'http://127.0.0.1:51234/other',
         'http://localhost:51234/callback',
         'http://[::1]:51234/callback',
         'http://localhost:1234/cb?x=2'
       ]) {
-        assert.equal(apos.oauth.matchesRedirectUri(client, uri), false, uri);
+        assert.equal(apos.modules['@apostrophecms/oauth'].matchesRedirectUri(client, uri), false, uri);
       }
     });
   });
@@ -254,7 +254,7 @@ describe('OAuth: clients', function () {
   describe('looking up a client', function () {
     it('finds no client for an unknown or malformed id', async function () {
       for (const clientId of [ 'unknown', '', null, 42, { $ne: null }, 'x'.repeat(2001) ]) {
-        assert.equal(await apos.oauth.getClient(clientId), null);
+        assert.equal(await apos.modules['@apostrophecms/oauth'].getClient(clientId), null);
       }
     });
   });
@@ -265,20 +265,20 @@ describe('OAuth: clients', function () {
     let fetchClientMetadataDocument;
 
     before(function () {
-      fetchClientMetadataDocument = apos.oauth.fetchClientMetadataDocument;
-      apos.oauth.fetchClientMetadataDocument = async (url) => {
+      fetchClientMetadataDocument = apos.modules['@apostrophecms/oauth'].fetchClientMetadataDocument;
+      apos.modules['@apostrophecms/oauth'].fetchClientMetadataDocument = async (url) => {
         fetched.push(url);
         return answer(url);
       };
     });
 
     after(function () {
-      apos.oauth.fetchClientMetadataDocument = fetchClientMetadataDocument;
+      apos.modules['@apostrophecms/oauth'].fetchClientMetadataDocument = fetchClientMetadataDocument;
     });
 
     beforeEach(async function () {
       fetched = [];
-      await apos.oauth.clients.deleteMany({ source: 'cimd' });
+      await apos.modules['@apostrophecms/oauth'].clients.deleteMany({ source: 'cimd' });
     });
 
     function document(extra = {}) {
@@ -295,15 +295,15 @@ describe('OAuth: clients', function () {
         document: document(),
         maxAge: 600
       });
-      const client = await apos.oauth.getClient(DOCUMENT_URL);
+      const client = await apos.modules['@apostrophecms/oauth'].getClient(DOCUMENT_URL);
       assert.equal(client.source, 'cimd');
       assert.equal(client.clientId, DOCUMENT_URL);
       assert.equal(client.metadata.client_name, 'Document tool');
       assert.deepEqual(client.metadata.redirect_uris, [ 'https://client.example.com/callback' ]);
-      await apos.oauth.getClient(DOCUMENT_URL);
+      await apos.modules['@apostrophecms/oauth'].getClient(DOCUMENT_URL);
       assert.deepEqual(fetched, [ DOCUMENT_URL ]);
 
-      const cached = await apos.oauth.clients.findOne({ _id: DOCUMENT_URL });
+      const cached = await apos.modules['@apostrophecms/oauth'].clients.findOne({ _id: DOCUMENT_URL });
       const seconds = (cached.expiresAt - cached.fetchedAt) / 1000;
       assert.ok(Math.abs(seconds - 600) < 5, String(seconds));
     });
@@ -314,13 +314,13 @@ describe('OAuth: clients', function () {
         [ null, 60 * 60 ],
         [ 365 * 24 * 60 * 60, 24 * 60 * 60 ]
       ]) {
-        await apos.oauth.clients.deleteMany({ source: 'cimd' });
+        await apos.modules['@apostrophecms/oauth'].clients.deleteMany({ source: 'cimd' });
         answer = () => ({
           document: document(),
           maxAge
         });
-        await apos.oauth.getClient(DOCUMENT_URL);
-        const cached = await apos.oauth.clients.findOne({ _id: DOCUMENT_URL });
+        await apos.modules['@apostrophecms/oauth'].getClient(DOCUMENT_URL);
+        const cached = await apos.modules['@apostrophecms/oauth'].clients.findOne({ _id: DOCUMENT_URL });
         const seconds = (cached.expiresAt - cached.fetchedAt) / 1000;
         assert.ok(Math.abs(seconds - expected) < 5, `${maxAge}: ${seconds}`);
       }
@@ -344,30 +344,30 @@ describe('OAuth: clients', function () {
           token_endpoint_auth_method: 'none'
         })
       });
-      const client = await apos.oauth.getClient(DOCUMENT_URL);
+      const client = await apos.modules['@apostrophecms/oauth'].getClient(DOCUMENT_URL);
       assert.equal(client.metadata.client_name, 'Claude');
       assert.deepEqual(client.metadata.grant_types, [ 'authorization_code', 'refresh_token' ]);
     });
 
     it('fetches the document again once the cache expires', async function () {
       answer = () => ({ document: document() });
-      await apos.oauth.getClient(DOCUMENT_URL);
-      await apos.oauth.clients.updateOne(
+      await apos.modules['@apostrophecms/oauth'].getClient(DOCUMENT_URL);
+      await apos.modules['@apostrophecms/oauth'].clients.updateOne(
         { _id: DOCUMENT_URL },
         { $set: { expiresAt: new Date(Date.now() - 1000) } }
       );
-      await apos.oauth.getClient(DOCUMENT_URL);
+      await apos.modules['@apostrophecms/oauth'].getClient(DOCUMENT_URL);
       assert.equal(fetched.length, 2);
     });
 
     it('refuses a document that names another client_id', async function () {
       answer = () => ({ document: document({ client_id: 'https://other.example.com/client.json' }) });
-      await assert.rejects(apos.oauth.getClient(DOCUMENT_URL), (e) => {
+      await assert.rejects(apos.modules['@apostrophecms/oauth'].getClient(DOCUMENT_URL), (e) => {
         assert.equal(e.oauth.error, 'invalid_client');
         assert.match(e.message, /different client_id/);
         return true;
       });
-      assert.equal(await apos.oauth.clients.countDocuments({ _id: DOCUMENT_URL }), 0);
+      assert.equal(await apos.modules['@apostrophecms/oauth'].clients.countDocuments({ _id: DOCUMENT_URL }), 0);
     });
 
     it('refuses a document with a secret or a bad redirect URI', async function () {
@@ -377,7 +377,7 @@ describe('OAuth: clients', function () {
         { redirect_uris: [ 'http://client.example.com/callback' ] }
       ]) {
         answer = () => ({ document: document(extra) });
-        await assert.rejects(apos.oauth.getClient(DOCUMENT_URL), (e) => {
+        await assert.rejects(apos.modules['@apostrophecms/oauth'].getClient(DOCUMENT_URL), (e) => {
           assert.equal(e.oauth.error, 'invalid_client');
           assert.match(e.message, /is not valid/);
           return true;
@@ -389,7 +389,7 @@ describe('OAuth: clients', function () {
       answer = () => {
         throw Object.assign(new Error('the response status was 404'), { aboutDocument: true });
       };
-      await assert.rejects(apos.oauth.getClient(DOCUMENT_URL), (e) => {
+      await assert.rejects(apos.modules['@apostrophecms/oauth'].getClient(DOCUMENT_URL), (e) => {
         assert.equal(e.oauth.error, 'invalid_client');
         assert.match(e.message, /could not be fetched .* status was 404/);
         return true;
@@ -400,7 +400,7 @@ describe('OAuth: clients', function () {
       answer = () => {
         throw new Error('intranet.example resolves to 10.1.2.3, which is not a public address');
       };
-      await assert.rejects(apos.oauth.getClient(DOCUMENT_URL), (e) => {
+      await assert.rejects(apos.modules['@apostrophecms/oauth'].getClient(DOCUMENT_URL), (e) => {
         assert.equal(e.oauth.error, 'invalid_client');
         assert.match(e.oauth.error_description, /could not be fetched .*: its address could not be reached$/);
         assert.doesNotMatch(e.oauth.error_description, /10\.1\.2\.3|resolves/);
@@ -421,7 +421,7 @@ describe('OAuth: clients', function () {
         'https://user:pass@client.example.com/client.json',
         'https://client.example.com/client.json#x'
       ]) {
-        await assert.rejects(apos.oauth.getClient(clientId), (e) => {
+        await assert.rejects(apos.modules['@apostrophecms/oauth'].getClient(clientId), (e) => {
           assert.equal(e.oauth.error, 'invalid_client');
           return true;
         }, clientId);
@@ -431,13 +431,13 @@ describe('OAuth: clients', function () {
 
     it('treats a client id URL as unknown when documents are turned off', async function () {
       answer = () => ({ document: document() });
-      apos.oauth.options.clientMetadataDocuments = false;
+      apos.modules['@apostrophecms/oauth'].options.clientMetadataDocuments = false;
       try {
-        assert.equal(await apos.oauth.getClient(DOCUMENT_URL), null);
-        const metadata = apos.oauth.getAuthorizationServerMetadata();
+        assert.equal(await apos.modules['@apostrophecms/oauth'].getClient(DOCUMENT_URL), null);
+        const metadata = apos.modules['@apostrophecms/oauth'].getAuthorizationServerMetadata();
         assert.equal(metadata.client_id_metadata_document_supported, false);
       } finally {
-        apos.oauth.options.clientMetadataDocuments = true;
+        apos.modules['@apostrophecms/oauth'].options.clientMetadataDocuments = true;
       }
       assert.deepEqual(fetched, []);
     });
@@ -446,7 +446,7 @@ describe('OAuth: clients', function () {
   describe('fetching a client metadata document', function () {
     it('knows which addresses are public', function () {
       for (const address of [ '8.8.8.8', '1.1.1.1', '2606:4700:4700::1111' ]) {
-        assert.equal(apos.oauth.isPublicAddress(address), true, address);
+        assert.equal(apos.modules['@apostrophecms/oauth'].isPublicAddress(address), true, address);
       }
       for (const address of [
         '127.0.0.1', '10.1.2.3', '172.16.0.1', '192.168.1.1', '169.254.169.254',
@@ -454,7 +454,7 @@ describe('OAuth: clients', function () {
         '::', '::1', 'fc00::1', 'fd12:3456::1', 'fe80::1', 'ff02::1',
         '::ffff:127.0.0.1', '::ffff:10.0.0.1', '64:ff9b::a00:1', 'not an address'
       ]) {
-        assert.equal(apos.oauth.isPublicAddress(address), false, address);
+        assert.equal(apos.modules['@apostrophecms/oauth'].isPublicAddress(address), false, address);
       }
     });
 
@@ -465,13 +465,13 @@ describe('OAuth: clients', function () {
         'https://169.254.169.254/client.json',
         'https://[::ffff:127.0.0.1]/client.json'
       ]) {
-        await assert.rejects(apos.oauth.fetchClientMetadataDocument(url), /not a public address/, url);
+        await assert.rejects(apos.modules['@apostrophecms/oauth'].fetchClientMetadataDocument(url), /not a public address/, url);
       }
     });
 
     it('refuses a name that resolves to a private address', async function () {
       await assert.rejects(
-        apos.oauth.fetchClientMetadataDocument('https://localhost/client.json'),
+        apos.modules['@apostrophecms/oauth'].fetchClientMetadataDocument('https://localhost/client.json'),
         (e) => {
           assert.match(e.message, /localhost resolves to .*, which is not a public address/);
           // About this server's network, so not for the page
@@ -488,10 +488,11 @@ describe('OAuth: clients', function () {
       let isPublicAddress;
 
       // The local server is on a loopback address, which the fetch refuses,
-      // so loopback counts as public here, and it's http, not https
+      // so loopback counts as public here. It serves http: the fetch itself
+      // doesn't check the scheme, validateClientMetadataDocumentUrl does
       before(async function () {
-        isPublicAddress = apos.oauth.isPublicAddress;
-        apos.oauth.isPublicAddress = (address) => [ '127.0.0.1', '::1' ].includes(address) ||
+        isPublicAddress = apos.modules['@apostrophecms/oauth'].isPublicAddress;
+        apos.modules['@apostrophecms/oauth'].isPublicAddress = (address) => [ '127.0.0.1', '::1' ].includes(address) ||
           isPublicAddress(address);
         server = http.createServer((req, res) => handler(req, res));
         await new Promise(resolve => server.listen(0, resolve));
@@ -499,16 +500,13 @@ describe('OAuth: clients', function () {
       });
 
       after(async function () {
-        apos.oauth.isPublicAddress = isPublicAddress;
+        apos.modules['@apostrophecms/oauth'].isPublicAddress = isPublicAddress;
         server.closeAllConnections();
         await new Promise(resolve => server.close(resolve));
       });
 
       function fetchLocal(path, options = {}) {
-        return apos.oauth.fetchClientMetadataDocument(`${base}${path}`, {
-          transport: http,
-          ...options
-        });
+        return apos.modules['@apostrophecms/oauth'].fetchClientMetadataDocument(`${base}${path}`, options);
       }
 
       function json(res, value, headers = {}) {
