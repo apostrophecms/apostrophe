@@ -283,10 +283,14 @@ module.exports = (self) => {
               limit: route.maxDocumentBytes
             });
           }
-          if (pages && route.maxDocumentPages && (pages > route.maxDocumentPages)) {
-            throw refuse('pages', `${name} has ${pages} pages, over the ${route.maxDocumentPages} page limit`, {
+          const maxPages = Math.min(
+            route.maxDocumentPages || Infinity,
+            self.getMaxDocumentPages()
+          );
+          if (pages && (pages > maxPages)) {
+            throw refuse('pages', `${name} has ${pages} pages, over the ${maxPages} page limit`, {
               pages,
-              limit: route.maxDocumentPages
+              limit: maxPages
             });
           }
           return {

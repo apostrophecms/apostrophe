@@ -27,6 +27,20 @@ const PDF = [
   '%%EOF'
 ].join('\n');
 
+// A PDF whose page tree counts `count` pages
+function pdfWithPages(count) {
+  const pages = Array.from({ length: count }, (_, i) => `${i + 3} 0 obj << /Type /Page /Parent 2 0 R >> endobj`);
+  const kids = pages.map((_, i) => `${i + 3} 0 R`).join(' ');
+  return [
+    '%PDF-1.4',
+    '1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj',
+    `2 0 obj << /Type /Pages /Kids [${kids}] /Count ${count} >> endobj`,
+    ...pages,
+    'trailer << /Root 1 0 R >>',
+    '%%EOF'
+  ].join('\n');
+}
+
 describe('Assistant: attachments', function () {
   this.timeout(t.timeout);
 
@@ -207,6 +221,27 @@ describe('Assistant: attachments', function () {
         assert.equal(page.kind, 'html');
       } finally {
         apos.assistant.options.attachmentMaxTextBytes = attachmentMaxTextBytes;
+      }
+    });
+
+    it('refuses a PDF longer than the chat\'s threshold holds', async function () {
+      const req = userReq(editor);
+      const { contextLimit } = apos.assistant.options;
+      // A threshold of 24000 holds the instructions and five pages
+      apos.assistant.options.contextLimit = 32000;
+      try {
+        await assert.rejects(attach(req, 'long-pdf', 'report.pdf', pdfWithPages(6)), {
+          name: 'invalid',
+          data: {
+            reason: 'pages',
+            pages: 6,
+            limit: 5
+          }
+        });
+        const taken = await attach(req, 'long-pdf', 'brief.pdf', pdfWithPages(5));
+        assert.equal(taken.pages, 5);
+      } finally {
+        apos.assistant.options.contextLimit = contextLimit;
       }
     });
 
@@ -776,7 +811,7 @@ describe('Assistant: attachments', function () {
         content: message.content.map(part => (part.attachmentId ? null : part))
       };
       assert.equal(apos.assistant.estimateTokens(message),
-        apos.assistant.estimateTokens(withoutMedia) + 1600 + 3 * 2000);
+        apos.assistant.estimateTokens(withoutMedia) + 1600 + 3 * 2400);
       // A widget whose type is called "image" counts as its text
       const widget = {
         _id: 'w1',
