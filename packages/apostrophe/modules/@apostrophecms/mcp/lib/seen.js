@@ -66,7 +66,7 @@ module.exports = (self) => {
 
     // In seconds: as long as an OAuth connection lasts
     getSeenLifetime() {
-      return self.apos.oauth.options.connectionLifetime;
+      return self.oauth.options.connectionLifetime;
     }
   };
 };

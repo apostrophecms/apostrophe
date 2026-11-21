@@ -28,8 +28,8 @@ describe('MCP: bearer tokens', function () {
 
   before(async function () {
     apos = await createMcpApos(module);
-    const createServer = apos.mcp.createServer;
-    apos.mcp.createServer = (req) => {
+    const createServer = apos.modules['@apostrophecms/mcp'].createServer;
+    apos.modules['@apostrophecms/mcp'].createServer = (req) => {
       seen.push(req.user);
       return createServer(req);
     };
@@ -115,14 +115,14 @@ describe('MCP: bearer tokens', function () {
       APOS_MCP_DEV_TOKEN: `${TOKEN}:${USERNAME}`,
       NODE_ENV: 'production'
     }, () => {
-      assert.equal(apos.mcp.getDevToken(), null);
+      assert.equal(apos.modules['@apostrophecms/mcp'].getDevToken(), null);
     });
   });
 
   it('refuses a malformed development token', function () {
     for (const value of [ TOKEN, 'short:editor', `${TOKEN}:` ]) {
       withEnv({ APOS_MCP_DEV_TOKEN: value }, () => {
-        assert.throws(() => apos.mcp.getDevToken(), /APOS_MCP_DEV_TOKEN must be/);
+        assert.throws(() => apos.modules['@apostrophecms/mcp'].getDevToken(), /APOS_MCP_DEV_TOKEN must be/);
       });
     }
   });

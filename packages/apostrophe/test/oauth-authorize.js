@@ -35,7 +35,7 @@ describe('OAuth: authorize', function () {
     await t.createUser(apos, 'editor', { username: 'other' });
     editorCookie = await getCookie('editor');
     otherCookie = await getCookie('other');
-    client = await apos.oauth.registerClient({
+    client = await apos.modules['@apostrophecms/oauth'].registerClient({
       client_name: 'Test <script>alert(1)</script> tool',
       redirect_uris: [ REDIRECT_URI, 'http://127.0.0.1/callback' ]
     });
@@ -171,8 +171,8 @@ describe('OAuth: authorize', function () {
     });
 
     it('stops at a client metadata document it can\'t use, and keeps the cause for developers', async function () {
-      const fetchDocument = apos.oauth.fetchClientMetadataDocument;
-      apos.oauth.fetchClientMetadataDocument = async () => {
+      const fetchDocument = apos.modules['@apostrophecms/oauth'].fetchClientMetadataDocument;
+      apos.modules['@apostrophecms/oauth'].fetchClientMetadataDocument = async () => {
         throw Object.assign(new Error('the response status was 404'), { aboutDocument: true });
       };
       try {
@@ -187,13 +187,13 @@ describe('OAuth: authorize', function () {
         assert.match(parts.details, /<code>invalid_client<\/code>/);
         assert.match(parts.details, /status was 404/);
       } finally {
-        apos.oauth.fetchClientMetadataDocument = fetchDocument;
+        apos.modules['@apostrophecms/oauth'].fetchClientMetadataDocument = fetchDocument;
       }
     });
 
     it('shows an unexpected error as the site\'s, promising nothing', async function () {
-      const getClient = apos.oauth.getClient;
-      apos.oauth.getClient = async () => {
+      const getClient = apos.modules['@apostrophecms/oauth'].getClient;
+      apos.modules['@apostrophecms/oauth'].getClient = async () => {
         throw new Error('the database is down');
       };
       try {
@@ -205,7 +205,7 @@ describe('OAuth: authorize', function () {
         assert.equal(parts.details, null);
         assert.doesNotMatch(html, /database is down/);
       } finally {
-        apos.oauth.getClient = getClient;
+        apos.modules['@apostrophecms/oauth'].getClient = getClient;
       }
     });
 
@@ -331,8 +331,8 @@ describe('OAuth: authorize', function () {
         approval,
         decision: 'approve'
       }));
-      const stored = await apos.oauth.codes.findOne({
-        _id: apos.oauth.hashSecret(sent.code)
+      const stored = await apos.modules['@apostrophecms/oauth'].codes.findOne({
+        _id: apos.modules['@apostrophecms/oauth'].hashSecret(sent.code)
       });
       assert.equal(stored.resource, `${BASE_URL}${RESOURCE}`);
     });
@@ -374,9 +374,9 @@ describe('OAuth: authorize', function () {
       assert.equal(sent.iss, BASE_URL);
       assert.match(sent.code, /^[\w-]{43}$/);
 
-      assert.equal(await apos.oauth.codes.countDocuments({ _id: sent.code }), 0);
-      const stored = await apos.oauth.codes.findOne({
-        _id: apos.oauth.hashSecret(sent.code)
+      assert.equal(await apos.modules['@apostrophecms/oauth'].codes.countDocuments({ _id: sent.code }), 0);
+      const stored = await apos.modules['@apostrophecms/oauth'].codes.findOne({
+        _id: apos.modules['@apostrophecms/oauth'].hashSecret(sent.code)
       });
       const editor = await apos.user.find(apos.task.getReq(), { username: 'editor' }).toObject();
       assert.equal(stored.userId, editor._id);
@@ -390,7 +390,7 @@ describe('OAuth: authorize', function () {
     });
 
     it('declines: sends access_denied back, and no code', async function () {
-      const before = await apos.oauth.codes.countDocuments({});
+      const before = await apos.modules['@apostrophecms/oauth'].codes.countDocuments({});
       const approval = await getApprovalId(await authorize());
       const { params: sent } = getRedirect(await decide({
         approval,
@@ -399,7 +399,7 @@ describe('OAuth: authorize', function () {
       assert.equal(sent.error, 'access_denied');
       assert.equal(sent.state, 'the-state');
       assert.equal(sent.code, undefined);
-      assert.equal(await apos.oauth.codes.countDocuments({}), before);
+      assert.equal(await apos.modules['@apostrophecms/oauth'].codes.countDocuments({}), before);
     });
 
     it('sends a loopback client back to the port it asked for', async function () {
@@ -435,7 +435,7 @@ describe('OAuth: authorize', function () {
 
     it('takes no approval once it expires', async function () {
       const approval = await getApprovalId(await authorize());
-      await apos.oauth.pendingApprovals.updateOne(
+      await apos.modules['@apostrophecms/oauth'].pendingApprovals.updateOne(
         { _id: approval },
         { $set: { expiresAt: new Date(Date.now() - 1000) } }
       );
@@ -480,8 +480,8 @@ describe('OAuth: authorize', function () {
       const originals = {};
       for (const severity of [ 'Info', 'Warn', 'Error' ]) {
         const name = `log${severity}`;
-        originals[name] = apos.oauth[name];
-        apos.oauth[name] = (...args) => {
+        originals[name] = apos.modules['@apostrophecms/oauth'][name];
+        apos.modules['@apostrophecms/oauth'][name] = (...args) => {
           const req = (args[0] && (typeof args[0].t === 'function')) ? args.shift() : null;
           const [ type, ...rest ] = args;
           entries.push({
@@ -495,7 +495,7 @@ describe('OAuth: authorize', function () {
       try {
         await fn();
       } finally {
-        Object.assign(apos.oauth, originals);
+        Object.assign(apos.modules['@apostrophecms/oauth'], originals);
       }
       return entries;
     }
@@ -543,8 +543,8 @@ describe('OAuth: authorize', function () {
     });
 
     it('keeps the whole cause of a document it couldn\'t fetch, which the page leaves out', async function () {
-      const fetchDocument = apos.oauth.fetchClientMetadataDocument;
-      apos.oauth.fetchClientMetadataDocument = async () => {
+      const fetchDocument = apos.modules['@apostrophecms/oauth'].fetchClientMetadataDocument;
+      apos.modules['@apostrophecms/oauth'].fetchClientMetadataDocument = async () => {
         throw new Error('intranet.example resolves to 10.1.2.3, which is not a public address');
       };
       let html;
@@ -559,7 +559,7 @@ describe('OAuth: authorize', function () {
         assert.equal(entry.data.clientId, 'https://tool.example.com/client.json');
         assert.match(entry.data.cause, /resolves to 10\.1\.2\.3/);
       } finally {
-        apos.oauth.fetchClientMetadataDocument = fetchDocument;
+        apos.modules['@apostrophecms/oauth'].fetchClientMetadataDocument = fetchDocument;
       }
       assert.doesNotMatch(html, /10\.1\.2\.3|resolves/);
       assert.match(getErrorParts(html).details, /its address could not be reached/);
@@ -620,8 +620,8 @@ describe('OAuth: authorize', function () {
     });
 
     it('logs an unexpected error with its request', async function () {
-      const getClient = apos.oauth.getClient;
-      apos.oauth.getClient = async () => {
+      const getClient = apos.modules['@apostrophecms/oauth'].getClient;
+      apos.modules['@apostrophecms/oauth'].getClient = async () => {
         throw new Error('the database is down');
       };
       try {
@@ -633,7 +633,7 @@ describe('OAuth: authorize', function () {
         assert.ok(entry.req);
         assert.match(entry.data.stack, /database is down/);
       } finally {
-        apos.oauth.getClient = getClient;
+        apos.modules['@apostrophecms/oauth'].getClient = getClient;
       }
     });
   });
@@ -758,7 +758,7 @@ describe('OAuth: authorize, on a site with its own security headers', function (
     const jar = await t.loginAs(apos, 'editor');
     const cookie = jar.getCookieStringSync(apos.http.getBase());
     const redirectUri = 'https://tool.example.com/callback';
-    const client = await apos.oauth.registerClient({
+    const client = await apos.modules['@apostrophecms/oauth'].registerClient({
       client_name: 'Test tool',
       redirect_uris: [ redirectUri ]
     });
@@ -812,7 +812,7 @@ describe('OAuth: authorize, on a site with two resources', function () {
       modules: {
         'second-resource': {
           init(self) {
-            self.apos.oauth.addResource('/api/v1/second-resource', { name: 'Second resource' });
+            self.apos.modules['@apostrophecms/oauth'].addResource('/api/v1/second-resource', { name: 'Second resource' });
           }
         }
       }
@@ -828,7 +828,7 @@ describe('OAuth: authorize, on a site with two resources', function () {
     const jar = await t.loginAs(apos, 'editor');
     const cookie = jar.getCookieStringSync(apos.http.getBase());
     const redirectUri = 'https://tool.example.com/callback';
-    const client = await apos.oauth.registerClient({
+    const client = await apos.modules['@apostrophecms/oauth'].registerClient({
       client_name: 'Test tool',
       redirect_uris: [ redirectUri ]
     });
@@ -862,7 +862,7 @@ describe('OAuth: authorize, on a site with two resources', function () {
     });
     assert.equal(decision.status, 303);
     const code = new URL(decision.headers.get('location')).searchParams.get('code');
-    const stored = await apos.oauth.codes.findOne({ _id: apos.oauth.hashSecret(code) });
+    const stored = await apos.modules['@apostrophecms/oauth'].codes.findOne({ _id: apos.modules['@apostrophecms/oauth'].hashSecret(code) });
     assert.equal(stored.resource, null);
   });
 });

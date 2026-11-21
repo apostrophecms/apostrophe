@@ -35,15 +35,15 @@ describe('OAuth: tokens', function () {
     await t.createUser(apos, 'editor', { username: 'editor' });
     await t.createUser(apos, 'editor', { username: 'leaver' });
     editorCookie = await getCookie('editor');
-    client = await apos.oauth.registerClient({
+    client = await apos.modules['@apostrophecms/oauth'].registerClient({
       client_name: 'Test tool',
       redirect_uris: [ REDIRECT_URI ]
     });
-    otherClient = await apos.oauth.registerClient({
+    otherClient = await apos.modules['@apostrophecms/oauth'].registerClient({
       client_name: 'Other tool',
       redirect_uris: [ REDIRECT_URI ]
     });
-    metadata = apos.oauth.getAuthorizationServerMetadata();
+    metadata = apos.modules['@apostrophecms/oauth'].getAuthorizationServerMetadata();
   });
 
   after(async function () {
@@ -151,7 +151,7 @@ describe('OAuth: tokens', function () {
   }
 
   function verify(token, resource = RESOURCE_URL) {
-    return apos.oauth.verifyAccessToken(token, { resource });
+    return apos.modules['@apostrophecms/oauth'].verifyAccessToken(token, { resource });
   }
 
   // After two requests raced with the same code or refresh token: at most
@@ -170,8 +170,8 @@ describe('OAuth: tokens', function () {
         refresh_token: body.refresh_token
       });
       assert.equal(refreshed.body.error, 'invalid_grant');
-      const stored = await apos.oauth.tokens.findOne({
-        _id: apos.oauth.hashSecret(body.access_token)
+      const stored = await apos.modules['@apostrophecms/oauth'].tokens.findOne({
+        _id: apos.modules['@apostrophecms/oauth'].hashSecret(body.access_token)
       });
       assert.equal(stored, null);
     }
@@ -197,11 +197,11 @@ describe('OAuth: tokens', function () {
 
     it('stores only the tokens\' hashes', async function () {
       const tokens = await getTokens();
-      const docs = await apos.oauth.tokens.find({
+      const docs = await apos.modules['@apostrophecms/oauth'].tokens.find({
         _id: {
           $in: [
-            apos.oauth.hashSecret(tokens.access_token),
-            apos.oauth.hashSecret(tokens.refresh_token)
+            apos.modules['@apostrophecms/oauth'].hashSecret(tokens.access_token),
+            apos.modules['@apostrophecms/oauth'].hashSecret(tokens.refresh_token)
           ]
         }
       }).toArray();
@@ -233,7 +233,7 @@ describe('OAuth: tokens', function () {
       assert.equal(result.user.username, 'editor');
       assert.equal(result.clientId, client.client_id);
       assert.equal(result.scope, 'content');
-      assert(await apos.oauth.connections.findOne({ _id: result.connectionId }));
+      assert(await apos.modules['@apostrophecms/oauth'].connections.findOne({ _id: result.connectionId }));
       assert.equal(await verify(tokens.access_token, `${BASE_URL}/api/v1/elsewhere`), null);
       assert.equal(await verify(tokens.refresh_token), null);
       assert.equal(await verify('not-a-token'), null);
@@ -348,8 +348,8 @@ describe('OAuth: tokens', function () {
 
     it('refuses an expired code', async function () {
       const { code, codeVerifier } = await getCode();
-      await apos.oauth.codes.updateOne(
-        { _id: apos.oauth.hashSecret(code) },
+      await apos.modules['@apostrophecms/oauth'].codes.updateOne(
+        { _id: apos.modules['@apostrophecms/oauth'].hashSecret(code) },
         { $set: { expiresAt: new Date(Date.now() - 1000) } }
       );
       const response = await post(TOKEN, {
@@ -538,8 +538,8 @@ describe('OAuth: tokens', function () {
 
     it('refuses an expired refresh token', async function () {
       const { refresh_token: refreshToken } = await getTokens();
-      await apos.oauth.tokens.updateOne(
-        { _id: apos.oauth.hashSecret(refreshToken) },
+      await apos.modules['@apostrophecms/oauth'].tokens.updateOne(
+        { _id: apos.modules['@apostrophecms/oauth'].hashSecret(refreshToken) },
         { $set: { expiresAt: new Date(Date.now() - 1000) } }
       );
       await assertRejects(refresh(refreshToken), 'invalid_grant');
@@ -568,18 +568,18 @@ describe('OAuth: tokens', function () {
     async function withOptions(options, fn) {
       const originals = {};
       for (const name of Object.keys(options)) {
-        originals[name] = apos.oauth.options[name];
+        originals[name] = apos.modules['@apostrophecms/oauth'].options[name];
       }
-      Object.assign(apos.oauth.options, options);
+      Object.assign(apos.modules['@apostrophecms/oauth'].options, options);
       try {
         return await fn();
       } finally {
-        Object.assign(apos.oauth.options, originals);
+        Object.assign(apos.modules['@apostrophecms/oauth'].options, originals);
       }
     }
 
     function getToken(token) {
-      return apos.oauth.tokens.findOne({ _id: apos.oauth.hashSecret(token) });
+      return apos.modules['@apostrophecms/oauth'].tokens.findOne({ _id: apos.modules['@apostrophecms/oauth'].hashSecret(token) });
     }
 
     it('defaults to an hour for access tokens and 30 days for the connection', async function () {
@@ -621,8 +621,8 @@ describe('OAuth: tokens', function () {
     it('cuts an access token off at the end of the connection', async function () {
       const first = await getTokens();
       const end = new Date(Date.now() + (10 * 60 * 1000));
-      await apos.oauth.tokens.updateOne(
-        { _id: apos.oauth.hashSecret(first.refresh_token) },
+      await apos.modules['@apostrophecms/oauth'].tokens.updateOne(
+        { _id: apos.modules['@apostrophecms/oauth'].hashSecret(first.refresh_token) },
         {
           $set: {
             expiresAt: end,
@@ -640,8 +640,8 @@ describe('OAuth: tokens', function () {
     it('sends the user back to approve again once the connection ends', async function () {
       const first = await getTokens();
       const past = new Date(Date.now() - 1000);
-      await apos.oauth.tokens.updateMany(
-        { _id: apos.oauth.hashSecret(first.refresh_token) },
+      await apos.modules['@apostrophecms/oauth'].tokens.updateMany(
+        { _id: apos.modules['@apostrophecms/oauth'].hashSecret(first.refresh_token) },
         {
           $set: {
             expiresAt: past,
@@ -658,8 +658,8 @@ describe('OAuth: tokens', function () {
         connectionLifetime: 60
       }, async () => {
         const { code, codeVerifier } = await getCode();
-        await apos.oauth.codes.updateOne(
-          { _id: apos.oauth.hashSecret(code) },
+        await apos.modules['@apostrophecms/oauth'].codes.updateOne(
+          { _id: apos.modules['@apostrophecms/oauth'].hashSecret(code) },
           { $set: { createdAt: new Date(Date.now() - (2 * 60 * 1000)) } }
         );
         const response = await post(TOKEN, {
@@ -678,7 +678,7 @@ describe('OAuth: tokens', function () {
         for (const value of [ 0, -1, 1.5, '3600', null ]) {
           await withOptions({ [name]: value }, () => {
             assert.throws(
-              () => apos.oauth.validateOptions(),
+              () => apos.modules['@apostrophecms/oauth'].validateOptions(),
               new RegExp(`${name} option must be a whole number`),
               `${name}: ${value}`
             );
@@ -692,7 +692,7 @@ describe('OAuth: tokens', function () {
         accessTokenLifetime: 7200,
         connectionLifetime: 3600
       }, () => {
-        assert.throws(() => apos.oauth.validateOptions(), /must not be longer than its connectionLifetime/);
+        assert.throws(() => apos.modules['@apostrophecms/oauth'].validateOptions(), /must not be longer than its connectionLifetime/);
       });
     });
   });
@@ -745,8 +745,8 @@ describe('OAuth: tokens', function () {
       const originals = {};
       for (const severity of [ 'Info', 'Warn', 'Error' ]) {
         const name = `log${severity}`;
-        originals[name] = apos.oauth[name];
-        apos.oauth[name] = (...args) => {
+        originals[name] = apos.modules['@apostrophecms/oauth'][name];
+        apos.modules['@apostrophecms/oauth'][name] = (...args) => {
           const req = (args[0] && (typeof args[0].t === 'function')) ? args.shift() : null;
           const [ type, ...rest ] = args;
           entries.push({
@@ -760,7 +760,7 @@ describe('OAuth: tokens', function () {
       try {
         await fn();
       } finally {
-        Object.assign(apos.oauth, originals);
+        Object.assign(apos.modules['@apostrophecms/oauth'], originals);
       }
       return entries;
     }
