@@ -57,6 +57,8 @@ describe('Assistant: module and options', function () {
         .some(trigger => trigger.name === 'assistant'));
       assert.deepEqual(data.modules['@apostrophecms/assistant'], {
         action: '/api/v1/@apostrophecms/assistant',
+        // One locale: no Localize in widget menus
+        widgetOperations: {},
         usageDisplay: 'tokens',
         modelDisplay: false,
         screenWait: 15000,
