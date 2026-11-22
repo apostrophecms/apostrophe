@@ -654,14 +654,17 @@ export const useAssistantStore = defineStore('assistant', () => {
       apos.bus.$on('modal-resolved', (item) => {
         modalOwners.value.delete(item.id);
       });
-      watch(() => JSON.stringify(getScreen().modals), postScreen);
+      watch(() => {
+        const { modals, window } = getScreen();
+        return JSON.stringify([ modals, window ]);
+      }, postScreen);
     }
     await catchUp();
   }
 
   // While it owns an open request, the browser tab posts its screen when its
-  // modal stack changes: the server never writes a document an editor
-  // opened meanwhile
+  // modals or its window change: the server never writes a document an
+  // editor opened meanwhile
   async function postScreen() {
     if (!chats.value.some(chat => getOwner(chat) === 'here')) {
       return;

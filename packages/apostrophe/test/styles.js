@@ -6084,5 +6084,52 @@ describe('Styles', function () {
         'Stylesheet should render all styles correctly'
       );
     });
+
+  });
+
+  describe('The render route', function () {
+    let apos;
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/styles': {
+            fields: {
+              add: {
+                textColor: {
+                  type: 'color',
+                  label: 'Text Color',
+                  selector: '.playground',
+                  property: 'color'
+                }
+              }
+            }
+          }
+        }
+      });
+      await t.createAdmin(apos);
+    });
+
+    after(async function () {
+      return t.destroy(apos);
+    });
+
+    it('renders unsaved values for a logged-in user, answering JSON', async function () {
+      const jar = await t.loginAs(apos, 'admin');
+      // The CSRF cookie
+      await apos.http.get('/', { jar });
+      const response = await apos.http.post('/api/v1/@apostrophecms/styles/render', {
+        jar,
+        body: { data: { textColor: '#662e9b' } },
+        fullResponse: true
+      });
+      assert.match(response.headers['content-type'], /^application\/json/);
+      assert(response.body.css.includes('.playground{color: #662e9b;'));
+      assert(Array.isArray(response.body.classes));
+      await assert.rejects(apos.http.post('/api/v1/@apostrophecms/styles/render', {
+        body: { data: {} }
+      }), { status: 403 });
+    });
   });
 });

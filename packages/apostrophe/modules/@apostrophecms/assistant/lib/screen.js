@@ -21,7 +21,7 @@ const NAME = /^[A-Za-z_][\w.:@/-]{0,99}$/;
 
 // What a change line compares, in the order it names them
 const COMPARED = [ 'url', 'locale', 'mode', 'editing', 'view', 'document', 'modals',
-  'selection', 'field' ];
+  'window', 'selection', 'field' ];
 const CHANGES_INTRO = 'Since your last reply the screen changed, [before, now]:';
 // What the model hears of its changes to the page the user is on
 const PAGE_INTRO = 'Since your last reply the user changed some of your changes on the page';
@@ -78,6 +78,7 @@ module.exports = (self) => {
         view: getName(screen.view),
         document: null,
         modals: [],
+        window: null,
         selection: null,
         field: null
       };
@@ -93,6 +94,10 @@ module.exports = (self) => {
       for (const modal of (Array.isArray(screen.modals) ? screen.modals : [])
         .slice(0, MAX_MODALS)) {
         verified.modals.push(await getModal(modal || {}));
+      }
+      // A window beside the page that reports what it is, verified as a modal
+      if (screen.window && (typeof screen.window === 'object')) {
+        verified.window = await getModal(screen.window);
       }
       verified.selection = await getSelection(screen.selection);
       const field = await findDoc(screen.field?.docId);
@@ -248,7 +253,7 @@ module.exports = (self) => {
     renderScreen(screen) {
       const shown = {};
       for (const key of [ 'url', 'locale', 'mode', 'editing', 'view', 'document',
-        'modals', 'selection', 'field' ]) {
+        'modals', 'window', 'selection', 'field' ]) {
         const value = screen[key];
         if ((value === null) || (value === undefined) ||
           (Array.isArray(value) && !value.length)) {

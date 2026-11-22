@@ -293,6 +293,7 @@ describe('Assistant: following a request', function () {
           { kind: 'manager' },
           { kind: 'other' }
         ],
+        window: null,
         selection: {
           docId: draft._id,
           areaId: draft.body._id,
@@ -318,6 +319,34 @@ describe('Assistant: following a request', function () {
       assert.equal(bare.selection, null);
       assert.equal(bare.visible, true);
       await assert.rejects(apos.assistant.verifyScreen(req, {}), { name: 'invalid' });
+    });
+
+    it('keeps the window that reports itself, verified as a modal', async function () {
+      const req = userReq(editor);
+      const styles = await apos.modules['@apostrophecms/styles'].find(req, {}).toObject();
+      const verified = await apos.assistant.verifyScreen(req, {
+        tabId: 'tab-1',
+        window: {
+          kind: 'editor',
+          docId: styles._id,
+          docType: 'forged'
+        }
+      });
+      assert.deepEqual(verified.window, {
+        kind: 'editor',
+        docId: styles._id,
+        title: styles.title,
+        locale: 'en',
+        docType: '@apostrophecms/styles'
+      });
+      assert.deepEqual(apos.assistant.renderScreen(verified).window, verified.window);
+
+      const forged = await apos.assistant.verifyScreen(req, {
+        tabId: 'tab-1',
+        window: 'editor'
+      });
+      assert.equal(forged.window, null);
+      assert.equal(apos.assistant.renderScreen(forged).window, undefined);
     });
 
     it('stores the screen on the request and gives it with each message, the prompt cacheable', async function () {
