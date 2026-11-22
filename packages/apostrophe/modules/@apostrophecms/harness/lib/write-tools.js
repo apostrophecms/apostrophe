@@ -27,13 +27,17 @@ module.exports = (self) => {
     before: id('The id of the widget they go before'),
     after: id('The id of the widget they go after')
   };
+  // A create makes a new document, never a locale copy of one that exists
+  const copies = (self.getLocaleNames().length > 1)
+    ? ' Never for a copy in another locale: that is localize_document.'
+    : '';
 
   return [
     {
       name: 'create_page',
       label: 'apostrophe:aiToolCreatePage',
       description: 'Create a page at "position" from "target": its first or last child, ' +
-        'or the page before or after it.',
+        `or the page before or after it.${copies}`,
       input: () => ({
         type: 'object',
         properties: {
@@ -65,7 +69,7 @@ module.exports = (self) => {
     {
       name: 'create_piece',
       label: 'apostrophe:aiToolCreatePiece',
-      description: 'Create a piece, a document outside the page tree.',
+      description: `Create a piece, a document outside the page tree.${copies}`,
       input: () => ({
         type: 'object',
         properties: {

@@ -8,10 +8,11 @@ const localize = require('../modules/@apostrophecms/ai-localize/lib/door-tools.j
 
 /**
  * Every text the model of `door` can read, each with where it comes from:
- * the instructions before the door's own sections, each type's guidance as
- * the door gets it, each tool the door selects, the schema read of every
- * type, every field type's `aiHow`, the harness's hints and notices, the
- * notes and refusals of the localization tools.
+ * the instructions before the door's own sections, the assistant's
+ * localization section, each type's guidance as the door gets it, each tool
+ * the door selects, the schema read of every type, every field type's
+ * `aiHow`, the harness's hints and notices, the notes and refusals of the
+ * localization tools.
  *
  * @param {object} apos
  * @param {string} door `assistant` or `mcp`.
@@ -31,6 +32,12 @@ async function getDoorTexts(apos, door) {
       where: 'the instructions',
       text: harness.getInstructions(req)
     },
+    ...((door === 'assistant') && apos.assistant?.active)
+      ? [ {
+        where: 'the assistant\'s localization section',
+        text: apos.assistant.getLocalizationSection()
+      } ]
+      : [],
     ...types.map(type => ({
       where: `the guidance of ${type}`,
       text: harness.getTypeGuidance(type, door)

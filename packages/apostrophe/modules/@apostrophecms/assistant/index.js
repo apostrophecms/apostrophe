@@ -82,6 +82,16 @@ module.exports = {
     // Gates added by name, and the tools whose gates were all taken off
     self.gates = {};
     self.ungated = new Set();
+    // Widget menu entries that open the panel with a prompt, by name (see
+    // lib/widget-operations.js)
+    self.widgetOperations = {};
+    if (Object.keys(self.apos.i18n.locales).length > 1) {
+      self.addWidgetOperation('assistantLocalize', {
+        label: 'apostrophe:localize',
+        icon: 'translate-icon',
+        prompt: 'apostrophe:assistantLocalizePrompt'
+      });
+    }
     self.addAskKind('browser', { accept: self.acceptBrowserAnswer });
     self.addAskKind('editMode', { accept: self.acceptEditModeAnswer });
     for (const tool of require('./lib/standard-browser-tools')(self)) {
@@ -179,6 +189,16 @@ module.exports = {
             label: 'apostrophe:assistantOpen',
             icon: 'creation-icon'
           });
+          // Every widget type's menus, now that the assistant can open
+          for (const [ name, { label, icon } ] of Object.entries(self.widgetOperations)) {
+            self.apos.area.addWidgetOperation(name, {
+              label,
+              icon,
+              action: 'assistant-widget-operation',
+              secondaryLevel: true,
+              multiple: true
+            });
+          }
         }
       }
     };
@@ -460,6 +480,8 @@ module.exports = {
       ...require('./lib/retention')(self),
       ...require('./lib/gates')(self),
       ...require('./lib/global-styles')(self),
+      ...require('./lib/localization')(self),
+      ...require('./lib/widget-operations')(self),
       ...require('./lib/edit-mode')(self),
       ...require('./lib/open-editor')(self),
       ...require('./lib/outside')(self),
@@ -480,6 +502,9 @@ module.exports = {
         }
         return {
           action: self.action,
+          // The prompt of each widget menu entry, by its name
+          widgetOperations: Object.fromEntries(Object.entries(self.widgetOperations)
+            .map(([ name, { prompt } ]) => [ name, prompt ])),
           usageDisplay: self.options.usageDisplay,
           modelDisplay: self.options.modelDisplay,
           screenWait: self.options.screenWait,

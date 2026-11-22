@@ -82,6 +82,9 @@ export const useAssistantStore = defineStore('assistant', () => {
   const activeId = ref(NEW_CHAT);
   // What the composer holds, by chat tab
   const drafts = ref({});
+  // A prompt asked for from outside the panel, for the composer of the chat
+  // tab it names to translate and put in: `{ chatId, key, count }`
+  const askedPrompt = ref(null);
   // Why the last send of a chat tab was refused: `{ title, text }`
   const refusals = ref({});
   // What a running request is doing now, by request id: `{ label }`, or
@@ -2380,6 +2383,48 @@ export const useAssistantStore = defineStore('assistant', () => {
     setDraft(id, draft.trim() ? `${message}\n\n${draft}` : message);
   }
 
+  /**
+   * Asks a composer for a prompt: it translates `key` with `count` and puts
+   * it in front of the draft, the caret where the translation has
+   * `{{ caret }}`. The active chat tab's, when it could send at once;
+   * otherwise the new chat tab's, which becomes active, so a running chat
+   * never holds the prompt.
+   *
+   * @param {string} key
+   * @param {number} count
+   */
+  function askPrompt(key, count) {
+    const chat = getChat(activeId.value);
+    const busy = (getOwner(chat) !== 'none') || chat?.openRevert || chat?.carry ||
+      confirmations.value[activeId.value];
+    if (busy) {
+      newChat();
+    }
+    askedPrompt.value = {
+      chatId: activeId.value,
+      key,
+      count
+    };
+  }
+
+  // The prompt asked for a chat tab, taken once by its composer
+  function takeAskedPrompt(id) {
+    if (askedPrompt.value?.chatId !== id) {
+      return null;
+    }
+    const asked = askedPrompt.value;
+    askedPrompt.value = null;
+    return asked;
+  }
+
+  // A prompt in front of a chat tab's draft; the same prompt twice in a row
+  // is put there once
+  function prefill(id, prompt) {
+    if (!(drafts.value[id] || '').startsWith(prompt)) {
+      prependDraft(id, prompt);
+    }
+  }
+
   function restoreTabs() {
     let stored = null;
     try {
@@ -2484,6 +2529,10 @@ export const useAssistantStore = defineStore('assistant', () => {
     dismissSuggestion,
     findMentions,
     setDraft,
+    askPrompt,
+    askedPrompt,
+    takeAskedPrompt,
+    prefill,
     runNoticeAction,
     canAttach,
     canUpload: attachments.canUpload,

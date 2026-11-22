@@ -221,6 +221,8 @@ describe('AI Localize: get_localization', function () {
       const names = apos.harness.getDoorTools(name).map(tool => tool.name);
       assert(names.includes('get_localization'), name);
     }
+    // Several locales, but no assistant enabled: no Localize in widget menus
+    assert.deepEqual(apos.area.widgetOperations, []);
   });
 
   it('should say a document has no copy in a locale', async function () {

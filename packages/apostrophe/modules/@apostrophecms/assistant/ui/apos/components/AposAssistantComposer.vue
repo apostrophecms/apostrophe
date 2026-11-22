@@ -196,7 +196,7 @@
 
 <script setup>
 import {
-  computed, inject, onBeforeUnmount, onMounted, ref
+  computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch
 } from 'vue';
 import { createId } from 'apostrophe/lib/beneath.js';
 import { useAssistantStore } from '../stores/assistant.js';
@@ -206,8 +206,12 @@ import AposAssistantGauge from './AposAssistantGauge.vue';
 import AposAssistantFiles from './AposAssistantFiles.vue';
 import { getFileUrl } from '../lib/attachments.js';
 
+// Stands for `{{ caret }}` in a translated prompt; no translation carries it
+const CARET = '\uE000';
+
 // The composer of the active chat tab. It never takes focus on its own:
-// only the editor's click or Tab puts it there
+// only the editor's click or Tab puts it there, or a prompt the editor asked
+// for from outside the panel (`askPrompt`)
 const props = defineProps({
   chatId: {
     type: String,
@@ -378,6 +382,28 @@ function getDockAsk(kind) {
 }
 
 onMounted(() => apos.bus.$on('refreshed', readEditMode));
+
+// A prompt asked for from outside the panel (`askPrompt`), in front of the
+// draft, the caret where its translation has `{{ caret }}`, else at its end
+watch(() => [ store.askedPrompt, props.chatId ], async () => {
+  const asked = store.takeAskedPrompt(props.chatId);
+  if (!asked) {
+    return;
+  }
+  const text = $t(asked.key, {
+    count: asked.count,
+    caret: CARET
+  });
+  const at = text.indexOf(CARET);
+  const prompt = text.replace(CARET, '');
+  store.prefill(props.chatId, prompt);
+  await nextTick();
+  input.value?.focus((at === -1) ? prompt.length : at);
+}, {
+  immediate: true,
+  flush: 'post'
+});
+
 onBeforeUnmount(() => {
   apos.bus.$off('refreshed', readEditMode);
   clearTimeout(searchTimer);

@@ -692,13 +692,14 @@ module.exports = (self) => {
       });
     },
 
-    // A run's instructions, how to build from an attached source once the
-    // chat has files, the chat's current summary, or the one it carried
-    // over, last
+    // A run's instructions, how to localize on a site with several locales,
+    // how to build from an attached source once the chat has files, the
+    // chat's current summary, or the one it carried over, last
     getRunInstructions(doorReq, chat) {
       return self.apos.harness.getInstructions(doorReq, [
         self.getReplySection(),
         self.getScreenSection(),
+        self.getLocalizationSection(),
         chat.hasAttachments ? self.getSourceSection() : null,
         self.getSummarySection(self.getCheckpoint(chat), chat)
       ]);

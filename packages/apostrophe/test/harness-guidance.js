@@ -159,6 +159,9 @@ describe('Harness: guidance and language', function () {
       assert.match(baseLines[0], /^You work on the content of this ApostropheCMS site/);
       assert(base.includes('never by id'));
       assert(base.includes('"notice"'));
+      // One locale: nothing about copies in other locales
+      assert(!base.includes('localize_document'));
+      assert(!apos.ai.getTool('create_page').description.includes('localize_document'));
       assert.match(baseLines.at(-1), /^Reply in the language the user writes in.+ English, without remarking on it\.$/);
       assert.equal(site, 'Write in a warm, plain tone.');
       assert.deepEqual(types.split('\n'), [

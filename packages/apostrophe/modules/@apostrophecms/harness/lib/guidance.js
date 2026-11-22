@@ -17,6 +17,11 @@ const BASE = [
     'write the locale it wrote.'
 ];
 
+// On a site with several locales, where ai-localize registers its tools
+const LOCALES = 'A document exists once per locale, as copies of one document. Make its ' +
+  'copy in another locale with localize_document, never with a create tool; ' +
+  'get_localization says what changed in each copy since the two were last in line.';
+
 const TYPES_INTRO = 'When to use each type. A type marked "(aiHow)" has rules for working ' +
   'with it: read them with get_guidance first.';
 
@@ -33,7 +38,11 @@ module.exports = (self) => {
      */
     getInstructions(req, sections = []) {
       return [
-        [ ...BASE, getLanguageLine() ].join('\n'),
+        [
+          ...BASE,
+          (self.getLocaleNames().length > 1) && LOCALES,
+          getLanguageLine()
+        ].filter(Boolean).join('\n'),
         self.getSiteInstructions(req),
         ...sections
       ]

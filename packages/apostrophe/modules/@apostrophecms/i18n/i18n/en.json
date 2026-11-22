@@ -154,6 +154,8 @@
   "assistantLoading": "Loading…",
   "assistantLoadingChat": "Loading this chat…",
   "assistantLoadingChats": "Loading your chats…",
+  "assistantLocalizePrompt": "Localize this widget into {{ caret }}",
+  "assistantLocalizePrompt_plural": "Localize these {{ count }} widgets into {{ caret }}",
   "assistantLocked": "{{ title }} is locked",
   "assistantLockedBy": "{{ name }} has it open for editing, so the assistant left it unchanged.",
   "assistantLockedMany": "{{ count }} documents are locked",

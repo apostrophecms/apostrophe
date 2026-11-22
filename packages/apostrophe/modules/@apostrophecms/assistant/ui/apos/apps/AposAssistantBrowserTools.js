@@ -8,10 +8,13 @@
 // load, panel open or not, so it answers the asks of the requests it owns.
 // After a navigation the assistant asked for, the panel opens again if it
 // was open; after a revert's "See changes" link, the page shows them.
+// The assistant's entries in widget menus are answered here, panel open or
+// not.
 
 import { pinia } from 'Modules/@apostrophecms/ui/lib/vue';
 import { browserTools, readNavigation } from '../lib/browser-tools.js';
 import { resumeSeeChanges } from '../lib/revert.js';
+import { listenForWidgetOperations } from '../lib/widget-operations.js';
 import { useAssistantStore } from '../stores/assistant.js';
 
 export default () => {
@@ -19,6 +22,7 @@ export default () => {
     return;
   }
   window.apos.assistant.browserTools = browserTools;
+  listenForWidgetOperations();
   resumeSeeChanges();
   const store = useAssistantStore(pinia);
   const navigation = readNavigation();
