@@ -9,6 +9,8 @@ export const useModalStore = defineStore('modal', () => {
   const standaloneWindows = ref([]);
   // Stamps stack entries and standalone windows in the order they open
   let opened = 0;
+  // How a document type edited in a standalone window opens, by type
+  const standaloneEditors = {};
 
   // The modal the editor works in: the last one opened, leaving out windows
   // stacked above every modal
@@ -62,8 +64,29 @@ export const useModalStore = defineStore('modal', () => {
       : [ ...standaloneWindows.value, entry ];
   }
 
-  function removeStandaloneWindow(id) {
+  // A window outside the stack closed; `result` says how, as a modal's
+  // result does (truthy once saved), with `standalone-window-closed`
+  function removeStandaloneWindow(id, result = null) {
+    if (!standaloneWindows.value.some(entry => entry.id === id)) {
+      return;
+    }
     standaloneWindows.value = standaloneWindows.value.filter(entry => entry.id !== id);
+    apos.bus.$emit('standalone-window-closed', {
+      id,
+      result
+    });
+  }
+
+  // A document type whose documents are edited in a standalone window
+  // registers how it opens: `open({ _id })` opens it for that document and
+  // returns `{ id }`, the window's id in `standaloneWindows` once it
+  // reports itself, or `{ reason }` when it can't
+  function setStandaloneEditor(type, open) {
+    standaloneEditors[type] = open;
+  }
+
+  function getStandaloneEditor(type) {
+    return standaloneEditors[type] || null;
   }
 
   function remove(id) {
@@ -364,6 +387,8 @@ export const useModalStore = defineStore('modal', () => {
     remove,
     addStandaloneWindow,
     removeStandaloneWindow,
+    setStandaloneEditor,
+    getStandaloneEditor,
     get,
     getAt,
     getDepth,

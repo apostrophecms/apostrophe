@@ -121,7 +121,9 @@ module.exports = (self) => {
       const result = await self.writeDocuments(req, targets.map(({ _id, values }) => ({
         _id,
         patch: (doc, manager, draftReq) => {
-          if (self.apos.instanceOf(manager, '@apostrophecms/styles')) {
+          // Only the assistant asks the user before a Global Styles write
+          if (self.apos.instanceOf(manager, '@apostrophecms/styles') &&
+            (self.getDoor(req)?.door !== 'assistant')) {
             throw refuse([ {
               path: '_id',
               name: 'styles'

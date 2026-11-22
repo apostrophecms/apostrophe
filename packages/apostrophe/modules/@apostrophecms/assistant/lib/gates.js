@@ -2,8 +2,10 @@
 // runs. A gate is a tool name and a predicate on the call's validated
 // arguments. When one fires, the call suspends with a `confirm` ask stating
 // the action and the count, and runs once approved; declined, it writes
-// nothing and the model hears so. Gates are the assistant's: the harness's
-// tools never ask, and the MCP door has none.
+// nothing and the model hears so. A gate may word its own confirmation and
+// offer alternatives, each a decline that tells the model what to do
+// instead. Gates are the assistant's: the harness's tools never ask, and the
+// MCP door has none.
 //
 // One gate ships on every write tool (an action tagged `content`): it fires
 // when one call would change more documents than `maxDocsWithoutConfirm`;
@@ -19,13 +21,25 @@ module.exports = (self) => {
   return {
     /**
      * Adds a gate to a tool: before each of its calls in the assistant,
-     * `predicate(args, { req, documentCount })` decides whether the editor
-     * is asked first. A tool may have several gates; any one firing asks.
+     * `predicate(args, context)` decides whether the editor is asked first.
+     * A tool may have several gates; the first one firing asks.
+     *
+     * The predicate returns `true` to ask with the standard confirmation, or
+     * an object to word its own, every key optional: `title`, `{ key,
+     * values }` for `$t`; `text`, one line or an array of lines, each
+     * `{ key, values }` or `{ list }`, strings joined as a list in the admin
+     * UI's language; `approve`, the i18n key of the approving action; and
+     * `alternatives`, `{ name, label, message }` each: `label` an i18n key,
+     * `message` what the model reads when the editor picks it, the call
+     * declined.
      *
      * @param {string} toolName
-     * @param {(args: object, context: { req: object, documentCount: number })
-     *   => boolean|Promise<boolean>} predicate `args` are the call's
-     *   validated arguments; `documentCount` how many documents it changes.
+     * @param {(args: object, context: { req: object, documentCount: number,
+     *   ids: string[], getScreen: () => Promise<object|null> })
+     *   => boolean|object|Promise<boolean|object>} predicate `args` are the
+     *   call's validated arguments; `documentCount` how many documents it
+     *   changes, `ids` the ids it names them by; `getScreen` reads the
+     *   request's verified screen.
      */
     addGate(toolName, predicate) {
       if (typeof predicate !== 'function') {
@@ -71,22 +85,36 @@ module.exports = (self) => {
         if (input.approved) {
           return;
         }
-        throw self.apos.error('aiToolError', 'the user declined this step, so nothing was ' +
-          'written; don\'t try it again unless they ask');
+        throw self.apos.error('aiToolError', input.message || ('the user declined this ' +
+          'step, so nothing was written; don\'t try it again unless they ask'));
       }
       if (input !== undefined) {
         return;
       }
       const ids = getCallDocumentIds(req, validated);
       const documentCount = Math.max(ids.length, 1);
+      let screen;
+      const context = {
+        req,
+        documentCount,
+        ids,
+        async getScreen() {
+          screen ??= (await self.requests.findOne({
+            _id: self.apos.harness.getDoor(req).requestId,
+            ownerId: self.getOwnerId(req)
+          }, { projection: { screen: 1 } }))?.screen || null;
+          return screen;
+        }
+      };
       for (const gate of gates) {
-        if (await gate(validated, {
-          req,
-          documentCount
-        })) {
+        const fired = await gate(validated, context);
+        if (fired) {
           throw self.apos.error('aiInput', 'waiting for the user to confirm', {
             kind: 'confirm',
-            gate: await describe(ids, documentCount)
+            gate: {
+              ...await describe(ids, documentCount),
+              ...((typeof fired === 'object') && getWording(fired))
+            }
           });
         }
       }
@@ -94,15 +122,36 @@ module.exports = (self) => {
       function getGates() {
         const standard = (tool.kind === 'action') && tool.tags?.includes('content') &&
           !self.ungated.has(tool.name);
+        // The tool's own gates first: their wording is the more specific
         return [
-          ...(standard ? [ exceedsDocuments ] : []),
-          ...(self.gates[tool.name] || [])
+          ...(self.gates[tool.name] || []),
+          ...(standard ? [ exceedsDocuments ] : [])
         ];
       }
 
       function exceedsDocuments(args, { documentCount }) {
         const max = self.options.maxDocsWithoutConfirm;
         return (max > 0) && (documentCount > max);
+      }
+
+      // A gate's own wording, as the browser renders it
+      function getWording({
+        title, text, approve, alternatives
+      }) {
+        return {
+          ...(title && { title }),
+          ...(text && { text: [ text ].flat() }),
+          ...(approve && { approve }),
+          ...(alternatives?.length && {
+            alternatives: alternatives.map(({
+              name, label, message
+            }) => ({
+              name,
+              label,
+              message
+            }))
+          })
+        };
       }
 
       // What the confirmation states: the step, the count, the type when

@@ -224,6 +224,9 @@ export default {
   async mounted() {
     await this.load();
     this.prepareBodyClasses();
+    if (this.docFields.data.type) {
+      useModalStore().setStandaloneEditor(this.docFields.data.type, this.openFor);
+    }
 
     apos.bus.$on('admin-menu-height-changed', this.setPosition);
     apos.bus.$on('admin-menu-click', async (itemName) => {
@@ -309,7 +312,8 @@ export default {
       this.ready = true;
       await this.render();
     },
-    toggleOpen() {
+    // `saved` when closing: whether the values were saved
+    toggleOpen({ saved = false } = {}) {
       document.body.classList.toggle('apos-styles-is-open');
       this.isOpen = !this.isOpen;
       // To remove when we support confirmation modal
@@ -327,13 +331,24 @@ export default {
         }
         removeEventListener('resize', this.positionOnResize);
       }
-      this.reportWindow();
+      this.reportWindow(saved);
+    },
+    // Opened as the editor of a Global Styles document, such as by the
+    // assistant: the window edits the page's locale only
+    openFor({ _id }) {
+      if (!this.isOwnId(_id, this.docFields.data.aposDocId)) {
+        return { reason: 'the Global Styles window edits the locale of the page shown only' };
+      }
+      if (!this.isOpen) {
+        this.toggleOpen();
+      }
+      return { id: this.outside.id };
     },
     // While open, the window is on the screen as the editor of its document
-    reportWindow() {
+    reportWindow(saved) {
       const store = useModalStore();
       if (!this.isOpen || !this.docFields.data._id) {
-        store.removeStandaloneWindow(this.outside.id);
+        store.removeStandaloneWindow(this.outside.id, saved);
         return;
       }
       store.addStandaloneWindow({
@@ -570,7 +585,7 @@ export default {
         });
         this.docFields.data = updatedDoc;
         this.clearOutside();
-        this.toggleOpen();
+        this.toggleOpen({ saved: true });
         setTimeout(() => {
           this.currentPath = [];
         }, 300);

@@ -4,6 +4,13 @@ const handlers = require('./lib/handlers');
 const apiRoutes = require('./lib/apiRoutes');
 const helpers = require('./lib/helpers');
 
+// How the AI works with Global Styles, once the site has any
+const AI_HOW = 'Change Global Styles in their own window: open it with open_editor on the ' +
+  'Global Styles document, then set the values with edit_open_document; the page ' +
+  'restyles as each value lands, and the user saves or cancels. It edits the locale of ' +
+  'the page shown. Write them with update_document only when the user asks for the ' +
+  'change to go live at once or in other locales; the user is asked first.';
+
 module.exports = {
   extend: '@apostrophecms/piece-type',
   options: {
@@ -71,6 +78,7 @@ module.exports = {
     self.styleCheckIfConditions = checkIfConditions;
 
     if (Object.keys(self.styles).length > 0) {
+      self.options.aiHow ??= AI_HOW;
       self.apos.doc.addContextOperation({
         action: 'reset-styles-position',
         label: 'apostrophe:stylesResetPosition',

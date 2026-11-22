@@ -338,6 +338,8 @@ const props = defineProps({
   }
 });
 
+// The action name of a gate's alternative, before the alternative's own
+const ALTERNATIVE = 'alternative-';
 // Why a request failed, in the editor's words, by the stored error's name
 const ERRORS = {
   aiRetry: {
@@ -530,6 +532,10 @@ const activities = computed(() => {
   const { request } = props;
   const list = [];
   if (confirmAsk.value) {
+    // A gate's alternatives and its approval are equal routes: the
+    // approval is filled only when it is the one way forward
+    const gate = confirmAsk.value.payload.gate;
+    const alternatives = gate?.alternatives || [];
     list.push({
       name: 'confirm',
       tone: 'warning',
@@ -541,10 +547,16 @@ const activities = computed(() => {
           kind: 'quiet',
           disabled: answering.value
         },
+        ...alternatives.map(alternative => ({
+          name: `${ALTERNATIVE}${alternative.name}`,
+          label: $t(alternative.label),
+          kind: 'outlined',
+          disabled: answering.value
+        })),
         {
           name: 'continue',
-          label: $t('apostrophe:assistantContinue'),
-          kind: 'primary',
+          label: $t(gate?.approve || 'apostrophe:assistantContinue'),
+          kind: alternatives.length ? 'outlined' : 'primary',
           disabled: answering.value
         }
       ]
@@ -736,6 +748,16 @@ function getConfirmText(payload) {
       text: payload.details || null
     };
   }
+  if (gate.title) {
+    return {
+      title: $t(gate.title.key, getValues(gate.title.values)),
+      text: (gate.text || [])
+        .map(line => (line.list
+          ? getList(line.list)
+          : $t(line.key, getValues(line.values))))
+        .join('\n') || null
+    };
+  }
   const title = (gate.count > 1)
     ? $t('apostrophe:assistantGateDocuments', {
       count: gate.count,
@@ -762,6 +784,18 @@ function getConfirmText(payload) {
     title,
     text
   };
+}
+
+// A gate's i18n values, a list among them joined in the admin UI's language
+function getValues(values = {}) {
+  return Object.fromEntries(Object.entries(values)
+    .map(([ name, value ]) => [ name, Array.isArray(value) ? getList(value) : value ]));
+}
+
+function getList(items) {
+  return new Intl.ListFormat(apos.i18n.adminLocale, {
+    type: 'conjunction'
+  }).format(items);
 }
 
 function startRevert() {
@@ -798,6 +832,13 @@ async function onAction(name) {
   if ([ 'continue', 'notNow' ].includes(name)) {
     store.answer(props.request.chatId, confirmAsk.value.callId, {
       approved: name === 'continue'
+    });
+    return;
+  }
+  if (name.startsWith(ALTERNATIVE)) {
+    store.answer(props.request.chatId, confirmAsk.value.callId, {
+      approved: false,
+      alternative: name.slice(ALTERNATIVE.length)
     });
     return;
   }

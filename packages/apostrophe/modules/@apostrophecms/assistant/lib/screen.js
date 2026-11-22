@@ -50,12 +50,25 @@ const SCREEN_INTRO = 'Each user message carries a "Current screen" line, true as
   'widget and "arrayEditor" for one array of its document, "itemId" its item shown; a ' +
   '"mediaManager" with a "docId" for the image open beside its list) holds ' +
   'that document with the user\'s unsaved changes: the document tools don\'t write it ' +
-  'while it is open. Read and change what the editor on top holds with ' +
+  'while it is open. Its "window", when there is one, sits beside the page and edits ' +
+  'its document as an editor does: it is the editor on top while no modal is open. ' +
+  'Read and change what the editor on top holds with ' +
   'edit_open_document; it is stored when the user saves.';
 const SCREEN_LINE = 'Current screen:';
 
 module.exports = (self) => {
   return {
+    /**
+     * The locale of the page a verified screen shows: its document's, else
+     * the screen's own (the request's locale).
+     *
+     * @param {object|null} screen
+     * @returns {string|null}
+     */
+    getPageLocale(screen) {
+      return screen?.document?.locale || screen?.locale || null;
+    },
+
     /**
      * The screen a browser tab reports, verified. `tabId` is required; every
      * other key is optional and dropped when it doesn't verify. `locale` is

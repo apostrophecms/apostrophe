@@ -73,12 +73,8 @@ export function useScreen() {
   }
 
   function getWindow() {
-    const reporting = [
-      ...modalStore.stack.filter(entry => isWindow(entry)),
-      ...modalStore.standaloneWindows
-    ].filter(entry => entry.screen);
-    const last = reporting.sort((a, b) => (a.opened || 0) - (b.opened || 0)).at(-1);
-    return last ? getPart(last.screen) : null;
+    const entry = getScreenWindow(modalStore);
+    return entry ? getPart(entry.screen) : null;
   }
 
   // A modal's or a window's part, as it reports it
@@ -143,6 +139,18 @@ export function useScreen() {
       }
       : null;
   }
+}
+
+// The modal store's entry of the screen's window: the last opened of the
+// windows reporting a screen part, in the stack or standalone
+export function getScreenWindow(modalStore) {
+  return [
+    ...modalStore.stack.filter(entry => isWindow(entry)),
+    ...modalStore.standaloneWindows
+  ]
+    .filter(entry => entry.screen)
+    .sort((a, b) => (a.opened || 0) - (b.opened || 0))
+    .at(-1) || null;
 }
 
 /**

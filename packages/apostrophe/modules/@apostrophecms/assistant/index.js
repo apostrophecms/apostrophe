@@ -91,6 +91,7 @@ module.exports = {
     self.addAgentTools();
     self.addAttachmentTools();
     self.addImageTools();
+    self.addGlobalStylesGate();
     self.enableBrowserData();
   },
   handlers(self) {
@@ -131,6 +132,10 @@ module.exports = {
         // A read of a document open in an editor is what is saved, not what it holds
         async noteHeldDocument(req, payload) {
           await self.noteHeldDocument(req, payload);
+        },
+        // A Global Styles write says whether this page's locale was written
+        async noteGlobalStylesWrite(req, payload) {
+          await self.noteGlobalStylesWrite(req, payload);
         },
         // A screen another request of the browser tab changed comes with
         // this run's next tool result; a browser tool's carries its own
@@ -454,6 +459,7 @@ module.exports = {
       ...require('./lib/image-tools')(self),
       ...require('./lib/retention')(self),
       ...require('./lib/gates')(self),
+      ...require('./lib/global-styles')(self),
       ...require('./lib/edit-mode')(self),
       ...require('./lib/open-editor')(self),
       ...require('./lib/outside')(self),
