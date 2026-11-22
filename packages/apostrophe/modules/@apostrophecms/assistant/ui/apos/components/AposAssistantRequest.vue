@@ -550,13 +550,13 @@ const activities = computed(() => {
         ...alternatives.map(alternative => ({
           name: `${ALTERNATIVE}${alternative.name}`,
           label: $t(alternative.label),
-          kind: 'outlined',
+          kind: 'accent',
           disabled: answering.value
         })),
         {
           name: 'continue',
           label: $t(gate?.approve || 'apostrophe:assistantContinue'),
-          kind: alternatives.length ? 'outlined' : 'primary',
+          kind: alternatives.length ? 'accent' : 'primary',
           disabled: answering.value
         }
       ]

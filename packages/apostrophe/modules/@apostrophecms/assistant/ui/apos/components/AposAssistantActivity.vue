@@ -81,8 +81,8 @@ defineProps({
     default: null
   },
   // `{ name, label, kind?, disabled?, busy?, focus? }`, kind 'text' (the
-  // default), or 'primary', 'outlined' and 'quiet' for a decision, outlined
-  // for routes of equal weight; `busy` while what
+  // default), or 'primary', 'accent' and 'quiet' for a decision, accent (the
+  // primary colour's text) for routes of equal weight; `busy` while what
   // it started is on its way; `focus` takes the focus when the slot
   // appears
   actions: {
@@ -231,22 +231,13 @@ onMounted(() => focused.value?.focus());
     color: var(--a-base-1);
   }
 
-  .apos-assistant-activity__action--outlined {
+  .apos-assistant-activity__action--accent {
     & {
-      padding: 4px 11px;
-      border: 1px solid var(--a-base-7);
-      color: var(--a-text-primary);
-      background-color: var(--a-white);
-      transition: border-color 200ms;
-    }
-
-    &:hover:not([aria-disabled]) {
-      text-decoration: none;
-      border-color: var(--a-base-4);
+      color: var(--a-primary);
     }
 
     &:focus-visible {
-      outline: 2px solid var(--a-primary);
+      outline-color: var(--a-primary);
     }
   }
 
