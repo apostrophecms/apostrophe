@@ -336,6 +336,10 @@ export default {
     // Opened as the editor of a Global Styles document, such as by the
     // assistant: the window edits the page's locale only
     openFor({ _id }) {
+      // The window has no read-only mode
+      if (!this.docFields.data._edit) {
+        return { reason: 'the user can\'t edit Global Styles' };
+      }
       if (!this.isOwnId(_id, this.docFields.data.aposDocId)) {
         return { reason: 'the Global Styles window edits the locale of the page shown only' };
       }
