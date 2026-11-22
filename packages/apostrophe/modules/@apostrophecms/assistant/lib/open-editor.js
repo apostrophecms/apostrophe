@@ -353,7 +353,12 @@ module.exports = (self) => {
       if (!holders.length) {
         return;
       }
-      for (const id of getCallDocumentIds(req, validated)) {
+      // A call naming locales also stands on the document's copies there:
+      // what one of them holds unsaved is not what is stored
+      const copies = ((typeof validated._id === 'string') && Array.isArray(validated.locales))
+        ? validated.locales.map(locale => `${validated._id.split(':')[0]}:${locale}`)
+        : [];
+      for (const id of [ ...getCallDocumentIds(req, validated), ...copies ]) {
         const key = getDocumentKey(req, id);
         const holder = holders
           .findLast(({ part }) => getDocumentKey(req, part.docId) === key);

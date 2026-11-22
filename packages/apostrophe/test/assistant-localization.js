@@ -312,6 +312,99 @@ describe('Assistant: localizing selected widgets', function () {
     await restore();
   });
 
+  it('should not switch the page shown to edit mode for a record of its copies', async function () {
+    const req = userReq();
+    const chat = await apos.assistant.createChat(req);
+    script = sequence([
+      toolTurn('get_localization', {
+        _id: pages.en._id,
+        locale: 'fr'
+      }, 'read'),
+      toolTurn('record_localization', {
+        _id: pages.en._id,
+        locales: [ 'fr' ]
+      }, 'record'),
+      { text: 'Recorded.' }
+    ]);
+    await apos.assistant.send(req, chat._id, {
+      message: 'Record French as up to date',
+      screen: {
+        tabId: 'tab-1',
+        url: '/',
+        visible: true,
+        editing: false,
+        document: {
+          _id: pages.en._id,
+          type: pages.en.type,
+          title: pages.en.title
+        }
+      }
+    });
+    const request = await waitForEnd(req, chat);
+
+    assert.equal(request.status, 'completed');
+    assert.deepEqual(
+      resultOf(request, 'call-record').output.written.map(item => item.locale),
+      [ 'fr' ]
+    );
+    await apos.aiLocalize.recordsDb.deleteMany({ aposDocId: pages.en.aposDocId });
+  });
+
+  it('should record no localization while an editor holds the copy unsaved', async function () {
+    const req = userReq();
+    const held = await apos.assistant.createChat(req);
+    const record = toolTurn('record_localization', {
+      _id: pages.en._id,
+      locales: [ 'fr' ]
+    }, 'record');
+    script = sequence([
+      toolTurn('get_localization', {
+        _id: pages.en._id,
+        locale: 'fr'
+      }, 'read'),
+      record,
+      { text: 'Save the French page first.' }
+    ]);
+    await apos.assistant.send(req, held._id, {
+      message: 'Bring French up to date',
+      screen: {
+        tabId: 'tab-1',
+        modals: [ {
+          kind: 'editor',
+          docId: pages.fr._id
+        } ]
+      }
+    });
+    const refused = await waitForEnd(req, held);
+    const free = await apos.assistant.createChat(req);
+    script = sequence([
+      toolTurn('get_localization', {
+        _id: pages.en._id,
+        locale: 'fr'
+      }, 'read'),
+      record,
+      { text: 'Recorded.' }
+    ]);
+    const recorded = await runToEnd(free, 'Bring French up to date');
+
+    assert.match(
+      resultOf(refused, 'call-record').error,
+      /is open in an editor on the user's screen/
+    );
+    assert.deepEqual(
+      resultOf(recorded, 'call-record').output.written.map(item => item.locale),
+      [ 'fr' ]
+    );
+    const records = await apos.aiLocalize.recordsDb
+      .find({
+        aposDocId: pages.en.aposDocId,
+        via: 'ai'
+      })
+      .toArray();
+    assert.equal(records.length, 1);
+    await apos.aiLocalize.recordsDb.deleteMany({ aposDocId: pages.en.aposDocId });
+  });
+
   function userReq() {
     return apos.task.getReq({
       user: editor,

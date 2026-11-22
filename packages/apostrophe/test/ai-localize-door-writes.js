@@ -633,6 +633,50 @@ describe('AI Localize: localize_document and record_localization', function () {
     assert.deepEqual((await records(article.aposDocId)).map(record => record.via), [ 'localize' ]);
   });
 
+  it('should record from the source named by its locale, checked as read', async function () {
+    const article = await insert('loc-article', { title: 'An article' });
+    const french = await articles().localize(userReq(), article, 'fr');
+    await edit(article._id, draft => {
+      draft.summary = 'New in the source';
+    });
+    const req = door();
+    const input = {
+      _id: french._id,
+      from: 'en',
+      locales: [ 'fr' ]
+    };
+
+    const unread = await run('record_localization', input, req);
+    await run('get_localization', {
+      _id: french._id,
+      from: 'en',
+      locale: 'fr'
+    }, req);
+    const recorded = await run('record_localization', input, req);
+
+    assert.equal(unread.refused[0].reason, 'changed');
+    assert.deepEqual(recorded.written.map(item => [ item._id, item.locale ]), [
+      [ french._id, 'fr' ]
+    ]);
+    const latest = (await records(article.aposDocId)).at(-1);
+    assert.deepEqual([ latest.from, latest.to, latest.via ], [ 'en', 'fr', 'ai' ]);
+  });
+
+  it('should say a copy in the archive stands in the way, and that an editor restores it', async function () {
+    const article = await insert('loc-article', { title: 'An article' });
+    const french = await articles().localize(userReq(), article, 'fr');
+    await apos.doc.db.updateOne({ _id: french._id }, { $set: { archived: true } });
+
+    const result = await run('localize_document', {
+      _id: article._id,
+      locales: [ 'fr' ]
+    });
+
+    assert.deepEqual(result.written, []);
+    assert.equal(result.refused[0].reason, 'exists');
+    assert.match(result.refused[0].message, /in the archive, and no tool restores a document/);
+  });
+
   it('should refuse a record of a copy the user may not edit', async function () {
     const notice = await insert('loc-notice', { title: 'A notice' });
     await apos.modules['loc-notice'].localize(userReq(), notice, 'fr');

@@ -22,7 +22,9 @@ module.exports = (self) => {
           'whether to create the page there, which localizes all of it, or to skip that ' +
           'locale, and go on with the other locales.',
         '- Before translating again what the source has not changed since the copies ' +
-          'were last in line, ask.',
+          'were last in line, ask. When nothing says when they were last in line, read ' +
+          'both texts: translate what the target lacks or says differently, leave what ' +
+          'is already a translation, and say which was which.',
         ...translator
           ? [
             `- ${translator.name} is the site's translation service and has the last word ` +

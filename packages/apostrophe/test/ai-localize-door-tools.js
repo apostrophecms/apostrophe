@@ -740,6 +740,58 @@ describe('AI Localize: get_localization', function () {
     assert.deepEqual(result.targetChanges, []);
   });
 
+  it('should take the source by its locale when the id is the target\'s', async function () {
+    const {
+      article, french, widget
+    } = await seed();
+    await edit(article._id, draft => {
+      widgetOf(draft, widget._id).heading = 'A new heading';
+    });
+
+    const result = await read({
+      _id: french._id,
+      from: 'en',
+      locale: 'fr'
+    });
+
+    assert.equal(result._id, article._id);
+    assert.equal(result.locale, 'en');
+    assert.equal(result.target._id, french._id);
+    assert.equal(result.state, 'behind');
+    assert.deepEqual(paths(result.sourceChanges), [ `@${widget._id}.heading` ]);
+    await assert.rejects(read({
+      _id: french._id,
+      from: 'de',
+      locale: 'fr'
+    }), {
+      name: 'aiToolError',
+      message: /no copy in that locale to take as the source/
+    });
+  });
+
+  it('should say a copy is in the archive, not that it can\'t be read', async function () {
+    const { article, french } = await seed();
+    await apos.doc.db.updateOne({ _id: french._id }, { $set: { archived: true } });
+
+    const result = await read({
+      _id: article._id,
+      locale: 'fr'
+    });
+
+    assert.deepEqual(result, {
+      _id: article._id,
+      type: 'loc-article',
+      title: 'An article',
+      locale: 'en',
+      target: {
+        _id: french._id,
+        title: 'An article',
+        locale: 'fr'
+      },
+      state: 'archived'
+    });
+  });
+
   it('should read long lists in pages, the source\'s share first', async function () {
     const widgets = [ 1, 2, 3, 4 ].map(n => richText(`Paragraph ${n}`));
     const article = await articles().insert(userReq(), {
@@ -822,7 +874,7 @@ describe('AI Localize: get_localization', function () {
       locale: 'en'
     }), {
       name: 'aiToolError',
-      message: /name another locale/
+      message: /name the source's locale in "from"/
     });
     await assert.rejects(read({
       _id: setting._id,

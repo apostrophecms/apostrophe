@@ -16,6 +16,9 @@ const UNTRANSLATED_NOTE = 'The copy was made for a localization that never finis
 // Why a copy into a locale, or its record, is refused, as the model reads it
 const EXISTS = 'The document has a copy in this locale already, and a copy is never ' +
   'replaced; get_localization compares the two.';
+const ARCHIVED = 'The document\'s copy in this locale is in the archive, and no tool ' +
+  'restores a document: an editor restores it first.';
+const NO_SOURCE = 'The document has no copy in that locale to take as the source.';
 const PARENT_MISSING = 'Its parent page has no copy in this locale; localize the parent first.';
 const NO_COPY = 'The document has no copy in this locale; localize_document makes one.';
 const UNREAD = 'The source was saved since you last read it, or you haven\'t read it: read ' +
@@ -29,14 +32,24 @@ module.exports = (self) => {
       if (locales.length < 2) {
         return;
       }
+      // The copy the changes come from, when the id at hand is another's:
+      // from the French page, the English copy is the source
+      const sourceLocale = {
+        type: 'string',
+        enum: locales,
+        description: 'The locale of the source, when "_id" is not the source: the ' +
+          'target\'s own id serves, with the locale to bring it in line with here'
+      };
       self.apos.ai.addTool({
         name: 'get_localization',
         label: 'apostrophe:aiToolGetLocalization',
-        description: 'One document against its copy in another locale. "state": ' +
-          '"missing" (no copy there; "parentMissing" when its parent page has none ' +
-          'either), "untranslated" (the copy is still in the source language), ' +
-          '"upToDate", "behind", or "noBaseline" (nothing says when the copies were ' +
-          'last in line). "sourceChanges" and "targetChanges": what each copy changed ' +
+        description: 'A document\'s copy in one locale, the source, against its copy in ' +
+          'another, the target to bring in line. "state": "missing" (no copy there; ' +
+          '"parentMissing" when its parent page has none either), "archived" (the copy ' +
+          'is in the archive; an editor restores it first), "untranslated" (the copy is ' +
+          'still in the source language), "upToDate", "behind", or "noBaseline" (nothing ' +
+          'says when the copies were last in line: read both and compare them yourself). ' +
+          '"sourceChanges" and "targetChanges": what each copy changed ' +
           'since then, as get_changes rows, each "path" usable in its own copy. ' +
           '"counterpart": the other copy holds a widget or item of the same id, so the ' +
           'path works there as it is; when false, find the place by meaning and ' +
@@ -49,12 +62,13 @@ module.exports = (self) => {
             _id: {
               type: 'string',
               minLength: 1,
-              description: 'A document id: the source'
+              description: 'A document id: the source, or with "from" any copy of it'
             },
+            from: sourceLocale,
             locale: {
               type: 'string',
               enum: locales,
-              description: 'The locale of the copy to compare with'
+              description: 'The locale of the target'
             },
             widgets: {
               type: 'array',
@@ -135,8 +149,9 @@ module.exports = (self) => {
             _id: {
               type: 'string',
               minLength: 1,
-              description: 'A document id: the source'
+              description: 'A document id: the source, or with "from" any copy of it'
             },
+            from: sourceLocale,
             locales: targetLocales('The locales of the copies brought in line')
           },
           required: [ '_id', 'locales' ],
@@ -208,7 +223,7 @@ module.exports = (self) => {
             _id: existing._id,
             ...header,
             reason: 'exists',
-            message: EXISTS
+            message: existing.archived ? ARCHIVED : EXISTS
           };
         }
         if (await self.isParentMissing(doc, locale)) {
@@ -327,9 +342,11 @@ module.exports = (self) => {
       }
     },
 
-    async recordLocalization(req, { _id, locales }) {
+    async recordLocalization(req, {
+      _id, from: sourceLocale, locales
+    }) {
       const { harness } = self.apos;
-      const { doc, draftReq } = await harness.findReadable(req, _id);
+      const { doc, draftReq } = await findSource(self, req, _id, sourceLocale);
       const from = checkLocales(self, doc, locales);
       const written = [];
       const refused = [];
@@ -393,17 +410,14 @@ module.exports = (self) => {
     },
 
     async getLocalization(req, {
-      _id, locale, widgets, offset = '0:0'
+      _id, from: sourceLocale, locale, widgets, offset = '0:0'
     }) {
       const { harness, docVersions } = self.apos;
-      const { doc, draftReq } = await harness.findReadable(req, _id);
+      const { doc, draftReq } = await findSource(self, req, _id, sourceLocale);
       const from = harness.getLocaleOf(doc);
-      if (!from) {
-        throw self.apos.error('aiToolError', 'Documents of this type exist once, not per locale.');
-      }
       if (from === locale) {
-        throw self.apos.error('aiToolError', `The document is the "${locale}" copy; name ` +
-          'another locale.');
+        throw self.apos.error('aiToolError', `The source and the target are both "${locale}"; ` +
+          'name the source\'s locale in "from".');
       }
       const header = {
         _id: doc._id,
@@ -418,6 +432,17 @@ module.exports = (self) => {
           ...header,
           state: 'missing',
           ...(await self.isParentMissing(doc, locale) && { parentMissing: true })
+        };
+      }
+      if (stored.archived) {
+        return {
+          ...header,
+          target: {
+            _id: stored._id,
+            title: stored.title,
+            locale
+          },
+          state: 'archived'
         };
       }
       const target = await findTarget();
@@ -611,6 +636,26 @@ module.exports = (self) => {
   };
 };
 
+// The source of a localization: the document `_id` names, or its copy in
+// `from` when that names another locale. A tool error the model can act on
+// when the type isn't localized or has no copy there
+async function findSource(self, req, _id, from) {
+  const { harness } = self.apos;
+  const found = await harness.findReadable(req, _id);
+  const own = harness.getLocaleOf(found.doc);
+  if (!own) {
+    throw self.apos.error('aiToolError', 'Documents of this type exist once, not per locale.');
+  }
+  if (!from || (from === own)) {
+    return found;
+  }
+  const sourceId = `${found.doc.aposDocId}:${from}:draft`;
+  if (!await self.storedDraft(sourceId)) {
+    throw self.apos.error('aiToolError', NO_SOURCE);
+  }
+  return harness.findReadable(req, sourceId);
+}
+
 // The locale of `doc`, the source of a copy into each of `locales`; a tool
 // error the model can act on when it has none or is among them
 function checkLocales(self, doc, locales) {
@@ -677,6 +722,8 @@ module.exports.MODEL_TEXTS = [
   VERSIONS_NOTE,
   UNTRANSLATED_NOTE,
   EXISTS,
+  ARCHIVED,
+  NO_SOURCE,
   PARENT_MISSING,
   NO_COPY,
   UNREAD,
