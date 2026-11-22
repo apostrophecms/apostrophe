@@ -203,6 +203,82 @@ module.exports = (self) => {
       return getWriteResult(result, () => ({ removed: widgets }));
     },
 
+    async copyWidgets(req, {
+      from, widgets, _id, area, position, before, after
+    }) {
+      checkPlace({
+        position,
+        before,
+        after
+      });
+      const source = await self.findReadable(req, from);
+      const held = indexDocument(source.draftReq, source.doc);
+      const missing = widgets.filter(id => !isWidget(held, id));
+      if (missing.length) {
+        throw self.apos.error('aiToolError', `No widget ${missing.map(id => `"${id}"`).join(', ')} ` +
+          'in the document copied from; get_document lists its widgets.');
+      }
+      let copies = [];
+      const result = await self.writeDocuments(req, [ {
+        _id,
+        patch: (doc, manager, draftReq) => {
+          const content = indexDocument(draftReq, doc);
+          // Within one document, from the draft as it is written
+          const origin = (doc._id === source.doc._id) ? content : held;
+          const target = findArea(content, area);
+          const taken = getIds(doc);
+          copies = findWidgets(origin, widgets)
+            .map(node => self.newWidgetCopy(draftReq, node.value, taken));
+          return place(target, copies, getPlace(content, target, [], {
+            position,
+            before,
+            after
+          }));
+        }
+      } ]);
+      return getWriteResult(result, doc => ({
+        area,
+        widgets: locate(indexDocument(req, doc), copies)
+          .map((widget, index) => ({
+            ...widget,
+            copyOf: widgets[index]
+          }))
+      }));
+    },
+
+    /**
+     * What AI can address by `_id` in a document, each held once: a Map of
+     * `_id` to `{ kind, type }`, `kind` one of `widget`, `item`, `object`
+     * and `area`; a widget with its `type`, the path of its `area` as the
+     * outline gives it, and the widget it comes `after` there, `null` for
+     * the first.
+     *
+     * @param {object} req In the document's locale.
+     * @param {object} doc A document as stored.
+     * @returns {Map<string, object>}
+     */
+    getContentIndex(req, doc) {
+      const index = new Map();
+      for (const [ _id, nodes ] of indexDocument(req, doc).ids) {
+        if (nodes.length !== 1) {
+          continue;
+        }
+        const [ node ] = nodes;
+        if (node.kind !== 'widget') {
+          index.set(_id, { kind: node.kind });
+          continue;
+        }
+        const position = node.area.widgets.indexOf(node.value);
+        index.set(_id, {
+          kind: node.kind,
+          type: node.value.type,
+          area: node.area.key,
+          after: position ? node.area.widgets[position - 1]._id : null
+        });
+      }
+      return index;
+    },
+
     /**
      * Changes what an open editor holds, in memory: the patch a document
      * tool would write, built on the root's content, applied and converted
@@ -917,6 +993,29 @@ module.exports = (self) => {
       throw refuse(errors, content);
     }
     return nodes;
+  }
+
+  // Whether `_id` names one widget AI sees in `content`
+  function isWidget(content, _id) {
+    const found = content.ids.get(_id) || [];
+    return (found.length === 1) && (found[0].kind === 'widget');
+  }
+
+  // Every `_id` a document holds as stored, in what it stores
+  function getIds(value, ids = new Set()) {
+    if (Array.isArray(value)) {
+      value.forEach(entry => getIds(entry, ids));
+    } else if (value && (typeof value === 'object') && !(value instanceof Date)) {
+      if (typeof value._id === 'string') {
+        ids.add(value._id);
+      }
+      for (const [ name, entry ] of Object.entries(value)) {
+        if (!name.startsWith('_')) {
+          getIds(entry, ids);
+        }
+      }
+    }
+    return ids;
   }
 
   // `$pullAllById` of widget nodes, by the key of their area's items

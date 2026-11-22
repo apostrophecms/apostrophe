@@ -125,6 +125,8 @@ module.exports = (self) => {
         return {
           basis: 'record',
           since: record.at,
+          ownerId: record.ownerId,
+          via: record.via,
           source: forward ? recordSource : recordTarget,
           target: forward ? recordTarget : recordSource
         };

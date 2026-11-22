@@ -10,6 +10,10 @@
 // background job the dialog follows and can stop (lib/run.js). What "since
 // its last localization" means is kept in localization records
 // (lib/records.js). Available whenever `apos.ai` has a provider configured.
+//
+// The AI doors (the assistant, the MCP server) run no pass: their own model
+// localizes with the harness's document tools, and this module tells it
+// where two copies stand (lib/door-tools.js).
 
 module.exports = {
   options: {
@@ -34,6 +38,7 @@ module.exports = {
   async init(self) {
     await self.ensureRecords();
     self.registerTools();
+    self.registerDoorTools();
     self.enableBrowserData();
   },
   handlers(self) {
@@ -87,6 +92,7 @@ module.exports = {
     return {
       ...require('./lib/records')(self),
       ...require('./lib/tools')(self),
+      ...require('./lib/door-tools')(self),
       ...require('./lib/run')(self),
       getBrowserData(req) {
         return {

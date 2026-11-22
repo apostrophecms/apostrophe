@@ -82,7 +82,14 @@ describe('Harness: what each door reads', function () {
   it('should have every kind of tool registered, so the check means something', function () {
     const names = apos.ai.getTools().map(({ name }) => name);
 
-    for (const name of [ 'update_document', 'open_editor', 'confirm', 'localize_finish' ]) {
+    for (const name of [
+      'update_document',
+      'copy_widgets',
+      'get_localization',
+      'open_editor',
+      'confirm',
+      'localize_finish'
+    ]) {
       assert(names.includes(name), name);
     }
   });

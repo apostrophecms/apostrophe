@@ -174,6 +174,29 @@ module.exports = (self) => {
       handler: handler('moveWidgets')
     },
     {
+      name: 'copy_widgets',
+      label: 'apostrophe:aiToolCopyWidgets',
+      description: 'Copy widgets into an area of another document, or of their own: ' +
+        'whole, with what reads don\'t show, in the order given, at the end unless a ' +
+        'place is given. Relationships follow into the locale written; a related ' +
+        'document with no copy there refuses the write. Returns each copy\'s id: the ' +
+        'widget\'s own when the document written didn\'t hold it.',
+      input: {
+        type: 'object',
+        properties: {
+          from: id('The id of the document holding the widgets'),
+          widgets: widgetIds('The ids of the widgets to copy'),
+          _id: id('The id of the document they are copied into'),
+          area: id('The path of the area they go to, as its outline gives it'),
+          ...place
+        },
+        required: [ 'from', 'widgets', '_id', 'area' ],
+        additionalProperties: false
+      },
+      kind: 'action',
+      handler: handler('copyWidgets')
+    },
+    {
       name: 'remove_widgets',
       label: 'apostrophe:aiToolRemoveWidgets',
       description: 'Remove widgets from one document.',
