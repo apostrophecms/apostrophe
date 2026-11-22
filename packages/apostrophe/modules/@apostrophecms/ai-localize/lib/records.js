@@ -249,7 +249,8 @@ module.exports = (self) => {
 
     // Core's change list from one stored content to another, as entries the
     // model can act on: the address the write tools take, the place in the
-    // editor's words, and the texts on both sides. Up to `budget`
+    // editor's words, and the texts on both sides. Only the changes AI
+    // reads: one in a field kept away from it is no entry. Up to `budget`
     // characters; `omitted` counts the rest
     async changesBetween(req, older, newer, budget) {
       if (!older) {
@@ -258,11 +259,14 @@ module.exports = (self) => {
           omitted: 0
         };
       }
-      const { rows } = await self.apos.docVersions.getChangeList(req, [ {
+      const manager = self.apos.doc.getManager(newer.type);
+      const { rows: all } = await self.apos.docVersions.getChangeList(req, [ {
         older,
         newer,
         ai: false
       } ]);
+      const rows = all
+        .filter((row) => self.apos.harness.describeChangeRow(req, manager, row));
       const changes = [];
       let size = 0;
       for (const row of rows) {

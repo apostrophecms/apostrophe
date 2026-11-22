@@ -1,8 +1,8 @@
-// The write tools' handlers. Every change is a patch built from the content
-// as it is, nothing sends a whole area or document back. The patch builders
-// take a root, the content of a document, a widget or an array: a stored
-// draft written through `writeDocuments`, or what an open editor holds,
-// changed in memory by `editContent`.
+// The write tools' handlers. Every change is a patch made from the content
+// as it is, nothing sends a whole area or document back. The functions that
+// make the patches take a root, the content of a document, a widget or an
+// array: a stored draft written through `writeDocuments`, or what an open
+// editor holds, changed in memory by `editContent`.
 
 const _ = require('lodash');
 const { klona } = require('klona');
@@ -127,7 +127,7 @@ module.exports = (self) => {
               name: 'styles'
             } ]);
           }
-          return buildUpdate(draftReq, indexDocument(draftReq, doc), values).patches;
+          return getUpdatePatches(draftReq, indexDocument(draftReq, doc), values).patches;
         }
       })));
       return self.getWriteResult(result);
@@ -145,15 +145,15 @@ module.exports = (self) => {
       const result = await self.writeDocuments(req, [ {
         _id,
         patch: (doc, manager, draftReq) => {
-          const built = buildAdd(draftReq, indexDocument(draftReq, doc), {
+          const made = getAddPatches(draftReq, indexDocument(draftReq, doc), {
             area,
             widgets,
             position,
             before,
             after
           });
-          added = built.widgets;
-          return built.patches;
+          added = made.widgets;
+          return made.patches;
         }
       } ]);
       return self.getWriteResult(result, doc => ({
@@ -174,15 +174,15 @@ module.exports = (self) => {
       const result = await self.writeDocuments(req, [ {
         _id,
         patch: (doc, manager, draftReq) => {
-          const built = buildMove(draftReq, indexDocument(draftReq, doc), {
+          const made = getMovePatches(draftReq, indexDocument(draftReq, doc), {
             widgets,
             area,
             position,
             before,
             after
           });
-          moved = built.widgets;
-          return built.patches;
+          moved = made.widgets;
+          return made.patches;
         }
       } ]);
       return self.getWriteResult(result, doc => ({
@@ -195,7 +195,7 @@ module.exports = (self) => {
       const result = await self.writeDocuments(req, [ {
         _id,
         patch: (doc, manager, draftReq) => {
-          return buildRemove(indexDocument(draftReq, doc), widgets).patches;
+          return getRemovePatches(indexDocument(draftReq, doc), widgets).patches;
         }
       } ]);
       return self.getWriteResult(result, () => ({ removed: widgets }));
@@ -223,15 +223,15 @@ module.exports = (self) => {
           const content = indexDocument(draftReq, doc);
           // Within one document, from the draft as it is written
           const origin = (doc._id === source.doc._id) ? content : held;
-          const target = findArea(content, area);
-          const taken = getIds(doc);
-          copies = findWidgets(origin, widgets)
-            .map(node => self.newWidgetCopy(draftReq, node.value, taken));
-          return place(target, copies, getPlace(content, target, [], {
+          const made = getCopyPatches(draftReq, content, origin, {
+            widgets,
+            area,
             position,
             before,
             after
-          }));
+          });
+          copies = made.widgets;
+          return made.patches;
         }
       } ]);
       return self.getWriteResult(result, doc => ({
@@ -242,6 +242,43 @@ module.exports = (self) => {
             copyOf: widgets[index]
           }))
       }));
+    },
+
+    /**
+     * The patches of a document tool for a stored draft, made from the
+     * draft as it is, for code that writes them itself (see `writeDraft`).
+     *
+     * @param {object} req In the document's locale.
+     * @param {object} doc The draft, as `findDraft` finds it.
+     * @param {object} operation `action`, one of `update_document`,
+     *   `add_widgets`, `move_widgets`, `remove_widgets` and `copy_widgets`,
+     *   with that tool's arguments without `_id`: `update_document` takes
+     *   the document's `values`, and `copy_widgets` takes as `from` the
+     *   document copied from, as found.
+     * @returns {{ patches: object[], widgets?: object[], removed?: string[] }}
+     *   `patches` as `writeDraft` saves them; `widgets`: those added, moved
+     *   or copied, as written.
+     * @throws `invalid`, naming what the change can't address.
+     */
+    getToolPatches(req, doc, { from, ...operation }) {
+      const content = indexDocument(req, doc);
+      let origin = null;
+      if (from) {
+        const fromReq = req.clone({ locale: self.getLocaleOf(from) ?? req.locale });
+        // Within one document, from the draft as it is written
+        origin = (from._id === doc._id) ? content : indexDocument(fromReq, from);
+      }
+      const {
+        patches, widgets, removed
+      } = getPatches(req, content, {
+        ...operation,
+        origin
+      });
+      return {
+        patches,
+        ...(widgets && { widgets }),
+        ...(removed && { removed })
+      };
     },
 
     /**
@@ -279,7 +316,7 @@ module.exports = (self) => {
 
     /**
      * Changes what an open editor holds, in memory: the patch a document
-     * tool would write, built on the root's content, applied and converted
+     * tool would write, made from the root's content, applied and converted
      * as a save would, and refused when conversion would drop anything it
      * supplies. Nothing is saved; the caller hands `values` to the editor.
      * The caller checks that AI may work with the root's document.
@@ -309,15 +346,18 @@ module.exports = (self) => {
       const opened = self.getContentRoot(req, root);
       const content = indexContent(opened.req, opened);
       const header = opened.header;
-      let built;
+      let made;
       let value;
       try {
-        built = build();
+        made = getPatches(opened.req, content, {
+          action,
+          ...args
+        });
       } catch (e) {
         return refused(e, path => path);
       }
       try {
-        value = await applyToRoot(opened, built.patches);
+        value = await applyToRoot(opened, made.patches);
       } catch (e) {
         return refused(e, fromHolder);
       }
@@ -326,25 +366,25 @@ module.exports = (self) => {
         value
       });
       // A key written with the value it held is neither applied nor marked
-      const unchanged = built.touched
+      const unchanged = made.touched
         .filter(key => isSameAt(resolve(content, key), resolve(changed, key)));
-      const touched = built.touched.filter(key => !unchanged.includes(key));
-      const names = (built.tops.includes(null)
+      const touched = made.touched.filter(key => !unchanged.includes(key));
+      const names = (made.tops.includes(null)
         ? opened.schema.map(field => field.name)
-        : [ ...new Set(built.tops) ])
+        : [ ...new Set(made.tops) ])
         .filter(name => Object.hasOwn(value, name))
         .filter(name => {
           const field = opened.schema.find(field => field.name === name);
           return !field || !isSameValue(field, opened.value[name], value[name]);
         });
       // Where added or moved widgets landed, as the document tools say it
-      const extra = built.widgets
+      const extra = made.widgets
         ? {
           area: args.area,
-          widgets: locate(changed, built.widgets)
+          widgets: locate(changed, made.widgets)
         }
-        : (built.removed && { removed: built.removed });
-      const isNoop = !names.length && !built.removed?.length;
+        : (made.removed && { removed: made.removed });
+      const isNoop = !names.length && !made.removed?.length;
       return {
         values: Object.fromEntries(names.map(name => {
           const field = opened.schema.find(field => field.name === name);
@@ -354,7 +394,7 @@ module.exports = (self) => {
           ];
         })),
         touched,
-        removed: built.removed || [],
+        removed: made.removed || [],
         result: {
           written: [ {
             ...header,
@@ -367,26 +407,6 @@ module.exports = (self) => {
           notice: isNoop ? NOOP_NOTICE : EDITOR_NOTICE
         }
       };
-
-      function build() {
-        if ([ 'add_widgets', 'move_widgets' ].includes(action)) {
-          checkPlace({
-            position: args.position,
-            before: args.before,
-            after: args.after
-          });
-        }
-        switch (action) {
-          case 'update_document':
-            return buildUpdate(opened.req, content, args.values);
-          case 'add_widgets':
-            return buildAdd(opened.req, content, args);
-          case 'move_widgets':
-            return buildMove(opened.req, content, args);
-          default:
-            return buildRemove(content, args.widgets);
-        }
-      }
 
       // The result of a change refused with `e`, each field it names by
       // `toPath`; any error but a refusal stops the call
@@ -556,12 +576,41 @@ module.exports = (self) => {
     });
   }
 
+  // The patches of a document tool's change to `content` (see
+  // `indexContent`), with what its own function adds. `origin` is the
+  // content `copy_widgets` copies from
+  function getPatches(req, content, {
+    action, origin, ...args
+  }) {
+    if ([ 'add_widgets', 'move_widgets', 'copy_widgets' ].includes(action)) {
+      checkPlace({
+        position: args.position,
+        before: args.before,
+        after: args.after
+      });
+    }
+    switch (action) {
+      case 'update_document':
+        return getUpdatePatches(req, content, args.values);
+      case 'add_widgets':
+        return getAddPatches(req, content, args);
+      case 'move_widgets':
+        return getMovePatches(req, content, args);
+      case 'remove_widgets':
+        return getRemovePatches(content, args.widgets);
+      case 'copy_widgets':
+        return getCopyPatches(req, content, origin, args);
+      default:
+        throw self.apos.error('invalid', `"${action}" changes nothing.`);
+    }
+  }
+
   /**
    * The patch of `update_document` for `values` on `content` (see
    * `indexContent`), with the keys it writes (`touched`) and the top-level
    * fields of the root they reach (`tops`, `null` for the root whole).
    */
-  function buildUpdate(req, content, values) {
+  function getUpdatePatches(req, content, values) {
     const patch = {};
     const touched = [];
     const tops = [];
@@ -618,7 +667,7 @@ module.exports = (self) => {
   }
 
   // The patch of `add_widgets` on `content`, with the new `widgets`
-  function buildAdd(req, content, {
+  function getAddPatches(req, content, {
     area, widgets, position, before, after
   }) {
     const target = findArea(content, area);
@@ -637,8 +686,29 @@ module.exports = (self) => {
     };
   }
 
+  // The patch of `copy_widgets` on `content`, with the copies: `widgets` of
+  // `origin`, each whole, its ids kept where the root holds none like them
+  function getCopyPatches(req, content, origin, {
+    widgets, area, position, before, after
+  }) {
+    const target = findArea(content, area);
+    const taken = getIds(content.value);
+    const copies = findWidgets(origin, widgets)
+      .map(node => self.newWidgetCopy(req, node.value, taken));
+    return {
+      patches: [
+        place(target, copies, getPlace(content, target, [], {
+          position,
+          before,
+          after
+        }))
+      ],
+      widgets: copies
+    };
+  }
+
   // The patches of `move_widgets` on `content`, with the moved `widgets`
-  function buildMove(req, content, {
+  function getMovePatches(req, content, {
     widgets, area, position, before, after
   }) {
     const nodes = findWidgets(content, widgets);
@@ -680,7 +750,7 @@ module.exports = (self) => {
   }
 
   // The patch of `remove_widgets` on `content`
-  function buildRemove(content, widgets) {
+  function getRemovePatches(content, widgets) {
     const nodes = findWidgets(content, widgets);
     // A widget inside another one removed goes with it
     const outer = nodes.filter(node => !nodes.some(other => {

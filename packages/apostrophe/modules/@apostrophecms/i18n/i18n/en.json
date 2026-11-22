@@ -1301,6 +1301,8 @@
   "yesLocalizeAndSwitchLocalesDoc": "Yes, localize this {{ docType }} and switch locales",
   "youTookControl": "You took control of this document in another tab or window. A document can only be edited in one place at a time.",
   "yourDevice": "your device",
+  "aiLocalizeLocked": "It's open for editing in another tab or chat of yours.",
+  "aiLocalizeLockedBy": "{{ name }} has it open for editing.",
   "aiLocalizeNewAndModifiedRelated": "New and modified content in related documents",
   "aiLocalizeProgressCount": "{{ current }} of {{ total }}",
   "aiLocalizeScopeAll": "All content",
