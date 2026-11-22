@@ -1,5 +1,7 @@
 // The instructions both doors send the model, assembled in one fixed order.
 
+const { DOORS } = require('./tools');
+
 // Short and structural: what the tools leave to the model on every request
 const BASE = [
   'You work on the content of this ApostropheCMS site for the user, through the content ' +
@@ -52,7 +54,8 @@ module.exports = (self) => {
     /**
      * What the site tells the model, in order: the `guidance` option, the
      * site rules kept in the CMS (none yet), every type's `aiWhen`. A type's
-     * `aiHow` is only marked; the model reads it with `get_guidance`. Part
+     * guidance for the door of `req` is only marked; the model reads it with
+     * `get_guidance`. Part
      * of `getInstructions`, and on its own for a run that needs the site's
      * knowledge without a door's base instructions, such as a subagent.
      *
@@ -70,20 +73,46 @@ module.exports = (self) => {
       return slots.length ? slots.join('\n\n') : null;
 
       // One line per type with guidance: `type: aiWhen`, marked `(aiHow)`
-      // when it has one
+      // when it has some for the door
       function getTypeLines() {
+        const door = self.getDoor(req)?.door;
         const lines = [];
         for (const type of self.getTypeNames()) {
-          const { aiWhen, aiHow } = self.getTypeOptions(type);
-          if (aiWhen?.trim() || aiHow?.trim()) {
+          const aiWhen = self.getTypeOptions(type).aiWhen?.trim();
+          const aiHow = self.getTypeGuidance(type, door);
+          if (aiWhen || aiHow) {
             lines.push([
-              aiWhen?.trim() ? `${type}: ${aiWhen.trim()}` : type,
-              aiHow?.trim() && '(aiHow)'
+              aiWhen ? `${type}: ${aiWhen}` : type,
+              aiHow && '(aiHow)'
             ].filter(Boolean).join(' '));
           }
         }
         return lines.length ? [ TYPES_INTRO, ...lines ].join('\n') : null;
       }
+    },
+
+    // The options of a type that guide the model: `aiWhen`, `aiHow` and each
+    // door's own procedure
+    getGuidanceOptionNames() {
+      return [ 'aiWhen', 'aiHow', ...Object.values(DOORS).map(({ howOption }) => howOption) ];
+    },
+
+    /**
+     * A type's guidance as a door reads it: its `aiHow`, for both doors,
+     * then the door's own (`aiHowAssistant`, `aiHowMcp`). A call without a
+     * door reads `aiHow` alone.
+     *
+     * @param {string} type
+     * @param {string} [door]
+     * @returns {string|null}
+     */
+    getTypeGuidance(type, door) {
+      const options = self.getTypeOptions(type);
+      const own = Object.hasOwn(DOORS, door) ? options[DOORS[door].howOption] : null;
+      return [ options.aiHow, own ]
+        .map(text => text?.trim())
+        .filter(Boolean)
+        .join('\n\n') || null;
     }
   };
 };

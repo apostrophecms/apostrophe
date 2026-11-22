@@ -6,17 +6,19 @@ const helpers = require('./lib/helpers');
 
 // When and how the AI works with Global Styles, once the site has any
 const AI_WHEN = 'The site-wide design: colors, fonts, spacing and the like on every page.';
-const AI_HOW = 'Change Global Styles in their own window: open it with open_editor on the ' +
-  'Global Styles document, then set every value the request needs with ' +
-  'edit_open_document, in as few calls as you can; the page restyles as each value ' +
+// For both doors: the content and its rules
+const AI_HOW = 'Say what the fields can\'t express (a gradient where a field takes one ' +
+  'color, say) rather than settling quietly for something close. The look of one widget ' +
+  'is that widget\'s own style fields, changed with update_document, not Global Styles.';
+// The assistant's own procedure: the window and the gate before a direct write
+const AI_HOW_ASSISTANT = 'Change Global Styles in their own window: open it with ' +
+  'open_editor on the Global Styles document, then set every value the request needs ' +
+  'with edit_open_document, in as few calls as you can; the page restyles as each value ' +
   'lands. Nothing is live until the user presses "Update Global Styles", which makes it ' +
   'live at once, and Cancel throws it away: say so in the reply. The window edits the ' +
-  'locale of the page shown. Say what the fields can\'t express (a gradient where a field ' +
-  'takes one color, say) rather than settling quietly for something close. The look of ' +
-  'one widget is that widget\'s own style fields, changed with update_document, not ' +
-  'Global Styles. Write Global Styles with update_document only when the user asks for ' +
-  'the change to go live at once or in other locales; that call asks the user itself ' +
-  'before it writes, so don\'t ask beforehand.';
+  'locale of the page shown. Write Global Styles with update_document only when the user ' +
+  'asks for the change to go live at once or in other locales; that call asks the user ' +
+  'itself before it writes, so don\'t ask beforehand.';
 
 module.exports = {
   extend: '@apostrophecms/piece-type',
@@ -87,6 +89,7 @@ module.exports = {
     if (Object.keys(self.styles).length > 0) {
       self.options.aiWhen ??= AI_WHEN;
       self.options.aiHow ??= AI_HOW;
+      self.options.aiHowAssistant ??= AI_HOW_ASSISTANT;
       self.apos.doc.addContextOperation({
         action: 'reset-styles-position',
         label: 'apostrophe:stylesResetPosition',

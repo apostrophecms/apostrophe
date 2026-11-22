@@ -36,7 +36,7 @@ module.exports = {
             ...[
               ...Object.values(self.apos.doc.managers),
               ...Object.values(self.apos.area.widgetManagers)
-            ].map(manager => [ manager, [ 'aiWhen', 'aiHow' ] ])
+            ].map(manager => [ manager, self.getGuidanceOptionNames() ])
           ];
           for (const [ module, names ] of options) {
             for (const name of names) {

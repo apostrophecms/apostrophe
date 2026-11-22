@@ -477,3 +477,6 @@ function isEmpty(value) {
     (Array.isArray(value) && !value.length) ||
     ((value.metaType === 'area') && !value.items?.length);
 }
+
+// What the model reads of a write, for tests of what each door reads
+module.exports.MODEL_TEXTS = [ LIVE_NOTICE, DRAFT_NOTICE ];

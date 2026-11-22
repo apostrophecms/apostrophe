@@ -30,8 +30,8 @@ const HINTS = {
   area: 'An area changes through add_widgets, move_widgets and remove_widgets.',
   notfound: 'No widget or item with that id in this document; get_document lists them.',
   ambiguous: 'The id is held more than once in this document.',
-  archived: 'The assistant doesn\'t archive or restore documents; an editor does.',
-  type: 'The assistant doesn\'t change the type of a document; an editor does.',
+  archived: 'No tool archives or restores documents; an editor does.',
+  type: 'No tool changes the type of a document; an editor does.',
   inside: 'A widget can\'t go into an area of its own or of another widget it moves with.',
   styles: 'Global Styles are not changed with update_document.'
 };
@@ -1262,3 +1262,12 @@ module.exports = (self) => {
     }
   }
 };
+
+// What the model reads of a refusal or a write, for tests of what each door reads
+module.exports.MODEL_TEXTS = [
+  ...Object.values(HINTS),
+  ...Object.values(ROOT_HINTS).flatMap(Object.values),
+  MIXED_NOTICE,
+  EDITOR_NOTICE,
+  NOOP_NOTICE
+];

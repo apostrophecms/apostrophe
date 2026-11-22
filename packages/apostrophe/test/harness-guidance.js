@@ -2,7 +2,8 @@ const assert = require('assert').strict;
 const t = require('../test-lib/test.js');
 
 // Guidance: the instructions both doors send, in their fixed order, and the
-// `aiWhen` and `aiHow` of types, field types and fields.
+// `aiWhen` and `aiHow` of types, field types and fields, with a type's own
+// procedure for each door (`aiHowAssistant`, `aiHowMcp`).
 
 describe('Harness: guidance and language', function () {
   this.timeout(t.timeout);
@@ -64,7 +65,14 @@ describe('Harness: guidance and language', function () {
         'guide-event': {
           extend: '@apostrophecms/piece-type',
           options: {
-            aiHow: 'Give every event a start date.'
+            aiHow: 'Give every event a start date.',
+            aiHowAssistant: 'Show the event on the page once it is written.'
+          }
+        },
+        'guide-menu': {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            aiHowMcp: 'Read the dishes before the prices.'
           }
         },
         'guide-secret': {
@@ -191,8 +199,9 @@ describe('Harness: guidance and language', function () {
       assert.equal(instructions.includes('Give every event a start date.'), false);
       assert.equal(instructions.includes('Open with what the reader'), false);
       assert.equal(instructions.includes('guide-secret'), false);
+      // One definition for both doors: every type with guidance for either
       assert.deepEqual(input.properties.types.items.enum, [
-        '@apostrophecms/layout', 'guide-article', 'guide-event'
+        '@apostrophecms/layout', 'guide-article', 'guide-event', 'guide-menu'
       ]);
       assert.deepEqual(await run('get_guidance', { types: [ 'guide-event' ] }), {
         guidance: [ {
@@ -202,18 +211,67 @@ describe('Harness: guidance and language', function () {
       });
     });
 
-    it('should print with their size for developers', async function () {
+    it('should give a type\'s guidance for both doors, then the door\'s own', async function () {
+      const read = async (door, type) => {
+        const { guidance } = await run('get_guidance', { types: [ type ] }, doorReq(door));
+        return guidance[0].aiHow;
+      };
+
+      assert.equal(
+        await read('assistant', 'guide-event'),
+        'Give every event a start date.\n\nShow the event on the page once it is written.'
+      );
+      assert.equal(await read('mcp', 'guide-event'), 'Give every event a start date.');
+      assert.equal(await read('mcp', 'guide-menu'), 'Read the dishes before the prices.');
+      assert.equal(await read('assistant', 'guide-menu'), null);
+      assert.equal(
+        (await run('get_guidance', { types: [ 'guide-event' ] })).guidance[0].aiHow,
+        'Give every event a start date.'
+      );
+    });
+
+    it('should mark a type only for the doors it has guidance for', function () {
+      const assistant = apos.harness.getInstructions(doorReq('assistant'));
+      const mcp = apos.harness.getInstructions(doorReq('mcp'));
+      const plain = apos.harness.getInstructions(userReq());
+
+      for (const instructions of [ assistant, mcp, plain ]) {
+        assert(instructions.includes('\nguide-event (aiHow)\n'));
+        assert.equal(instructions.includes('Show the event on the page'), false);
+      }
+      assert(mcp.includes('\nguide-menu (aiHow)\n'));
+      assert.equal(assistant.includes('guide-menu'), false);
+      assert.equal(plain.includes('guide-menu'), false);
+    });
+
+    it('should print each door\'s with their size for developers', async function () {
       const printed = await captureLog(() => apos.task.invoke(
         '@apostrophecms/harness:print-instructions'
       ));
-      const instructions = apos.harness.getInstructions(apos.task.getReq());
+      const printedMcp = await captureLog(() => apos.task.invoke(
+        '@apostrophecms/harness:print-instructions',
+        { door: 'mcp' }
+      ));
+      const [ assistant, mcp ] = [ 'assistant', 'mcp' ].map(door => {
+        const instructions = apos.harness.getInstructions(apos.harness.withDoor(
+          apos.task.getReq(),
+          {
+            door,
+            lockId: 'print-instructions',
+            requestId: 'print-instructions'
+          }
+        ));
+        return `# ${door}: ${instructions.length} characters, before the door's own ` +
+          `sections\n\n${instructions}`;
+      });
 
-      assert.equal(
-        printed,
-        `# Instructions: ${instructions.length} characters, before each door's own sections\n\n` +
-          instructions
-      );
-      assert(printed.includes('\nguide-page: A landing page for a campaign.'));
+      assert.equal(printed, `${assistant}\n\n${mcp}`);
+      assert.equal(printedMcp, mcp);
+      assert(mcp.includes('\nguide-menu (aiHow)\n'));
+      await assert.rejects(apos.task.invoke(
+        '@apostrophecms/harness:print-instructions',
+        { door: 'other' }
+      ), { name: 'invalid' });
     });
 
     it('should name the admin UI language for a message with none of its own', function () {
@@ -347,6 +405,14 @@ describe('Harness: guidance and language', function () {
           }
         }
       }, /"bad-guide" module's aiHow option must be a string/);
+      await failsToBoot({
+        'bad-guide': {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            aiHowMcp: { steps: [ 'Read first.' ] }
+          }
+        }
+      }, /"bad-guide" module's aiHowMcp option must be a string/);
     });
 
     it('should refuse a field\'s or field type\'s aiHow that is not a string', async function () {

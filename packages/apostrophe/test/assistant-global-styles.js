@@ -119,12 +119,36 @@ describe('Assistant: Global Styles', function () {
     script = null;
   });
 
-  it('marks Global Styles as having rules, the window first', function () {
-    const req = userReq(editor);
-    assert.match(apos.harness.getSiteInstructions(req),
-      /^@apostrophecms\/styles: The site-wide design: .* \(aiHow\)$/m);
-    assert.match(apos.modules['@apostrophecms/styles'].options.aiHow,
-      /^Change Global Styles in their own window: open it with open_editor/);
+  it('marks Global Styles as having rules, the window for the assistant only', function () {
+    const [ assistant, mcp ] = [ 'assistant', 'mcp' ].map(door => apos.harness.withDoor(
+      userReq(editor),
+      {
+        door,
+        lockId: `${door}-test`,
+        requestId: `${door}-request`
+      }
+    ));
+    const shared = 'Say what the fields can\'t express (a gradient where a field takes one ' +
+      'color, say) rather than settling quietly for something close. The look of one ' +
+      'widget is that widget\'s own style fields, changed with update_document, not ' +
+      'Global Styles.';
+
+    for (const req of [ assistant, mcp ]) {
+      assert.match(apos.harness.getSiteInstructions(req),
+        /^@apostrophecms\/styles: The site-wide design: .* \(aiHow\)$/m);
+    }
+    assert.equal(apos.harness.getTypeGuidance('@apostrophecms/styles', 'mcp'), shared);
+    assert.equal(
+      apos.harness.getTypeGuidance('@apostrophecms/styles', 'assistant'),
+      `${shared}\n\nChange Global Styles in their own window: open it with open_editor on ` +
+        'the Global Styles document, then set every value the request needs with ' +
+        'edit_open_document, in as few calls as you can; the page restyles as each value ' +
+        'lands. Nothing is live until the user presses "Update Global Styles", which makes ' +
+        'it live at once, and Cancel throws it away: say so in the reply. The window edits ' +
+        'the locale of the page shown. Write Global Styles with update_document only when ' +
+        'the user asks for the change to go live at once or in other locales; that call ' +
+        'asks the user itself before it writes, so don\'t ask beforehand.'
+    );
   });
 
   describe('a direct write', function () {
