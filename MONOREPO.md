@@ -286,7 +286,7 @@ pnpm changeset
 
 It will ask you which packages have been updated by your work. Select each package of interest by pressing the spacebar.
 
-It will then ask what kind of change you made for each package (major / minor / patch). Select "major" only for backwards compatibility breaks - such changes likely will not be accepted without serious consultation. Select "major" for any feature addition. "Patch" for fixes only.
+It will then ask what kind of change you made for each package (major / minor / patch). Select "major" only for backwards compatibility breaks - such changes likely will not be accepted without serious consultation. Select "minor" for any feature addition. "Patch" for fixes only.
 
 Finally, it will ask for a summary (this will be the changelog entry).
 
