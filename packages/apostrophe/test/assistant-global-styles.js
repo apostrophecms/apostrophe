@@ -121,7 +121,8 @@ describe('Assistant: Global Styles', function () {
 
   it('marks Global Styles as having rules, the window first', function () {
     const req = userReq(editor);
-    assert.match(apos.harness.getSiteInstructions(req), /^@apostrophecms\/styles \(aiHow\)$/m);
+    assert.match(apos.harness.getSiteInstructions(req),
+      /^@apostrophecms\/styles: The site-wide design: .* \(aiHow\)$/m);
     assert.match(apos.modules['@apostrophecms/styles'].options.aiHow,
       /^Change Global Styles in their own window: open it with open_editor/);
   });
@@ -224,6 +225,30 @@ describe('Assistant: Global Styles', function () {
       assert.equal(output.pageLocaleWritten, true);
       for (const locale of [ 'en', 'fr', 'de' ]) {
         assert.equal(await getAccent(locale), '#333333', locale);
+      }
+    });
+
+    it('is taken back in every locale by one Revert', async function () {
+      const req = userReq(editor);
+      const chat = await apos.assistant.createChat(req);
+      const before = {};
+      for (const locale of [ 'en', 'fr', 'de' ]) {
+        before[locale] = await getAccent(locale);
+      }
+      script = sequence([
+        updateTurn([ styles.en, styles.fr, styles.de ], '#3a3a3a'),
+        { text: 'Changed in every locale.' }
+      ]);
+      await runToEnd(req, chat, 'Darker accent in all locales');
+      await apos.assistant.answer(req, chat._id, {
+        tabId: 'tab-1',
+        callId: 'call-update',
+        answer: { approved: true }
+      });
+      const done = await waitForEnd(req, chat);
+      assert.equal(await revertRequest(done), 'done');
+      for (const locale of [ 'en', 'fr', 'de' ]) {
+        assert.equal(await getAccent(locale), before[locale], locale);
       }
     });
 
@@ -363,6 +388,142 @@ describe('Assistant: Global Styles', function () {
     });
   });
 
+  describe('a save from the window', function () {
+    let jar;
+
+    before(async function () {
+      jar = await t.loginAs(apos, 'editor');
+    });
+
+    it('is recorded as the request\'s rows with the AI mark, and Revert puts the values and the stylesheet back', async function () {
+      const request = await endedRequest();
+      const draft = await getWindowDraft();
+      const before = draft.accentColor;
+      await saveFromWindow(draft, {
+        accentColor: '#0a7d32',
+        radius: 12
+      }, request);
+
+      const entries = await apos.harness.changes
+        .find({
+          requestId: request._id,
+          docId: draft._id
+        })
+        .toArray();
+      assert.equal(entries.length, 1);
+      assert.deepEqual(entries[0].rows.map(pathOf), [ 'accentColor' ]);
+      const req = userReq(editor);
+      const published = await apos.doc.db.findOne({
+        _id: draft._id.replace(':draft', ':published')
+      });
+      assert.equal(published.accentColor, '#0a7d32');
+      const { results } = await apos.docVersions.getTimelinePage(
+        req,
+        apos.docVersions.getTimelineCriteria(published)
+      );
+      assert.equal(results[0].ai, true);
+      const { rows } = await apos.docVersions.getVersionChanges(req, results[0]._id);
+      assert.deepEqual(
+        rows.filter(row => [ 'accentColor', 'radius' ].includes(pathOf(row))).map(aiOf),
+        [ [ 'accentColor', 'changed' ], [ 'radius', false ] ]
+      );
+      assert.match(await getStylesheet('draft'), /#0a7d32/);
+      assert.match(await getStylesheet('published'), /#0a7d32/);
+
+      assert.equal(await revertRequest(request), 'done');
+      for (const mode of [ 'draft', 'published' ]) {
+        const doc = await apos.doc.db.findOne({
+          _id: draft._id.replace(':draft', `:${mode}`)
+        });
+        assert.equal(doc.accentColor, before, mode);
+        // The editor's own value stays
+        assert.equal(doc.radius, 12, mode);
+        assert.doesNotMatch(await getStylesheet(mode), /#0a7d32/, mode);
+      }
+    });
+
+    it('leaves Global Styles to a revert while the window is open', async function () {
+      const request = await endedRequest();
+      const draft = await getWindowDraft();
+      await saveFromWindow(draft, { accentColor: '#7d0a32' }, request);
+      const checked = await apos.assistant.checkRevert(userReq(editor), request.chatId, {
+        requestId: request._id,
+        tabId: 'tab-1',
+        screen: withWindow()
+      });
+      const planned = checked.documents.find(document => document.docId === draft._id);
+      assert.equal(planned.outcome, 'locked');
+      assert.equal(planned.reason, 'editor');
+    });
+
+    it('is restored from Document Versions, with the stylesheet', async function () {
+      const draft = await getWindowDraft();
+      await saveFromWindow(draft, { accentColor: '#101010' });
+      const marked = await getWindowDraft();
+      await saveFromWindow(marked, { accentColor: '#202020' });
+      const published = await apos.doc.db.findOne({
+        _id: draft._id.replace(':draft', ':published')
+      });
+      const versions = await apos.docVersions.find(
+        userReq(editor),
+        apos.docVersions.getTimelineCriteria(published)
+      );
+      const version = versions.find(item => item.doc.accentColor === '#101010');
+      await apos.http.put(`/api/v1/@apostrophecms/styles/${draft._id}`, {
+        jar,
+        body: {
+          ...version.doc,
+          _restoreVersion: version._id
+        }
+      });
+      assert.equal((await getWindowDraft()).accentColor, '#101010');
+      assert.match(await getStylesheet('published'), /#101010/);
+      const [ latest ] = await apos.docVersions.find(
+        userReq(editor),
+        apos.docVersions.getTimelineCriteria(published)
+      );
+      assert.equal(latest.restoredFrom?._id, version._id);
+    });
+
+    // What the window holds, as it reads it
+    async function getWindowDraft() {
+      const { results } = await apos.http.get('/api/v1/@apostrophecms/styles', {
+        jar,
+        qs: { aposMode: 'draft' }
+      });
+      return results[0];
+    }
+
+    // Update in the window: its values, with what the request wrote in it
+    function saveFromWindow(draft, values, request = null) {
+      return apos.http.put(`/api/v1/@apostrophecms/styles/${draft._id}`, {
+        jar,
+        body: {
+          ...draft,
+          ...values,
+          ...(request && {
+            _outside: {
+              tabId: 'tab-1',
+              parts: [ {
+                marker: { requestId: request._id },
+                fields: [ 'accentColor' ]
+              } ]
+            }
+          })
+        }
+      });
+    }
+
+    async function getStylesheet(mode) {
+      const global = await apos.doc.db.findOne({
+        type: '@apostrophecms/global',
+        aposLocale: `en:${mode}`
+      });
+      return global.stylesStylesheet || '';
+    }
+
+  });
+
   // A screen with the Global Styles window open on an English page
   function withWindow(extra = {}) {
     return {
@@ -395,6 +556,32 @@ describe('Assistant: Global Styles', function () {
       aposLocale: `${locale}:draft`
     });
     return doc.accentColor;
+  }
+
+  async function revertRequest(request) {
+    const req = userReq(editor);
+    const started = await apos.assistant.revert(req, request.chatId, {
+      requestId: request._id,
+      tabId: 'tab-1'
+    });
+    await waitFor(async () => {
+      const stored = await apos.assistant.getRevert(req, started._id);
+      const job = stored.jobId &&
+        await apos.modules['@apostrophecms/job'].db.findOne({ _id: stored.jobId });
+      return (stored.status !== 'running') && (!job || job.ended);
+    });
+    return (await apos.assistant.getRevert(req, started._id)).status;
+  }
+
+  // A request of a new chat, ended
+  async function endedRequest() {
+    const req = userReq(editor);
+    const chat = await apos.assistant.createChat(req);
+    await apos.assistant.send(req, chat._id, {
+      message: 'Hello',
+      screen: { tabId: 'tab-1' }
+    });
+    return waitForEnd(req, chat);
   }
 
   function userReq(user) {
@@ -431,6 +618,14 @@ describe('Assistant: Global Styles', function () {
     return () => queue.shift() || { text: 'Done.' };
   }
 });
+
+function pathOf(row) {
+  return row.path.map(segment => segment.name).join('.');
+}
+
+function aiOf(row) {
+  return [ pathOf(row), row.ai ];
+}
 
 function resultOf(request, callId) {
   return request.messages

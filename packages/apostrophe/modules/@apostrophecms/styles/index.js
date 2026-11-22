@@ -4,12 +4,18 @@ const handlers = require('./lib/handlers');
 const apiRoutes = require('./lib/apiRoutes');
 const helpers = require('./lib/helpers');
 
-// How the AI works with Global Styles, once the site has any
+// When and how the AI works with Global Styles, once the site has any
+const AI_WHEN = 'The site-wide design: colors, fonts, spacing and the like on every page.';
 const AI_HOW = 'Change Global Styles in their own window: open it with open_editor on the ' +
-  'Global Styles document, then set the values with edit_open_document; the page ' +
-  'restyles as each value lands, and the user saves or cancels. It edits the locale of ' +
-  'the page shown. Write them with update_document only when the user asks for the ' +
-  'change to go live at once or in other locales; the user is asked first.';
+  'Global Styles document, then set every value the request needs with ' +
+  'edit_open_document, in as few calls as you can; the page restyles as each value ' +
+  'lands. Nothing is live until the user presses "Update Global Styles", which makes it ' +
+  'live at once, and Cancel throws it away: say so in the reply. The window edits the ' +
+  'locale of the page shown. Say what the fields can\'t express (a gradient where a field ' +
+  'takes one color, say) rather than settling quietly for something close. The look of ' +
+  'one widget is that widget\'s own style fields, changed with update_document, not ' +
+  'Global Styles. Write Global Styles with update_document only when the user asks for ' +
+  'the change to go live at once or in other locales; the user is asked first.';
 
 module.exports = {
   extend: '@apostrophecms/piece-type',
@@ -78,6 +84,7 @@ module.exports = {
     self.styleCheckIfConditions = checkIfConditions;
 
     if (Object.keys(self.styles).length > 0) {
+      self.options.aiWhen ??= AI_WHEN;
       self.options.aiHow ??= AI_HOW;
       self.apos.doc.addContextOperation({
         action: 'reset-styles-position',
