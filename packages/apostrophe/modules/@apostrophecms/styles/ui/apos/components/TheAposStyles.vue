@@ -487,7 +487,10 @@ export default {
         this.ssrTimeout = null;
         this.ssrBusy = true;
         try {
+          // In the mode the values were read in: the server reads their
+          // relationships by the draft ids they carry
           const { css, classes } = await apos.http.post(`${this.moduleOptions.action}/render`, {
+            draft: true,
             body: {
               data: this.docFields.data
             }
