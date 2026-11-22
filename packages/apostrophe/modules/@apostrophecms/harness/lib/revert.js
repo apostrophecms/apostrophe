@@ -55,6 +55,8 @@ module.exports = (self) => {
      *   one its newest entry stored. With `dryRun`, a created document has
      *   `rows` whatever its outcome, and `createdRows`, its creation's rows
      *   checked the same way, `putBack` meaning still as created.
+     *
+     * Emits `beforeRevert` with `requestIds` before a revert that writes.
      */
     async revertRequests(req, requestIds, {
       dryRun = false, ignoreLocks = false, docIds = null, onProgress = null, isHeld = null
@@ -62,6 +64,11 @@ module.exports = (self) => {
       const door = self.getDoor(req);
       if (!door?.revert) {
         throw self.apos.error('invalid', 'a revert needs the door context of a revert');
+      }
+      // Before any document is written: what the requests left beside the
+      // change log goes even when the revert stops halfway
+      if (!dryRun) {
+        await self.emit('beforeRevert', req, requestIds);
       }
       const entries = await self.changes
         .find({
@@ -363,6 +370,9 @@ module.exports = (self) => {
             .project({ _id: 1 })
             .toArray();
           return referrers.some(({ _id }) => {
+            if (removed.has(_id)) {
+              return false;
+            }
             const after = planned.get(_id);
             return !after ||
               after.manager.getRelatedDocsIds(req, after.doc).includes(doc.aposDocId);

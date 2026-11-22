@@ -1,8 +1,9 @@
 // What this module gives the AI doors (the assistant, the MCP server), as
 // `content` tools of the harness: no model runs here. A door's own model
 // localizes with the harness's document tools; these tell it where two
-// copies of a document stand. Registered only in a project with several
-// locales.
+// copies of a document stand, make a document's copy in another locale and
+// record a localization once it is done. Registered only in a project with
+// several locales.
 
 // Characters of the result budget kept for what stands beside the lists
 const HEADROOM = 600;
@@ -11,6 +12,15 @@ const VERSIONS_NOTE = 'The lists come from version history and may hold changes 
   'target already has; check before writing.';
 const UNTRANSLATED_NOTE = 'The copy was made for a localization that never finished: its ' +
   'text may still be in the source language. The lists are since that copy.';
+
+// Why a copy into a locale, or its record, is refused, as the model reads it
+const EXISTS = 'The document has a copy in this locale already, and a copy is never ' +
+  'replaced; get_localization compares the two.';
+const PARENT_MISSING = 'Its parent page has no copy in this locale; localize the parent first.';
+const NO_COPY = 'The document has no copy in this locale; localize_document makes one.';
+const UNREAD = 'The source was saved since you last read it, or you haven\'t read it: read ' +
+  'it with get_localization, check nothing new is left to carry over, then record.';
+const MAY_NOT_RECORD = 'The user may not edit the copy in this locale.';
 
 module.exports = (self) => {
   return {
@@ -72,6 +82,314 @@ module.exports = (self) => {
         kind: 'query',
         handler: '@apostrophecms/ai-localize:getLocalization'
       });
+      const targetLocales = description => ({
+        type: 'array',
+        items: {
+          type: 'string',
+          enum: locales
+        },
+        minItems: 1,
+        uniqueItems: true,
+        description
+      });
+      self.apos.ai.addTool({
+        name: 'localize_document',
+        label: 'apostrophe:aiToolLocalizeDocument',
+        description: 'Make a document\'s copy in each locale given where it has none: the ' +
+          'same document in the same place, its content in the source language until ' +
+          'translated with update_document, then record_localization. Never replaces a ' +
+          'copy. A page needs its parent\'s copy there.',
+        input: {
+          type: 'object',
+          properties: {
+            _id: {
+              type: 'string',
+              minLength: 1,
+              description: 'A document id: the source'
+            },
+            locales: targetLocales('The locales to copy it into'),
+            related: {
+              type: 'boolean',
+              default: false,
+              description: 'First copy the documents it relates to, such as images, that ' +
+                'have no copy there, so it keeps them'
+            }
+          },
+          required: [ '_id', 'locales' ],
+          additionalProperties: false
+        },
+        tags: [ 'content' ],
+        kind: 'action',
+        handler: '@apostrophecms/ai-localize:localizeDocument'
+      });
+      self.apos.ai.addTool({
+        name: 'record_localization',
+        label: 'apostrophe:aiToolRecordLocalization',
+        description: 'Record that the copies in these locales are in line with the source ' +
+          'as you last read it: get_localization compares from here on. Only once every ' +
+          'source change is carried over, never for part of a document. Refused when the ' +
+          'source was saved since your last read.',
+        input: {
+          type: 'object',
+          properties: {
+            _id: {
+              type: 'string',
+              minLength: 1,
+              description: 'A document id: the source'
+            },
+            locales: targetLocales('The locales of the copies brought in line')
+          },
+          required: [ '_id', 'locales' ],
+          additionalProperties: false
+        },
+        tags: [ 'content' ],
+        kind: 'action',
+        handler: '@apostrophecms/ai-localize:recordLocalization'
+      });
+    },
+
+    // Whether core would refuse to copy a page into `locale` for want of
+    // its parent's copy there
+    async isParentMissing(doc, locale) {
+      if (!self.apos.page.isPage(doc) || !doc.level) {
+        return false;
+      }
+      return !await self.apos.doc.db.findOne({
+        path: self.apos.page.getParentPath(doc),
+        aposLocale: `${locale}:draft`
+      }, { projection: { _id: 1 } });
+    },
+
+    async localizeDocument(req, {
+      _id, locales, related = false
+    }) {
+      const { harness } = self.apos;
+      const found = await harness.findReadable(req, _id);
+      const from = checkLocales(self, found.doc, locales);
+      const manager = self.apos.doc.getManager(found.doc.type);
+      const source = await self.docModuleFor(manager)
+        .findForEditing(found.draftReq, { _id: found.doc._id })
+        .toObject();
+      if (!source || !self.apos.ai.can(found.draftReq, 'edit', source)) {
+        throw self.apos.error('aiToolError', 'The user may not edit this document, so it ' +
+          'can\'t be localized.');
+      }
+      const written = [];
+      const refused = [];
+      for (const locale of locales) {
+        const refusal = await getRefusal(source, locale);
+        if (refusal) {
+          refused.push(refusal);
+          continue;
+        }
+        if (related) {
+          for (const other of await getMissingRelated(locale)) {
+            await localize(other, locale, { related: true });
+          }
+        }
+        await localize(source, locale);
+      }
+      return harness.getWriteResult({
+        written,
+        refused
+      });
+
+      // Why the copy of `doc` into `locale` would be refused, `null` when
+      // nothing says so before trying
+      async function getRefusal(doc, locale, more = {}) {
+        const header = {
+          title: doc.title,
+          locale,
+          ...more
+        };
+        const existing = await self.storedDraft(`${doc.aposDocId}:${locale}:draft`);
+        if (existing) {
+          return {
+            _id: existing._id,
+            ...header,
+            reason: 'exists',
+            message: EXISTS
+          };
+        }
+        if (await self.isParentMissing(doc, locale)) {
+          return {
+            ...header,
+            reason: 'parentMissing',
+            message: PARENT_MISSING
+          };
+        }
+        if (!self.apos.ai.can(found.draftReq.clone({ locale }), 'create', doc.type, 'draft')) {
+          return {
+            ...header,
+            ...harness.describeRefusal(self.apos.error('forbidden', { create: true }))
+          };
+        }
+        return null;
+      }
+
+      async function localize(doc, locale, more = {}) {
+        const refusal = more.related && await getRefusal(doc, locale, more);
+        if (refusal) {
+          refused.push(refusal);
+          return;
+        }
+        let copy;
+        try {
+          copy = await self.localizeUntranslated(req, doc, locale);
+        } catch (e) {
+          refused.push({
+            title: doc.title,
+            locale,
+            ...more,
+            ...describeError(e)
+          });
+          return;
+        }
+        const copyReq = req.clone({
+          locale,
+          mode: 'draft'
+        });
+        // Read back for the URL the type's own query adds
+        const loaded = await self.apos.doc.getManager(copy.type)
+          .find(copyReq, { _id: copy._id })
+          .relationships(false)
+          .toObject();
+        written.push({
+          _id: copy._id,
+          title: copy.title,
+          type: copy.type,
+          locale,
+          slug: copy.slug,
+          ...(loaded?._url && { url: loaded._url }),
+          ...harness.getPublishState(copy.type),
+          ...more,
+          doc: copy
+        });
+      }
+
+      // The documents the source relates to, in its locale, that the user
+      // may read and that have no copy in `locale`, as core's Localize finds
+      // them: only types that are localized and not kept out of related
+      // documents
+      async function getMissingRelated(locale) {
+        const ids = manager.getRelatedDocsIds(found.draftReq, source);
+        if (!ids.length) {
+          return [];
+        }
+        const copied = new Set((await self.apos.doc.db
+          .find({
+            aposDocId: { $in: ids },
+            aposLocale: `${locale}:draft`
+          })
+          .project({ aposDocId: 1 })
+          .toArray())
+          .map(doc => doc.aposDocId));
+        const missing = ids.filter(id => !copied.has(id));
+        const docs = [];
+        for (const aposDocId of [ ...new Set(missing) ]) {
+          const stored = await self.apos.doc.db.findOne({
+            aposDocId,
+            aposLocale: `${from}:draft`
+          }, { projection: { type: 1 } });
+          const relatedManager = stored && self.apos.doc.getManager(stored.type);
+          if (!relatedManager?.isLocalized() ||
+            (relatedManager.options.relatedDocument === false)) {
+            continue;
+          }
+          const doc = await self.docModuleFor(relatedManager)
+            .findForEditing(found.draftReq, { _id: stored._id })
+            .permission('view')
+            .toObject();
+          if (doc && self.apos.ai.can(found.draftReq, 'view', doc)) {
+            docs.push(doc);
+          }
+        }
+        return docs;
+      }
+
+      function describeError(e) {
+        if (e.data?.parentNotLocalized) {
+          return {
+            reason: 'parentMissing',
+            message: PARENT_MISSING
+          };
+        }
+        if (e.name === 'conflict') {
+          return {
+            reason: 'exists',
+            message: EXISTS
+          };
+        }
+        if ([ 'forbidden', 'locked', 'invalid', 'notfound' ].includes(e.name)) {
+          return harness.describeRefusal(e);
+        }
+        throw e;
+      }
+    },
+
+    async recordLocalization(req, { _id, locales }) {
+      const { harness } = self.apos;
+      const { doc, draftReq } = await harness.findReadable(req, _id);
+      const from = checkLocales(self, doc, locales);
+      const written = [];
+      const refused = [];
+      for (const locale of locales) {
+        const targetId = `${doc.aposDocId}:${locale}:draft`;
+        // Read for each locale: a record says what the source was as read
+        const source = await self.storedDraft(doc._id);
+        const target = await self.storedDraft(targetId);
+        const header = {
+          title: doc.title,
+          locale
+        };
+        if (!target) {
+          refused.push({
+            ...header,
+            reason: 'notfound',
+            message: NO_COPY
+          });
+          continue;
+        }
+        const targetReq = draftReq.clone({ locale });
+        if (!self.apos.ai.can(targetReq, 'edit', target)) {
+          refused.push({
+            _id: targetId,
+            ...header,
+            reason: 'forbidden',
+            message: MAY_NOT_RECORD
+          });
+          continue;
+        }
+        const seen = harness.getDoor(req)?.seen.get(source._id);
+        if (!seen || (new Date(seen).getTime() !== source.updatedAt?.getTime())) {
+          refused.push({
+            _id: targetId,
+            ...header,
+            reason: 'changed',
+            message: UNREAD
+          });
+          continue;
+        }
+        const record = await self.insertRecord(req, {
+          aposDocId: doc.aposDocId,
+          from,
+          to: locale,
+          via: 'ai',
+          source,
+          target
+        });
+        written.push({
+          _id: targetId,
+          title: target.title,
+          type: target.type,
+          locale,
+          since: record.at
+        });
+      }
+      return {
+        written,
+        ...(refused.length && { refused })
+      };
     },
 
     async getLocalization(req, {
@@ -99,7 +417,7 @@ module.exports = (self) => {
         return {
           ...header,
           state: 'missing',
-          ...(await isParentMissing() && { parentMissing: true })
+          ...(await self.isParentMissing(doc, locale) && { parentMissing: true })
         };
       }
       const target = await findTarget();
@@ -180,17 +498,6 @@ module.exports = (self) => {
         targetChanges: targetPage.rows,
         ...(more && { next: next.join(':') })
       };
-
-      // Core refuses to copy a page whose parent has no copy in the locale
-      async function isParentMissing() {
-        if (!self.apos.page.isPage(doc) || !doc.level) {
-          return false;
-        }
-        return !await self.apos.doc.db.findOne({
-          path: self.apos.page.getParentPath(doc),
-          aposLocale: `${locale}:draft`
-        }, { projection: { _id: 1 } });
-      }
 
       // The copy as the user reads it; one the user can't read is no copy
       // to compare with, and not a missing one either
@@ -304,6 +611,20 @@ module.exports = (self) => {
   };
 };
 
+// The locale of `doc`, the source of a copy into each of `locales`; a tool
+// error the model can act on when it has none or is among them
+function checkLocales(self, doc, locales) {
+  const from = self.apos.harness.getLocaleOf(doc);
+  if (!from) {
+    throw self.apos.error('aiToolError', 'Documents of this type exist once, not per locale.');
+  }
+  if (locales.includes(from)) {
+    throw self.apos.error('aiToolError', `The document is the "${from}" copy; name only ` +
+      'other locales.');
+  }
+  return from;
+}
+
 // The names along a row's path: fields, and the ids of widgets and items
 function namesOf(row) {
   return row.path.map(segment => segment.name);
@@ -350,6 +671,14 @@ function withCounterpart(place, otherIndex) {
   };
 }
 
-// What the model reads beside the tool's definition, for tests of what each
+// What the model reads beside the tools' definitions, for tests of what each
 // door reads
-module.exports.MODEL_TEXTS = [ VERSIONS_NOTE, UNTRANSLATED_NOTE ];
+module.exports.MODEL_TEXTS = [
+  VERSIONS_NOTE,
+  UNTRANSLATED_NOTE,
+  EXISTS,
+  PARENT_MISSING,
+  NO_COPY,
+  UNREAD,
+  MAY_NOT_RECORD
+];

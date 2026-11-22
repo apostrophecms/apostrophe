@@ -47,6 +47,11 @@ module.exports = {
         async recordLocalization(req, source, result, options) {
           await self.recordCoreLocalization(req, source, result, options);
         }
+      },
+      '@apostrophecms/harness:beforeRevert': {
+        async deleteRevertedRecords(req, requestIds) {
+          await self.deleteRequestRecords(requestIds);
+        }
       }
     };
   },

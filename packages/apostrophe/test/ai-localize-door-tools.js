@@ -853,6 +853,8 @@ describe('AI Localize: get_localization in a project with one locale', function 
     const names = apos.ai.getTools().map(tool => tool.name);
 
     assert(names.includes('copy_widgets'));
-    assert.equal(names.includes('get_localization'), false);
+    for (const name of [ 'get_localization', 'localize_document', 'record_localization' ]) {
+      assert.equal(names.includes(name), false, name);
+    }
   });
 });

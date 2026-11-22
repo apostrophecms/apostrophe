@@ -7,8 +7,6 @@
 const _ = require('lodash');
 const { klona } = require('klona');
 
-const MIXED_NOTICE = 'Changes with "published": true are live on the site now; the others ' +
-  'are saved in drafts and go live when an editor publishes them.';
 const EDITOR_NOTICE = 'The change is in the open editor, not saved; the user saves or ' +
   'cancels it.';
 const NOOP_NOTICE = 'Nothing changed: the open editor already holds these values.';
@@ -100,7 +98,7 @@ module.exports = (self) => {
         target: found,
         position
       });
-      return getWriteResult(result);
+      return self.getWriteResult(result);
     },
 
     async createPiece(req, {
@@ -114,7 +112,7 @@ module.exports = (self) => {
           values
         }
       );
-      return getWriteResult(result);
+      return self.getWriteResult(result);
     },
 
     async updateDocument(req, { targets }) {
@@ -132,7 +130,7 @@ module.exports = (self) => {
           return buildUpdate(draftReq, indexDocument(draftReq, doc), values).patches;
         }
       })));
-      return getWriteResult(result);
+      return self.getWriteResult(result);
     },
 
     async addWidgets(req, {
@@ -158,7 +156,7 @@ module.exports = (self) => {
           return built.patches;
         }
       } ]);
-      return getWriteResult(result, doc => ({
+      return self.getWriteResult(result, doc => ({
         area,
         widgets: locate(indexDocument(req, doc), added)
       }));
@@ -187,7 +185,7 @@ module.exports = (self) => {
           return built.patches;
         }
       } ]);
-      return getWriteResult(result, doc => ({
+      return self.getWriteResult(result, doc => ({
         area,
         widgets: locate(indexDocument(req, doc), moved)
       }));
@@ -200,7 +198,7 @@ module.exports = (self) => {
           return buildRemove(indexDocument(draftReq, doc), widgets).patches;
         }
       } ]);
-      return getWriteResult(result, () => ({ removed: widgets }));
+      return self.getWriteResult(result, () => ({ removed: widgets }));
     },
 
     async copyWidgets(req, {
@@ -236,7 +234,7 @@ module.exports = (self) => {
           }));
         }
       } ]);
-      return getWriteResult(result, doc => ({
+      return self.getWriteResult(result, doc => ({
         area,
         widgets: locate(indexDocument(req, doc), copies)
           .map((widget, index) => ({
@@ -542,25 +540,6 @@ module.exports = (self) => {
       throw self.apos.error('invalid', `No content root of kind "${kind}".`);
     }
   };
-
-  // The tool result of a write: each document written with where it landed,
-  // and what `extra(doc)` adds for the tool, the refused ones with their
-  // reason, and the sentence the model repeats
-  function getWriteResult({ written, refused }, extra = () => ({})) {
-    const published = new Set(written.map(item => item.published));
-    return {
-      written: written.map(({
-        doc, notice, ...item
-      }) => ({
-        ...item,
-        ...extra(doc)
-      })),
-      ...(refused.length && { refused }),
-      ...(written.length && {
-        notice: (published.size > 1) ? MIXED_NOTICE : written[0].notice
-      })
-    };
-  }
 
   // An `invalid` error naming `errors`, `{ path, name }` each, with the hint
   // the model reads, the root's own where `content` has one
@@ -1366,7 +1345,6 @@ module.exports = (self) => {
 module.exports.MODEL_TEXTS = [
   ...Object.values(HINTS),
   ...Object.values(ROOT_HINTS).flatMap(Object.values),
-  MIXED_NOTICE,
   EDITOR_NOTICE,
   NOOP_NOTICE
 ];
