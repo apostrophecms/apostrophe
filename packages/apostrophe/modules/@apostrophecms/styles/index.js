@@ -15,7 +15,8 @@ const AI_HOW = 'Change Global Styles in their own window: open it with open_edit
   'takes one color, say) rather than settling quietly for something close. The look of ' +
   'one widget is that widget\'s own style fields, changed with update_document, not ' +
   'Global Styles. Write Global Styles with update_document only when the user asks for ' +
-  'the change to go live at once or in other locales; the user is asked first.';
+  'the change to go live at once or in other locales; that call asks the user itself ' +
+  'before it writes, so don\'t ask beforehand.';
 
 module.exports = {
   extend: '@apostrophecms/piece-type',
