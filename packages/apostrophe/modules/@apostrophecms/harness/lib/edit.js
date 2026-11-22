@@ -30,8 +30,7 @@ const HINTS = {
   ambiguous: 'The id is held more than once in this document.',
   archived: 'No tool archives or restores documents; an editor does.',
   type: 'No tool changes the type of a document; an editor does.',
-  inside: 'A widget can\'t go into an area of its own or of another widget it moves with.',
-  styles: 'Global Styles are not changed with update_document.'
+  inside: 'A widget can\'t go into an area of its own or of another widget it moves with.'
 };
 
 // The hints of a widget or array root, where only the root can change until
@@ -119,14 +118,6 @@ module.exports = (self) => {
       const result = await self.writeDocuments(req, targets.map(({ _id, values }) => ({
         _id,
         patch: (doc, manager, draftReq) => {
-          // Only the assistant asks the user before a Global Styles write
-          if (self.apos.instanceOf(manager, '@apostrophecms/styles') &&
-            (self.getDoor(req)?.door !== 'assistant')) {
-            throw refuse([ {
-              path: '_id',
-              name: 'styles'
-            } ]);
-          }
           return getUpdatePatches(draftReq, indexDocument(draftReq, doc), values).patches;
         }
       })));

@@ -9,7 +9,9 @@
 // referencing them are reverted: removed unless published, edited, given
 // children or used elsewhere since. A never-published draft is deleted, as
 // the editor's Discard Draft does; a type that publishes on save or has no
-// drafts is archived.
+// drafts is archived. A copy the requests made of a document into another
+// locale is deleted whatever its type: the document lives on where it was
+// copied from, and an archived copy would stand in the way of the next one.
 
 const _ = require('lodash');
 
@@ -224,9 +226,15 @@ module.exports = (self) => {
             };
             const reason = await getKeepReason(doc, created);
             if (!reason) {
-              const outcome = (self.getPublishing(doc.type) === 'drafts') ? 'deleted' : 'archived';
+              const isDeleted = create.localized ||
+                (self.getPublishing(doc.type) === 'drafts');
+              const outcome = isDeleted ? 'deleted' : 'archived';
               removed.add(doc._id);
-              if (save && (outcome === 'deleted')) {
+              if (save && isDeleted) {
+                if (create.localized) {
+                  // What the copy's own save published goes with it
+                  await manager.unpublish(draftReq, doc);
+                }
                 await self.apos.doc.delete(draftReq, doc);
               } else if (save) {
                 await save([ { archived: true } ]);

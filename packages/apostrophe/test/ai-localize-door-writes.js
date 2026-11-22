@@ -74,6 +74,24 @@ describe('AI Localize: localize_document and record_localization', function () {
           options: {
             localized: false
           }
+        },
+        // Published on save, as images and files are
+        'loc-photo': {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            autopublish: true
+          }
+        },
+        'loc-album': {
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              _photos: {
+                type: 'relationship',
+                withType: 'loc-photo'
+              }
+            }
+          }
         }
       }
     });
@@ -472,6 +490,75 @@ describe('AI Localize: localize_document and record_localization', function () {
     assert.equal(await stored(inLocale(author, 'fr')), null);
     assert.deepEqual(await records(article.aposDocId), []);
     assert.deepEqual(await records(author.aposDocId), []);
+  });
+
+  it('should remove a reverted copy that publishes on save, so the next copy finds nothing in its way', async function () {
+    const photo = await insert('loc-photo', { title: 'A photo' });
+    const album = await insert('loc-album', {
+      title: 'An album',
+      _photos: [ photo ]
+    });
+    const copy = () => run('localize_document', {
+      _id: album._id,
+      locales: [ 'fr' ],
+      related: true
+    }, req);
+    const published = doc => inLocale(doc, 'fr').replace(':draft', ':published');
+    let req = door();
+
+    await copy();
+    await apos.harness.endRequest(req);
+    const live = await stored(published(photo));
+    const entry = await apos.harness.changes.findOne({
+      requestId: apos.harness.getDoor(req).requestId,
+      docId: inLocale(photo, 'fr')
+    });
+    const dry = await revert(req, true);
+    const done = await revert(req);
+
+    assert.equal(live.title, 'A photo');
+    assert.equal(entry.effect, 'create');
+    assert.equal(entry.localized, true);
+    for (const outcomes of [ dry, done ]) {
+      assert.deepEqual(outcomes.map(item => [ item.docId, item.outcome ]).sort(), [
+        [ inLocale(album, 'fr'), 'deleted' ],
+        [ inLocale(photo, 'fr'), 'deleted' ]
+      ].sort());
+    }
+    assert.equal(await stored(inLocale(photo, 'fr')), null);
+    assert.equal(await stored(published(photo)), null);
+    assert.equal((await stored(photo._id)).archived, false);
+    assert.equal((await stored(photo._id.replace(':draft', ':published'))).title, 'A photo');
+
+    req = door();
+    const again = await copy();
+
+    assert.deepEqual(again.written.map(item => [ item._id, Boolean(item.related) ]), [
+      [ inLocale(photo, 'fr'), true ],
+      [ inLocale(album, 'fr'), false ]
+    ]);
+    const loaded = await apos.modules['loc-album']
+      .find(userReq('ann', { locale: 'fr' }), { _id: inLocale(album, 'fr') })
+      .toObject();
+    assert.deepEqual(loaded._photos.map(doc => doc._id), [ inLocale(photo, 'fr') ]);
+  });
+
+  it('should still archive a reverted document the request created itself, when it publishes on save', async function () {
+    const req = door();
+    const created = await run('create_piece', {
+      type: 'loc-photo',
+      title: 'A new photo'
+    }, req);
+    await apos.harness.endRequest(req);
+    const entry = await apos.harness.changes.findOne({
+      requestId: apos.harness.getDoor(req).requestId
+    });
+
+    const done = await revert(req);
+
+    assert.equal(entry.localized, undefined);
+    assert.deepEqual(done.map(item => item.outcome), [ 'archived' ]);
+    assert.equal((await stored(created.written[0]._id)).archived, true);
   });
 
   it('should take back the record of a reverted request that wrote nothing else', async function () {

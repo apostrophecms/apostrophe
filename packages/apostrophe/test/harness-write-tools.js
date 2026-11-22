@@ -822,25 +822,6 @@ describe('Harness: write tools and get_changes', function () {
       assert.equal(stored.archived, false);
       assert.equal((await findDraft(archived._id)).archived, true);
     });
-
-    it('should leave Global Styles to their own tools', async function () {
-      const styles = await apos.doc.db.findOne({
-        type: '@apostrophecms/styles',
-        aposLocale: 'en:draft'
-      });
-
-      const { refused } = await run('update_document', {
-        targets: [ {
-          _id: styles._id,
-          values: { title: 'Styles' }
-        } ]
-      });
-
-      assert.deepEqual(fieldsOf(refused[0]), [ {
-        path: '_id',
-        reason: 'styles'
-      } ]);
-    });
   });
 
   describe('add_widgets', function () {

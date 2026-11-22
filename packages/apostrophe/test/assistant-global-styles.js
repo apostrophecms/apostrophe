@@ -152,7 +152,7 @@ describe('Assistant: Global Styles', function () {
   });
 
   describe('a direct write', function () {
-    it('is refused outside the assistant\'s door, with the hint', async function () {
+    it('is written at once through the MCP door, which has no gate', async function () {
       const mcpReq = apos.harness.withDoor(userReq(editor), {
         door: 'mcp',
         lockId: 'mcp-test',
@@ -168,8 +168,10 @@ describe('Assistant: Global Styles', function () {
         } ]);
       await apos.harness.endRequest(mcpReq);
       assert.equal(result[0].suspended, undefined);
-      assert.match(JSON.stringify(result[0]), /Global Styles are not changed with update_document/);
-      assert.notEqual(await getAccent('en'), '#111111');
+      assert.equal(result[0].error, undefined);
+      assert.equal(result[0].result.written[0]._id, styles.en._id);
+      assert.equal(result[0].result.written[0].published, true);
+      assert.equal(await getAccent('en'), '#111111');
     });
 
     it('asks first for this page\'s locale, offering the window instead', async function () {
