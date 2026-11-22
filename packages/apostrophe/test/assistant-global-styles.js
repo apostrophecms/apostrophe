@@ -60,6 +60,42 @@ describe('Assistant: Global Styles', function () {
                 label: 'Accent',
                 selector: ':root',
                 property: '--accent'
+              },
+              brandColor: {
+                type: 'color',
+                label: 'Brand',
+                selector: ':root',
+                property: '--brand',
+                options: {
+                  presetColors: [ '#112233', '#445566' ],
+                  disableSpectrum: true,
+                  disableFields: true
+                }
+              },
+              headingFont: {
+                type: 'select',
+                label: 'Heading font',
+                selector: 'h1',
+                property: 'font-family',
+                choices: [
+                  {
+                    label: 'Inter',
+                    value: 'Inter'
+                  },
+                  {
+                    label: 'Georgia',
+                    value: 'Georgia'
+                  }
+                ]
+              },
+              radius: {
+                type: 'range',
+                label: 'Radius',
+                selector: '.button',
+                property: 'border-radius',
+                unit: 'px',
+                min: 0,
+                max: 24
               }
             }
           }
@@ -255,6 +291,75 @@ describe('Assistant: Global Styles', function () {
       const done = await waitForEnd(req, chat);
       assert.equal(done.status, 'completed');
       assert.match(resultOf(done, 'call-edit').error, /a dialog is open over the editor/);
+    });
+  });
+
+  describe('values the fields take', function () {
+    const refusals = [
+      [ { accentColor: 'notacolor' }, 'accentColor', 'Not a color or a CSS variable ("--name").' ],
+      [ { brandColor: '#ff0000' }, 'brandColor', 'Only these colors: #112233, #445566.' ],
+      [ { headingFont: 'Comic Sans' }, 'headingFont', 'Not one of the choices: "Inter", "Georgia".' ],
+      [ { radius: 99 }, 'radius', 'Outside the range 0 to 24.' ],
+      [ { nope: 1 }, 'nope', 'No field of that name here; the schema read lists them.' ]
+    ];
+
+    it('refuses in the window, field by field with the reason, what its field would drop', async function () {
+      const req = userReq(editor);
+      const root = {
+        kind: 'document',
+        data: styles.en
+      };
+      for (const [ values, path, message ] of refusals) {
+        const { result } = await apos.harness.editContent(req, root, {
+          action: 'update_document',
+          values
+        });
+        assert.deepEqual(result.refused[0].fields, [ {
+          path,
+          reason: (path === 'nope') ? 'unknown' : 'invalid',
+          message
+        } ], path);
+      }
+      // A CSS variable, a preset in another case and a choice pass
+      const { values } = await apos.harness.editContent(req, root, {
+        action: 'update_document',
+        values: {
+          accentColor: '--brand-accent',
+          brandColor: '#445566',
+          headingFont: 'Georgia',
+          radius: 8
+        }
+      });
+      assert.deepEqual(values, {
+        accentColor: '--brand-accent',
+        brandColor: '#445566',
+        headingFont: 'Georgia',
+        radius: 8
+      });
+    });
+
+    it('refuses the same in a direct write, writing nothing', async function () {
+      const req = apos.harness.withDoor(userReq(editor), {
+        door: 'assistant',
+        lockId: 'styles-test',
+        requestId: 'styles-request'
+      });
+      const result = await apos.harness.updateDocument(req, {
+        targets: [ {
+          _id: styles.en._id,
+          values: {
+            accentColor: '#123456',
+            radius: 99
+          }
+        } ]
+      });
+      await apos.harness.endRequest(req);
+      assert.deepEqual(result.refused[0].fields, [ {
+        path: 'radius',
+        reason: 'invalid',
+        message: 'Outside the range 0 to 24.'
+      } ]);
+      assert.notEqual(await getAccent('en'), '#123456');
     });
   });
 

@@ -611,9 +611,23 @@ module.exports = (self) => {
   self.addFieldType({
     name: 'select',
     dynamicChoices: true,
-    async convert(req, field, data, destination, { ancestors = [] } = {}) {
+    async convert(req, field, data, destination, {
+      ancestors = [], drops, dropPath
+    } = {}) {
       const choices = await self.getChoices(req, field, [ ...ancestors, destination ]);
       destination[field.name] = self.apos.launder.select(data[field.name], choices);
+      // A lossless save hears of a value it gave that is none of the choices
+      const given = data[field.name];
+      const blank = (given == null) || (given === '');
+      if (drops && !blank && (String(destination[field.name]) !== String(given))) {
+        drops.push({
+          path: dropPathOf(dropPath, field.name),
+          reason: 'invalid',
+          message: `Not one of the choices: ${
+            choices.map(choice => JSON.stringify(choice.value)).join(', ')
+          }.`
+        });
+      }
     },
     index: function (value, field, texts) {
       const silent = field.silent === undefined ? true : field.silent;
@@ -1024,7 +1038,7 @@ module.exports = (self) => {
   self.addFieldType({
     name: 'range',
     vueComponent: 'AposInputRange',
-    async convert(req, field, data, destination) {
+    async convert(req, field, data, destination, { drops, dropPath } = {}) {
       destination[field.name] = self.apos.launder.float(
         data[field.name],
         field.def,
@@ -1051,6 +1065,14 @@ module.exports = (self) => {
         data[field.name] > field.max
       ) {
         destination[field.name] = null;
+        // A lossless save hears of a number it gave outside the range
+        if (drops && !blank) {
+          drops.push({
+            path: dropPathOf(dropPath, field.name),
+            reason: 'invalid',
+            message: `Outside the range ${field.min} to ${field.max}.`
+          });
+        }
       }
     },
     validate: function (field, options, warn, fail) {

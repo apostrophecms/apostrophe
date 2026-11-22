@@ -404,7 +404,8 @@ module.exports = (self) => {
         if (Array.isArray(error.data?.drops)) {
           return error.data.drops.map(drop => ({
             path: drop.path,
-            reason: drop.reason
+            reason: drop.reason,
+            ...(drop.message && { message: drop.message })
           }));
         }
         const errors = error.data?.errors;
