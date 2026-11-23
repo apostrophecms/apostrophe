@@ -148,7 +148,36 @@
       :key="activity.name"
       v-bind="activity"
       @action="onAction"
-    />
+    >
+      <template v-if="(activity.name === 'confirm') && gateNames">
+        <ul
+          class="apos-assistant-request__gate-list"
+          data-apos-test="assistant-gate-list"
+        >
+          <li
+            v-for="(name, index) in shownGateNames"
+            :key="index"
+          >
+            {{ name }}
+          </li>
+        </ul>
+        <button
+          v-if="hiddenGateCount"
+          type="button"
+          class="apos-assistant-request__gate-more"
+          data-apos-test="assistant-gate-more"
+          @click="gateExpanded = true"
+        >
+          {{ $t('apostrophe:assistantGateShowMore', { count: hiddenGateCount }) }}
+        </button>
+        <p
+          v-else-if="gateNames.more"
+          class="apos-assistant-request__gate-rest"
+        >
+          {{ $t('apostrophe:assistantGateAndMore', { count: gateNames.more }) }}
+        </p>
+      </template>
+    </AposAssistantActivity>
     <p
       v-if="request.status === 'stopped'"
       class="apos-assistant-request__notice"
@@ -516,6 +545,28 @@ const confirmAsk = computed(() => {
   return request.asks?.find(ask => ask.kind === 'confirm') || null;
 });
 
+// The documents a gate's confirmation names, a few shown until the editor
+// asks for the rest: `{ names, more }`, `more` those past what the server
+// sent
+const GATE_SHOWN = 5;
+const gateExpanded = ref(false);
+const gateNames = computed(() => {
+  const gate = confirmAsk.value?.payload.gate;
+  if (!gate || gate.title || !gate.titles?.length) {
+    return null;
+  }
+  return {
+    names: gate.titles.map(each => each || $t('apostrophe:assistantUntitled')),
+    more: gate.more || 0
+  };
+});
+const shownGateNames = computed(() => (gateExpanded.value
+  ? gateNames.value.names
+  : gateNames.value.names.slice(0, GATE_SHOWN)));
+const hiddenGateCount = computed(() => (gateNames.value
+  ? gateNames.value.names.length - shownGateNames.value.length
+  : 0));
+
 // The documents the request left because someone was editing them, as one
 // list of titles
 const lockedTitles = computed(() => {
@@ -768,21 +819,10 @@ function getConfirmText(payload) {
     : $t('apostrophe:assistantGateStep', {
       label: gate.label ? $t(gate.label) : gate.tool
     });
-  const names = gate.titles.map(each => each || $t('apostrophe:assistantUntitled'));
-  let text = null;
-  if (names.length && gate.more) {
-    text = $t('apostrophe:assistantGateNamesMore', {
-      titles: names.join(', '),
-      count: gate.more
-    });
-  } else if (names.length) {
-    text = new Intl.ListFormat(apos.i18n.adminLocale, {
-      type: 'conjunction'
-    }).format(names);
-  }
+  // The titles are a list of their own (`gateNames`)
   return {
     title,
-    text
+    text: null
   };
 }
 
@@ -1118,7 +1158,7 @@ function onChipClick(event) {
     gap: 6px;
     min-width: 0;
     margin: 0;
-    padding: 4px 2px 0;
+    padding: 4px 0 0;
   }
 
   .apos-assistant-request__status-shell {
@@ -1252,9 +1292,67 @@ function onChipClick(event) {
 
     & {
       margin: 0;
-      padding: 4px 2px 0;
+      padding: 4px 0 0;
       color: var(--a-base-1);
       font-style: italic;
+    }
+  }
+
+  // The names line up with the title, their bullets hang in the padding
+  .apos-assistant-request__gate-list {
+    @include type-base;
+
+    & {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin: 2px 0;
+      padding: 0;
+      color: var(--a-base-1);
+      line-height: var(--a-line-tall);
+      list-style: none;
+      overflow-wrap: anywhere;
+    }
+
+    li {
+      position: relative;
+    }
+
+    li::before {
+      content: '';
+      position: absolute;
+      top: calc(0.5lh - 2px);
+      left: -10px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background-color: var(--a-base-1);
+    }
+  }
+
+  .apos-assistant-request__gate-more {
+    @include apos-button-reset();
+    @include type-base;
+
+    & {
+      align-self: flex-start;
+      color: var(--a-primary);
+      line-height: var(--a-line-tall);
+    }
+
+    &:hover,
+    &:focus-visible {
+      text-decoration: underline;
+    }
+  }
+
+  .apos-assistant-request__gate-rest {
+    @include type-base;
+
+    & {
+      margin: 0;
+      color: var(--a-base-1);
+      line-height: var(--a-line-tall);
     }
   }
 
@@ -1263,7 +1361,7 @@ function onChipClick(event) {
 
     & {
       margin: -4px 0 0;
-      padding: 0 2px;
+      padding: 0;
       color: var(--a-base-2);
     }
   }

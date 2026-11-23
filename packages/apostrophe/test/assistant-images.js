@@ -155,7 +155,7 @@ describe('Assistant: images', function () {
       link: {
         _id: image._id,
         type: '@apostrophecms/image',
-        label: 'apostrophe:assistantOpenInMedia'
+        label: 'apostrophe:edit'
       },
       action: null
     });

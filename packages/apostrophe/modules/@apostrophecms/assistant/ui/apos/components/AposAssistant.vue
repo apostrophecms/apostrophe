@@ -58,10 +58,16 @@ import { useAssistantStore } from '../stores/assistant.js';
 // The assistant's window: above the page and every modal, never taking
 // focus from them. Everything it shows is the stored records with the
 // editor's actions not answered yet shown over them (the store)
-defineProps({
+const props = defineProps({
   modalData: {
     type: Object,
     required: true
+  },
+  // Opened again by the page after the assistant moved to another one, not
+  // by the editor: focus stays on the page
+  resumed: {
+    type: Boolean,
+    default: false
   }
 });
 defineEmits([ 'modal-result', 'safe-close' ]);
@@ -98,6 +104,9 @@ store.start();
 
 onMounted(() => {
   modal.value.active = true;
+  if (!props.resumed) {
+    store.focusComposer();
+  }
 });
 
 function close() {

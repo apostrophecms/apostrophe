@@ -260,11 +260,13 @@ async function focusControl(id, name) {
 function open(row) {
   store.openChat(row._id);
   emit('close', { focus: false });
+  store.focusComposer();
 }
 
 function newChat() {
   store.newChat();
   emit('close', { focus: false });
+  store.focusComposer();
 }
 
 async function startRename(row) {
