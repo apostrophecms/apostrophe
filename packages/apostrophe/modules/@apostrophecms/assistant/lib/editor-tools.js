@@ -268,7 +268,7 @@ module.exports = (self) => {
           additionalProperties: false
         },
         async handler(req, { steps }) {
-          const { requestId, chat } = self.apos.harness.getDoor(req);
+          const { requestId, chat } = self.apos.aposHarness.getDoor(req);
           const request = {
             _id: requestId,
             chatId: chat,

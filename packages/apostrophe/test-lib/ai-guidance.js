@@ -19,7 +19,7 @@ const localize = require('../modules/@apostrophecms/ai-localize/lib/door-tools.j
  * @returns {Promise<{ where: string, text: string }[]>}
  */
 async function getDoorTexts(apos, door) {
-  const { harness } = apos;
+  const { aposHarness: harness } = apos;
   const req = harness.withDoor(apos.task.getReq({ mode: 'draft' }), {
     door,
     lockId: 'guidance-test',
@@ -32,10 +32,10 @@ async function getDoorTexts(apos, door) {
       where: 'the instructions',
       text: harness.getInstructions(req)
     },
-    ...((door === 'assistant') && apos.assistant?.active)
+    ...((door === 'assistant') && apos.aposAssistant?.active)
       ? [ {
         where: 'the assistant\'s localization section',
-        text: apos.assistant.getLocalizationSection()
+        text: apos.aposAssistant.getLocalizationSection()
       } ]
       : [],
     ...types.map(type => ({
@@ -77,7 +77,7 @@ async function getDoorTexts(apos, door) {
  * @returns {Promise<string[]>}
  */
 async function findForeignTools(apos, door) {
-  const own = new Set(apos.harness.getDoorTools(door).map(({ name }) => name));
+  const own = new Set(apos.aposHarness.getDoorTools(door).map(({ name }) => name));
   const foreign = apos.ai.getTools()
     .map(({ name }) => name)
     .filter(name => !own.has(name));

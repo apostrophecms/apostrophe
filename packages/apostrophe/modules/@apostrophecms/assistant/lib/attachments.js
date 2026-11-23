@@ -855,7 +855,7 @@ module.exports = (self) => {
      * @returns {Promise<object>} The record.
      */
     async findChatAttachment(req, _id) {
-      const door = self.apos.harness.getDoor(req);
+      const door = self.apos.aposHarness.getDoor(req);
       const record = door?.chat && await self.attachments.findOne({
         _id: self.apos.launder.id(_id),
         ownerId: self.getOwnerId(req),

@@ -148,20 +148,20 @@ describe('Assistant: localizing selected widgets', function () {
   });
 
   it('should tell the model how copies work and when to ask, with the site\'s translation service', async function () {
-    const chat = await apos.assistant.createChat(userReq());
+    const chat = await apos.aposAssistant.createChat(userReq());
     await runToEnd(chat, 'Hello');
     const { system } = calls[0];
 
     assert(system.includes('Make its copy in another locale with localize_document, never ' +
       'with a create tool; get_localization says what changed'));
-    assert(system.includes(`\n\n${apos.assistant.getLocalizationSection()}`));
+    assert(system.includes(`\n\n${apos.aposAssistant.getLocalizationSection()}`));
     assert.match(system, /^Localizing for the user:\n- Before replacing a change the target copy made itself/m);
     assert.match(system, /- site_translate is the site's translation service and has the last word on wording/);
     assert.match(apos.ai.getTool('create_page').description, /Never for a copy in another locale: that is localize_document\.$/);
     assert.match(apos.ai.getTool('create_piece').description, /Never for a copy in another locale: that is localize_document\.$/);
     // The service runs on the server, so the MCP door never has it
-    assert(apos.harness.getDoorTools('assistant').some(({ name }) => name === 'site_translate'));
-    assert(!apos.harness.getDoorTools('mcp').some(({ name }) => name === 'site_translate'));
+    assert(apos.aposHarness.getDoorTools('assistant').some(({ name }) => name === 'site_translate'));
+    assert(!apos.aposHarness.getDoorTools('mcp').some(({ name }) => name === 'site_translate'));
     for (const door of [ 'assistant', 'mcp' ]) {
       assert.deepEqual(await findForeignTools(apos, door), []);
     }
@@ -180,15 +180,15 @@ describe('Assistant: localizing selected widgets', function () {
       secondaryLevel: true,
       multiple: true
     });
-    assert.deepEqual(apos.assistant.getBrowserData(req).widgetOperations, {
+    assert.deepEqual(apos.aposAssistant.getBrowserData(req).widgetOperations, {
       assistantLocalize: 'apostrophe:assistantLocalizePrompt'
     });
-    assert.throws(() => apos.assistant.addWidgetOperation('bad', { label: 'Bad' }),
+    assert.throws(() => apos.aposAssistant.addWidgetOperation('bad', { label: 'Bad' }),
       /needs a label and a prompt/);
   });
 
   it('should localize a selected widget into one locale and change nothing else', async function () {
-    const chat = await apos.assistant.createChat(userReq());
+    const chat = await apos.aposAssistant.createChat(userReq());
     script = sequence([
       toolTurn('get_localization', {
         _id: pages.en._id,
@@ -223,14 +223,16 @@ describe('Assistant: localizing selected widgets', function () {
     assert.equal(fr.title, pages.fr.title);
     assert.deepEqual(contents(await stored('en')), contents(pages.en));
     assert.deepEqual(contents(await stored('de')), contents(pages.de));
-    const entries = await apos.harness.changes.find({ requestId: request._id }).toArray();
+    const entries = await apos.aposHarness.changes
+      .find({ requestId: request._id })
+      .toArray();
     assert.deepEqual(entries.map(entry => [ entry.docId, entry.ai ]),
       [ [ pages.fr._id, true ] ]);
     await restore();
   });
 
   it('should localize several widgets into two locales, and take every locale back on revert', async function () {
-    const chat = await apos.assistant.createChat(userReq());
+    const chat = await apos.aposAssistant.createChat(userReq());
     script = sequence([
       toolTurn('get_localization', {
         _id: pages.en._id,
@@ -275,7 +277,7 @@ describe('Assistant: localizing selected widgets', function () {
   });
 
   it('should refuse and name a locale the editor may not edit, and write the others', async function () {
-    const chat = await apos.assistant.createChat(userReq());
+    const chat = await apos.aposAssistant.createChat(userReq());
     script = sequence([
       toolTurn('update_document', {
         targets: [ {
@@ -314,7 +316,7 @@ describe('Assistant: localizing selected widgets', function () {
 
   it('should not switch the page shown to edit mode for a record of its copies', async function () {
     const req = userReq();
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     script = sequence([
       toolTurn('get_localization', {
         _id: pages.en._id,
@@ -326,7 +328,7 @@ describe('Assistant: localizing selected widgets', function () {
       }, 'record'),
       { text: 'Recorded.' }
     ]);
-    await apos.assistant.send(req, chat._id, {
+    await apos.aposAssistant.send(req, chat._id, {
       message: 'Record French as up to date',
       screen: {
         tabId: 'tab-1',
@@ -352,7 +354,7 @@ describe('Assistant: localizing selected widgets', function () {
 
   it('should record no localization while an editor holds the copy unsaved', async function () {
     const req = userReq();
-    const held = await apos.assistant.createChat(req);
+    const held = await apos.aposAssistant.createChat(req);
     const record = toolTurn('record_localization', {
       _id: pages.en._id,
       locales: [ 'fr' ]
@@ -365,7 +367,7 @@ describe('Assistant: localizing selected widgets', function () {
       record,
       { text: 'Save the French page first.' }
     ]);
-    await apos.assistant.send(req, held._id, {
+    await apos.aposAssistant.send(req, held._id, {
       message: 'Bring French up to date',
       screen: {
         tabId: 'tab-1',
@@ -376,7 +378,7 @@ describe('Assistant: localizing selected widgets', function () {
       }
     });
     const refused = await waitForEnd(req, held);
-    const free = await apos.assistant.createChat(req);
+    const free = await apos.aposAssistant.createChat(req);
     script = sequence([
       toolTurn('get_localization', {
         _id: pages.en._id,
@@ -428,7 +430,7 @@ describe('Assistant: localizing selected widgets', function () {
 
   async function runToEnd(chat, message, widgetIds) {
     const req = userReq();
-    await apos.assistant.send(req, chat._id, {
+    await apos.aposAssistant.send(req, chat._id, {
       message,
       screen: {
         tabId: 'tab-1',
@@ -446,9 +448,9 @@ describe('Assistant: localizing selected widgets', function () {
   async function waitForEnd(req, chat) {
     let request;
     await waitFor(async () => {
-      const requests = await apos.assistant.getChatRequests(req, chat._id);
+      const requests = await apos.aposAssistant.getChatRequests(req, chat._id);
       request = requests.at(-1);
-      const open = (await apos.assistant.getChat(req, chat._id)).openRequest;
+      const open = (await apos.aposAssistant.getChat(req, chat._id)).openRequest;
       const job = request?.jobId &&
         await apos.modules['@apostrophecms/job'].db.findOne({ _id: request.jobId });
       return request && (request.status !== 'running') &&
@@ -459,17 +461,17 @@ describe('Assistant: localizing selected widgets', function () {
 
   async function revertRequest(request) {
     const req = userReq();
-    const started = await apos.assistant.revert(req, request.chatId, {
+    const started = await apos.aposAssistant.revert(req, request.chatId, {
       requestId: request._id,
       tabId: 'tab-1'
     });
     await waitFor(async () => {
-      const revert = await apos.assistant.getRevert(req, started._id);
+      const revert = await apos.aposAssistant.getRevert(req, started._id);
       const job = revert.jobId &&
         await apos.modules['@apostrophecms/job'].db.findOne({ _id: revert.jobId });
       return (revert.status !== 'running') && (!job || job.ended);
     });
-    return (await apos.assistant.getRevert(req, started._id)).status;
+    return (await apos.aposAssistant.getRevert(req, started._id)).status;
   }
 
   function sequence(turns) {

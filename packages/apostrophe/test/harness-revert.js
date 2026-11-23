@@ -96,7 +96,7 @@ describe('Harness: revert', function () {
 
   // A request of the assistant's chat
   function door(context = {}) {
-    return apos.harness.withDoor(userReq(), {
+    return apos.aposHarness.withDoor(userReq(), {
       door: 'assistant',
       lockId: 'chat-1',
       family: 'tab-1',
@@ -107,7 +107,7 @@ describe('Harness: revert', function () {
   }
 
   async function write(req, _id, patch) {
-    const { written, refused } = await apos.harness.writeDocuments(req, [ {
+    const { written, refused } = await apos.aposHarness.writeDocuments(req, [ {
       _id,
       patch
     } ]);
@@ -117,15 +117,19 @@ describe('Harness: revert', function () {
 
   // Reverts the requests, after a dry run that must say the same
   async function revert(requests, options = {}) {
-    const ids = requests.map(req => apos.harness.getDoor(req).requestId);
+    const ids = requests.map(req => apos.aposHarness.getDoor(req).requestId);
     for (const req of requests) {
-      await apos.harness.endRequest(req);
+      await apos.aposHarness.endRequest(req);
     }
-    const dry = await apos.harness.revertRequests(door({ revert: true }), ids, {
+    const dry = await apos.aposHarness.revertRequests(door({ revert: true }), ids, {
       ...options,
       dryRun: true
     });
-    const done = await apos.harness.revertRequests(door({ revert: true }), ids, options);
+    const done = await apos.aposHarness.revertRequests(
+      door({ revert: true }),
+      ids,
+      options
+    );
     assert.deepEqual(dry.map(outcomeOf), done.map(outcomeOf));
     return done;
   }
@@ -171,7 +175,7 @@ describe('Harness: revert', function () {
   }
 
   async function createPage(req, title, parent) {
-    const { written, refused } = await apos.harness.createDocument(req, {
+    const { written, refused } = await apos.aposHarness.createDocument(req, {
       type: 'revert-page',
       title,
       parent: parent || await home()
@@ -358,10 +362,13 @@ describe('Harness: revert', function () {
     await write(req, article._id, { body: 'AI body' });
     const reverting = door({ revert: true });
 
-    await apos.harness.revertRequests(reverting, [ apos.harness.getDoor(req).requestId ]);
+    await apos.aposHarness.revertRequests(
+      reverting,
+      [ apos.aposHarness.getDoor(req).requestId ]
+    );
 
-    const [ entry ] = await apos.harness.changes
-      .find({ requestId: apos.harness.getDoor(reverting).requestId })
+    const [ entry ] = await apos.aposHarness.changes
+      .find({ requestId: apos.aposHarness.getDoor(reverting).requestId })
       .toArray();
     assert.equal(entry.ai, false);
     assert.equal(entry.revert, true);
@@ -375,7 +382,7 @@ describe('Harness: revert', function () {
 
   it('should refuse a revert without the door context of a revert', async function () {
     await assert.rejects(
-      () => apos.harness.revertRequests(door(), [ 'nothing' ]),
+      () => apos.aposHarness.revertRequests(door(), [ 'nothing' ]),
       { name: 'invalid' }
     );
   });
@@ -419,7 +426,7 @@ describe('Harness: revert', function () {
 
     it('should archive a document of a type that publishes on save, its own save not counting as publishing', async function () {
       const req = door();
-      const { written } = await apos.harness.createDocument(req, {
+      const { written } = await apos.aposHarness.createDocument(req, {
         type: 'revert-notice',
         title: 'Live notice'
       });
@@ -437,7 +444,7 @@ describe('Harness: revert', function () {
       const req = door();
       const created = [];
       for (const title of [ 'Referenced by AI', 'Used by Ann' ]) {
-        const { written } = await apos.harness.createDocument(req, {
+        const { written } = await apos.aposHarness.createDocument(req, {
           type: 'revert-notice',
           title
         });

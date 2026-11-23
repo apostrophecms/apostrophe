@@ -65,7 +65,7 @@ describe('Harness: the change log', function () {
                 required: [ 'ids', 'body' ]
               },
               handler: async (req, args) => {
-                const { written } = await self.apos.harness.writeDocuments(
+                const { written } = await self.apos.aposHarness.writeDocuments(
                   req,
                   args.ids.map(_id => ({
                     _id,
@@ -104,7 +104,7 @@ describe('Harness: the change log', function () {
   }
 
   function door(context = {}) {
-    return apos.harness.withDoor(userReq(), {
+    return apos.aposHarness.withDoor(userReq(), {
       door: 'assistant',
       lockId: 'chat-1',
       family: 'tab-1',
@@ -127,8 +127,8 @@ describe('Harness: the change log', function () {
   }
 
   function entriesOf(req) {
-    return apos.harness.changes
-      .find({ requestId: apos.harness.getDoor(req).requestId })
+    return apos.aposHarness.changes
+      .find({ requestId: apos.aposHarness.getDoor(req).requestId })
       .sort({
         at: 1,
         sequence: 1
@@ -137,7 +137,7 @@ describe('Harness: the change log', function () {
   }
 
   function write(req, _id, patch) {
-    return apos.harness.writeDocuments(req, [ {
+    return apos.aposHarness.writeDocuments(req, [ {
       _id,
       patch
     } ]);
@@ -168,7 +168,7 @@ describe('Harness: the change log', function () {
     }, { text: 'done' });
 
     await apos.ai.generate(req, 'go', { tools: [ 'write_bodies' ] });
-    await apos.harness.endRequest(req);
+    await apos.aposHarness.endRequest(req);
 
     const entries = await entriesOf(req);
     assert.equal(entries.length, 30);
@@ -217,7 +217,7 @@ describe('Harness: the change log', function () {
     const body = entries[0].rows.find(row => row.path[0].name === 'body');
     assert.equal(body.new, 'Three');
     assert.equal(entries[0].title, 'Renamed');
-    await apos.harness.endRequest(req);
+    await apos.aposHarness.endRequest(req);
   });
 
   it('should start a new entry when someone else saved in between', async function () {
@@ -231,10 +231,14 @@ describe('Harness: the change log', function () {
     draft.title = 'Edited by Ann';
     await apos.modules['log-article'].update(userReq(), draft);
     // Read again: a write over the editor's save is refused until then
-    await write(door({ requestId: apos.harness.getDoor(req).requestId }), article._id, {
-      body: 'AI second'
-    });
-    await apos.harness.endRequest(req);
+    await write(
+      door({ requestId: apos.aposHarness.getDoor(req).requestId }),
+      article._id,
+      {
+        body: 'AI second'
+      }
+    );
+    await apos.aposHarness.endRequest(req);
 
     const entries = await entriesOf(req);
     assert.deepEqual(entries.map(entry => entry.sequence), [ 1, 2 ]);
@@ -248,14 +252,14 @@ describe('Harness: the change log', function () {
     const marked = req.clone({
       aposSaveMarker: {
         door: 'assistant',
-        requestId: apos.harness.getDoor(req).requestId
+        requestId: apos.aposHarness.getDoor(req).requestId
       }
     });
     const article = await apos.modules['log-article'].insert(marked, {
       title: 'Created'
     });
     await write(req, article._id, { body: 'Then written' });
-    await apos.harness.endRequest(req);
+    await apos.aposHarness.endRequest(req);
 
     const entries = await entriesOf(req);
     assert.equal(entries.length, 1);
@@ -269,7 +273,7 @@ describe('Harness: the change log', function () {
     await apos.modules['log-article'].publish(userReq(), article);
     const req = door();
     await write(req, article._id, { archived: true });
-    await apos.harness.endRequest(req);
+    await apos.aposHarness.endRequest(req);
 
     const entries = await entriesOf(req);
     assert.equal(entries.length, 1);
@@ -284,7 +288,7 @@ describe('Harness: the change log', function () {
     const [ open ] = await entriesOf(req);
     assert(open.head);
 
-    await apos.harness.endRequest(req);
+    await apos.aposHarness.endRequest(req);
 
     const [ closed ] = await entriesOf(req);
     assert.equal(closed.base, undefined);
@@ -299,7 +303,7 @@ describe('Harness: the change log', function () {
     const notice = await apos.modules['log-notice'].insert(userReq(), { title: 'Notice' });
     const req = door();
     await write(req, notice._id, { body: 'Live' });
-    await apos.harness.endRequest(req);
+    await apos.aposHarness.endRequest(req);
 
     const entries = await entriesOf(req);
     assert.deepEqual(entries.map(entry => entry.docId), [ notice._id ]);
@@ -317,7 +321,7 @@ describe('Harness: the change log', function () {
       chat: undefined
     });
     await write(req, article._id, { body: 'Over MCP' });
-    await apos.harness.endRequest(req);
+    await apos.aposHarness.endRequest(req);
 
     const [ entry ] = await entriesOf(req);
     assert.equal(entry.door, 'mcp');
@@ -328,7 +332,7 @@ describe('Harness: the change log', function () {
     const [ article ] = await insertArticles(1);
     const req = door({ revert: true });
     await write(req, article._id, { body: 'Put back' });
-    await apos.harness.endRequest(req);
+    await apos.aposHarness.endRequest(req);
 
     const [ entry ] = await entriesOf(req);
     assert.equal(entry.ai, false);
@@ -345,13 +349,16 @@ describe('Harness: the change log', function () {
     const [ article ] = await insertArticles(1);
     await write(userReq(), article._id, { body: 'Plain' });
 
-    assert.equal(await apos.harness.changes.countDocuments({ docId: article._id }), 0);
+    assert.equal(
+      await apos.aposHarness.changes.countDocuments({ docId: article._id }),
+      0
+    );
   });
 
   describe('change events', function () {
     function eventsOf(req) {
       return apos.notification.db
-        .find({ 'event.data.requestId': apos.harness.getDoor(req).requestId })
+        .find({ 'event.data.requestId': apos.aposHarness.getDoor(req).requestId })
         .sort({ createdAt: 1 })
         .toArray();
     }
@@ -380,7 +387,7 @@ describe('Harness: the change log', function () {
         type: 'log-article',
         ids: [],
         fields: [ 'body' ],
-        requestId: apos.harness.getDoor(req).requestId
+        requestId: apos.aposHarness.getDoor(req).requestId
       });
       assert.equal(settled.written, true);
       assert.equal(settled.entryId, entry._id);
@@ -403,7 +410,7 @@ describe('Harness: the change log', function () {
           after: 'Second'
         }
       ]);
-      await apos.harness.endRequest(req);
+      await apos.aposHarness.endRequest(req);
     });
 
     it('should send each document of a write over several its own pair, naming its type, and nothing for one the user may not edit', async function () {
@@ -417,7 +424,7 @@ describe('Harness: the change log', function () {
       const req = door();
       // An editor, who may edit the articles and the notice only
       req.user.role = 'editor';
-      const { written, refused } = await apos.harness.writeDocuments(req, [
+      const { written, refused } = await apos.aposHarness.writeDocuments(req, [
         first,
         restricted,
         notice,
@@ -458,13 +465,13 @@ describe('Harness: the change log', function () {
       assert(events
         .filter(({ event }) => event.name === 'content-change-settled')
         .every(({ event }) => event.data.written));
-      await apos.harness.endRequest(req);
+      await apos.aposHarness.endRequest(req);
     });
 
     it('should say a write was refused after it started, and send nothing without a family', async function () {
       const [ article ] = await insertArticles(1);
       const req = door();
-      const { refused } = await apos.harness.writeDocuments(req, [ {
+      const { refused } = await apos.aposHarness.writeDocuments(req, [ {
         _id: article._id,
         patch: { title: '' }
       } ]);
@@ -478,7 +485,7 @@ describe('Harness: the change log', function () {
         docId: article._id,
         type: 'log-article',
         written: false,
-        requestId: apos.harness.getDoor(req).requestId
+        requestId: apos.aposHarness.getDoor(req).requestId
       });
 
       const mcp = door({

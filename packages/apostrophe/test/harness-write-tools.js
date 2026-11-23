@@ -221,7 +221,7 @@ describe('Harness: write tools and get_changes', function () {
   }
 
   function door(req, context = {}) {
-    return apos.harness.withDoor(req, {
+    return apos.aposHarness.withDoor(req, {
       door: 'assistant',
       lockId: 'chat-1',
       chat: 'chat-1',
@@ -1220,8 +1220,8 @@ describe('Harness: write tools and get_changes', function () {
       const article = await insertArticle({ body: 'Original' });
       const req = door(userReq());
       // A projection without the date is not remembered
-      await apos.harness.rememberSeen(req, { _id: article._id });
-      assert.equal(apos.harness.getDoor(req).seen.has(article._id), false);
+      await apos.aposHarness.rememberSeen(req, { _id: article._id });
+      assert.equal(apos.aposHarness.getDoor(req).seen.has(article._id), false);
 
       await read(article._id, req);
       // Stored without it since the read: written, nothing to compare
@@ -1257,11 +1257,11 @@ describe('Harness: write tools and get_changes', function () {
       ]);
       const told = [];
       const listen = (req, _id) => told.push(_id);
-      apos.harness.on('documentSeen', 'testListenSeen', listen);
+      apos.aposHarness.on('documentSeen', 'testListenSeen', listen);
       const first = door(userReq());
       await read(readOne._id, first);
       await update(writtenOne._id, { body: 'Written' }, first);
-      const { seen } = apos.harness.getDoor(first);
+      const { seen } = apos.aposHarness.getDoor(first);
       assert.deepEqual(told, [ readOne._id, writtenOne._id ]);
       assert.deepEqual([ ...seen.keys() ], [ readOne._id, writtenOne._id ]);
 
@@ -1444,7 +1444,7 @@ describe('Harness: write tools and get_changes', function () {
           values: { body: 'First' }
         } ]
       }, first);
-      await apos.harness.endRequest(first);
+      await apos.aposHarness.endRequest(first);
       const second = door(userReq(), { requestId: 'request-2' });
       await run('update_document', {
         targets: [ {

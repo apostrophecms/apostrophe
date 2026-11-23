@@ -72,7 +72,7 @@ module.exports = (self) => {
      * @param {object} payload The engine's `{ tool, args }`.
      */
     async checkGates(req, { tool, args }) {
-      if (!self.active || (self.apos.harness.getDoor(req)?.door !== DOOR)) {
+      if (!self.active || (self.apos.aposHarness.getDoor(req)?.door !== DOOR)) {
         return;
       }
       const gates = getGates();
@@ -101,7 +101,7 @@ module.exports = (self) => {
         ids,
         async getScreen() {
           screen ??= (await self.requests.findOne({
-            _id: self.apos.harness.getDoor(req).requestId,
+            _id: self.apos.aposHarness.getDoor(req).requestId,
             ownerId: self.getOwnerId(req)
           }, { projection: { screen: 1 } }))?.screen || null;
           return screen;
@@ -161,7 +161,7 @@ module.exports = (self) => {
         const docs = [];
         for (const id of ids) {
           try {
-            docs.push((await self.apos.harness.findDraft(req, id)).doc);
+            docs.push((await self.apos.aposHarness.findDraft(req, id)).doc);
           } catch (e) {
             if (e.name !== 'notfound') {
               throw e;

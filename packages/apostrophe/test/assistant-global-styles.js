@@ -120,7 +120,7 @@ describe('Assistant: Global Styles', function () {
   });
 
   it('marks Global Styles as having rules, the window for the assistant only', function () {
-    const [ assistant, mcp ] = [ 'assistant', 'mcp' ].map(door => apos.harness.withDoor(
+    const [ assistant, mcp ] = [ 'assistant', 'mcp' ].map(door => apos.aposHarness.withDoor(
       userReq(editor),
       {
         door,
@@ -134,12 +134,12 @@ describe('Assistant: Global Styles', function () {
       'Global Styles.';
 
     for (const req of [ assistant, mcp ]) {
-      assert.match(apos.harness.getSiteInstructions(req),
+      assert.match(apos.aposHarness.getSiteInstructions(req),
         /^@apostrophecms\/styles: The site-wide design: .* \(aiHow\)$/m);
     }
-    assert.equal(apos.harness.getTypeGuidance('@apostrophecms/styles', 'mcp'), shared);
+    assert.equal(apos.aposHarness.getTypeGuidance('@apostrophecms/styles', 'mcp'), shared);
     assert.equal(
-      apos.harness.getTypeGuidance('@apostrophecms/styles', 'assistant'),
+      apos.aposHarness.getTypeGuidance('@apostrophecms/styles', 'assistant'),
       `${shared}\n\nChange Global Styles in their own window: open it with open_editor on ` +
         'the Global Styles document, then set every value the request needs with ' +
         'edit_open_document, in as few calls as you can; the page restyles as each value ' +
@@ -153,7 +153,7 @@ describe('Assistant: Global Styles', function () {
 
   describe('a direct write', function () {
     it('is written at once through the MCP door, which has no gate', async function () {
-      const mcpReq = apos.harness.withDoor(userReq(editor), {
+      const mcpReq = apos.aposHarness.withDoor(userReq(editor), {
         door: 'mcp',
         lockId: 'mcp-test',
         requestId: 'mcp-request'
@@ -166,7 +166,7 @@ describe('Assistant: Global Styles', function () {
           name: 'update_document',
           input: { targets: [ accentTarget(styles.en, '#111111') ] }
         } ]);
-      await apos.harness.endRequest(mcpReq);
+      await apos.aposHarness.endRequest(mcpReq);
       assert.equal(result[0].suspended, undefined);
       assert.equal(result[0].error, undefined);
       assert.equal(result[0].result.written[0]._id, styles.en._id);
@@ -176,7 +176,7 @@ describe('Assistant: Global Styles', function () {
 
     it('asks first for this page\'s locale, offering the window instead', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ updateTurn([ styles.en ], '#222222'), { text: 'Opening it.' } ]);
       const waiting = await runToEnd(req, chat, 'Make the accent darker');
       assert.equal(waiting.status, 'waiting');
@@ -195,7 +195,7 @@ describe('Assistant: Global Styles', function () {
         label: 'apostrophe:assistantOpenStyles'
       } ]);
 
-      await apos.assistant.answer(req, chat._id, {
+      await apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-update',
         answer: {
@@ -212,7 +212,7 @@ describe('Assistant: Global Styles', function () {
 
     it('names several locales without the window, and writes them all in one request once applied', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([
         updateTurn([ styles.en, styles.fr, styles.de ], '#333333'),
         { text: 'Changed in every locale.' }
@@ -229,7 +229,7 @@ describe('Assistant: Global Styles', function () {
       ]);
       assert.equal(gate.alternatives, undefined);
       // The window is no answer to it
-      await assert.rejects(apos.assistant.answer(req, chat._id, {
+      await assert.rejects(apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-update',
         answer: {
@@ -238,7 +238,7 @@ describe('Assistant: Global Styles', function () {
         }
       }), { name: 'invalid' });
 
-      await apos.assistant.answer(req, chat._id, {
+      await apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-update',
         answer: { approved: true }
@@ -256,7 +256,7 @@ describe('Assistant: Global Styles', function () {
 
     it('is taken back in every locale by one Revert', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const before = {};
       for (const locale of [ 'en', 'fr', 'de' ]) {
         before[locale] = await getAccent(locale);
@@ -266,7 +266,7 @@ describe('Assistant: Global Styles', function () {
         { text: 'Changed in every locale.' }
       ]);
       await runToEnd(req, chat, 'Darker accent in all locales');
-      await apos.assistant.answer(req, chat._id, {
+      await apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-update',
         answer: { approved: true }
@@ -280,13 +280,13 @@ describe('Assistant: Global Styles', function () {
 
     it('offers no window for another locale, and says this page\'s was not written', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ updateTurn([ styles.fr ], '#444444'), { text: 'Changed.' } ]);
       const waiting = await runToEnd(req, chat, 'Darker accent in French');
       const { gate } = waiting.asks[0].payload;
       assert.deepEqual(gate.title.values, { locale: 'French' });
       assert.equal(gate.alternatives, undefined);
-      await apos.assistant.answer(req, chat._id, {
+      await apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-update',
         answer: { approved: true }
@@ -301,7 +301,7 @@ describe('Assistant: Global Styles', function () {
   describe('the window', function () {
     it('holds its document: a direct write points at edit_open_document, which reaches it', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([
         toolTurn('get_document', { _id: styles.en._id }, 'read'),
         updateTurn([ styles.en ], '#555555'),
@@ -310,7 +310,7 @@ describe('Assistant: Global Styles', function () {
           values: { accentColor: '#555555' }
         }, 'edit')
       ]);
-      await apos.assistant.send(req, chat._id, {
+      await apos.aposAssistant.send(req, chat._id, {
         message: 'Darker accent',
         screen: withWindow()
       });
@@ -323,19 +323,19 @@ describe('Assistant: Global Styles', function () {
       assert.equal(waiting.status, 'waiting');
       assert.equal(waiting.asks[0].name, 'edit_open_document');
       assert.notEqual(await getAccent('en'), '#555555');
-      await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+      await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
     });
 
     it('is not reached under a modal', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([
         toolTurn('edit_open_document', {
           action: 'update_document',
           values: { accentColor: '#666666' }
         }, 'edit')
       ]);
-      await apos.assistant.send(req, chat._id, {
+      await apos.aposAssistant.send(req, chat._id, {
         message: 'Darker accent',
         screen: withWindow({ modals: [ { kind: 'other' } ] })
       });
@@ -361,7 +361,7 @@ describe('Assistant: Global Styles', function () {
         data: styles.en
       };
       for (const [ values, path, message ] of refusals) {
-        const { result } = await apos.harness.editContent(req, root, {
+        const { result } = await apos.aposHarness.editContent(req, root, {
           action: 'update_document',
           values
         });
@@ -372,7 +372,7 @@ describe('Assistant: Global Styles', function () {
         } ], path);
       }
       // A CSS variable, a preset in another case and a choice pass
-      const { values } = await apos.harness.editContent(req, root, {
+      const { values } = await apos.aposHarness.editContent(req, root, {
         action: 'update_document',
         values: {
           accentColor: '--brand-accent',
@@ -390,12 +390,12 @@ describe('Assistant: Global Styles', function () {
     });
 
     it('refuses the same in a direct write, writing nothing', async function () {
-      const req = apos.harness.withDoor(userReq(editor), {
+      const req = apos.aposHarness.withDoor(userReq(editor), {
         door: 'assistant',
         lockId: 'styles-test',
         requestId: 'styles-request'
       });
-      const result = await apos.harness.updateDocument(req, {
+      const result = await apos.aposHarness.updateDocument(req, {
         targets: [ {
           _id: styles.en._id,
           values: {
@@ -404,7 +404,7 @@ describe('Assistant: Global Styles', function () {
           }
         } ]
       });
-      await apos.harness.endRequest(req);
+      await apos.aposHarness.endRequest(req);
       assert.deepEqual(result.refused[0].fields, [ {
         path: 'radius',
         reason: 'invalid',
@@ -430,7 +430,7 @@ describe('Assistant: Global Styles', function () {
         radius: 12
       }, request);
 
-      const entries = await apos.harness.changes
+      const entries = await apos.aposHarness.changes
         .find({
           requestId: request._id,
           docId: draft._id
@@ -472,11 +472,15 @@ describe('Assistant: Global Styles', function () {
       const request = await endedRequest();
       const draft = await getWindowDraft();
       await saveFromWindow(draft, { accentColor: '#7d0a32' }, request);
-      const checked = await apos.assistant.checkRevert(userReq(editor), request.chatId, {
-        requestId: request._id,
-        tabId: 'tab-1',
-        screen: withWindow()
-      });
+      const checked = await apos.aposAssistant.checkRevert(
+        userReq(editor),
+        request.chatId,
+        {
+          requestId: request._id,
+          tabId: 'tab-1',
+          screen: withWindow()
+        }
+      );
       const planned = checked.documents.find(document => document.docId === draft._id);
       assert.equal(planned.outcome, 'locked');
       assert.equal(planned.reason, 'editor');
@@ -586,24 +590,24 @@ describe('Assistant: Global Styles', function () {
 
   async function revertRequest(request) {
     const req = userReq(editor);
-    const started = await apos.assistant.revert(req, request.chatId, {
+    const started = await apos.aposAssistant.revert(req, request.chatId, {
       requestId: request._id,
       tabId: 'tab-1'
     });
     await waitFor(async () => {
-      const stored = await apos.assistant.getRevert(req, started._id);
+      const stored = await apos.aposAssistant.getRevert(req, started._id);
       const job = stored.jobId &&
         await apos.modules['@apostrophecms/job'].db.findOne({ _id: stored.jobId });
       return (stored.status !== 'running') && (!job || job.ended);
     });
-    return (await apos.assistant.getRevert(req, started._id)).status;
+    return (await apos.aposAssistant.getRevert(req, started._id)).status;
   }
 
   // A request of a new chat, ended
   async function endedRequest() {
     const req = userReq(editor);
-    const chat = await apos.assistant.createChat(req);
-    await apos.assistant.send(req, chat._id, {
+    const chat = await apos.aposAssistant.createChat(req);
+    await apos.aposAssistant.send(req, chat._id, {
       message: 'Hello',
       screen: { tabId: 'tab-1' }
     });
@@ -618,7 +622,7 @@ describe('Assistant: Global Styles', function () {
   }
 
   async function runToEnd(req, chat, message) {
-    await apos.assistant.send(req, chat._id, {
+    await apos.aposAssistant.send(req, chat._id, {
       message,
       screen: { tabId: 'tab-1' }
     });
@@ -628,9 +632,9 @@ describe('Assistant: Global Styles', function () {
   async function waitForEnd(req, chat) {
     let request;
     await waitFor(async () => {
-      const requests = await apos.assistant.getChatRequests(req, chat._id);
+      const requests = await apos.aposAssistant.getChatRequests(req, chat._id);
       request = requests.at(-1);
-      const open = (await apos.assistant.getChat(req, chat._id)).openRequest;
+      const open = (await apos.aposAssistant.getChat(req, chat._id)).openRequest;
       const job = request?.jobId &&
         await apos.modules['@apostrophecms/job'].db.findOne({ _id: request.jobId });
       return request && (request.status !== 'running') &&

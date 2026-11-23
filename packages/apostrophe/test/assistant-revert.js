@@ -65,7 +65,7 @@ describe('Assistant: revert', function () {
                 required: [ '_id', 'title' ]
               },
               handler: async (req, { _id, title }) => {
-                const { written } = await self.apos.harness.writeDocuments(req, [ {
+                const { written } = await self.apos.aposHarness.writeDocuments(req, [ {
                   _id,
                   patch: { title }
                 } ]);
@@ -85,7 +85,7 @@ describe('Assistant: revert', function () {
                 required: [ '_id', 'patch' ]
               },
               handler: async (req, { _id, patch }) => {
-                const { written } = await self.apos.harness.writeDocuments(req, [ {
+                const { written } = await self.apos.aposHarness.writeDocuments(req, [ {
                   _id,
                   patch
                 } ]);
@@ -144,17 +144,17 @@ describe('Assistant: revert', function () {
       }
     }, { text: 'Renamed.' } ];
     script = () => turns.shift() || { text: 'Done.' };
-    const request = await apos.assistant.send(userReq(), chat._id, {
+    const request = await apos.aposAssistant.send(userReq(), chat._id, {
       message: `Rename it ${title}`,
       screen: { tabId: 'tab-1' }
     });
     await waitFor(async () => {
-      const stored = await apos.assistant.getRequest(userReq(), request._id);
+      const stored = await apos.aposAssistant.getRequest(userReq(), request._id);
       return (stored.status !== 'running') &&
-        !(await apos.assistant.getChat(userReq(), chat._id)).openRequest &&
+        !(await apos.aposAssistant.getChat(userReq(), chat._id)).openRequest &&
         await jobEnded(stored.jobId);
     });
-    return apos.assistant.getRequest(userReq(), request._id);
+    return apos.aposAssistant.getRequest(userReq(), request._id);
   }
 
   // A request writing `patch` to the document, run to its end
@@ -176,21 +176,21 @@ describe('Assistant: revert', function () {
       }
     }, { text: 'Written.' } ];
     script = () => turns.shift() || { text: 'Done.' };
-    const request = await apos.assistant.send(userReq(), chat._id, {
+    const request = await apos.aposAssistant.send(userReq(), chat._id, {
       message: 'Write it',
       screen: { tabId: 'tab-1' }
     });
     await waitFor(async () => {
-      const stored = await apos.assistant.getRequest(userReq(), request._id);
+      const stored = await apos.aposAssistant.getRequest(userReq(), request._id);
       return (stored.status !== 'running') &&
-        !(await apos.assistant.getChat(userReq(), chat._id)).openRequest &&
+        !(await apos.aposAssistant.getChat(userReq(), chat._id)).openRequest &&
         await jobEnded(stored.jobId);
     });
-    return apos.assistant.getRequest(userReq(), request._id);
+    return apos.aposAssistant.getRequest(userReq(), request._id);
   }
 
   async function revert(chat, request, options = {}) {
-    const started = await apos.assistant.revert(userReq(), chat._id, {
+    const started = await apos.aposAssistant.revert(userReq(), chat._id, {
       requestId: request._id,
       tabId: 'tab-1',
       ...options
@@ -199,7 +199,7 @@ describe('Assistant: revert', function () {
   }
 
   function retry(chat, revertId) {
-    return apos.assistant.retryRevert(userReq(), chat._id, {
+    return apos.aposAssistant.retryRevert(userReq(), chat._id, {
       revertId,
       tabId: 'tab-1'
     });
@@ -207,10 +207,10 @@ describe('Assistant: revert', function () {
 
   async function waitForRevert(started) {
     await waitFor(async () => {
-      const stored = await apos.assistant.getRevert(userReq(), started._id);
+      const stored = await apos.aposAssistant.getRevert(userReq(), started._id);
       return (stored.status !== 'running') && await jobEnded(stored.jobId);
     });
-    return apos.assistant.getRevert(userReq(), started._id);
+    return apos.aposAssistant.getRevert(userReq(), started._id);
   }
 
   // A job ends only after its work's own end
@@ -220,13 +220,13 @@ describe('Assistant: revert', function () {
   }
 
   it('should revert a request and every later one, mark them and free the chat', async function () {
-    const chat = await apos.assistant.createChat(userReq());
+    const chat = await apos.aposAssistant.createChat(userReq());
     const _id = await insertNote('Original');
     const first = await rename(chat, _id, 'One');
     const second = await rename(chat, _id, 'Two');
     const third = await rename(chat, _id, 'Three');
 
-    const checked = await apos.assistant.checkRevert(userReq(), chat._id, {
+    const checked = await apos.aposAssistant.checkRevert(userReq(), chat._id, {
       requestId: second._id,
       tabId: 'tab-1'
     });
@@ -247,17 +247,23 @@ describe('Assistant: revert', function () {
       checked.documents.map(document => document.outcome)
     );
     assert.equal((await find(_id)).title, 'One');
-    const requests = await apos.assistant.getChatRequests(userReq(), chat._id);
+    const requests = await apos.aposAssistant.getChatRequests(userReq(), chat._id);
     assert.deepEqual(requests.map(request => request.revertId || null), [
       null, done._id, done._id
     ]);
     assert.equal(first.revertId, undefined);
-    assert.equal((await apos.assistant.getChat(userReq(), chat._id)).openRevert, null);
-    const [ entry ] = await apos.harness.changes.find({ requestId: done._id }).toArray();
+    assert.equal(
+      (await apos.aposAssistant.getChat(userReq(), chat._id)).openRevert,
+      null
+    );
+    const [ entry ] = await apos.aposHarness.changes
+      .find({ requestId: done._id })
+      .toArray();
     assert.equal(entry.ai, false);
     assert.equal(entry.revert, true);
     assert.deepEqual(
-      (await apos.assistant.getChatReverts(userReq(), chat._id)).map(item => item._id),
+      (await apos.aposAssistant.getChatReverts(userReq(), chat._id))
+        .map(item => item._id),
       [ done._id ]
     );
 
@@ -270,7 +276,7 @@ describe('Assistant: revert', function () {
   });
 
   it('should refuse a revert while a request is open, and a send or a delete while a revert runs', async function () {
-    const chat = await apos.assistant.createChat(userReq());
+    const chat = await apos.aposAssistant.createChat(userReq());
     const _id = await insertNote('Original');
     const request = await rename(chat, _id, 'Renamed');
     let release;
@@ -281,24 +287,24 @@ describe('Assistant: revert', function () {
       await held;
       return { text: 'Done.' };
     };
-    await apos.assistant.send(userReq(), chat._id, {
+    await apos.aposAssistant.send(userReq(), chat._id, {
       message: 'Wait',
       screen: { tabId: 'tab-1' }
     });
 
     const open = { reason: 'requestOpen' };
     await assert.rejects(revert(chat, request), refusal(open));
-    await assert.rejects(apos.assistant.checkRevert(userReq(), chat._id, {
+    await assert.rejects(apos.aposAssistant.checkRevert(userReq(), chat._id, {
       requestId: request._id,
       tabId: 'tab-1'
     }), refusal(open));
     release();
     await waitFor(async () => {
-      return !(await apos.assistant.getChat(userReq(), chat._id)).openRequest;
+      return !(await apos.aposAssistant.getChat(userReq(), chat._id)).openRequest;
     });
 
     // A revert running, as its slot holds the chat
-    await apos.assistant.chats.updateOne({ _id: chat._id }, {
+    await apos.aposAssistant.chats.updateOne({ _id: chat._id }, {
       $set: {
         openRevert: {
           _id: 'running-revert',
@@ -306,7 +312,7 @@ describe('Assistant: revert', function () {
         }
       }
     });
-    await apos.assistant.reverts.insertOne({
+    await apos.aposAssistant.reverts.insertOne({
       _id: 'running-revert',
       chatId: chat._id,
       ownerId: editor._id,
@@ -317,19 +323,19 @@ describe('Assistant: revert', function () {
       updatedAt: new Date()
     });
     const running = { reason: 'revertRunning' };
-    await assert.rejects(apos.assistant.send(userReq(), chat._id, {
+    await assert.rejects(apos.aposAssistant.send(userReq(), chat._id, {
       message: 'Next',
       screen: { tabId: 'tab-1' }
     }), refusal(running));
     await assert.rejects(revert(chat, request), refusal(running));
     await assert.rejects(
-      apos.assistant.deleteChat(userReq(), chat._id),
+      apos.aposAssistant.deleteChat(userReq(), chat._id),
       refusal(running)
     );
   });
 
   it('should hold back a locked document, and put it back on retry', async function () {
-    const chat = await apos.assistant.createChat(userReq());
+    const chat = await apos.aposAssistant.createChat(userReq());
     const ids = [ await insertNote('Free'), await insertNote('Locked') ];
     const request = await rename(chat, ids[0], 'Free, renamed');
     await rename(chat, ids[1], 'Locked, renamed');
@@ -358,7 +364,7 @@ describe('Assistant: revert', function () {
   });
 
   it('should leave a document an editor of its browser tab holds, and put it back on retry once closed', async function () {
-    const chat = await apos.assistant.createChat(userReq());
+    const chat = await apos.aposAssistant.createChat(userReq());
     const ids = [ await insertNote('Free'), await insertNote('Open') ];
     const request = await rename(chat, ids[0], 'Free, renamed');
     await rename(chat, ids[1], 'Open, renamed');
@@ -370,7 +376,7 @@ describe('Assistant: revert', function () {
       } ]
     };
 
-    const checked = await apos.assistant.checkRevert(userReq(), chat._id, {
+    const checked = await apos.aposAssistant.checkRevert(userReq(), chat._id, {
       requestId: request._id,
       tabId: 'tab-1',
       screen
@@ -389,7 +395,7 @@ describe('Assistant: revert', function () {
     assert.equal(outcome(ids[1]).lockedBy, null);
     assert.equal((await find(ids[1])).title, 'Open, renamed');
 
-    const again = await apos.assistant.retryRevert(userReq(), chat._id, {
+    const again = await apos.aposAssistant.retryRevert(userReq(), chat._id, {
       revertId: done._id,
       tabId: 'tab-1',
       screen
@@ -405,11 +411,11 @@ describe('Assistant: revert', function () {
   });
 
   it('should fail a revert left behind by a process that died, and run it whole on retry', async function () {
-    const chat = await apos.assistant.createChat(userReq());
+    const chat = await apos.aposAssistant.createChat(userReq());
     const _id = await insertNote('Original');
     const request = await rename(chat, _id, 'Renamed');
     const long = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    await apos.assistant.reverts.insertOne({
+    await apos.aposAssistant.reverts.insertOne({
       _id: 'left-revert',
       chatId: chat._id,
       ownerId: editor._id,
@@ -420,7 +426,7 @@ describe('Assistant: revert', function () {
       createdAt: long,
       updatedAt: long
     });
-    await apos.assistant.chats.updateOne({ _id: chat._id }, {
+    await apos.aposAssistant.chats.updateOne({ _id: chat._id }, {
       $set: {
         openRevert: {
           _id: 'left-revert',
@@ -430,35 +436,35 @@ describe('Assistant: revert', function () {
       }
     });
 
-    const reconciled = await apos.assistant.reconcileChat(
+    const reconciled = await apos.aposAssistant.reconcileChat(
       userReq(),
-      await apos.assistant.getChat(userReq(), chat._id)
+      await apos.aposAssistant.getChat(userReq(), chat._id)
     );
 
     assert.equal(reconciled.openRevert, null);
-    const failed = await apos.assistant.getRevert(userReq(), 'left-revert');
+    const failed = await apos.aposAssistant.getRevert(userReq(), 'left-revert');
     assert.equal(failed.status, 'failed');
     assert.equal(failed.error.name, 'interrupted');
-    const kept = await apos.assistant.getRequest(userReq(), request._id);
+    const kept = await apos.aposAssistant.getRequest(userReq(), request._id);
     assert.equal(kept.revertId, undefined);
 
     const retried = await waitForRevert(await retry(chat, 'left-revert'));
 
     assert.equal(retried.status, 'done');
     assert.equal((await find(_id)).title, 'Original');
-    const reverted = await apos.assistant.getRequest(userReq(), request._id);
+    const reverted = await apos.aposAssistant.getRequest(userReq(), request._id);
     assert.equal(reverted.revertId, 'left-revert');
   });
 
   it('should leave reverted requests out of the transcript', async function () {
-    const chat = await apos.assistant.createChat(userReq());
+    const chat = await apos.aposAssistant.createChat(userReq());
     const _id = await insertNote('Original');
     await rename(chat, _id, 'One');
     const second = await rename(chat, _id, 'Two');
     await revert(chat, second);
 
-    const transcript = await apos.assistant.getTranscript(
-      await apos.assistant.getChat(userReq(), chat._id),
+    const transcript = await apos.aposAssistant.getTranscript(
+      await apos.aposAssistant.getChat(userReq(), chat._id),
       { sequence: 99 }
     );
 
@@ -470,7 +476,7 @@ describe('Assistant: revert', function () {
   });
 
   it('should keep a revert\'s progress, cause and the view of each document it kept, and its dismissal', async function () {
-    const chat = await apos.assistant.createChat(userReq());
+    const chat = await apos.aposAssistant.createChat(userReq());
     const page = await apos.page.insert(userReq(), '_home', 'lastChild', {
       type: 'revert-page',
       title: 'Spring sale'
@@ -495,7 +501,7 @@ describe('Assistant: revert', function () {
     const locked = await find(lockedId);
     await apos.doc.lock(userReq(other), locked, 'other-tab');
 
-    const checked = await apos.assistant.checkRevert(userReq(), chat._id, {
+    const checked = await apos.aposAssistant.checkRevert(userReq(), chat._id, {
       requestId: first._id,
       tabId: 'tab-1'
     });
@@ -517,7 +523,7 @@ describe('Assistant: revert', function () {
     assert.equal((await find(noteId)).title, 'Note');
 
     // As the panel reads it: no rows, partly when some were put back
-    const rendered = apos.assistant.renderRevert(done);
+    const rendered = apos.aposAssistant.renderRevert(done);
     assert.equal(rendered.ownerId, undefined);
     assert.equal(rendered.jobId, undefined);
     const shown = new Map(rendered.documents
@@ -527,7 +533,7 @@ describe('Assistant: revert', function () {
     assert.equal(shown.get(page._id).partly, false);
     assert.equal(shown.get(page._id).label, 'apostrophe:page');
     assert.equal(shown.get(noteId).label, apos.modules['revert-note'].options.label);
-    const dry = apos.assistant.renderRevert({ documents: checked.documents });
+    const dry = apos.aposAssistant.renderRevert({ documents: checked.documents });
     const summary = document => [ document.docId, document.outcome, document.partly ];
     assert.deepEqual(dry.documents.map(summary), rendered.documents.map(summary));
 
@@ -536,24 +542,27 @@ describe('Assistant: revert', function () {
     const unknown = await revert(chat, await rename(chat, lockedId, 'Again'), { cause: 'other' });
     assert.equal(unknown.cause, undefined);
 
-    const dismissed = await apos.assistant.dismissRevert(userReq(), chat._id, {
+    const dismissed = await apos.aposAssistant.dismissRevert(userReq(), chat._id, {
       revertId: done._id
     });
     assert.equal(dismissed._id, done._id);
     assert.equal(dismissed.dismissed, true);
-    assert.equal((await apos.assistant.getRevert(userReq(), done._id)).dismissed, true);
-    const elsewhere = await apos.assistant.createChat(userReq());
+    assert.equal(
+      (await apos.aposAssistant.getRevert(userReq(), done._id)).dismissed,
+      true
+    );
+    const elsewhere = await apos.aposAssistant.createChat(userReq());
     await assert.rejects(
-      apos.assistant.dismissRevert(userReq(), elsewhere._id, { revertId: done._id }),
+      apos.aposAssistant.dismissRevert(userReq(), elsewhere._id, { revertId: done._id }),
       { name: 'notfound' }
     );
   });
 
   it('should not retry a failed revert once a request was sent after it', async function () {
-    const chat = await apos.assistant.createChat(userReq());
+    const chat = await apos.aposAssistant.createChat(userReq());
     const _id = await insertNote('Original');
     const request = await rename(chat, _id, 'Renamed');
-    await apos.assistant.reverts.insertOne({
+    await apos.aposAssistant.reverts.insertOne({
       _id: 'failed-revert',
       chatId: chat._id,
       ownerId: editor._id,
@@ -572,18 +581,24 @@ describe('Assistant: revert', function () {
 
     await assert.rejects(retry(chat, 'failed-revert'), { name: 'invalid' });
 
-    assert.equal((await apos.assistant.getRevert(userReq(), 'failed-revert')).status, 'failed');
-    assert.equal((await apos.assistant.getChat(userReq(), chat._id)).openRevert, null);
+    assert.equal((await apos.aposAssistant.getRevert(userReq(), 'failed-revert')).status, 'failed');
+    assert.equal(
+      (await apos.aposAssistant.getChat(userReq(), chat._id)).openRevert,
+      null
+    );
   });
 
   it('should delete a chat\'s reverts with it', async function () {
-    const chat = await apos.assistant.createChat(userReq());
+    const chat = await apos.aposAssistant.createChat(userReq());
     const request = await rename(chat, await insertNote('Original'), 'Renamed');
     await revert(chat, request);
 
-    await apos.assistant.deleteChat(userReq(), chat._id);
+    await apos.aposAssistant.deleteChat(userReq(), chat._id);
 
-    assert.equal(await apos.assistant.reverts.countDocuments({ chatId: chat._id }), 0);
+    assert.equal(
+      await apos.aposAssistant.reverts.countDocuments({ chatId: chat._id }),
+      0
+    );
   });
 });
 

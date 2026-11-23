@@ -140,7 +140,7 @@ describe('Assistant: attachments', function () {
       for (const attachment of Object.values(kinds)) {
         assert.equal(attachment.storage, undefined);
       }
-      const records = await apos.assistant.attachments.find({
+      const records = await apos.aposAssistant.attachments.find({
         chatId: { $regex: '^intake-' }
       }).toArray();
       assert.equal(records.length, 9);
@@ -152,7 +152,7 @@ describe('Assistant: attachments', function () {
       await assert.rejects(attach(userReq(guest), 'guest-chat', 'note.md', 'Hi'), {
         name: 'forbidden'
       });
-      const { attachments } = apos.assistant;
+      const { attachments } = apos.aposAssistant;
       assert.equal(await attachments.countDocuments({ ownerId: guest._id }), 0);
     });
 
@@ -163,8 +163,8 @@ describe('Assistant: attachments', function () {
       await assert.rejects(attach(req, chat, 'fake.png', 'not an image'), refusal('unreadable'));
       await assert.rejects(attach(req, chat, 'fake.pdf', 'not a pdf'), refusal('unreadable'));
       await assert.rejects(attach(req, chat, 'broken.json', '{ nope'), refusal('unreadable'));
-      const { attachmentMaxBytes } = apos.assistant.options;
-      apos.assistant.options.attachmentMaxBytes = 1000;
+      const { attachmentMaxBytes } = apos.aposAssistant.options;
+      apos.aposAssistant.options.attachmentMaxBytes = 1000;
       try {
         await assert.rejects(attach(req, chat, 'big.png', fixture('upload_image.png')), {
           name: 'invalid',
@@ -176,7 +176,7 @@ describe('Assistant: attachments', function () {
           message: 'big.png is 102 KB, over the 1 KB limit'
         });
       } finally {
-        apos.assistant.options.attachmentMaxBytes = attachmentMaxBytes;
+        apos.aposAssistant.options.attachmentMaxBytes = attachmentMaxBytes;
       }
       const { capabilities } = apos.ai.providers.fake;
       capabilities.documentInput = false;
@@ -188,24 +188,27 @@ describe('Assistant: attachments', function () {
             kind: 'pdf'
           }
         });
-        assert(!apos.assistant.getAttachmentExtensions().includes('pdf'));
-        assert.deepEqual(apos.assistant.getUnreadableExtensions(), { pdf: 'pdf' });
+        assert(!apos.aposAssistant.getAttachmentExtensions().includes('pdf'));
+        assert.deepEqual(apos.aposAssistant.getUnreadableExtensions(), { pdf: 'pdf' });
       } finally {
         capabilities.documentInput = true;
       }
-      assert(apos.assistant.getAttachmentExtensions().includes('pdf'));
+      assert(apos.aposAssistant.getAttachmentExtensions().includes('pdf'));
       for (let i = 0; i < 4; i++) {
         await attach(req, chat, `note-${i}.md`, 'Hi');
       }
       await assert.rejects(attach(req, chat, 'fifth.md', 'Hi'), refusal('count'));
-      assert.equal(await apos.assistant.attachments.countDocuments({ chatId: chat }), 4);
+      assert.equal(
+        await apos.aposAssistant.attachments.countDocuments({ chatId: chat }),
+        4
+      );
     });
 
     it('takes CSS, JSON and Markdown up to their own limit, markup up to the larger one', async function () {
       const req = userReq(editor);
       const chat = 'text-limit';
-      const { attachmentMaxTextBytes } = apos.assistant.options;
-      apos.assistant.options.attachmentMaxTextBytes = 1000;
+      const { attachmentMaxTextBytes } = apos.aposAssistant.options;
+      apos.aposAssistant.options.attachmentMaxTextBytes = 1000;
       try {
         const content = `/* ${'a'.repeat(2000)} */`;
         await assert.rejects(attach(req, chat, 'big.css', content), {
@@ -220,15 +223,15 @@ describe('Assistant: attachments', function () {
         const page = await attach(req, chat, 'big.html', `<p>${'a'.repeat(2000)}</p>`);
         assert.equal(page.kind, 'html');
       } finally {
-        apos.assistant.options.attachmentMaxTextBytes = attachmentMaxTextBytes;
+        apos.aposAssistant.options.attachmentMaxTextBytes = attachmentMaxTextBytes;
       }
     });
 
     it('refuses a PDF longer than the chat\'s threshold holds', async function () {
       const req = userReq(editor);
-      const { contextLimit } = apos.assistant.options;
+      const { contextLimit } = apos.aposAssistant.options;
       // A threshold of 24000 holds the instructions and five pages
-      apos.assistant.options.contextLimit = 32000;
+      apos.aposAssistant.options.contextLimit = 32000;
       try {
         await assert.rejects(attach(req, 'long-pdf', 'report.pdf', pdfWithPages(6)), {
           name: 'invalid',
@@ -241,7 +244,7 @@ describe('Assistant: attachments', function () {
         const taken = await attach(req, 'long-pdf', 'brief.pdf', pdfWithPages(5));
         assert.equal(taken.pages, 5);
       } finally {
-        apos.assistant.options.contextLimit = contextLimit;
+        apos.aposAssistant.options.contextLimit = contextLimit;
       }
     });
 
@@ -249,15 +252,15 @@ describe('Assistant: attachments', function () {
       const jar = await login('editor');
       const own = await upload(jar, 'route-chat', 'upload_image.png');
       assert.equal(own.attachment.kind, 'image');
-      const { attachmentMaxBytes } = apos.assistant.options;
-      apos.assistant.options.attachmentMaxBytes = 1000;
+      const { attachmentMaxBytes } = apos.aposAssistant.options;
+      apos.aposAssistant.options.attachmentMaxBytes = 1000;
       try {
         await assert.rejects(upload(jar, 'route-chat', 'upload_image.png'),
           error => (error.status === 400) && (error.body.data.reason === 'size'));
       } finally {
-        apos.assistant.options.attachmentMaxBytes = attachmentMaxBytes;
+        apos.aposAssistant.options.attachmentMaxBytes = attachmentMaxBytes;
       }
-      const chat = await apos.assistant.createChat(userReq(editor));
+      const chat = await apos.aposAssistant.createChat(userReq(editor));
       const other = await login('other');
       await assert.rejects(upload(other, chat._id, 'upload_image.png'), { status: 404 });
     });
@@ -295,32 +298,35 @@ describe('Assistant: attachments', function () {
       });
       // A sent file leaves the list
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const sent = await attach(req, chat._id, 'sent.md', 'Hi');
       const kept = await attach(req, chat._id, 'kept.md', 'Hi');
       await runToEnd(req, chat, 'Read it', [ sent._id ]);
-      const unsent = await apos.assistant.listUnsent(req, chat._id);
+      const unsent = await apos.aposAssistant.listUnsent(req, chat._id);
       assert.deepEqual(unsent.map(({ _id }) => _id), [ kept._id ]);
     });
 
     it('deletes an unsent file, and never one a request carries', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const dropped = await attach(req, chat._id, 'dropped.md', 'Hi');
-      const record = await apos.assistant.attachments.findOne({ _id: dropped._id });
-      await apos.assistant.detach(req, chat._id, dropped._id);
-      assert.equal(await apos.assistant.attachments.findOne({ _id: dropped._id }), null);
+      const record = await apos.aposAssistant.attachments.findOne({ _id: dropped._id });
+      await apos.aposAssistant.detach(req, chat._id, dropped._id);
+      assert.equal(
+        await apos.aposAssistant.attachments.findOne({ _id: dropped._id }),
+        null
+      );
       await assertGone(record.storage);
       const sent = await attach(req, chat._id, 'sent.md', 'Hi');
       await runToEnd(req, chat, 'Read it', [ sent._id ]);
-      await assert.rejects(apos.assistant.detach(req, chat._id, sent._id), { name: 'notfound' });
+      await assert.rejects(apos.aposAssistant.detach(req, chat._id, sent._id), { name: 'notfound' });
     });
   });
 
   describe('the send', function () {
     it('names each file in the message, with bytes only in the outbound call', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const image = await attach(req, chat._id, 'photo.png', fixture('upload_image.png'));
       const pdf = await attach(req, chat._id, 'brief.pdf', PDF);
       const svg = await attach(req, chat._id, 'logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>');
@@ -359,7 +365,7 @@ describe('Assistant: attachments', function () {
         [ 'document', pdf._id, undefined, undefined ]
       ]);
       assert(!JSON.stringify(request).includes(media[0].image.data.slice(0, 200)));
-      const records = await apos.assistant.attachments
+      const records = await apos.aposAssistant.attachments
         .find({ requestId: request._id })
         .toArray();
       assert.equal(records.length, 3);
@@ -375,14 +381,14 @@ describe('Assistant: attachments', function () {
 
     it('refuses a file of another chat, one sent already, and too many', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const elsewhere = await attach(req, 'another-chat', 'note.md', 'Hi');
       await assert.rejects(send(req, chat, 'Hi', [ elsewhere._id ]), {
         name: 'invalid',
         data: { reason: 'gone' }
       });
       // A refused send leaves the chat free and the file unclaimed
-      assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest, null);
+      assert.equal((await apos.aposAssistant.getChat(req, chat._id)).openRequest, null);
       const mine = await attach(req, chat._id, 'mine.md', 'Hi');
       await runToEnd(req, chat, 'Read it', [ mine._id ]);
       await assert.rejects(send(req, chat, 'Again', [ mine._id ]), refusal('gone'));
@@ -391,13 +397,13 @@ describe('Assistant: attachments', function () {
 
     it('goes on with a note when a file is gone from storage, and so do the tools', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const image = await attach(req, chat._id, 'photo.png', fixture('upload_image.png'));
       const page = await attach(req, chat._id, 'page.html', '<p>Hi</p>');
       await runToEnd(req, chat, 'Look', [ image._id, page._id ]);
       for (const _id of [ image._id, page._id ]) {
-        const { storage } = await apos.assistant.attachments.findOne({ _id });
-        await apos.assistant.removeChatFile(storage);
+        const { storage } = await apos.aposAssistant.attachments.findOne({ _id });
+        await apos.aposAssistant.removeChatFile(storage);
       }
       calls = [];
       script = {
@@ -419,10 +425,10 @@ describe('Assistant: attachments', function () {
         'The file "photo.png" is no longer available.');
       assert(!calls.some(call => call.caller === 'vision'));
       // Found gone, each file is marked so, and the thread is told
-      const [ first ] = await apos.assistant.getChatRequests(req, chat._id);
-      const [ shown ] = await apos.assistant.presentRequests([ first ]);
+      const [ first ] = await apos.aposAssistant.getChatRequests(req, chat._id);
+      const [ shown ] = await apos.aposAssistant.presentRequests([ first ]);
       assert.deepEqual(shown.unavailable.toSorted(), [ image._id, page._id ].toSorted());
-      const records = await apos.assistant.attachments
+      const records = await apos.aposAssistant.attachments
         .find({ _id: { $in: [ image._id, page._id ] } })
         .toArray();
       assert(records.every(record => record.status === 'missing'));
@@ -434,7 +440,7 @@ describe('Assistant: attachments', function () {
 
     it('tells the model how to build from a source once the chat has files', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const system = () => calls.filter(call => call.caller === 'run').at(-1).request.system;
       await runToEnd(req, chat, 'Hello');
       assert(!system().includes('Building from an attached source'));
@@ -445,12 +451,15 @@ describe('Assistant: attachments', function () {
       // And on, for the rest of the chat
       await runToEnd(req, chat, 'Thanks');
       assert(system().includes('Building from an attached source'));
-      assert.equal((await apos.assistant.getChat(req, chat._id)).hasAttachments, true);
+      assert.equal(
+        (await apos.aposAssistant.getChat(req, chat._id)).hasAttachments,
+        true
+      );
     });
 
     it('brings the files of a retried request the model never answered', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const image = await attach(req, chat._id, 'photo.png', fixture('upload_image.png'));
       script = {
         run: () => {
@@ -461,7 +470,7 @@ describe('Assistant: attachments', function () {
       assert.equal(failed.status, 'failed');
       script = null;
       calls = [];
-      await apos.assistant.retry(req, chat._id, {
+      await apos.aposAssistant.retry(req, chat._id, {
         retryOf: failed._id,
         screen: { tabId: 'tab-1' }
       });
@@ -658,7 +667,7 @@ describe('Assistant: attachments', function () {
   describe('save_attachment_to_media and describe_images', function () {
     it('saves an attached image to Media unchanged and untagged, through the change log', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const image = await attach(req, chat._id, 'launch-photo.png', fixture('upload_image.png'));
       const pdf = await attach(req, chat._id, 'brief.pdf', PDF);
       script = {
@@ -681,23 +690,24 @@ describe('Assistant: attachments', function () {
       assert.deepEqual(doc.tagsIds || [], []);
       assert.equal(doc.attachment.extension, 'png');
       // The file as the chat stored it, which is what Media stores of an upload
-      const { storage } = await apos.assistant.attachments.findOne({ _id: image._id });
-      const stored = await apos.assistant.readChatFile(storage);
+      const { storage } = await apos.aposAssistant.attachments
+        .findOne({ _id: image._id });
+      const stored = await apos.aposAssistant.readChatFile(storage);
       assert.equal(doc.attachment.length, stored.length);
-      const logged = await apos.harness.changes
+      const logged = await apos.aposHarness.changes
         .find({ requestId: request._id })
         .toArray();
       assert(logged.some(row => row.aposDocId === doc.aposDocId));
       assert.match(resultOf(request, 'call-pdf').error, /Only images can be saved to Media/);
       // The chat file stays the chat's
-      assert(await apos.assistant.attachments.findOne({ _id: image._id }));
+      assert(await apos.aposAssistant.attachments.findOne({ _id: image._id }));
     });
 
     it('refuses to save for a user who may not upload', async function () {
       const req = userReq(guest);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       // Attaching takes the same right: a file of theirs from before they lost it
-      const image = await apos.assistant.storeChatFile(
+      const image = await apos.aposAssistant.storeChatFile(
         path.join(FIXTURES, 'upload_image.png'),
         'png',
         {
@@ -722,7 +732,7 @@ describe('Assistant: attachments', function () {
 
     it('describes an attached image at its preview size, and refuses an SVG', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const image = await attach(req, chat._id, 'photo.png', fixture('upload_image.png'));
       const svg = await attach(req, chat._id, 'logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>');
       script = {
@@ -743,8 +753,9 @@ describe('Assistant: attachments', function () {
       assert.match(attachments[1].error, /read_attachment/);
       const vision = calls.filter(call => call.caller === 'vision');
       assert.equal(vision.length, 1);
-      const { storage } = await apos.assistant.attachments.findOne({ _id: image._id });
-      const preview = await apos.assistant.readChatFile(storage, { size: 'preview' });
+      const { storage } = await apos.aposAssistant.attachments
+        .findOne({ _id: image._id });
+      const preview = await apos.aposAssistant.readChatFile(storage, { size: 'preview' });
       assert.equal(vision[0].request.messages[0].content[0].image.data, preview.toString('base64'));
     });
   });
@@ -752,7 +763,7 @@ describe('Assistant: attachments', function () {
   describe('describe_images by kind', function () {
     it('looks an id up only where its argument says, and needs one image', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const image = await attach(req, chat._id, 'photo.png', fixture('upload_image.png'));
       const media = await apos.image.insert(apos.task.getReq(), {
         title: 'Beach',
@@ -785,7 +796,7 @@ describe('Assistant: attachments', function () {
 
   describe('long chats and deletion', function () {
     it('drops old attached images and PDFs with tier 1, and counts them as a provider bills them', async function () {
-      const message = apos.assistant.getUserMessage({
+      const message = apos.aposAssistant.getUserMessage({
         _id: 'r1',
         screen: { tabId: 'tab-1' },
         message: 'Look',
@@ -810,17 +821,17 @@ describe('Assistant: attachments', function () {
         ...message,
         content: message.content.map(part => (part.attachmentId ? null : part))
       };
-      assert.equal(apos.assistant.estimateTokens(message),
-        apos.assistant.estimateTokens(withoutMedia) + 1600 + 3 * 2400);
+      assert.equal(apos.aposAssistant.estimateTokens(message),
+        apos.aposAssistant.estimateTokens(withoutMedia) + 1600 + 3 * 2400);
       // A widget whose type is called "image" counts as its text
       const widget = {
         _id: 'w1',
         type: 'image',
         caption: 'x'
       };
-      assert.equal(apos.assistant.estimateTokens(widget),
+      assert.equal(apos.aposAssistant.estimateTokens(widget),
         Math.ceil(JSON.stringify(widget).length / 2));
-      const [ shortened ] = apos.assistant.applyCheckpoint({
+      const [ shortened ] = apos.aposAssistant.applyCheckpoint({
         calls: [],
         media: [ 'r1' ]
       }, [ {
@@ -835,23 +846,24 @@ describe('Assistant: attachments', function () {
         '[The image "photo.png" was shown here and later removed from the chat to save space.]',
         '[The document "brief.pdf" was shown here and later removed from the chat to save space.]'
       ]);
-      const sent = await apos.assistant
+      const sent = await apos.aposAssistant
         .addAttachmentBytes(editor._id, shortened.messages);
       assert(!sent[0].content.some(part => [ 'image', 'document' ].includes(part.type)));
     });
 
     it('deletes a chat\'s files, sent and unsent, bytes before records', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const sent = await attach(req, chat._id, 'photo.png', fixture('upload_image.png'));
       await runToEnd(req, chat, 'Look', [ sent._id ]);
       await attach(req, chat._id, 'unsent.md', 'Hi');
-      const records = await apos.assistant.attachments
+      const records = await apos.aposAssistant.attachments
         .find({ chatId: chat._id })
         .toArray();
       assert.equal(records.length, 2);
-      await apos.assistant.deleteChat(req, chat._id);
-      const left = await apos.assistant.attachments.countDocuments({ chatId: chat._id });
+      await apos.aposAssistant.deleteChat(req, chat._id);
+      const left = await apos.aposAssistant.attachments
+        .countDocuments({ chatId: chat._id });
       assert.equal(left, 0);
       for (const { storage } of records) {
         await assertGone(storage);
@@ -878,7 +890,7 @@ describe('Assistant: attachments', function () {
     } else {
       await fs.copyFile(content.from, file);
     }
-    return apos.assistant.attach(req, chatId, {
+    return apos.aposAssistant.attach(req, chatId, {
       originalname: name,
       path: file
     });
@@ -887,7 +899,7 @@ describe('Assistant: attachments', function () {
   // A `read_attachment` call's result in a chat of its own, or `{ error }`
   async function readOne(name, content, input = {}) {
     const req = userReq(editor);
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     const file = await attach(req, chat._id, name, content);
     script = {
       run: sequence([
@@ -927,7 +939,7 @@ describe('Assistant: attachments', function () {
   }
 
   function send(req, chat, message, attachments = []) {
-    return apos.assistant.send(req, chat._id, {
+    return apos.aposAssistant.send(req, chat._id, {
       message,
       screen: { tabId: 'tab-1' },
       attachments
@@ -942,7 +954,7 @@ describe('Assistant: attachments', function () {
   async function waitForEnd(req, chat) {
     let request;
     await waitFor(async () => {
-      const requests = await apos.assistant.getChatRequests(req, chat._id);
+      const requests = await apos.aposAssistant.getChatRequests(req, chat._id);
       request = requests.at(-1);
       const job = request?.jobId &&
         await apos.modules['@apostrophecms/job'].db.findOne({ _id: request.jobId });

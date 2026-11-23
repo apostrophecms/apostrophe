@@ -263,13 +263,13 @@ module.exports = (self) => {
         await fs.rm(temp, { force: true });
       }
       const result = target
-        ? await self.apos.harness.updateDocument(req, {
+        ? await self.apos.aposHarness.updateDocument(req, {
           targets: [ {
             _id: target.doc._id,
             values: { attachment: { _id: attachment._id } }
           } ]
         })
-        : await self.apos.harness.createPiece(req, {
+        : await self.apos.aposHarness.createPiece(req, {
           type: '@apostrophecms/image',
           title: title || base,
           values: {
@@ -316,7 +316,7 @@ module.exports = (self) => {
     async findMediaImage(req, _id) {
       let found;
       try {
-        found = await self.apos.harness.findReadable(req, _id);
+        found = await self.apos.aposHarness.findReadable(req, _id);
       } catch (e) {
         if (e.name !== 'aiToolError') {
           throw e;

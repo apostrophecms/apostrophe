@@ -25,7 +25,7 @@ module.exports = (self) => {
      * @param {object} payload The engine's `{ tool, args }`.
      */
     async checkEditMode(req, { tool, args }) {
-      const door = self.apos.harness.getDoor(req);
+      const door = self.apos.aposHarness.getDoor(req);
       if (!self.active || (door?.door !== DOOR) || (tool.kind !== 'action') ||
         !tool.tags?.includes('content')) {
         return;

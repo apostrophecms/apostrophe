@@ -8,12 +8,12 @@ const DOOR = 'assistant';
 module.exports = (self) => {
   return {
     getLocalizationSection() {
-      if (self.apos.harness.getLocaleNames().length < 2) {
+      if (self.apos.aposHarness.getLocaleNames().length < 2) {
         return null;
       }
       // Tagged "ai-localize-translate" by its module, which also tags it
       // "assistant" for this door to have it
-      const translator = self.apos.harness.getDoorTools(DOOR)
+      const translator = self.apos.aposHarness.getDoorTools(DOOR)
         .find(tool => tool.tags?.includes('ai-localize-translate'));
       return [
         'Localizing for the user:',

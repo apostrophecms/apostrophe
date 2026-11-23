@@ -1,4 +1,4 @@
-// This module provides `apos.assistant`, the assistant of the admin UI: an
+// This module provides `apos.aposAssistant`, the assistant of the admin UI: an
 // editor's chats with AI, each request run as one background job on the
 // harness's tools and guidance, through the `assistant` door.
 //
@@ -18,7 +18,7 @@
 
 module.exports = {
   options: {
-    alias: 'assistant',
+    alias: 'aposAssistant',
     enabled: false,
     // effort: the effort route requests run on; the engine's default when
     //   unset
@@ -124,7 +124,7 @@ module.exports = {
       '@apostrophecms/harness:documentSeen': {
         // The chat keeps what it saw of each document for its next requests
         async storeSeen(req) {
-          const door = self.apos.harness.getDoor(req);
+          const door = self.apos.aposHarness.getDoor(req);
           if (!self.active || (door?.door !== 'assistant')) {
             return;
           }
@@ -153,7 +153,7 @@ module.exports = {
           const { result } = payload;
           // Not to a subagent's result (its `generate` runs inside a tool),
           // which the run's model never sees
-          if (!self.active || (self.apos.harness.getDoor(req)?.door !== 'assistant') ||
+          if (!self.active || (self.apos.aposHarness.getDoor(req)?.door !== 'assistant') ||
             req.aposAiDepth || payload.tool.tags?.includes('browser') ||
             !result || (typeof result !== 'object') || Array.isArray(result)) {
             return;

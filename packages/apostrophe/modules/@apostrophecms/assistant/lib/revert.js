@@ -41,7 +41,7 @@ module.exports = (self) => {
         throw self.getRefusal(chat, {});
       }
       const requestIds = await getRequestIds(req, chat, requestId);
-      const documents = await self.apos.harness.revertRequests(
+      const documents = await self.apos.aposHarness.revertRequests(
         getDoorReq(req, chat, clean, self.apos.util.generateId()),
         requestIds,
         {
@@ -340,7 +340,7 @@ module.exports = (self) => {
   // The `req` a revert writes with: the user's, through the assistant's
   // door, as the user's own change
   function getDoorReq(req, chat, tabId, revertId) {
-    return self.apos.harness.withDoor(req, {
+    return self.apos.aposHarness.withDoor(req, {
       door: DOOR,
       lockId: chat._id,
       family: tabId,
@@ -366,37 +366,41 @@ module.exports = (self) => {
           }, {
             $set: { jobId: info.jobId }
           });
-          documents = await self.apos.harness.revertRequests(doorReq, record.requestIds, {
-            docIds,
-            isHeld: getHeld(held),
-            onProgress: async ({ done, total }) => {
-              if (done === 1) {
-                await reporting.setTotal(total);
-              }
-              await reporting.success();
-              await self.reverts.updateOne({
-                _id: record._id,
-                ownerId: record.ownerId
-              }, {
-                $set: {
-                  progress: {
-                    done,
-                    total
-                  }
+          documents = await self.apos.aposHarness.revertRequests(
+            doorReq,
+            record.requestIds,
+            {
+              docIds,
+              isHeld: getHeld(held),
+              onProgress: async ({ done, total }) => {
+                if (done === 1) {
+                  await reporting.setTotal(total);
                 }
-              });
-              await self.publish(req, chat._id, 'revertProgress', {
-                revertId: record._id,
-                done,
-                total
-              });
+                await reporting.success();
+                await self.reverts.updateOne({
+                  _id: record._id,
+                  ownerId: record.ownerId
+                }, {
+                  $set: {
+                    progress: {
+                      done,
+                      total
+                    }
+                  }
+                });
+                await self.publish(req, chat._id, 'revertProgress', {
+                  revertId: record._id,
+                  done,
+                  total
+                });
+              }
             }
-          });
+          );
         } catch (error) {
           await endRevert(req, chat, record, { error });
           throw error;
         } finally {
-          await self.apos.harness.endRequest(doorReq);
+          await self.apos.aposHarness.endRequest(doorReq);
         }
         await endRevert(req, chat, record, {
           documents,

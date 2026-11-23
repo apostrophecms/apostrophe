@@ -88,7 +88,7 @@ module.exports = (self) => {
           properties: {},
           additionalProperties: true
         },
-        maxResultChars: self.apos.harness.getReadBudget('document'),
+        maxResultChars: self.apos.aposHarness.getReadBudget('document'),
         prepare: self.prepareOpenEditor,
         accept: self.acceptOpenEditorAnswer
       };
@@ -190,9 +190,9 @@ module.exports = (self) => {
       try {
         checkRoot(req, request.screen, root, action);
         if (isRead(action)) {
-          result = self.apos.harness.readContent(req, root, args);
+          result = self.apos.aposHarness.readContent(req, root, args);
         } else {
-          change = await self.apos.harness.editContent(req, root, {
+          change = await self.apos.aposHarness.editContent(req, root, {
             action,
             ...args
           });
@@ -299,7 +299,7 @@ module.exports = (self) => {
       const {
         tool, args, result
       } = payload;
-      const door = self.apos.harness.getDoor(req);
+      const door = self.apos.aposHarness.getDoor(req);
       // A call refused before it ran has no result and no `args`
       if (!self.active || (door?.door !== DOOR) || (tool.name !== 'get_document') ||
         !result || (typeof result !== 'object') || (args.view === 'versions')) {
@@ -343,7 +343,7 @@ module.exports = (self) => {
      * @param {object} payload The engine's `{ tool, args }`.
      */
     async checkHeldDocuments(req, { tool, args }) {
-      const door = self.apos.harness.getDoor(req);
+      const door = self.apos.aposHarness.getDoor(req);
       if (!self.active || (door?.door !== DOOR) || (tool.kind !== 'action') ||
         !tool.tags?.includes('content')) {
         return;
@@ -387,7 +387,7 @@ module.exports = (self) => {
   // The request's verified screen
   async function getScreen(req) {
     const request = await self.requests.findOne({
-      _id: self.apos.harness.getDoor(req).requestId,
+      _id: self.apos.aposHarness.getDoor(req).requestId,
       ownerId: self.getOwnerId(req)
     }, { projection: { screen: 1 } });
     return request?.screen || null;

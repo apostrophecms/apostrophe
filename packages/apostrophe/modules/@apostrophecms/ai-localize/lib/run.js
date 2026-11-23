@@ -244,8 +244,8 @@ module.exports = (self) => {
         // No model is asked to change a copy that can't be written now, one
         // another editor has open: the write path refuses it here, as it
         // would each write of the pass
-        await self.apos.harness.writeDraft(
-          await self.apos.harness.findDraft(req, targetId),
+        await self.apos.aposHarness.writeDraft(
+          await self.apos.aposHarness.findDraft(req, targetId),
           () => {}
         );
       }

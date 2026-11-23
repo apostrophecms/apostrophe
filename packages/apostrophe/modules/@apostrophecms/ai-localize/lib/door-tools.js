@@ -91,7 +91,7 @@ module.exports = (self) => {
           required: [ '_id', 'locale' ],
           additionalProperties: false
         },
-        maxResultChars: self.apos.harness.getReadBudget('document'),
+        maxResultChars: self.apos.aposHarness.getReadBudget('document'),
         tags: [ 'content' ],
         kind: 'query',
         handler: '@apostrophecms/ai-localize:getLocalization'
@@ -178,7 +178,7 @@ module.exports = (self) => {
     async localizeDocument(req, {
       _id, locales, related = false
     }) {
-      const { harness } = self.apos;
+      const { aposHarness: harness } = self.apos;
       const found = await harness.findReadable(req, _id);
       const from = checkLocales(self, found.doc, locales);
       const manager = self.apos.doc.getManager(found.doc.type);
@@ -345,7 +345,7 @@ module.exports = (self) => {
     async recordLocalization(req, {
       _id, from: sourceLocale, locales
     }) {
-      const { harness } = self.apos;
+      const { aposHarness: harness } = self.apos;
       const { doc, draftReq } = await findSource(self, req, _id, sourceLocale);
       const from = checkLocales(self, doc, locales);
       const written = [];
@@ -412,7 +412,7 @@ module.exports = (self) => {
     async getLocalization(req, {
       _id, from: sourceLocale, locale, widgets, offset = '0:0'
     }) {
-      const { harness, docVersions } = self.apos;
+      const { aposHarness: harness, docVersions } = self.apos;
       const { doc, draftReq } = await findSource(self, req, _id, sourceLocale);
       const from = harness.getLocaleOf(doc);
       if (from === locale) {
@@ -640,7 +640,7 @@ module.exports = (self) => {
 // `from` when that names another locale. A tool error the model can act on
 // when the type isn't localized or has no copy there
 async function findSource(self, req, _id, from) {
-  const { harness } = self.apos;
+  const { aposHarness: harness } = self.apos;
   const found = await harness.findReadable(req, _id);
   const own = harness.getLocaleOf(found.doc);
   if (!own) {
@@ -659,7 +659,7 @@ async function findSource(self, req, _id, from) {
 // The locale of `doc`, the source of a copy into each of `locales`; a tool
 // error the model can act on when it has none or is among them
 function checkLocales(self, doc, locales) {
-  const from = self.apos.harness.getLocaleOf(doc);
+  const from = self.apos.aposHarness.getLocaleOf(doc);
   if (!from) {
     throw self.apos.error('aiToolError', 'Documents of this type exist once, not per locale.');
   }

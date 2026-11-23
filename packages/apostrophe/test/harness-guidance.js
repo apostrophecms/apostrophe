@@ -117,7 +117,7 @@ describe('Harness: guidance and language', function () {
   }
 
   function doorReq(door) {
-    return apos.harness.withDoor(userReq(), {
+    return apos.aposHarness.withDoor(userReq(), {
       door,
       lockId: `lock-${door}`,
       requestId: `request-${door}`
@@ -148,7 +148,7 @@ describe('Harness: guidance and language', function () {
 
   describe('the instructions', function () {
     it('should assemble the slots in their fixed order', function () {
-      const instructions = apos.harness.getInstructions(doorReq('assistant'), [
+      const instructions = apos.aposHarness.getInstructions(doorReq('assistant'), [
         'The editor is on /about.',
         '  ',
         'The plan: one step left.'
@@ -179,16 +179,16 @@ describe('Harness: guidance and language', function () {
     });
 
     it('should give the site\'s part on its own, as the instructions carry it', function () {
-      const site = apos.harness.getSiteInstructions(userReq());
+      const site = apos.aposHarness.getSiteInstructions(userReq());
 
       assert.match(site, /^Write in a warm, plain tone\.\n\nWhen to use each type\./);
       assert.doesNotMatch(site, /You work on the content/);
-      assert(apos.harness.getInstructions(userReq()).includes(`\n\n${site}`));
+      assert(apos.aposHarness.getInstructions(userReq()).includes(`\n\n${site}`));
     });
 
     it('should send every type\'s aiWhen through either door', function () {
       for (const req of [ doorReq('assistant'), doorReq('mcp'), userReq() ]) {
-        const instructions = apos.harness.getInstructions(req);
+        const instructions = apos.aposHarness.getInstructions(req);
 
         assert(instructions.includes('\nguide-banner: A banner at the top of a landing page.\n'));
         assert(instructions.endsWith('\nguide-page: A landing page for a campaign.'));
@@ -196,7 +196,7 @@ describe('Harness: guidance and language', function () {
     });
 
     it('should only mark a type\'s aiHow, which get_guidance gives', async function () {
-      const instructions = apos.harness.getInstructions(userReq());
+      const instructions = apos.aposHarness.getInstructions(userReq());
       const { input } = apos.ai.getTool('get_guidance');
 
       assert.equal(instructions.includes('Give every event a start date.'), false);
@@ -234,9 +234,9 @@ describe('Harness: guidance and language', function () {
     });
 
     it('should mark a type only for the doors it has guidance for', function () {
-      const assistant = apos.harness.getInstructions(doorReq('assistant'));
-      const mcp = apos.harness.getInstructions(doorReq('mcp'));
-      const plain = apos.harness.getInstructions(userReq());
+      const assistant = apos.aposHarness.getInstructions(doorReq('assistant'));
+      const mcp = apos.aposHarness.getInstructions(doorReq('mcp'));
+      const plain = apos.aposHarness.getInstructions(userReq());
 
       for (const instructions of [ assistant, mcp, plain ]) {
         assert(instructions.includes('\nguide-event (aiHow)\n'));
@@ -256,7 +256,7 @@ describe('Harness: guidance and language', function () {
         { door: 'mcp' }
       ));
       const [ assistant, mcp ] = [ 'assistant', 'mcp' ].map(door => {
-        const instructions = apos.harness.getInstructions(apos.harness.withDoor(
+        const instructions = apos.aposHarness.getInstructions(apos.aposHarness.withDoor(
           apos.task.getReq(),
           {
             door,
@@ -281,7 +281,7 @@ describe('Harness: guidance and language', function () {
       const req = userReq({ locale: 'en' });
       req.user.adminLocale = 'fr';
 
-      const instructions = apos.harness.getInstructions(req);
+      const instructions = apos.aposHarness.getInstructions(req);
 
       assert.match(
         instructions,

@@ -21,7 +21,7 @@ module.exports = (self) => {
         const docs = [];
         for (const id of ids) {
           try {
-            docs.push((await self.apos.harness.findDraft(req, id)).doc);
+            docs.push((await self.apos.aposHarness.findDraft(req, id)).doc);
           } catch (e) {
             if (e.name !== 'notfound') {
               throw e;
@@ -38,7 +38,7 @@ module.exports = (self) => {
           return true;
         }
         const locales = [
-          ...new Set(styles.map(doc => self.apos.harness.getLocaleOf(doc)))
+          ...new Set(styles.map(doc => self.apos.aposHarness.getLocaleOf(doc)))
         ];
         const pageLocale = self.getPageLocale(await getScreen());
         const live = { key: 'apostrophe:assistantGateLive' };
@@ -86,7 +86,7 @@ module.exports = (self) => {
      */
     async noteGlobalStylesWrite(req, payload) {
       const { tool, result } = payload;
-      if (!self.active || (self.apos.harness.getDoor(req)?.door !== 'assistant') ||
+      if (!self.active || (self.apos.aposHarness.getDoor(req)?.door !== 'assistant') ||
         (tool.name !== TOOL) || !Array.isArray(result?.written)) {
         return;
       }
@@ -95,7 +95,7 @@ module.exports = (self) => {
         return;
       }
       const request = await self.requests.findOne({
-        _id: self.apos.harness.getDoor(req).requestId,
+        _id: self.apos.aposHarness.getDoor(req).requestId,
         ownerId: self.getOwnerId(req)
       }, { projection: { screen: 1 } });
       const pageLocale = self.getPageLocale(request?.screen);

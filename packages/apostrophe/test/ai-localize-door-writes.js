@@ -119,7 +119,7 @@ describe('AI Localize: localize_document and record_localization', function () {
   }
 
   function door(req = userReq(), { revert = false } = {}) {
-    return apos.harness.withDoor(req, {
+    return apos.aposHarness.withDoor(req, {
       door: 'assistant',
       lockId: 'chat-1',
       chat: 'chat-1',
@@ -160,16 +160,16 @@ describe('AI Localize: localize_document and record_localization', function () {
   }
 
   function revert(req, dryRun = false) {
-    return apos.harness.revertRequests(
+    return apos.aposHarness.revertRequests(
       door(userReq(), { revert: true }),
-      [ apos.harness.getDoor(req).requestId ],
+      [ apos.aposHarness.getDoor(req).requestId ],
       { dryRun }
     );
   }
 
   it('should be tools of both doors', function () {
     for (const name of [ 'assistant', 'mcp' ]) {
-      const names = apos.harness.getDoorTools(name).map(tool => tool.name);
+      const names = apos.aposHarness.getDoorTools(name).map(tool => tool.name);
       assert(names.includes('localize_document'), name);
       assert(names.includes('record_localization'), name);
     }
@@ -315,9 +315,12 @@ describe('AI Localize: localize_document and record_localization', function () {
     }, door(userReq('eve')));
 
     assert.deepEqual(result.written.map(item => item.title), [ 'An author', 'An article' ]);
-    assert.deepEqual(result.refused.map(item => [ item.title, item.reason, item.related ]), [
-      [ 'A notice', 'forbidden', true ]
-    ]);
+    assert.deepEqual(
+      result.refused.map(item => [ item.title, item.reason, item.related ]),
+      [
+        [ 'A notice', 'forbidden', true ]
+      ]
+    );
   });
 
   it('should refuse a locale the user may not create in, and go on with the others', async function () {
@@ -418,8 +421,8 @@ describe('AI Localize: localize_document and record_localization', function () {
     assert.equal(locked.refused[0].reason, 'locked');
     assert.equal(locked.refused[0].lockedBy, 'Bob');
     assert.equal(updated.written[0]._id, french._id);
-    const [ entry ] = await apos.harness.changes
-      .find({ requestId: apos.harness.getDoor(req).requestId })
+    const [ entry ] = await apos.aposHarness.changes
+      .find({ requestId: apos.aposHarness.getDoor(req).requestId })
       .toArray();
     assert.equal(entry.docId, french._id);
     assert.equal(entry.ai, true);
@@ -433,7 +436,7 @@ describe('AI Localize: localize_document and record_localization', function () {
     assert.equal(after.by, 'Ann');
     const record = (await records(article.aposDocId)).at(-1);
     assert.equal(record.via, 'ai');
-    assert.equal(record.requestId, apos.harness.getDoor(req).requestId);
+    assert.equal(record.requestId, apos.aposHarness.getDoor(req).requestId);
   });
 
   it('should make a copy, translate and record it in one request, and take all of it back on revert', async function () {
@@ -467,19 +470,22 @@ describe('AI Localize: localize_document and record_localization', function () {
       _id: article._id,
       locale: 'fr'
     }, req);
-    await apos.harness.endRequest(req);
-    const entries = await apos.harness.changes
-      .find({ requestId: apos.harness.getDoor(req).requestId })
+    await apos.aposHarness.endRequest(req);
+    const entries = await apos.aposHarness.changes
+      .find({ requestId: apos.aposHarness.getDoor(req).requestId })
       .toArray();
     const dry = await revert(req, true);
     const done = await revert(req);
 
     assert.equal(copied.state, 'untranslated');
     assert.equal(translated.state, 'upToDate');
-    assert.deepEqual(entries.map(entry => [ entry.docId, entry.effect, entry.ai ]).sort(), [
-      [ inLocale(article, 'fr'), 'create', true ],
-      [ inLocale(author, 'fr'), 'create', true ]
-    ].sort());
+    assert.deepEqual(
+      entries.map(entry => [ entry.docId, entry.effect, entry.ai ]).sort(),
+      [
+        [ inLocale(article, 'fr'), 'create', true ],
+        [ inLocale(author, 'fr'), 'create', true ]
+      ].sort()
+    );
     for (const outcomes of [ dry, done ]) {
       assert.deepEqual(outcomes.map(item => [ item.docId, item.outcome ]).sort(), [
         [ inLocale(article, 'fr'), 'deleted' ],
@@ -507,10 +513,10 @@ describe('AI Localize: localize_document and record_localization', function () {
     let req = door();
 
     await copy();
-    await apos.harness.endRequest(req);
+    await apos.aposHarness.endRequest(req);
     const live = await stored(published(photo));
-    const entry = await apos.harness.changes.findOne({
-      requestId: apos.harness.getDoor(req).requestId,
+    const entry = await apos.aposHarness.changes.findOne({
+      requestId: apos.aposHarness.getDoor(req).requestId,
       docId: inLocale(photo, 'fr')
     });
     const dry = await revert(req, true);
@@ -549,9 +555,9 @@ describe('AI Localize: localize_document and record_localization', function () {
       type: 'loc-photo',
       title: 'A new photo'
     }, req);
-    await apos.harness.endRequest(req);
-    const entry = await apos.harness.changes.findOne({
-      requestId: apos.harness.getDoor(req).requestId
+    await apos.aposHarness.endRequest(req);
+    const entry = await apos.aposHarness.changes.findOne({
+      requestId: apos.aposHarness.getDoor(req).requestId
     });
 
     const done = await revert(req);
@@ -681,7 +687,7 @@ describe('AI Localize: localize_document and record_localization', function () {
     const notice = await insert('loc-notice', { title: 'A notice' });
     await apos.modules['loc-notice'].localize(userReq(), notice, 'fr');
     const req = door(userReq('eve'));
-    await apos.harness.rememberSeen(req, await stored(notice._id));
+    await apos.aposHarness.rememberSeen(req, await stored(notice._id));
 
     const result = await run('record_localization', {
       _id: notice._id,

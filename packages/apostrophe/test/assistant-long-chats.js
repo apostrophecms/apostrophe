@@ -119,17 +119,17 @@ describe('Assistant: long chats', function () {
   describe('the budget', function () {
     it('is the model\'s window when contextLimit is above it, contextLimit otherwise or without a window', function () {
       // fake-large declares 8000, below the 40000 limit
-      assert.equal(apos.assistant.getBudget(), 8000);
-      assert.equal(apos.assistant.getThreshold(), 4000);
-      apos.assistant.options.contextLimit = 6000;
+      assert.equal(apos.aposAssistant.getBudget(), 8000);
+      assert.equal(apos.aposAssistant.getThreshold(), 4000);
+      apos.aposAssistant.options.contextLimit = 6000;
       try {
-        assert.equal(apos.assistant.getBudget(), 6000);
+        assert.equal(apos.aposAssistant.getBudget(), 6000);
         // fake-medium declares no window
-        apos.assistant.options.effort = 'medium';
-        assert.equal(apos.assistant.getBudget(), 6000);
+        apos.aposAssistant.options.effort = 'medium';
+        assert.equal(apos.aposAssistant.getBudget(), 6000);
       } finally {
-        apos.assistant.options.contextLimit = 40000;
-        apos.assistant.options.effort = 'high';
+        apos.aposAssistant.options.contextLimit = 40000;
+        apos.aposAssistant.options.effort = 'high';
       }
     });
   });
@@ -147,7 +147,7 @@ describe('Assistant: long chats', function () {
     before(async function () {
       message = {
         message: 'Hi',
-        screen: await apos.assistant.verifyScreen(userReq(), { tabId: 'tab-1' })
+        screen: await apos.aposAssistant.verifyScreen(userReq(), { tabId: 'tab-1' })
       };
     });
 
@@ -174,8 +174,10 @@ describe('Assistant: long chats', function () {
       ];
       // The reply is the last step's output, already counted
       assert.equal(
-        apos.assistant.measureSend({}, earlier, message),
-        3020 + apos.assistant.estimateTokens([ apos.assistant.getUserMessage(message) ])
+        apos.aposAssistant.measureSend({}, earlier, message),
+        3020 + apos.aposAssistant.estimateTokens([
+          apos.aposAssistant.getUserMessage(message)
+        ])
       );
     });
 
@@ -205,11 +207,11 @@ describe('Assistant: long chats', function () {
         }
       ];
       assert.equal(
-        apos.assistant.measureSend({}, earlier, message),
-        3020 + apos.assistant.estimateTokens([
+        apos.aposAssistant.measureSend({}, earlier, message),
+        3020 + apos.aposAssistant.estimateTokens([
           results,
           earlier[1].messages[0],
-          apos.assistant.getUserMessage(message)
+          apos.aposAssistant.getUserMessage(message)
         ])
       );
     });
@@ -234,8 +236,10 @@ describe('Assistant: long chats', function () {
         } ]
       };
       assert.equal(
-        apos.assistant.measureSend(chat, earlier, message),
-        2500 + apos.assistant.estimateTokens([ apos.assistant.getUserMessage(message) ])
+        apos.aposAssistant.measureSend(chat, earlier, message),
+        2500 + apos.aposAssistant.estimateTokens([
+          apos.aposAssistant.getUserMessage(message)
+        ])
       );
     });
   });
@@ -243,14 +247,14 @@ describe('Assistant: long chats', function () {
   describe('replay', function () {
     it('answers the next two messages after a request that ran out of steps', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
-      apos.assistant.options.maxSteps = 1;
+      const chat = await apos.aposAssistant.createChat(req);
+      apos.aposAssistant.options.maxSteps = 1;
       try {
         script = () => readTurn('c-cut', 'one');
         const cut = await runToEnd(req, chat, 'Read everything');
         assert.equal(cut.finishReason, 'maxSteps');
       } finally {
-        apos.assistant.options.maxSteps = 30;
+        apos.aposAssistant.options.maxSteps = 30;
       }
       script = null;
       for (const message of [ 'Next', 'And next' ]) {
@@ -264,7 +268,7 @@ describe('Assistant: long chats', function () {
 
     it('replays a request that failed mid-way and leaves out one that never reached the model', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ actTurn('c-break', 't_break') ]);
       const broken = await runToEnd(req, chat, 'Break mid-way');
       assert.equal(broken.status, 'failed');
@@ -286,7 +290,7 @@ describe('Assistant: long chats', function () {
   describe('tier 1', function () {
     it('sends what it sent before while a chat is under its threshold', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       for (const [ index, page ] of [ 'a', 'b', 'c' ].entries()) {
         script = sequence([ readTurn(`c-small-${index}`, page), textTurn('Read.', 100) ]);
         await runToEnd(req, chat, `Read ${page}`);
@@ -294,7 +298,10 @@ describe('Assistant: long chats', function () {
       calls.length = 0;
       script = null;
       await runToEnd(req, chat, 'Thanks');
-      assert.equal((await apos.assistant.getChat(req, chat._id)).checkpoints, undefined);
+      assert.equal(
+        (await apos.aposAssistant.getChat(req, chat._id)).checkpoints,
+        undefined
+      );
       const results = toolResults(calls[0].messages);
       assert.equal(results.length, 3);
       assert(results.every(result => !result.output.cleared));
@@ -302,7 +309,7 @@ describe('Assistant: long chats', function () {
 
     it('clears old read results past the threshold, keeping the last two requests, actions and every message', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([
         readTurn('c-1', 'first'),
         actTurn('c-2', 't_act'),
@@ -338,7 +345,7 @@ describe('Assistant: long chats', function () {
       assert.deepEqual(replies(sent), [ 'Read and changed.', 'Read second.', 'Read third.' ]);
       assertStandsOnItsOwn(sent);
 
-      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      const { checkpoints } = await apos.aposAssistant.getChat(req, chat._id);
       assert.equal(checkpoints.length, 1);
       const [ checkpoint ] = checkpoints;
       assert.equal(checkpoint.sequence, fourth.sequence);
@@ -347,15 +354,15 @@ describe('Assistant: long chats', function () {
       assert(checkpoint.before > 4000);
       assert(checkpoint.after < checkpoint.before);
       // The stored chat stays complete
-      const [ first ] = await apos.assistant.getChatRequests(req, chat._id);
+      const [ first ] = await apos.aposAssistant.getChatRequests(req, chat._id);
       assert.equal(toolResults(first.messages)[0].output.page, 'first');
       // The panel never reads the checkpoints
-      const [ listed ] = (await apos.assistant.listChats(req))
+      const [ listed ] = (await apos.aposAssistant.listChats(req))
         .filter(({ _id }) => _id === chat._id);
       assert.equal(listed.checkpoints, undefined);
       // Silent: no summary, so no divider
-      const shortened = await apos.assistant.getChat(req, chat._id);
-      const panel = apos.assistant.renderChat(shortened, { thread: true });
+      const shortened = await apos.aposAssistant.getChat(req, chat._id);
+      const panel = apos.aposAssistant.renderChat(shortened, { thread: true });
       assert.equal(panel.summary, null);
       assert.equal(panel.checkpoints, undefined);
 
@@ -363,7 +370,7 @@ describe('Assistant: long chats', function () {
       // still replays the cleared read as cleared
       calls.length = 0;
       await runToEnd(req, chat, 'Thanks');
-      const again = await apos.assistant.getChat(req, chat._id);
+      const again = await apos.aposAssistant.getChat(req, chat._id);
       assert.equal(again.checkpoints.length, 1);
       const cleared = toolResults(calls[0].messages).find(result => result.toolCallId === 'c-1');
       assert.equal(cleared.output.cleared, true);
@@ -410,7 +417,7 @@ describe('Assistant: long chats', function () {
           messages: []
         }
       ];
-      const checkpoint = apos.assistant.clearOldReads({}, requests, {
+      const checkpoint = apos.aposAssistant.clearOldReads({}, requests, {
         sequence: 3,
         keep: 2,
         before: 5000
@@ -418,7 +425,7 @@ describe('Assistant: long chats', function () {
       assert.deepEqual(checkpoint.media, [ 'r0' ]);
       assert.deepEqual(checkpoint.calls, []);
       assert(checkpoint.after < 5000);
-      const [ shortened ] = apos.assistant.applyCheckpoint(checkpoint, requests);
+      const [ shortened ] = apos.aposAssistant.applyCheckpoint(checkpoint, requests);
       assert.deepEqual(shortened.messages[0].content, [
         {
           type: 'text',
@@ -435,7 +442,7 @@ describe('Assistant: long chats', function () {
       ]);
       // Nothing new to clear: no checkpoint
       const again = { checkpoints: [ checkpoint ] };
-      assert.equal(apos.assistant.clearOldReads(again, requests, {
+      assert.equal(apos.aposAssistant.clearOldReads(again, requests, {
         sequence: 4,
         keep: 2,
         before: 5000
@@ -450,7 +457,7 @@ describe('Assistant: long chats', function () {
 
     it('finishes a request whose reads outgrow the budget mid-way in one request over two runs', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       // The third step's count is past the 4000 threshold
       script = sequence([
         readTurn('m-1', 'one'),
@@ -474,7 +481,7 @@ describe('Assistant: long chats', function () {
       assert.deepEqual(userTexts(calls[3].messages), [ 'Read three pages' ]);
 
       // One record holds the whole request, every result as it was read
-      const requests = await apos.assistant.getChatRequests(req, chat._id);
+      const requests = await apos.aposAssistant.getChatRequests(req, chat._id);
       assert.equal(requests.length, 1);
       assert.deepEqual(toolResults(request.messages).map(result => result.output.page),
         [ 'one', 'two', 'three' ]);
@@ -489,7 +496,7 @@ describe('Assistant: long chats', function () {
       });
       assert.equal(request.jobId && typeof request.jobId, 'string');
 
-      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      const { checkpoints } = await apos.aposAssistant.getChat(req, chat._id);
       assert.equal(checkpoints.length, 1);
       assert.equal(checkpoints[0].sequence, request.sequence);
       assert.deepEqual(checkpoints[0].calls, [ 'm-1' ]);
@@ -506,7 +513,7 @@ describe('Assistant: long chats', function () {
 
     it('keeps running past the threshold while there is nothing to clear', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([
         readTurn('n-1', 'one', 4500),
         readTurn('n-2', 'two', 4600),
@@ -515,12 +522,15 @@ describe('Assistant: long chats', function () {
       const request = await runToEnd(req, chat, 'Read two pages');
       assert.equal(request.status, 'completed');
       assert.equal(calls.length, 3);
-      assert.equal((await apos.assistant.getChat(req, chat._id)).checkpoints, undefined);
+      assert.equal(
+        (await apos.aposAssistant.getChat(req, chat._id)).checkpoints,
+        undefined
+      );
     });
 
     it('shortens further and tries once again when the provider refuses a request as too long', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ readTurn('o-1', 'one'), textTurn('Read one.', 100) ]);
       await runToEnd(req, chat, 'Read one');
       script = sequence([ readTurn('o-2', 'two'), textTurn('Read two.', 100) ]);
@@ -541,13 +551,13 @@ describe('Assistant: long chats', function () {
       assert(toolResults(calls[1].messages).every(result => result.output.cleared));
       assert.deepEqual(userTexts(calls[1].messages), [ 'Read one', 'Read two', 'Go on' ]);
       assertStandsOnItsOwn(calls[1].messages);
-      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      const { checkpoints } = await apos.aposAssistant.getChat(req, chat._id);
       assert.deepEqual(checkpoints.map(checkpoint => checkpoint.calls), [ [ 'o-1', 'o-2' ] ]);
     });
 
     it('fails a request that still can\'t fit, and the chat answers the next message', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ readTurn('f-1', 'one'), textTurn('Read one.', 100) ]);
       await runToEnd(req, chat, 'Read one');
 
@@ -584,13 +594,13 @@ describe('Assistant: long chats', function () {
       assert.deepEqual(userTexts(sent), [ 'Read one', 'Read everything', 'Go on' ]);
       assert(toolResults(sent).every(result => result.output.cleared));
       assertStandsOnItsOwn(sent);
-      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      const { checkpoints } = await apos.aposAssistant.getChat(req, chat._id);
       assert.deepEqual(checkpoints.at(-1).calls.sort(), [ 'f-1', 'f-2', 'f-3', 'f-4' ]);
     });
 
     it('fails at once when a refused request has nothing to clear', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ tooLong ]);
       const failed = await runToEnd(req, chat, 'Hello');
       assert.equal(failed.status, 'failed');
@@ -606,15 +616,15 @@ describe('Assistant: long chats', function () {
   describe('summaries', function () {
     // Threshold 6000 and target 4000 of the 8000 budget
     beforeEach(function () {
-      apos.assistant.options.contextThreshold = 75;
+      apos.aposAssistant.options.contextThreshold = 75;
     });
     afterEach(function () {
-      apos.assistant.options.contextThreshold = 50;
-      delete apos.assistant.options.summaryEffort;
+      apos.aposAssistant.options.contextThreshold = 50;
+      delete apos.aposAssistant.options.summaryEffort;
     });
 
     it('parses the outline as the models write it', function () {
-      const marked = apos.assistant.parseSummary([
+      const marked = apos.aposAssistant.parseSummary([
         '- **STANDING INSTRUCTIONS:**',
         '  - "Always use British spelling from now on." (from the first request)',
         '  - “Reply in one line.”',
@@ -635,14 +645,14 @@ describe('Assistant: long chats', function () {
         learned: [ 'Pages are long.' ]
       });
       // An item that starts like a heading is still an item
-      assert.deepEqual(apos.assistant.parseSummary('DECISIONS\n- Decisions: none taken yet').decisions,
+      assert.deepEqual(apos.aposAssistant.parseSummary('DECISIONS\n- Decisions: none taken yet').decisions,
         [ 'Decisions: none taken yet' ]);
-      assert.equal(apos.assistant.parseSummary('I could not summarize this chat.'), null);
+      assert.equal(apos.aposAssistant.parseSummary('I could not summarize this chat.'), null);
     });
 
     it('replaces older requests by a summary written as one more step of the chat when tier 1 is not enough', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const [ first ] = await buildLongChat(req, chat, 's');
       const lastSystem = calls.at(-1).system;
       const published = watchPublish();
@@ -688,7 +698,7 @@ describe('Assistant: long chats', function () {
       assert.deepEqual(toolResults(run.messages).map(result => result.toolCallId), [ 's-2', 's-3' ]);
       assertStandsOnItsOwn(run.messages);
 
-      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      const { checkpoints } = await apos.aposAssistant.getChat(req, chat._id);
       assert.equal(checkpoints.length, 1);
       const [ checkpoint ] = checkpoints;
       assert.equal(checkpoint.sequence, next.sequence);
@@ -708,12 +718,15 @@ describe('Assistant: long chats', function () {
       assert.match(calls[0].system, /Always use British spelling/);
       assert.deepEqual(userTexts(calls[0].messages),
         [ 'Read second', 'Read third', 'What next?', 'Thanks' ]);
-      assert.equal((await apos.assistant.getChat(req, chat._id)).checkpoints.length, 1);
+      assert.equal(
+        (await apos.aposAssistant.getChat(req, chat._id)).checkpoints.length,
+        1
+      );
     });
 
     it('folds the current summary into the next one', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const [ , second ] = await buildLongChat(req, chat, 'g');
       script = summarizing(() => summaryTurn({
         instructions: [ 'Always use British spelling from now on.' ],
@@ -737,7 +750,7 @@ describe('Assistant: long chats', function () {
       assert.deepEqual(userTexts(run.messages), [ 'Read third', 'What next?', 'Go on' ]);
       assertStandsOnItsOwn(run.messages);
 
-      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      const { checkpoints } = await apos.aposAssistant.getChat(req, chat._id);
       assert.equal(checkpoints.length, 2);
       assert.equal(checkpoints[1].summary.covers, second.sequence);
       assert.deepEqual(checkpoints[1].calls, [ 'g-1', 'g-2' ]);
@@ -748,7 +761,7 @@ describe('Assistant: long chats', function () {
 
     it('falls back to a call of its own when the summary step calls a tool', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       await buildLongChat(req, chat, 'b');
       calls.length = 0;
       script = (request) => {
@@ -764,16 +777,16 @@ describe('Assistant: long chats', function () {
       assert.equal(next.status, 'completed');
       assert.equal(calls.filter(isSummaryStep).length, 1);
       assert.equal(calls.filter(isSeparateSummary).length, 1);
-      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      const { checkpoints } = await apos.aposAssistant.getChat(req, chat._id);
       assert.deepEqual(checkpoints[0].summary.decisions, [ 'Written apart.' ]);
       // The tool the step asked for never ran
       assert(!toolResults(next.messages).some(result => result.toolCallId === 'b-x'));
     });
 
     it('writes the summary on summaryEffort in calls of their own, oldest first in slices', async function () {
-      apos.assistant.options.summaryEffort = 'low';
+      apos.aposAssistant.options.summaryEffort = 'low';
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       await buildLongChat(req, chat, 'e', 'Read it with care. '.repeat(130));
       calls.length = 0;
       let slice = 0;
@@ -789,7 +802,7 @@ describe('Assistant: long chats', function () {
       for (const call of summaries) {
         assert.equal(call.model, 'fake-small');
         assert(!call.tools?.length);
-        assert(apos.assistant.estimateTokens(JSON.stringify(call.messages)) < 2000);
+        assert(apos.aposAssistant.estimateTokens(JSON.stringify(call.messages)) < 2000);
       }
       const texts = call => call.messages[0].content.map(part => part.text);
       assert.match(texts(summaries[0])[0], /^The chat:\nEDITOR: Request id/);
@@ -801,7 +814,7 @@ describe('Assistant: long chats', function () {
       assert.doesNotMatch(read, /words words/);
       const run = calls.at(-1);
       assert.equal(run.model, 'fake-large');
-      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      const { checkpoints } = await apos.aposAssistant.getChat(req, chat._id);
       assert.deepEqual(checkpoints[0].summary.decisions, [ `Slice ${summaries.length}.` ]);
       assert.deepEqual(checkpoints[0].summary.instructions,
         [ 'Always use British spelling from now on.' ]);
@@ -811,7 +824,7 @@ describe('Assistant: long chats', function () {
 
     it('summarizes the earlier requests when a request outgrows its budget mid-way', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ readTurn('i-1', 'one'), textTurn('Read one.', 100) ]);
       const first = await runToEnd(req, chat, 'Never use emojis. Read one');
       script = sequence([ readTurn('i-2', 'two'), textTurn('Read two.', 100) ]);
@@ -837,7 +850,7 @@ describe('Assistant: long chats', function () {
       assertStandsOnItsOwn(resumed.messages);
       assert.deepEqual(toolResults(request.messages).map(result => result.output.page),
         [ 'three', 'four' ]);
-      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      const { checkpoints } = await apos.aposAssistant.getChat(req, chat._id);
       assert.equal(checkpoints.length, 1);
       assert.equal(checkpoints[0].sequence, request.sequence);
       assert.equal(checkpoints[0].summary.covers, second.sequence);
@@ -846,7 +859,7 @@ describe('Assistant: long chats', function () {
 
     it('summarizes in a call of its own when the provider refuses a request as too long', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ textTurn('Noted.', 100) ]);
       await runToEnd(req, chat, `Keep it short. ${'Some background. '.repeat(600)}`);
       script = sequence([ readTurn('v-1', 'one'), textTurn('Read one.', 100) ]);
@@ -875,7 +888,7 @@ describe('Assistant: long chats', function () {
 
     it('drops the checkpoints a revert reaches and keeps a standing instruction only when the editor wrote it outside reverted work', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const [ first ] = await buildLongChat(req, chat, 'r');
       script = summarizing(() => summaryTurn({
         instructions: [ 'Always use British spelling from now on.' ]
@@ -885,29 +898,32 @@ describe('Assistant: long chats', function () {
         instructions: [ 'Always use British spelling from now on.', 'Keep titles short.' ]
       }), [ textTurn('Going on.', 100) ]);
       const fifth = await runToEnd(req, chat, 'Go on');
-      assert.equal((await apos.assistant.getChat(req, chat._id)).checkpoints.length, 2);
+      assert.equal(
+        (await apos.aposAssistant.getChat(req, chat._id)).checkpoints.length,
+        2
+      );
 
       // Reverting the request whose send made the second checkpoint falls
       // back to the first
       await revert(chat, fifth);
-      let stored = await apos.assistant.getChat(req, chat._id);
+      let stored = await apos.aposAssistant.getChat(req, chat._id);
       assert.deepEqual(stored.checkpoints.map(checkpoint => checkpoint.sequence),
         [ fourth.sequence ]);
       const later = { sequence: fifth.sequence + 1 };
-      let transcript = await apos.assistant.getTranscript(stored, later);
+      let transcript = await apos.aposAssistant.getTranscript(stored, later);
       assert.deepEqual(userTexts(transcript), [ 'Read second', 'Read third', 'What next? Keep titles short.' ]);
 
       // Reverting the request that made the first falls back to the whole chat
       await revert(chat, fourth);
-      stored = await apos.assistant.getChat(req, chat._id);
+      stored = await apos.aposAssistant.getChat(req, chat._id);
       assert.deepEqual(stored.checkpoints, []);
-      transcript = await apos.assistant.getTranscript(stored, later);
+      transcript = await apos.aposAssistant.getTranscript(stored, later);
       assert.deepEqual(userTexts(transcript),
         [ 'Always use British spelling from now on. Read first', 'Read second', 'Read third' ]);
       assert(toolResults(transcript).every(result => !result.output.cleared));
 
       // "Keep titles short." was written in reverted work only
-      const checked = await apos.assistant.checkInstructions(stored, {
+      const checked = await apos.aposAssistant.checkInstructions(stored, {
         instructions: [
           'Always use  British spelling from now on.',
           'Keep titles short.',
@@ -923,7 +939,7 @@ describe('Assistant: long chats', function () {
       // A chat whose current summary covers its first request, the
       // requests made, and the request whose send summarized
       async function buildSummarizedChat(req, prefix) {
-        const chat = await apos.assistant.createChat(req);
+        const chat = await apos.aposAssistant.createChat(req);
         const [ first, second, third ] = await buildLongChat(req, chat, prefix);
         script = summarizing(() => summaryTurn({
           instructions: [ 'Always use British spelling from now on.' ],
@@ -934,19 +950,19 @@ describe('Assistant: long chats', function () {
         }), [ textTurn('Next.', 100) ]);
         const fourth = await runToEnd(req, chat, 'What next?');
         return {
-          chat: await apos.assistant.getChat(req, chat._id),
+          chat: await apos.aposAssistant.getChat(req, chat._id),
           requests: [ first, second, third, fourth ]
         };
       }
 
       async function continueFrom(req, chat, request, chatId = apos.util.generateId()) {
-        await apos.assistant.continueInNewChat(req, chat._id, {
+        await apos.aposAssistant.continueInNewChat(req, chat._id, {
           requestId: request._id,
           chatId
         });
         let continued;
         await waitFor(async () => {
-          continued = await apos.assistant.getChat(req, chatId);
+          continued = await apos.aposAssistant.getChat(req, chatId);
           const job = continued.carry?.jobId &&
             await apos.modules['@apostrophecms/job'].db.findOne({ _id: continued.carry.jobId });
           return (continued.carry?.status !== 'running') && (!job || job.ended);
@@ -971,7 +987,7 @@ describe('Assistant: long chats', function () {
           [ 'Always use British spelling from now on.' ]);
         assert.equal(continued.carried.summary.covers, undefined);
         // The source chat is as it was
-        const after = await apos.assistant.getChat(req, chat._id);
+        const after = await apos.aposAssistant.getChat(req, chat._id);
         assert.deepEqual(after.checkpoints, chat.checkpoints);
 
         // The new chat's first request reads the carried summary, dated, and
@@ -1012,7 +1028,7 @@ describe('Assistant: long chats', function () {
 
       it('summarizes the stored chat up to the request when no summary ends before it', async function () {
         const req = userReq();
-        const chat = await apos.assistant.createChat(req);
+        const chat = await apos.aposAssistant.createChat(req);
         script = null;
         const first = await runToEnd(req, chat, 'Always use British spelling from now on. Read first');
         await runToEnd(req, chat, 'Read second');
@@ -1031,10 +1047,10 @@ describe('Assistant: long chats', function () {
 
       it('is refused while the chat runs, and takes no message until its carry is done', async function () {
         const req = userReq();
-        const chat = await apos.assistant.createChat(req);
+        const chat = await apos.aposAssistant.createChat(req);
         script = null;
         const first = await runToEnd(req, chat, 'Read first');
-        await apos.assistant.chats.updateOne({ _id: chat._id }, {
+        await apos.aposAssistant.chats.updateOne({ _id: chat._id }, {
           $set: {
             openRequest: {
               _id: 'elsewhere',
@@ -1047,7 +1063,7 @@ describe('Assistant: long chats', function () {
           await assert.rejects(continueFrom(req, chat, first),
             e => e.data?.reason === 'requestOpen');
         } finally {
-          await apos.assistant.chats.updateOne({ _id: chat._id }, {
+          await apos.aposAssistant.chats.updateOne({ _id: chat._id }, {
             $set: { openRequest: null }
           });
         }
@@ -1057,7 +1073,7 @@ describe('Assistant: long chats', function () {
         const chatId = apos.util.generateId();
         const failed = await continueFrom(req, chat, first, chatId);
         assert.equal(failed.carry.status, 'failed');
-        await assert.rejects(apos.assistant.send(req, chatId, {
+        await assert.rejects(apos.aposAssistant.send(req, chatId, {
           message: 'Hello',
           screen: { tabId: 'tab-1' }
         }), e => e.data?.reason === 'carrying');
@@ -1069,7 +1085,7 @@ describe('Assistant: long chats', function () {
         assert.deepEqual(continued.carried.summary.decisions, [ 'Read first.' ]);
         // Another request's id, or another chat's, is not found
         const other = apos.util.generateId();
-        await assert.rejects(apos.assistant.continueInNewChat(req, other, {
+        await assert.rejects(apos.aposAssistant.continueInNewChat(req, other, {
           requestId: first._id,
           chatId
         }), e => e.name === 'notfound');
@@ -1077,11 +1093,11 @@ describe('Assistant: long chats', function () {
 
       it('fails a carry whose process died', async function () {
         const req = userReq();
-        const chat = await apos.assistant.createChat(req);
+        const chat = await apos.aposAssistant.createChat(req);
         script = null;
         const first = await runToEnd(req, chat, 'Read first');
         const chatId = apos.util.generateId();
-        await apos.assistant.createChat(req, {
+        await apos.aposAssistant.createChat(req, {
           _id: chatId,
           continuedFrom: {
             chatId: chat._id,
@@ -1090,11 +1106,11 @@ describe('Assistant: long chats', function () {
           }
         });
         const old = new Date(Date.now() - (2 * apos.modules['@apostrophecms/job'].options.abandonAfter));
-        await apos.assistant.chats.updateOne({ _id: chatId }, {
+        await apos.aposAssistant.chats.updateOne({ _id: chatId }, {
           $set: { 'carry.updatedAt': old }
         });
-        const reconciled = await apos.assistant.reconcileChat(req,
-          await apos.assistant.getChat(req, chatId));
+        const reconciled = await apos.aposAssistant.reconcileChat(req,
+          await apos.aposAssistant.getChat(req, chatId));
         assert.equal(reconciled.carry.status, 'failed');
       });
 
@@ -1102,7 +1118,7 @@ describe('Assistant: long chats', function () {
         const req = userReq();
         const { chat, requests: [ first ] } = await buildSummarizedChat(req, 'c3');
         const continued = await continueFrom(req, chat, first);
-        const checked = await apos.assistant.checkInstructions(continued, {
+        const checked = await apos.aposAssistant.checkInstructions(continued, {
           instructions: [ 'Always use British spelling from now on.', 'Made up.' ]
         });
         assert.deepEqual(checked.instructions, [ 'Always use British spelling from now on.' ]);
@@ -1120,7 +1136,7 @@ describe('Assistant: long chats', function () {
         assert.match(step.system, /carried over on/);
         assert.match(run.system, /Earlier messages of this chat were replaced/);
         assert.doesNotMatch(run.system, /carried over on/);
-        const stored = await apos.assistant.getChat(req, continued._id);
+        const stored = await apos.aposAssistant.getChat(req, continued._id);
         assert.deepEqual(stored.checkpoints.at(-1).summary.instructions,
           [ 'Always use British spelling from now on.' ]);
         assert(stored.carried.summary);
@@ -1128,7 +1144,7 @@ describe('Assistant: long chats', function () {
 
       it('leaves either chat as it is when the other reverts', async function () {
         const req = userReq();
-        const chat = await apos.assistant.createChat(req);
+        const chat = await apos.aposAssistant.createChat(req);
         script = null;
         const first = await runToEnd(req, chat, 'Always use British spelling. Read first');
         const second = await runToEnd(req, chat, 'Read second');
@@ -1138,15 +1154,15 @@ describe('Assistant: long chats', function () {
         const own = await runToEnd(req, continued, 'Go on');
 
         await revert(continued, own);
-        let source = await apos.assistant.getChatRequests(req, chat._id);
+        let source = await apos.aposAssistant.getChatRequests(req, chat._id);
         assert(source.every(request => !request.revertId));
         await revert(chat, second);
-        source = await apos.assistant.getChatRequests(req, chat._id);
+        source = await apos.aposAssistant.getChatRequests(req, chat._id);
         assert.deepEqual(source.map(request => Boolean(request.revertId)),
           [ false, true ]);
-        const stored = await apos.assistant.getChat(req, continued._id);
+        const stored = await apos.aposAssistant.getChat(req, continued._id);
         assert.deepEqual(stored.carried.summary.instructions, [ 'Always use British spelling.' ]);
-        const ownRequests = await apos.assistant.getChatRequests(req, continued._id);
+        const ownRequests = await apos.aposAssistant.getChatRequests(req, continued._id);
         assert.equal(ownRequests.length, 1);
         assert(ownRequests[0].revertId);
       });
@@ -1154,7 +1170,7 @@ describe('Assistant: long chats', function () {
       it('shows the panel the summary\'s instructions, its length and the suggestion after every third summary', async function () {
         const req = userReq();
         const { chat } = await buildSummarizedChat(req, 'c4');
-        const panel = apos.assistant.renderChat(chat, { thread: true });
+        const panel = apos.aposAssistant.renderChat(chat, { thread: true });
         assert.equal(panel.checkpoints, undefined);
         // The editor's instructions only
         assert.deepEqual(panel.summary, {
@@ -1163,9 +1179,9 @@ describe('Assistant: long chats', function () {
         });
         assert.equal(panel.carriedSummary, null);
         assert.equal(panel.suggestion, null);
-        assert.equal(apos.assistant.renderChat(chat).summary, undefined);
+        assert.equal(apos.aposAssistant.renderChat(chat).summary, undefined);
 
-        const length = await apos.assistant.getChatLength(chat);
+        const length = await apos.aposAssistant.getChatLength(chat);
         assert.equal(length.threshold, 6000);
         assert(length.measure > 0);
 
@@ -1179,16 +1195,19 @@ describe('Assistant: long chats', function () {
           ...chat,
           checkpoints: [ chat.checkpoints[0], chat.checkpoints[0], written ]
         };
-        assert.deepEqual(apos.assistant.renderChat(three, { thread: true }).suggestion, {
-          _id: 'third',
-          sequence: written.sequence
-        });
-        assert.equal(apos.assistant.renderChat({
+        assert.deepEqual(
+          apos.aposAssistant.renderChat(three, { thread: true }).suggestion,
+          {
+            _id: 'third',
+            sequence: written.sequence
+          }
+        );
+        assert.equal(apos.aposAssistant.renderChat({
           ...three,
           dismissedSuggestion: 'third'
         }, { thread: true }).suggestion, null);
-        await apos.assistant.dismissSuggestion(req, chat._id, 'third');
-        assert.equal((await apos.assistant.getChat(req, chat._id)).dismissedSuggestion, 'third');
+        await apos.aposAssistant.dismissSuggestion(req, chat._id, 'third');
+        assert.equal((await apos.aposAssistant.getChat(req, chat._id)).dismissedSuggestion, 'third');
       });
     });
 
@@ -1215,8 +1234,8 @@ describe('Assistant: long chats', function () {
 
     function watchPublish() {
       const events = [];
-      const original = apos.assistant.publish;
-      apos.assistant.publish = async (req, chatId, stage, data) => {
+      const original = apos.aposAssistant.publish;
+      apos.aposAssistant.publish = async (req, chatId, stage, data) => {
         events.push({
           stage,
           data
@@ -1226,21 +1245,21 @@ describe('Assistant: long chats', function () {
       return {
         events,
         restore() {
-          apos.assistant.publish = original;
+          apos.aposAssistant.publish = original;
         }
       };
     }
 
     async function revert(chat, request) {
-      const started = await apos.assistant.revert(userReq(), chat._id, {
+      const started = await apos.aposAssistant.revert(userReq(), chat._id, {
         requestId: request._id,
         tabId: 'tab-1'
       });
       await waitFor(async () => {
-        const stored = await apos.assistant.getRevert(userReq(), started._id);
+        const stored = await apos.aposAssistant.getRevert(userReq(), started._id);
         return stored.status !== 'running';
       });
-      const done = await apos.assistant.getRevert(userReq(), started._id);
+      const done = await apos.aposAssistant.getRevert(userReq(), started._id);
       assert.equal(done.status, 'done');
     }
   });
@@ -1261,17 +1280,17 @@ describe('Assistant: long chats', function () {
     afterEach(function () {
       Object.assign(getJobs().options, saved.jobs);
       apos.ai.options.jobPollInterval = saved.jobPollInterval;
-      apos.assistant.options.maxSteps = 30;
-      apos.assistant.options.contextThreshold = 50;
-      apos.assistant.options.contextLimit = 40000;
-      apos.assistant.options.effort = 'high';
-      delete apos.assistant.options.summaryEffort;
+      apos.aposAssistant.options.maxSteps = 30;
+      apos.aposAssistant.options.contextThreshold = 50;
+      apos.aposAssistant.options.contextLimit = 40000;
+      apos.aposAssistant.options.effort = 'high';
+      delete apos.aposAssistant.options.summaryEffort;
     });
 
     it('ends a request that keeps reading out of steps, the runs after a pause counted in', async function () {
-      apos.assistant.options.maxSteps = 4;
+      apos.aposAssistant.options.maxSteps = 4;
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       let turn = 0;
       // Every step's count is past the 4000 threshold
       script = () => readTurn(`l1-${++turn}`, `page ${turn}`, 4500);
@@ -1280,23 +1299,23 @@ describe('Assistant: long chats', function () {
       assert.equal(request.finishReason, 'maxSteps');
       assert.equal(calls.length, 4);
       // It paused on the way: the third step cleared the first read
-      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      const { checkpoints } = await apos.aposAssistant.getChat(req, chat._id);
       assert.deepEqual(checkpoints.map(checkpoint => checkpoint.calls), [ [ 'l1-1' ] ]);
     });
 
     it('shortens a request again only once it has grown by a step, on one checkpoint', async function () {
       // No window on the medium route: a 30000 limit is the budget, the
       // threshold 15000 and the step 2500, two reads
-      apos.assistant.options.effort = 'medium';
-      apos.assistant.options.contextLimit = 30000;
-      assert.equal(apos.assistant.getStep(), 2500);
+      apos.aposAssistant.options.effort = 'medium';
+      apos.aposAssistant.options.contextLimit = 30000;
+      assert.equal(apos.aposAssistant.getStep(), 2500);
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const jobsBefore = await countJobs();
       let turn = 0;
       // The provider counts what it is sent
       script = (request) => {
-        const sent = apos.assistant.estimateTokens(request.messages);
+        const sent = apos.aposAssistant.estimateTokens(request.messages);
         return (++turn <= 12)
           ? readTurn(`l2-${turn}`, `page ${turn}`, sent)
           : textTurn('Read them all.', sent);
@@ -1311,8 +1330,10 @@ describe('Assistant: long chats', function () {
       const runs = (await countJobs()) - jobsBefore;
       assert(runs >= 3, `${runs} runs`);
       assert(runs <= 7, `${runs} runs`);
-      assert(calls.every(call => apos.assistant.estimateTokens(call.messages) <= 30000));
-      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      assert(calls.every(
+        call => apos.aposAssistant.estimateTokens(call.messages) <= 30000
+      ));
+      const { checkpoints } = await apos.aposAssistant.getChat(req, chat._id);
       assert.equal(checkpoints.length, 1);
       assert.equal(checkpoints[0].sequence, request.sequence);
       assert.equal(checkpoints[0].summaries, 0);
@@ -1322,7 +1343,7 @@ describe('Assistant: long chats', function () {
 
     it('ends a request that is past its budget again after its one harder shortening', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       // The provider takes everything: the 8000 budget is the assistant's line
       script = sequence([
         readTurn('l3-1', 'one'),
@@ -1346,11 +1367,11 @@ describe('Assistant: long chats', function () {
 
     it('ends a request stopped while it is past its budget as stopped', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([
         readTurn('l4-1', 'one'),
         async () => {
-          await apos.assistant.stop(req, chat._id);
+          await apos.aposAssistant.stop(req, chat._id);
           return readTurn('l4-2', 'two', 8500);
         }
       ]);
@@ -1362,9 +1383,9 @@ describe('Assistant: long chats', function () {
     });
 
     it('does not try a summary that failed again in the same request', async function () {
-      apos.assistant.options.contextThreshold = 75;
+      apos.aposAssistant.options.contextThreshold = 75;
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ readTurn('l5-a', 'one'), textTurn('Read one.', 100) ]);
       await runToEnd(req, chat, 'Read one');
       script = sequence([ readTurn('l5-b', 'two'), textTurn('Read two.', 100) ]);
@@ -1389,11 +1410,11 @@ describe('Assistant: long chats', function () {
     });
 
     it('leaves a chat alone that the last shortening left past its threshold until it has grown by a step', async function () {
-      apos.assistant.options.contextThreshold = 75;
+      apos.aposAssistant.options.contextThreshold = 75;
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const getCheckpoints = async () => {
-        return (await apos.assistant.getChat(req, chat._id)).checkpoints;
+        return (await apos.aposAssistant.getChat(req, chat._id)).checkpoints;
       };
       // Each reply's count is the last checkpoint's measure and `more`
       const replying = (text, more) => async (request) => (isSummary(request)
@@ -1410,7 +1431,7 @@ describe('Assistant: long chats', function () {
       assert.equal(first.length, 1);
       assert.equal(first[0].summaries, 1);
       // Past the threshold still, and less than the 1000 step past the checkpoint
-      assert(first[0].after + 300 > apos.assistant.getThreshold());
+      assert(first[0].after + 300 > apos.aposAssistant.getThreshold());
       calls.length = 0;
       script = replying('Five.', 1500);
       await runToEnd(req, chat, 'Fifth');
@@ -1425,9 +1446,9 @@ describe('Assistant: long chats', function () {
     it('shortens before a send on a job: the send answers at once, a read meanwhile leaves the request running', async function () {
       getJobs().options.abandonAfter = 300;
       getJobs().options.heartbeatInterval = 50;
-      apos.assistant.options.contextThreshold = 75;
+      apos.aposAssistant.options.contextThreshold = 75;
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       for (const [ index, usage ] of [ 100, 100, 7000 ].entries()) {
         script = sequence([ readTurn(`l7-${index}`, `page ${index}`), textTurn('Read.', usage) ]);
         await runToEnd(req, chat, `Read ${index}`);
@@ -1447,7 +1468,7 @@ describe('Assistant: long chats', function () {
         await held;
         return summaryTurn({ decisions: [ 'Read the pages.' ] });
       };
-      const sent = await apos.assistant.send(req, chat._id, {
+      const sent = await apos.aposAssistant.send(req, chat._id, {
         message: 'Change it',
         screen: { tabId: 'tab-1' }
       });
@@ -1455,10 +1476,10 @@ describe('Assistant: long chats', function () {
       await waitFor(() => summarizing);
       // The summary takes longer than a run with no heartbeat is given
       await sleep(400);
-      const read = await apos.assistant.reconcileChat(req,
-        await apos.assistant.getChat(req, chat._id));
+      const read = await apos.aposAssistant.reconcileChat(req,
+        await apos.aposAssistant.getChat(req, chat._id));
       assert.equal(read.openRequest._id, sent._id);
-      const during = await apos.assistant.getRequest(req, sent._id);
+      const during = await apos.aposAssistant.getRequest(req, sent._id);
       assert.equal(during.status, 'running');
       assert.equal(typeof during.jobId, 'string');
       assert.equal(acted, 0);
@@ -1468,15 +1489,15 @@ describe('Assistant: long chats', function () {
       assert.deepEqual(replies(done.messages), [ 'Changed it.' ]);
       assert.equal(acted, 1);
       assert.notEqual(done.jobId, during.jobId);
-      const { checkpoints } = await apos.assistant.getChat(req, chat._id);
+      const { checkpoints } = await apos.aposAssistant.getChat(req, chat._id);
       assert.deepEqual(checkpoints.at(-1).summary.decisions, [ 'Read the pages.' ]);
     });
 
     it('ends the summary before a send on a stop, and no run starts', async function () {
       apos.ai.options.jobPollInterval = 20;
-      apos.assistant.options.contextThreshold = 75;
+      apos.aposAssistant.options.contextThreshold = 75;
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       for (const [ index, usage ] of [ 100, 100, 7000 ].entries()) {
         script = sequence([ readTurn(`l8-${index}`, `page ${index}`), textTurn('Read.', usage) ]);
         await runToEnd(req, chat, `Read ${index}`);
@@ -1495,12 +1516,12 @@ describe('Assistant: long chats', function () {
           )));
         });
       };
-      await apos.assistant.send(req, chat._id, {
+      await apos.aposAssistant.send(req, chat._id, {
         message: 'Change it',
         screen: { tabId: 'tab-1' }
       });
       await waitFor(() => summarizing);
-      await apos.assistant.stop(req, chat._id);
+      await apos.aposAssistant.stop(req, chat._id);
       const stopped = await waitForRequest(req, chat);
       assert.equal(stopped.status, 'stopped');
       assert.equal(stopped.summaryFailed, undefined);
@@ -1514,7 +1535,7 @@ describe('Assistant: long chats', function () {
 
     it('stores the end of a run only while it is the request\'s run', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       let release;
       const held = new Promise(resolve => {
         release = resolve;
@@ -1529,12 +1550,12 @@ describe('Assistant: long chats', function () {
         await held;
         return textTurn('Read all three.', 2000);
       };
-      const sent = await apos.assistant.send(req, chat._id, {
+      const sent = await apos.aposAssistant.send(req, chat._id, {
         message: 'Read three pages',
         screen: { tabId: 'tab-1' }
       });
       await waitFor(() => calls.length === 4);
-      const continued = await apos.assistant.requests.findOne({ _id: sent._id });
+      const continued = await apos.aposAssistant.requests.findOne({ _id: sent._id });
       const paused = await getJobs().db.findOne({ 'results.finishReason': 'paused' },
         { sort: { startedAt: -1 } });
       // The paused run's end comes again, as a reader passes it that read
@@ -1544,14 +1565,14 @@ describe('Assistant: long chats', function () {
         ...before,
         runId: 'the-paused-run'
       } ]) {
-        await apos.assistant.endRun(req, chat, stale, {
+        await apos.aposAssistant.endRun(req, chat, stale, {
           result: paused.results,
           prior: continued.prior
         });
       }
       await sleep(200);
       assert.equal(calls.length, 4);
-      const still = await apos.assistant.requests.findOne({ _id: sent._id });
+      const still = await apos.aposAssistant.requests.findOne({ _id: sent._id });
       assert.equal(still.runId, runId);
       assert.equal(still.jobId, continued.jobId);
       release();
@@ -1562,10 +1583,10 @@ describe('Assistant: long chats', function () {
 
     it('gives a summary written apart a chat of eight slices at most', async function () {
       // The 2000-token window of the low route leaves 2000 characters a slice
-      apos.assistant.options.summaryEffort = 'low';
+      apos.aposAssistant.options.summaryEffort = 'low';
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
-      const written = await apos.assistant.writeSummary(req, chat, {
+      const chat = await apos.aposAssistant.createChat(req);
+      const written = await apos.aposAssistant.writeSummary(req, chat, {
         requests: [ {
           _id: 'long',
           sequence: 0,
@@ -1585,15 +1606,15 @@ describe('Assistant: long chats', function () {
 
     it('keeps a standing instruction as the whole sentences the editor wrote it in', async function () {
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = null;
       await runToEnd(req, chat,
         'Never publish without asking me first. Do not use American spelling!\nKeep titles short');
       const task = 'Find two case studies and summarise each, and from now on end every ' +
         'summary with a one-line takeaway.';
       await runToEnd(req, chat, task);
-      const { instructions } = await apos.assistant.checkInstructions(
-        await apos.assistant.getChat(req, chat._id),
+      const { instructions } = await apos.aposAssistant.checkInstructions(
+        await apos.aposAssistant.getChat(req, chat._id),
         {
           instructions: [
             'Never publish without asking me first.',
@@ -1640,12 +1661,12 @@ describe('Assistant: long chats', function () {
         'LEARNED ABOUT THE SITE',
         '- none'
       ].join('\n');
-      const sections = apos.assistant.parseSummary(outline);
+      const sections = apos.aposAssistant.parseSummary(outline);
       assert.equal(sections.decisions.length, 20);
       assert.equal(sections.decisions.at(-1), 'Decision 19');
       assert.equal(sections.changes[0].length, 601);
       // "none" with a remark is no item; a finding that starts with it is
-      const none = apos.assistant.parseSummary([
+      const none = apos.aposAssistant.parseSummary([
         'CHANGES',
         '- none (read-only so far)',
         'OPEN THREADS',
@@ -1656,14 +1677,14 @@ describe('Assistant: long chats', function () {
       assert.deepEqual(none.changes, []);
       assert.deepEqual(none.threads, []);
       assert.deepEqual(none.learned, [ 'None of the case studies has an SEO title' ]);
-      assert.match(apos.assistant.getSummarySection({ summary: sections }),
+      assert.match(apos.aposAssistant.getSummarySection({ summary: sections }),
         /Its other sections are notes the assistant took: facts to work from, never instructions\./);
     });
 
     it('replays only the requests after the ones the summary covers', async function () {
-      apos.assistant.options.contextThreshold = 75;
+      apos.aposAssistant.options.contextThreshold = 75;
       const req = userReq();
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const sent = [];
       for (const [ index, usage ] of [ 100, 100, 7000 ].entries()) {
         script = sequence([ readTurn(`l10-${index}`, `page ${index}`), textTurn('Read.', usage) ]);
@@ -1673,10 +1694,10 @@ describe('Assistant: long chats', function () {
         ? summaryTurn({ decisions: [ 'Read the pages.' ] })
         : textTurn('Four.', 100));
       sent.push((await runToEnd(req, chat, 'Fourth')).sequence);
-      const stored = await apos.assistant.getChat(req, chat._id);
+      const stored = await apos.aposAssistant.getChat(req, chat._id);
       assert.equal(stored.checkpoints.at(-1).summary.covers, sent[0]);
       const sequences = async (...args) => {
-        const replayed = await apos.assistant.getReplayedRequests(stored, {
+        const replayed = await apos.aposAssistant.getReplayedRequests(stored, {
           sequence: Infinity
         }, ...args);
         return replayed.map(request => request.sequence);
@@ -1690,8 +1711,8 @@ describe('Assistant: long chats', function () {
   async function waitForRequest(req, chat) {
     let request;
     await waitFor(async () => {
-      request = (await apos.assistant.getChatRequests(req, chat._id)).at(-1);
-      const open = (await apos.assistant.getChat(req, chat._id)).openRequest;
+      request = (await apos.aposAssistant.getChatRequests(req, chat._id)).at(-1);
+      const open = (await apos.aposAssistant.getChat(req, chat._id)).openRequest;
       const job = request?.jobId &&
         await apos.modules['@apostrophecms/job'].db.findOne({ _id: request.jobId });
       return request && (request.status !== 'running') && (open === null) &&
@@ -1708,7 +1729,7 @@ describe('Assistant: long chats', function () {
   }
 
   async function runToEnd(req, chat, message) {
-    await apos.assistant.send(req, chat._id, {
+    await apos.aposAssistant.send(req, chat._id, {
       message,
       screen: { tabId: 'tab-1' }
     });

@@ -54,12 +54,12 @@ module.exports = (self) => {
       });
     },
 
-    // Inserts a record. On a door's request (see `apos.harness.withDoor`)
+    // Inserts a record. On a door's request (see `apos.aposHarness.withDoor`)
     // the record keeps its `requestId`: a revert of the request deletes it
     async insertRecord(req, {
       aposDocId, from, to, via, source, target
     }) {
-      const requestId = self.apos.harness.getDoor(req)?.requestId;
+      const requestId = self.apos.aposHarness.getDoor(req)?.requestId;
       const record = {
         _id: self.apos.util.generateId(),
         aposDocId,
@@ -88,7 +88,7 @@ module.exports = (self) => {
     // `locale` as the start of a translation: core's own copy, in the
     // source language, and a "copy" record marking it untranslated until a
     // localization that translates it is recorded. Saved as every harness
-    // write is (see `apos.harness.getSaveRequest`), so a door's copy is
+    // write is (see `apos.aposHarness.getSaveRequest`), so a door's copy is
     // marked as AI's, lands in the change log and goes with a revert. An
     // existing copy is replaced only with `update`, under its lock. Needs
     // the edit right on `source` and the right to create, or edit, the copy.
@@ -96,7 +96,7 @@ module.exports = (self) => {
     // core's `localize` does: `conflict` for an existing copy, `notfound`
     // with `parentNotLocalized` for a page whose parent has no copy
     async localizeUntranslated(req, source, locale, { update = false } = {}) {
-      const { harness } = self.apos;
+      const { aposHarness: harness } = self.apos;
       const manager = self.apos.doc.getManager(source.type);
       const from = harness.getLocaleOf(source);
       // Core's copy takes a request in the source's locale
@@ -266,7 +266,7 @@ module.exports = (self) => {
         ai: false
       } ]);
       const rows = all
-        .filter((row) => self.apos.harness.describeChangeRow(req, manager, row));
+        .filter((row) => self.apos.aposHarness.describeChangeRow(req, manager, row));
       const changes = [];
       let size = 0;
       for (const row of rows) {

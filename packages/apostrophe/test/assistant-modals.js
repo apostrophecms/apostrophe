@@ -296,7 +296,8 @@ describe('Assistant: working in open editors', function () {
       await put(unknown, jar, outside({ _id: 'nope' }, [ 'title' ]));
 
       assert.deepEqual(await entriesOf(request, note), []);
-      const logged = await apos.harness.changes.countDocuments({ docId: fromOther._id });
+      const logged = await apos.aposHarness.changes
+        .countDocuments({ docId: fromOther._id });
       assert.equal(logged, 0);
     });
 
@@ -460,7 +461,7 @@ describe('Assistant: working in open editors', function () {
 
     it('leaves the entry open while the request runs, as its own writes do', async function () {
       const request = await endedRequest(editor);
-      await apos.assistant.requests.updateOne({ _id: request._id }, {
+      await apos.aposAssistant.requests.updateOne({ _id: request._id }, {
         $set: { status: 'waiting' }
       });
       const note = await insertNote('Open');
@@ -487,8 +488,8 @@ describe('Assistant: working in open editors', function () {
     it('is a browser tool of the assistant, named in the screen section', async function () {
       const tool = apos.ai.getTool('edit_open_document');
       assert.deepEqual(tool.tags, [ 'assistant', 'browser' ]);
-      assert.equal(tool.maxResultChars, apos.harness.getReadBudget('document'));
-      assert(apos.assistant.getScreenSection().includes('edit_open_document'));
+      assert.equal(tool.maxResultChars, apos.aposHarness.getReadBudget('document'));
+      assert(apos.aposAssistant.getScreenSection().includes('edit_open_document'));
     });
 
     it('refuses a call no editor on top can serve, from the stored screen', async function () {
@@ -564,7 +565,7 @@ describe('Assistant: working in open editors', function () {
           reason: 'the user is in another browser tab'
         }
       });
-      await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+      await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
     });
 
     it('reads what the editor holds, unsaved changes included', async function () {
@@ -614,8 +615,9 @@ describe('Assistant: working in open editors', function () {
       assert.equal(served.values.body.items[0].heading, 'New heading');
       assert.deepEqual(served.touched.sort(), [ '@card-1.heading', 'subtitle' ]);
       // The panel never reads the kept result
-      const [ waiting ] = (await apos.assistant.getChatRequests(req, chat._id)).slice(-1);
-      assert.equal(apos.assistant.renderRequest(waiting).asks[0].result, undefined);
+      const [ waiting ] = (await apos.aposAssistant.getChatRequests(req, chat._id))
+        .slice(-1);
+      assert.equal(apos.aposAssistant.renderRequest(waiting).asks[0].result, undefined);
       const done = await answer(req, chat, {
         executed: true,
         // The browser's word on the result is not taken
@@ -659,7 +661,7 @@ describe('Assistant: working in open editors', function () {
       const result = await serve(changed.req, changed.chat, widget);
       assert.deepEqual(result.values, { heading: 'Widget heading' });
       assert.deepEqual(result.touched, [ 'heading' ]);
-      await apos.assistant.skip(changed.req, changed.chat._id, { tabId: 'tab-1' });
+      await apos.aposAssistant.skip(changed.req, changed.chat._id, { tabId: 'tab-1' });
     });
 
     it('refuses a root that is not the editor on top, and takes the browser\'s reason', async function () {
@@ -695,21 +697,21 @@ describe('Assistant: working in open editors', function () {
     it('serves only the browser tab that owns the waiting request', async function () {
       const { req, chat } = await callOnScreen([ editorModal() ], { action: 'get_document' });
       await assert.rejects(
-        apos.assistant.serveOpenEditor(req, chat._id, {
+        apos.aposAssistant.serveOpenEditor(req, chat._id, {
           tabId: 'tab-2',
           callId: 'call-edit_open_document',
           root: documentRoot()
         })
       );
       await assert.rejects(
-        apos.assistant.serveOpenEditor(req, chat._id, {
+        apos.aposAssistant.serveOpenEditor(req, chat._id, {
           tabId: 'tab-1',
           callId: 'call-other',
           root: documentRoot()
         }),
         { name: 'notfound' }
       );
-      await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+      await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
     });
 
     it('refuses a document tool\'s write to a document an editor holds', async function () {
@@ -870,7 +872,7 @@ describe('Assistant: working in open editors', function () {
       assert.equal(request.status, 'waiting');
       assert.deepEqual(request.asks.map(ask => ask.callId), [ 'call-1' ]);
       assert.deepEqual(request.asks[0].payload.ahead, [ '@card-1', '@item-1.label', 'subtitle' ]);
-      await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+      await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
     });
 
     it('takes the screen the browser tab posts when its modals change, before the next write', async function () {
@@ -891,19 +893,19 @@ describe('Assistant: working in open editors', function () {
       assert.equal(request.status, 'waiting');
       const otherTab = await sendFromTab(userReq(editor), 'tab-2');
       // The editor opens over the page while the request waits
-      await apos.assistant.postScreen(req, {
+      await apos.aposAssistant.postScreen(req, {
         tabId: 'tab-1',
         screen: {
           tabId: 'tab-1',
           modals: [ editorModal() ]
         }
       });
-      const stored = await apos.assistant.getRequest(req, request._id);
+      const stored = await apos.aposAssistant.getRequest(req, request._id);
       assert.deepEqual(stored.screen.modals.map(modal => modal.docId), [ note._id ]);
       assert.equal(stored.screen.locale, request.screen.locale);
-      const untouched = await apos.assistant.getRequest(req, otherTab._id);
+      const untouched = await apos.aposAssistant.getRequest(req, otherTab._id);
       assert.deepEqual(untouched.screen.modals, []);
-      await apos.assistant.answer(req, chat._id, {
+      await apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-confirm',
         answer: { approved: true }
@@ -915,16 +917,16 @@ describe('Assistant: working in open editors', function () {
       );
       const draft = await apos.doc.db.findOne({ _id: note._id });
       assert.equal(draft.subtitle, 'Saved subtitle');
-      await apos.assistant.skip(req, otherTab.chatId, { tabId: 'tab-2' });
+      await apos.aposAssistant.skip(req, otherTab.chatId, { tabId: 'tab-2' });
     });
 
     // A request of another browser tab, left waiting on a confirmation
     async function sendFromTab(req, tabId) {
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const turns = [ toolTurn('confirm', { action: 'Wait?' }) ];
       const before = script;
       script = () => turns.shift() || before();
-      await apos.assistant.send(req, chat._id, {
+      await apos.aposAssistant.send(req, chat._id, {
         message: 'Wait',
         screen: {
           tabId,
@@ -964,8 +966,8 @@ describe('Assistant: working in open editors', function () {
 
     async function sendOnScreen(modals, message) {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
-      await apos.assistant.send(req, chat._id, {
+      const chat = await apos.aposAssistant.createChat(req);
+      await apos.aposAssistant.send(req, chat._id, {
         message,
         screen: {
           tabId: 'tab-1',
@@ -1000,7 +1002,7 @@ describe('Assistant: working in open editors', function () {
     }
 
     function serve(req, chat, root) {
-      return apos.assistant.serveOpenEditor(req, chat._id, {
+      return apos.aposAssistant.serveOpenEditor(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-edit_open_document',
         root
@@ -1008,7 +1010,7 @@ describe('Assistant: working in open editors', function () {
     }
 
     async function answer(req, chat, given) {
-      await apos.assistant.answer(req, chat._id, {
+      await apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-edit_open_document',
         answer: given,
@@ -1029,8 +1031,8 @@ describe('Assistant: working in open editors', function () {
   async function waitForEnd(req, chat) {
     let request;
     await waitFor(async () => {
-      request = (await apos.assistant.getChatRequests(req, chat._id)).at(-1);
-      const open = (await apos.assistant.getChat(req, chat._id)).openRequest;
+      request = (await apos.aposAssistant.getChatRequests(req, chat._id)).at(-1);
+      const open = (await apos.aposAssistant.getChat(req, chat._id)).openRequest;
       const job = request?.jobId &&
         await apos.modules['@apostrophecms/job'].db.findOne({ _id: request.jobId });
       return request && (request.status !== 'running') &&
@@ -1042,14 +1044,14 @@ describe('Assistant: working in open editors', function () {
   // A request of the user's that ran and ended, sent from `tab-1`
   async function endedRequest(user) {
     const req = userReq(user);
-    const chat = await apos.assistant.createChat(req);
-    await apos.assistant.send(req, chat._id, {
+    const chat = await apos.aposAssistant.createChat(req);
+    await apos.aposAssistant.send(req, chat._id, {
       message: 'Hello',
       screen: { tabId: 'tab-1' }
     });
     let request;
     await waitFor(async () => {
-      [ request ] = await apos.assistant.getChatRequests(req, chat._id);
+      [ request ] = await apos.aposAssistant.getChatRequests(req, chat._id);
       const job = request?.jobId &&
         await apos.modules['@apostrophecms/job'].db.findOne({ _id: request.jobId });
       return request && (request.status !== 'running') && (!job || job.ended);
@@ -1084,21 +1086,21 @@ describe('Assistant: working in open editors', function () {
   // The status a revert of the request by its chat ends in
   async function revertRequest(request) {
     const req = userReq(editor);
-    const started = await apos.assistant.revert(req, request.chatId, {
+    const started = await apos.aposAssistant.revert(req, request.chatId, {
       requestId: request._id,
       tabId: 'tab-1'
     });
     await waitFor(async () => {
-      const stored = await apos.assistant.getRevert(req, started._id);
+      const stored = await apos.aposAssistant.getRevert(req, started._id);
       const job = stored.jobId &&
         await apos.modules['@apostrophecms/job'].db.findOne({ _id: stored.jobId });
       return (stored.status !== 'running') && (!job || job.ended);
     });
-    return (await apos.assistant.getRevert(req, started._id)).status;
+    return (await apos.aposAssistant.getRevert(req, started._id)).status;
   }
 
   function entriesOf(request, note) {
-    return apos.harness.changes
+    return apos.aposHarness.changes
       .find({
         requestId: request._id,
         docId: note._id

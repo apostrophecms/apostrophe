@@ -76,7 +76,7 @@ describe('Assistant: chats and the run', function () {
                 properties: {}
               },
               handler: async (req) => {
-                doors.push(self.apos.harness.getDoor(req));
+                doors.push(self.apos.aposHarness.getDoor(req));
                 return { ok: true };
               }
             });
@@ -105,7 +105,7 @@ describe('Assistant: chats and the run', function () {
                 required: [ '_id', 'title' ]
               },
               handler: async (req, { _id, title }) => {
-                await self.apos.harness.writeDocuments(req, [ {
+                await self.apos.aposHarness.writeDocuments(req, [ {
                   _id,
                   patch: { title }
                 } ]);
@@ -122,7 +122,7 @@ describe('Assistant: chats and the run', function () {
                   properties: {}
                 },
                 handler: async (req, args) => {
-                  doors.push(self.apos.harness.getDoor(req));
+                  doors.push(self.apos.aposHarness.getDoor(req));
                   const input = args._context?.input;
                   if (input === undefined) {
                     throw self.apos.error('aiInput', 'waiting', {
@@ -133,7 +133,7 @@ describe('Assistant: chats and the run', function () {
                   return input;
                 }
               });
-              self.apos.assistant.addAskKind(kind, {
+              self.apos.aposAssistant.addAskKind(kind, {
                 accept(req, ask, answer) {
                   if (typeof answer !== 'string') {
                     throw self.apos.error('invalid', 'an answer is a string');
@@ -170,162 +170,168 @@ describe('Assistant: chats and the run', function () {
   describe('chats', function () {
     it('creates, lists newest first and renames a chat', async function () {
       const req = userReq(editor);
-      const first = await apos.assistant.createChat(req);
+      const first = await apos.aposAssistant.createChat(req);
       // Created apart, as an editor creates them
       await new Promise(resolve => setTimeout(resolve, 5));
-      const second = await apos.assistant.createChat(req);
-      await apos.assistant.createChat(userReq(other));
+      const second = await apos.aposAssistant.createChat(req);
+      await apos.aposAssistant.createChat(userReq(other));
       assert.equal(first.title, null);
       assert.equal(first.openRequest, null);
 
-      const listed = (await apos.assistant.listChats(req)).map(chat => chat._id);
+      const listed = (await apos.aposAssistant.listChats(req)).map(chat => chat._id);
       assert.deepEqual(listed.slice(0, 2), [ second._id, first._id ]);
       assert(!listed.includes(undefined));
-      assert.equal(listed.length, (await apos.assistant.chats.countDocuments({
+      assert.equal(listed.length, (await apos.aposAssistant.chats.countDocuments({
         ownerId: editor._id
       })));
 
-      const renamed = await apos.assistant.renameChat(req, first._id, '  Spring   launch ');
+      const renamed = await apos.aposAssistant.renameChat(req, first._id, '  Spring   launch ');
       assert.equal(renamed.title, 'Spring launch');
-      await assert.rejects(apos.assistant.renameChat(req, first._id, '  '), { name: 'invalid' });
+      await assert.rejects(apos.aposAssistant.renameChat(req, first._id, '  '), { name: 'invalid' });
     });
 
     it('keeps a chat private to its owner', async function () {
-      const chat = await apos.assistant.createChat(userReq(editor));
+      const chat = await apos.aposAssistant.createChat(userReq(editor));
       const req = userReq(other);
-      await assert.rejects(apos.assistant.getChat(req, chat._id), { name: 'notfound' });
-      await assert.rejects(apos.assistant.renameChat(req, chat._id, 'Mine'), { name: 'notfound' });
-      await assert.rejects(apos.assistant.deleteChat(req, chat._id), { name: 'notfound' });
+      await assert.rejects(apos.aposAssistant.getChat(req, chat._id), { name: 'notfound' });
+      await assert.rejects(apos.aposAssistant.renameChat(req, chat._id, 'Mine'), { name: 'notfound' });
+      await assert.rejects(apos.aposAssistant.deleteChat(req, chat._id), { name: 'notfound' });
       await assert.rejects(send(req, chat, 'tab-1', 'Hello'), { name: 'notfound' });
-      await assert.rejects(apos.assistant.createChat(apos.task.getReq()), { name: 'forbidden' });
+      await assert.rejects(apos.aposAssistant.createChat(apos.task.getReq()), { name: 'forbidden' });
     });
 
     it('deletes a chat: its requests, its change log entries, then the chat', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = writeScript('Renamed by the chat');
       const request = await runToEnd(req, chat, 'tab-1', 'Rename the note');
       assert.equal(request.status, 'completed');
-      const entries = await apos.harness.changes.find({ chat: chat._id }).toArray();
+      const entries = await apos.aposHarness.changes.find({ chat: chat._id }).toArray();
       assert.equal(entries.length, 1);
       // Someone else's entry naming the same chat is not the owner's to delete
-      await apos.harness.changes.insertOne({
+      await apos.aposHarness.changes.insertOne({
         _id: 'foreign-entry',
         chat: chat._id,
         userId: other._id
       });
 
-      await apos.assistant.deleteChat(req, chat._id);
-      assert.equal(await apos.assistant.chats.countDocuments({ _id: chat._id }), 0);
-      assert.equal(await apos.assistant.requests.countDocuments({ chatId: chat._id }), 0);
-      const left = await apos.harness.changes.find({ chat: chat._id }).toArray();
+      await apos.aposAssistant.deleteChat(req, chat._id);
+      assert.equal(await apos.aposAssistant.chats.countDocuments({ _id: chat._id }), 0);
+      assert.equal(
+        await apos.aposAssistant.requests.countDocuments({ chatId: chat._id }),
+        0
+      );
+      const left = await apos.aposHarness.changes.find({ chat: chat._id }).toArray();
       assert.deepEqual(left.map(entry => entry._id), [ 'foreign-entry' ]);
-      await apos.harness.changes.deleteOne({ _id: 'foreign-entry' });
+      await apos.aposHarness.changes.deleteOne({ _id: 'foreign-entry' });
     });
 
     it('takes the ids the browser names: a first send creates its chat, a second send of a request answers with it', async function () {
       const req = userReq(editor);
       const chat = { _id: 'named-chat' };
       const gate = holdModel();
-      const request = await apos.assistant.send(req, chat._id, {
+      const request = await apos.aposAssistant.send(req, chat._id, {
         message: 'Hello',
         screen: { tabId: 'tab-1' },
         requestId: 'named-request',
         create: true
       });
       assert.equal(request._id, 'named-request');
-      const created = await apos.assistant.getChat(req, chat._id);
+      const created = await apos.aposAssistant.getChat(req, chat._id);
       assert.equal(created.openRequest._id, 'named-request');
 
       // Sent again, as after an answer that never arrived: nothing new runs
-      const again = await apos.assistant.send(req, chat._id, {
+      const again = await apos.aposAssistant.send(req, chat._id, {
         message: 'Hello',
         screen: { tabId: 'tab-1' },
         requestId: 'named-request',
         create: true
       });
       assert.equal(again._id, 'named-request');
-      assert.equal(await apos.assistant.requests.countDocuments({ chatId: chat._id }), 1);
-      assert.equal(await apos.assistant.chats.countDocuments({ _id: chat._id }), 1);
+      assert.equal(
+        await apos.aposAssistant.requests.countDocuments({ chatId: chat._id }),
+        1
+      );
+      assert.equal(await apos.aposAssistant.chats.countDocuments({ _id: chat._id }), 1);
       gate.release();
       await waitForEnd(req, chat);
 
       // Someone else's ids are not found, and change nothing of theirs
       const otherReq = userReq(other);
-      await assert.rejects(apos.assistant.send(otherReq, chat._id, {
+      await assert.rejects(apos.aposAssistant.send(otherReq, chat._id, {
         message: 'Mine now',
         screen: { tabId: 'tab-2' },
         create: true
       }), { name: 'notfound' });
-      await apos.assistant.createChat(otherReq, { _id: 'other-chat' });
-      await assert.rejects(apos.assistant.send(otherReq, 'other-chat', {
+      await apos.aposAssistant.createChat(otherReq, { _id: 'other-chat' });
+      await assert.rejects(apos.aposAssistant.send(otherReq, 'other-chat', {
         message: 'Hello',
         screen: { tabId: 'tab-2' },
         requestId: 'named-request'
       }), { name: 'notfound' });
       // An id of another chat's request is not this chat's
-      await apos.assistant.createChat(req, { _id: 'second-chat' });
-      await assert.rejects(apos.assistant.send(req, 'second-chat', {
+      await apos.aposAssistant.createChat(req, { _id: 'second-chat' });
+      await assert.rejects(apos.aposAssistant.send(req, 'second-chat', {
         message: 'Hello',
         screen: { tabId: 'tab-1' },
         requestId: 'named-request'
       }), { name: 'notfound' });
-      assert.equal((await apos.assistant.getChat(req, 'second-chat')).openRequest, null);
-      await assert.rejects(apos.assistant.send(req, chat._id, {
+      assert.equal((await apos.aposAssistant.getChat(req, 'second-chat')).openRequest, null);
+      await assert.rejects(apos.aposAssistant.send(req, chat._id, {
         message: 'Hello',
         screen: { tabId: 'tab-1' },
         requestId: 'not a valid id'
       }), { name: 'invalid' });
-      assert.equal((await apos.assistant.getRequest(req, 'named-request')).ownerId, editor._id);
+      assert.equal((await apos.aposAssistant.getRequest(req, 'named-request')).ownerId, editor._id);
     });
 
     it('frees the chat when a send stores nothing: a request id taken by someone else', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       // Stored by someone else since the check, as in a race
-      await apos.assistant.requests.insertOne({
+      await apos.aposAssistant.requests.insertOne({
         _id: 'raced-request',
         ownerId: other._id,
         chatId: 'elsewhere',
         sequence: 0
       });
-      const findSentRequest = apos.assistant.findSentRequest;
-      apos.assistant.findSentRequest = async () => null;
+      const findSentRequest = apos.aposAssistant.findSentRequest;
+      apos.aposAssistant.findSentRequest = async () => null;
       try {
-        await assert.rejects(apos.assistant.send(req, chat._id, {
+        await assert.rejects(apos.aposAssistant.send(req, chat._id, {
           message: 'Hello',
           screen: { tabId: 'tab-1' },
           requestId: 'raced-request'
         }), { name: 'notfound' });
       } finally {
-        apos.assistant.findSentRequest = findSentRequest;
-        await apos.assistant.requests.deleteOne({ _id: 'raced-request' });
+        apos.aposAssistant.findSentRequest = findSentRequest;
+        await apos.aposAssistant.requests.deleteOne({ _id: 'raced-request' });
       }
-      assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest, null);
+      assert.equal((await apos.aposAssistant.getChat(req, chat._id)).openRequest, null);
       const request = await runToEnd(req, chat, 'tab-1', 'Hello again');
       assert.equal(request.status, 'completed');
     });
 
     it('refuses to delete a chat whose request runs, not one waiting for an answer', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const gate = holdModel();
       await send(req, chat, 'tab-1', 'Hello');
-      await assert.rejects(apos.assistant.deleteChat(req, chat._id), conflict('requestOpen'));
+      await assert.rejects(apos.aposAssistant.deleteChat(req, chat._id), conflict('requestOpen'));
       gate.release();
       await waitForEnd(req, chat);
 
       script = askScript('t_browser');
       await runToEnd(req, chat, 'tab-1', 'Ask me');
-      await apos.assistant.deleteChat(req, chat._id);
-      assert.equal(await apos.assistant.chats.countDocuments({ _id: chat._id }), 0);
+      await apos.aposAssistant.deleteChat(req, chat._id);
+      assert.equal(await apos.aposAssistant.chats.countDocuments({ _id: chat._id }), 0);
     });
   });
 
   describe('titles', function () {
     it('titles a chat from its first message with no model call for titleEffort "none"', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       // Every model call, the ones the engine can't route included
       const generate = apos.ai.generate;
       const generated = [];
@@ -338,68 +344,69 @@ describe('Assistant: chats and the run', function () {
       } finally {
         apos.ai.generate = generate;
       }
-      assert.equal((await apos.assistant.getChat(req, chat._id)).title,
+      assert.equal((await apos.aposAssistant.getChat(req, chat._id)).title,
         'Rewrite the intro of the about page');
       assert.equal(generated.length, 1);
       assert.equal(generated[0][1].schema, undefined);
       // Only the first message names it
       await runToEnd(req, chat, 'tab-1', 'Now the outro');
-      assert.equal((await apos.assistant.getChat(req, chat._id)).title,
+      assert.equal((await apos.aposAssistant.getChat(req, chat._id)).title,
         'Rewrite the intro of the about page');
     });
 
     it('cuts a long first message at a word boundary, or gives #N with no text', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const long = 'Write a short welcome paragraph for the new members of the board and the staff';
-      const title = await apos.assistant.getMessageTitle(chat, long);
+      const title = await apos.aposAssistant.getMessageTitle(chat, long);
       assert.equal(title, 'Write a short welcome paragraph for the new members of the…');
       assert(title.length <= 60);
       assert.equal(
-        await apos.assistant.getMessageTitle(chat, 'x'.repeat(80)),
+        await apos.aposAssistant.getMessageTitle(chat, 'x'.repeat(80)),
         `${'x'.repeat(59)}…`
       );
-      const number = await apos.assistant.chats.countDocuments({ ownerId: editor._id });
-      assert.equal(await apos.assistant.getMessageTitle(chat, ' \n '), `#${number}`);
+      const number = await apos.aposAssistant.chats
+        .countDocuments({ ownerId: editor._id });
+      assert.equal(await apos.aposAssistant.getMessageTitle(chat, ' \n '), `#${number}`);
     });
 
     it('names a chat with a model call on titleEffort, unless the editor renamed it', async function () {
       const req = userReq(editor);
-      apos.assistant.options.titleEffort = 'low';
+      apos.aposAssistant.options.titleEffort = 'low';
       try {
         script = (request) => (request.schema
           ? titleTurn('Spring launch')
           : { text: 'Done.' });
-        const chat = await apos.assistant.createChat(req);
+        const chat = await apos.aposAssistant.createChat(req);
         await runToEnd(req, chat, 'tab-1', 'Plan the spring launch page');
-        assert.equal((await apos.assistant.getChat(req, chat._id)).title, 'Spring launch');
+        assert.equal((await apos.aposAssistant.getChat(req, chat._id)).title, 'Spring launch');
         const titleCall = calls.find(call => call.schema);
         assert.equal(titleCall.model, 'fake-small');
 
         const gate = holdModel((request) => (request.schema
           ? titleTurn('Model title')
           : { text: 'Done.' }));
-        const renamed = await apos.assistant.createChat(req);
+        const renamed = await apos.aposAssistant.createChat(req);
         await send(req, renamed, 'tab-1', 'Plan the summer page');
-        await apos.assistant.renameChat(req, renamed._id, 'My summer');
+        await apos.aposAssistant.renameChat(req, renamed._id, 'My summer');
         gate.release();
         await waitForEnd(req, renamed);
         assert.equal(calls.filter(call => call.schema).length, 2);
-        assert.equal((await apos.assistant.getChat(req, renamed._id)).title, 'My summer');
+        assert.equal((await apos.aposAssistant.getChat(req, renamed._id)).title, 'My summer');
       } finally {
-        apos.assistant.options.titleEffort = 'none';
+        apos.aposAssistant.options.titleEffort = 'none';
       }
     });
 
     it('marks the usage of the request\'s run and of the title call by purpose', async function () {
       const req = userReq(editor);
-      apos.assistant.options.titleEffort = 'low';
+      apos.aposAssistant.options.titleEffort = 'low';
       try {
         script = (request) => (request.schema
           ? titleTurn('Autumn sale')
           : { text: 'Done.' });
         usageRecords.length = 0;
-        const chat = await apos.assistant.createChat(req);
+        const chat = await apos.aposAssistant.createChat(req);
         await runToEnd(req, chat, 'tab-1', 'Plan the autumn sale page');
         await waitFor(() => usageRecords.length === 2);
         assert.deepEqual(
@@ -407,7 +414,7 @@ describe('Assistant: chats and the run', function () {
           [ 'request', 'title' ]
         );
       } finally {
-        apos.assistant.options.titleEffort = 'none';
+        apos.aposAssistant.options.titleEffort = 'none';
       }
     });
   });
@@ -415,7 +422,7 @@ describe('Assistant: chats and the run', function () {
   describe('the run', function () {
     it('runs a request on the harness through the assistant door and stores its end', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([
         toolTurn('t_door', {}),
         { text: 'All done.' }
@@ -451,7 +458,7 @@ describe('Assistant: chats and the run', function () {
       });
       assert.equal(request.messages.at(-1).role, 'assistant');
       assert.equal(request.messages.length, 4);
-      assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest, null);
+      assert.equal((await apos.aposAssistant.getChat(req, chat._id)).openRequest, null);
 
       assert.deepEqual(doors, [ {
         door: 'assistant',
@@ -472,26 +479,26 @@ describe('Assistant: chats and the run', function () {
       }
       assert.match(calls[0].system, /^You work on the content of this ApostropheCMS site/);
       // One locale: nothing about copies in other locales
-      assert.equal(apos.assistant.getLocalizationSection(), null);
+      assert.equal(apos.aposAssistant.getLocalizationSection(), null);
       assert(!calls[0].system.includes('localize_document'));
       assert.deepEqual(apos.area.widgetOperations, []);
     });
 
     it('keeps what the chat saw of each document on the chat, for its next request', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const draftId = note._id.replace(':published', ':draft');
       script = writeScript('Seen by the chat');
       await runToEnd(req, chat, 'tab-1', 'Rename the note');
 
       const { updatedAt } = await apos.doc.db.findOne({ _id: draftId });
-      const stored = await apos.assistant.chats.findOne({ _id: chat._id });
+      const stored = await apos.aposAssistant.chats.findOne({ _id: chat._id });
       assert.deepEqual(stored.seen, [ {
         _id: draftId,
         updatedAt: updatedAt.toISOString()
       } ]);
       // Never sent to the browser with the chat list
-      const listed = await apos.assistant.listChats(req);
+      const listed = await apos.aposAssistant.listChats(req);
       assert.equal(listed.find(each => each._id === chat._id).seen, undefined);
 
       script = sequence([
@@ -505,11 +512,11 @@ describe('Assistant: chats and the run', function () {
 
     it('records the request\'s writes in the change log and ends them there', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = writeScript('Renamed again');
       const request = await runToEnd(req, chat, 'tab-1', 'Rename the note');
 
-      const [ entry ] = await apos.harness.changes
+      const [ entry ] = await apos.aposHarness.changes
         .find({ requestId: request._id })
         .toArray();
       assert.equal(entry.door, 'assistant');
@@ -526,13 +533,13 @@ describe('Assistant: chats and the run', function () {
 
     it('refuses a send while the chat\'s request is open, with the reason', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const gate = holdModel();
       const running = await send(req, chat, 'tab-1', 'First');
 
       await assert.rejects(send(req, chat, 'tab-1', 'Second'), conflict('requestOpen', running._id));
       await assert.rejects(send(req, chat, 'tab-2', 'Second'), conflict('otherBrowserTab', running._id));
-      const read = await apos.assistant.getChat(req, chat._id);
+      const read = await apos.aposAssistant.getChat(req, chat._id);
       assert.deepEqual(read.openRequest, {
         _id: running._id,
         tabId: 'tab-1',
@@ -550,14 +557,14 @@ describe('Assistant: chats and the run', function () {
 
     it('runs two chats at once', async function () {
       const req = userReq(editor);
-      const one = await apos.assistant.createChat(req);
-      const two = await apos.assistant.createChat(req);
+      const one = await apos.aposAssistant.createChat(req);
+      const two = await apos.aposAssistant.createChat(req);
       const gate = holdModel();
       await send(req, one, 'tab-1', 'One');
       await send(req, two, 'tab-1', 'Two');
       await waitFor(() => gate.waiting === 2);
       for (const chat of [ one, two ]) {
-        assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest.status, 'running');
+        assert.equal((await apos.aposAssistant.getChat(req, chat._id)).openRequest.status, 'running');
       }
       gate.release();
       assert.equal((await waitForEnd(req, one)).status, 'completed');
@@ -566,7 +573,7 @@ describe('Assistant: chats and the run', function () {
 
     it('replays the chat\'s earlier requests, a failed one only as far as the model got', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       await runToEnd(req, chat, 'tab-1', 'Remember the word apple');
       script = () => {
         throw apos.error('aiRefusal', 'refused');
@@ -577,7 +584,7 @@ describe('Assistant: chats and the run', function () {
         name: 'aiRefusal',
         message: 'refused'
       });
-      assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest, null);
+      assert.equal((await apos.aposAssistant.getChat(req, chat._id)).openRequest, null);
 
       // A continuation that fails keeps the slice its first run stored
       script = sequence([
@@ -616,10 +623,10 @@ describe('Assistant: chats and the run', function () {
 
     it('keeps the calls of a run a tool stopped, and a retry reads them', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const logged = [];
-      const logError = apos.assistant.logError;
-      apos.assistant.logError = (req, name, message, data) => {
+      const logError = apos.aposAssistant.logError;
+      apos.aposAssistant.logError = (req, name, message, data) => {
         logged.push({
           name,
           message,
@@ -664,7 +671,7 @@ describe('Assistant: chats and the run', function () {
 
         script = null;
         calls.length = 0;
-        await apos.assistant.retry(req, chat._id, {
+        await apos.aposAssistant.retry(req, chat._id, {
           retryOf: failed._id,
           screen: { tabId: 'tab-1' }
         });
@@ -690,21 +697,21 @@ describe('Assistant: chats and the run', function () {
           .map(message => message.content.at(-1).text);
         assert.deepEqual(texts, [ 'Rename, then break', 'Rename, then break' ]);
       } finally {
-        apos.assistant.logError = logError;
+        apos.aposAssistant.logError = logError;
       }
     });
 
     it('replays a request that ran out of steps with its last calls answered as not run', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
-      apos.assistant.options.maxSteps = 1;
+      const chat = await apos.aposAssistant.createChat(req);
+      apos.aposAssistant.options.maxSteps = 1;
       try {
         script = () => toolTurn('t_door', {});
         const cut = await runToEnd(req, chat, 'tab-1', 'Keep going');
         assert.equal(cut.status, 'completed');
         assert.equal(cut.finishReason, 'maxSteps');
       } finally {
-        apos.assistant.options.maxSteps = 30;
+        apos.aposAssistant.options.maxSteps = 30;
       }
       script = null;
       calls.length = 0;
@@ -722,18 +729,18 @@ describe('Assistant: chats and the run', function () {
 
     it('runs every request on the effort option, or the engine default when unset', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       await runToEnd(req, chat, 'tab-1', 'One');
       assert.deepEqual(calls.map(call => call.model), [ 'fake-large' ]);
 
-      delete apos.assistant.options.effort;
+      delete apos.aposAssistant.options.effort;
       try {
         calls.length = 0;
         const request = await runToEnd(req, chat, 'tab-1', 'Two');
         assert.deepEqual(calls.map(call => call.model), [ 'fake-medium' ]);
         assert.equal(request.model, 'fake-medium');
       } finally {
-        apos.assistant.options.effort = 'high';
+        apos.aposAssistant.options.effort = 'high';
       }
     });
   });
@@ -762,7 +769,7 @@ describe('Assistant: chats and the run', function () {
 
     it('finds pages, pieces and images by the start of their words, only those the user may read', async function () {
       const req = userReq(editor);
-      const found = await apos.assistant.findMentions(req, 'pric');
+      const found = await apos.aposAssistant.findMentions(req, 'pric');
       assert.deepEqual(
         found.map(doc => [ doc._id, doc.kind ]).sort(),
         [ [ chart._id, 'image' ], [ pricing._id, 'piece' ], [ secret._id, 'piece' ] ].sort()
@@ -771,18 +778,18 @@ describe('Assistant: chats and the run', function () {
         found.find(doc => doc._id === chart._id).label,
         apos.image.options.label
       );
-      const home = await apos.assistant.findMentions(req, 'hom');
+      const home = await apos.aposAssistant.findMentions(req, 'hom');
       assert.deepEqual(home.map(doc => [ doc.kind, doc.label ]), [ [ 'page', 'apostrophe:page' ] ]);
       // Nothing typed yet: the latest updated
-      const latest = await apos.assistant.findMentions(req, '');
+      const latest = await apos.aposAssistant.findMentions(req, '');
       assert(latest.some(doc => doc._id === chart._id));
       // Never a one-of-a-kind document
-      assert.deepEqual(await apos.assistant.findMentions(req, 'glob'), []);
-      assert.deepEqual(await apos.assistant.findMentions(req, 'zzqx'), []);
-      assert.deepEqual(await apos.assistant.findMentions(userReq(guest), 'pric'), []);
+      assert.deepEqual(await apos.aposAssistant.findMentions(req, 'glob'), []);
+      assert.deepEqual(await apos.aposAssistant.findMentions(req, 'zzqx'), []);
+      assert.deepEqual(await apos.aposAssistant.findMentions(userReq(guest), 'pric'), []);
       // An editor never sees a type its role may not view
       assert.deepEqual(
-        (await apos.assistant.findMentions(userReq(editorRole), 'pric'))
+        (await apos.aposAssistant.findMentions(userReq(editorRole), 'pric'))
           .map(doc => doc._id).sort(),
         [ chart._id, pricing._id ].sort()
       );
@@ -797,7 +804,7 @@ describe('Assistant: chats and the run', function () {
 
     it('keeps the mentions the user may read, with their own titles, and the model reads them', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const message = `Compare @[Old \\] name](image:${pricing._id}) with ` +
         `@[Ghost](page:nope:en:draft), then @[Pricing notes](piece:${pricing._id})`;
       const request = await runToEnd(req, chat, 'tab-1', message);
@@ -818,10 +825,10 @@ describe('Assistant: chats and the run', function () {
       assert.match(intro, /^The message mentions these documents/);
       assert.deepEqual(JSON.parse(listed), request.mentions);
       // The chat's title reads the mention, not its token
-      assert.equal((await apos.assistant.getChat(req, chat._id)).title,
+      assert.equal((await apos.aposAssistant.getChat(req, chat._id)).title,
         'Compare @Pricing notes with Ghost, then @Pricing notes');
 
-      const { message: guestMessage, mentions } = await apos.assistant
+      const { message: guestMessage, mentions } = await apos.aposAssistant
         .verifyMentions(userReq(guest), token);
       assert.equal(guestMessage, 'Pricing notes');
       assert.deepEqual(mentions, []);
@@ -833,9 +840,9 @@ describe('Assistant: chats and the run', function () {
       const typed = `**Bold** @[x](page:${home._id}), @[y](piece:${pricing._id}) and ` +
         '@[Ghost](page:nope)\n<a class="apos-assistant-chip" href="https://x.test">fake</a> ' +
         '\uE0000\uE001';
-      const { message, mentions } = await apos.assistant.verifyMentions(req, typed);
+      const { message, mentions } = await apos.aposAssistant.verifyMentions(req, typed);
       assert.equal(mentions.find(each => each._id === home._id).url, home._url);
-      const html = apos.assistant.renderMarkdown(message, { mentions });
+      const html = apos.aposAssistant.renderMarkdown(message, { mentions });
       assert(html.includes('<strong>Bold</strong>'));
       // A page is a link to it, a piece without a page a button for its editor
       assert(html.includes('<a class="apos-assistant-chip apos-assistant-chip--action" ' +
@@ -846,7 +853,7 @@ describe('Assistant: chats and the run', function () {
       assert.equal(html.match(/apos-assistant-chip--action/g).length, 2);
       assert(!/[\uE000\uE001]/.test(html));
       // The editor's message stays as typed: the panel shows it
-      const rendered = apos.assistant.renderRequest({
+      const rendered = apos.aposAssistant.renderRequest({
         message,
         mentions,
         messages: []
@@ -857,7 +864,7 @@ describe('Assistant: chats and the run', function () {
 
     it('renders a reply\'s documents as chips, any other token as its title, and tells the model how', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const home = await apos.page.find(req, { slug: '/' }).toObject();
       // A wrong title and kind are the document's own, any form of an id
       // names its document, and an id nobody may read is its title
@@ -870,13 +877,13 @@ describe('Assistant: chats and the run', function () {
         request.replyMentions.map(each => [ each._id, each.kind, each.title ]),
         [ [ pricing._id, 'piece', 'Pricing notes' ], [ home._id, 'page', 'Home' ] ]
       );
-      const { reply: html } = apos.assistant.renderRequest(request);
+      const { reply: html } = apos.aposAssistant.renderRequest(request);
       assert(html.includes(`data-kind="piece" title="Pricing notes" data-id="${pricing._id}"`));
       assert(html.includes(`data-kind="page" title="Home" href="${home._url}"`));
       assert.equal(html.match(/apos-assistant-chip--action/g).length, 2);
       assert(html.includes('. Ghost was not found.'));
-      assert(calls[0].system.includes(apos.assistant.getReplySection()));
-      assert(apos.assistant.getReplySection().includes('@[title](kind:_id)'));
+      assert(calls[0].system.includes(apos.aposAssistant.getReplySection()));
+      assert(apos.aposAssistant.getReplySection().includes('@[title](kind:_id)'));
       // The transcript keeps the model's words
       assert(request.messages.at(-1).content[0].text.includes(`@[Notes](page:${pricing._id})`));
     });
@@ -885,7 +892,7 @@ describe('Assistant: chats and the run', function () {
   describe('asks', function () {
     it('waits on a browser ask that only the owning browser tab answers', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = askScript('t_browser');
       const waiting = await runToEnd(req, chat, 'tab-1', 'Show me');
       assert.equal(waiting.status, 'waiting');
@@ -898,12 +905,12 @@ describe('Assistant: chats and the run', function () {
           what: 'something'
         }
       } ]);
-      assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest.status, 'waiting');
+      assert.equal((await apos.aposAssistant.getChat(req, chat._id)).openRequest.status, 'waiting');
 
       await assert.rejects(send(req, chat, 'tab-1', 'Something else'), conflict('requestOpen'));
       await assert.rejects(answer(req, chat, 'tab-2', 'shown'), conflict('otherBrowserTab'));
       await assert.rejects(answer(req, chat, 'tab-1', 42), { name: 'invalid' });
-      assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest.status, 'waiting');
+      assert.equal((await apos.aposAssistant.getChat(req, chat._id)).openRequest.status, 'waiting');
       assert(Number.isFinite(waiting.workedMs));
 
       // The editor takes a while to answer
@@ -923,21 +930,21 @@ describe('Assistant: chats and the run', function () {
       });
       assert.equal(done.messages[0].content.at(-1).text, 'Show me');
       assert.equal(done.usage.inputTokens > waiting.usage.inputTokens, true);
-      assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest, null);
+      assert.equal((await apos.aposAssistant.getChat(req, chat._id)).openRequest, null);
     });
 
     for (const [ tool, kind ] of [ [ 't_browser', 'browser' ], [ 't_test_question', 'test-question' ] ]) {
       it(`moves a request waiting on a ${kind} ask to the browser tab that continues here`, async function () {
         const req = userReq(editor);
-        const chat = await apos.assistant.createChat(req);
+        const chat = await apos.aposAssistant.createChat(req);
         script = askScript(tool);
         await runToEnd(req, chat, 'tab-1', 'Ask');
 
-        await assert.rejects(apos.assistant.continueHere(req, chat._id, {
+        await assert.rejects(apos.aposAssistant.continueHere(req, chat._id, {
           tabId: 'tab-2',
           screen: { tabId: 'tab-1' }
         }), { name: 'invalid' });
-        const moved = await apos.assistant.continueHere(req, chat._id, {
+        const moved = await apos.aposAssistant.continueHere(req, chat._id, {
           tabId: 'tab-2',
           screen: {
             tabId: 'tab-2',
@@ -950,7 +957,7 @@ describe('Assistant: chats and the run', function () {
         assert.equal(moved.screen.tabId, 'tab-2');
         assert.equal(moved.screen.url, '/elsewhere');
         assert.equal(moved.screen.visible, true);
-        assert.deepEqual((await apos.assistant.getChat(req, chat._id)).openRequest, {
+        assert.deepEqual((await apos.aposAssistant.getChat(req, chat._id)).openRequest, {
           _id: moved._id,
           tabId: 'tab-2',
           status: 'waiting'
@@ -959,7 +966,7 @@ describe('Assistant: chats and the run', function () {
           answer(req, chat, 'tab-1', 'from the old one', `call-${tool}`),
           conflict('otherBrowserTab')
         );
-        await assert.rejects(apos.assistant.skip(req, chat._id, { tabId: 'tab-1' }), conflict('otherBrowserTab'));
+        await assert.rejects(apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' }), conflict('otherBrowserTab'));
 
         doors.length = 0;
         await answer(req, chat, 'tab-2', 'here', `call-${tool}`);
@@ -972,7 +979,7 @@ describe('Assistant: chats and the run', function () {
 
     it('skips the asks: the request ends with its transcript completed', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       // An ask, and an action after it, which never starts
       script = sequence([
         {
@@ -987,8 +994,8 @@ describe('Assistant: chats and the run', function () {
       const waiting = await runToEnd(req, chat, 'tab-1', 'Ask then look');
       assert.equal(waiting.status, 'waiting');
 
-      await assert.rejects(apos.assistant.skip(req, chat._id, { tabId: 'tab-2' }), conflict('otherBrowserTab'));
-      const skipped = await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+      await assert.rejects(apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-2' }), conflict('otherBrowserTab'));
+      const skipped = await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
       assert.equal(skipped.status, 'skipped');
       assert.equal(skipped.asks, null);
       assert(skipped.endedAt);
@@ -1010,8 +1017,8 @@ describe('Assistant: chats and the run', function () {
           }
         ]
       });
-      assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest, null);
-      await assert.rejects(apos.assistant.skip(req, chat._id, { tabId: 'tab-1' }), conflict('notWaiting'));
+      assert.equal((await apos.aposAssistant.getChat(req, chat._id)).openRequest, null);
+      await assert.rejects(apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' }), conflict('notWaiting'));
 
       script = null;
       calls.length = 0;
@@ -1022,10 +1029,10 @@ describe('Assistant: chats and the run', function () {
 
     it('refuses an answer when no ask waits, with the reason', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       await assert.rejects(answer(req, chat, 'tab-1', 'x'), conflict('notWaiting'));
       await assert.rejects(
-        apos.assistant.continueHere(req, chat._id, { tabId: 'tab-1' }),
+        apos.aposAssistant.continueHere(req, chat._id, { tabId: 'tab-1' }),
         conflict('notWaiting')
       );
       const gate = holdModel();
@@ -1109,7 +1116,7 @@ describe('Assistant: chats and the run', function () {
       // Waiting on a question: every action below would be taken from its
       // owner
       script = askScript('t_test_question');
-      await apos.assistant.send(req, chat._id, {
+      await apos.aposAssistant.send(req, chat._id, {
         message: 'Ask me',
         screen: { tabId: 'tab-1' },
         requestId: 'forged-request',
@@ -1117,8 +1124,8 @@ describe('Assistant: chats and the run', function () {
       });
       const waiting = await waitForEnd(req, chat);
       assert.equal(waiting.status, 'waiting');
-      const before = await apos.assistant.getChat(req, chat._id);
-      await apos.assistant.reverts.insertOne({
+      const before = await apos.aposAssistant.getChat(req, chat._id);
+      await apos.aposAssistant.reverts.insertOne({
         _id: 'forged-revert',
         ownerId: editor._id,
         chatId: chat._id,
@@ -1219,24 +1226,24 @@ describe('Assistant: chats and the run', function () {
       assert(!chats.some(each => each._id === chat._id));
 
       // Theirs as they left it
-      const after = await apos.assistant.getChat(req, chat._id);
+      const after = await apos.aposAssistant.getChat(req, chat._id);
       assert.equal(after.openRequest._id, waiting._id);
       assert.equal(after.openRequest.status, 'waiting');
       assert.equal(after.openRequest.tabId, 'tab-1');
       assert.equal(after.title, before.title);
-      const requests = await apos.assistant.getChatRequests(req, chat._id);
+      const requests = await apos.aposAssistant.getChatRequests(req, chat._id);
       assert.deepEqual(requests.map(each => [ each._id, each.status, each.tabId ]),
         [ [ waiting._id, 'waiting', 'tab-1' ] ]);
       assert.equal(requests[0].messages.length, waiting.messages.length);
-      const reverts = await apos.assistant.getChatReverts(req, chat._id);
+      const reverts = await apos.aposAssistant.getChatReverts(req, chat._id);
       assert.deepEqual(reverts.map(each => [ each._id, each.status, each.dismissed ]),
         [ [ 'forged-revert', 'failed', undefined ] ]);
-      assert.equal(await apos.assistant.requests.countDocuments({
+      assert.equal(await apos.aposAssistant.requests.countDocuments({
         ownerId: other._id,
         chatId: chat._id
       }), 0);
-      await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
-      await apos.assistant.reverts.deleteOne({ _id: 'forged-revert' });
+      await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
+      await apos.aposAssistant.reverts.deleteOne({ _id: 'forged-revert' });
     });
   });
 
@@ -1248,14 +1255,14 @@ describe('Assistant: chats and the run', function () {
   }
 
   function send(req, chat, tabId, message) {
-    return apos.assistant.send(req, chat._id, {
+    return apos.aposAssistant.send(req, chat._id, {
       message,
       screen: { tabId }
     });
   }
 
   function answer(req, chat, tabId, value, callId = 'call-t_browser') {
-    return apos.assistant.answer(req, chat._id, {
+    return apos.aposAssistant.answer(req, chat._id, {
       tabId,
       callId,
       answer: value
@@ -1272,9 +1279,9 @@ describe('Assistant: chats and the run', function () {
   async function waitForEnd(req, chat) {
     let request;
     await waitFor(async () => {
-      const requests = await apos.assistant.getChatRequests(req, chat._id);
+      const requests = await apos.aposAssistant.getChatRequests(req, chat._id);
       request = requests.at(-1);
-      const open = (await apos.assistant.getChat(req, chat._id)).openRequest;
+      const open = (await apos.aposAssistant.getChat(req, chat._id)).openRequest;
       return request && (request.status !== 'running') &&
         ((open === null) || (open.status === 'waiting')) &&
         await jobEnded(request.jobId);
