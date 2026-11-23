@@ -177,6 +177,9 @@ function sanitizeHtml(html, options, _fallback) {
 
   options = Object.assign({}, sanitizeHtml.defaults, options);
   options.parser = Object.assign({}, htmlParserDefaults, options.parser);
+  if (options.escapeHtml !== undefined && typeof options.escapeHtml !== 'function') {
+    throw new TypeError('escapeHtml must be a function');
+  }
 
   // Outside SVG and MathML, browsers parse `<![CDATA[` as a bogus comment that
   // ends at the first `>`, but htmlparser2 reads it to `]]>`, which hides any
@@ -915,6 +918,13 @@ function sanitizeHtml(html, options, _fallback) {
   function escapeHtml(s, quote) {
     if (typeof (s) !== 'string') {
       s = s + '';
+    }
+    if (options.escapeHtml) {
+      const escaped = options.escapeHtml(s, !!quote);
+      if (typeof escaped !== 'string') {
+        throw new TypeError('escapeHtml must return a string');
+      }
+      return escaped;
     }
     if (options.parser.decodeEntities) {
       s = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

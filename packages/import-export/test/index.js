@@ -128,10 +128,14 @@ describe('@apostrophecms/import-export', function() {
       docs, attachments, attachmentFiles
     } = await getExtractedFiles(exportPath);
 
-    const docsNames = docs.map(({ title, aposMode }) => ({
+    // Drafts are exported first; within a mode the order is the database's
+    const modes = docs.map(({ aposMode }) => aposMode);
+    assert.deepEqual(modes, modes.toSorted());
+
+    const docsNames = sortDocs(docs.map(({ title, aposMode }) => ({
       title,
       aposMode
-    }));
+    })));
 
     const topicsContainNonProjectedFields = docs
       .filter(({ type }) => type === 'topic')
@@ -147,7 +151,7 @@ describe('@apostrophecms/import-export', function() {
     };
 
     const expected = {
-      docsNames: [
+      docsNames: sortDocs([
         {
           title: 'article2',
           aposMode: 'draft'
@@ -188,7 +192,7 @@ describe('@apostrophecms/import-export', function() {
           title: 'topic2',
           aposMode: 'published'
         }
-      ],
+      ]),
       attachmentsLength: 1,
       attachmentFiles: [ `${attachmentId}-test-image.jpg` ],
       topicsContainNonProjectedFields: true
@@ -259,10 +263,14 @@ describe('@apostrophecms/import-export', function() {
       docs, attachments, attachmentFiles
     } = await getExtractedFiles(exportPath);
 
-    const docsNames = docs.map(({ title, aposMode }) => ({
+    // Drafts are exported first; within a mode the order is the database's
+    const modes = docs.map(({ aposMode }) => aposMode);
+    assert.deepEqual(modes, modes.toSorted());
+
+    const docsNames = sortDocs(docs.map(({ title, aposMode }) => ({
       title,
       aposMode
-    }));
+    })));
 
     const topicsContainNonProjectedFields = docs
       .filter(({ type }) => type === 'topic')
@@ -278,7 +286,7 @@ describe('@apostrophecms/import-export', function() {
     };
 
     const expected = {
-      docsNames: [
+      docsNames: sortDocs([
         {
           title: 'article2',
           aposMode: 'draft'
@@ -303,7 +311,7 @@ describe('@apostrophecms/import-export', function() {
           title: 'topic2',
           aposMode: 'published'
         }
-      ],
+      ]),
       attachmentsLength: 1,
       attachmentFiles: [ `${attachmentId}-test-image.jpg` ],
       topicsContainNonProjectedFields: true

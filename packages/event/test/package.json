@@ -3,7 +3,7 @@
   " * ": "Apostrophe requires that all npm modules to be loaded by moog",
   " */": "exist in package.json at project level, which for a test is here",
   "dependencies": {
-    "apostrophe": "workspace:^",
-    "@apostrophecms/event": "workspace:^"
+    "apostrophe": "git+https://github.com/apostrophecms/apostrophe.git",
+    "@apostrophecms/event": "git+https://github.com/apostrophecms/apostrophe.git"
   }
 }
