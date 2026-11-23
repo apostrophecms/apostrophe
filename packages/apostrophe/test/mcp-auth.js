@@ -1,13 +1,23 @@
 const assert = require('assert').strict;
 const t = require('../test-lib/test.js');
 const {
-  PATH, TOKEN, USERNAME, createMcpApos, getUrl, initializeMessage, post, withEnv
+  BASE_URL, PATH, TOKEN, USERNAME, createMcpApos, getUrl, initializeMessage, post, withEnv
 } = require('./utils/mcp.js');
 
 // An MCP request acts as its bearer token's user and nothing else: the
 // express module's login-token check skips the route, the session cookie is
-// dropped, the token is read from the `Authorization` header only, and until
-// OAuth the one token taken is APOS_MCP_DEV_TOKEN.
+// dropped, and the token is read from the `Authorization` header only. These
+// tests use APOS_MCP_DEV_TOKEN; test/mcp-oauth.js covers OAuth's tokens.
+
+// The OAuth server's 401 for the route: it points the tool at the route's
+// metadata. `error` only when a token was sent (RFC 6750)
+function challenge(error) {
+  return [
+    `Bearer resource_metadata="${BASE_URL}/.well-known/oauth-protected-resource${PATH}"`,
+    'scope="content"',
+    ...(error ? [ `error="${error}"` ] : [])
+  ].join(', ');
+}
 
 describe('MCP: bearer tokens', function () {
   this.timeout(t.timeout);
@@ -18,8 +28,8 @@ describe('MCP: bearer tokens', function () {
 
   before(async function () {
     apos = await createMcpApos(module);
-    const createServer = apos.mcp.createServer;
-    apos.mcp.createServer = (req) => {
+    const createServer = apos.modules['@apostrophecms/mcp'].createServer;
+    apos.modules['@apostrophecms/mcp'].createServer = (req) => {
       seen.push(req.user);
       return createServer(req);
     };
@@ -43,14 +53,14 @@ describe('MCP: bearer tokens', function () {
   it('refuses any other bearer token with a 401 the route answers', async function () {
     const response = await post(apos, { authorization: 'Bearer some-oauth-access-token' });
     assert.equal(response.status, 401);
-    assert.equal(response.headers.get('www-authenticate'), 'Bearer error="invalid_token"');
+    assert.equal(response.headers.get('www-authenticate'), challenge('invalid_token'));
     assert.deepEqual(seen, []);
   });
 
   it('refuses a request with no bearer token', async function () {
     const response = await post(apos, { authorization: null });
     assert.equal(response.status, 401);
-    assert.equal(response.headers.get('www-authenticate'), 'Bearer');
+    assert.equal(response.headers.get('www-authenticate'), challenge());
     assert.deepEqual(seen, []);
   });
 
@@ -73,7 +83,7 @@ describe('MCP: bearer tokens', function () {
       `${PATH}?access_token=${TOKEN}`
     );
     assert.equal(response.status, 401);
-    assert.equal(response.headers.get('www-authenticate'), 'Bearer');
+    assert.equal(response.headers.get('www-authenticate'), challenge());
     assert.deepEqual(seen, []);
   });
 
@@ -83,7 +93,7 @@ describe('MCP: bearer tokens', function () {
       access_token: TOKEN
     });
     assert.equal(response.status, 401);
-    assert.equal(response.headers.get('www-authenticate'), 'Bearer');
+    assert.equal(response.headers.get('www-authenticate'), challenge());
     assert.deepEqual(seen, []);
   });
 
@@ -105,14 +115,14 @@ describe('MCP: bearer tokens', function () {
       APOS_MCP_DEV_TOKEN: `${TOKEN}:${USERNAME}`,
       NODE_ENV: 'production'
     }, () => {
-      assert.equal(apos.mcp.getDevToken(), null);
+      assert.equal(apos.modules['@apostrophecms/mcp'].getDevToken(), null);
     });
   });
 
   it('refuses a malformed development token', function () {
     for (const value of [ TOKEN, 'short:editor', `${TOKEN}:` ]) {
       withEnv({ APOS_MCP_DEV_TOKEN: value }, () => {
-        assert.throws(() => apos.mcp.getDevToken(), /APOS_MCP_DEV_TOKEN must be/);
+        assert.throws(() => apos.modules['@apostrophecms/mcp'].getDevToken(), /APOS_MCP_DEV_TOKEN must be/);
       });
     }
   });
@@ -148,6 +158,6 @@ describe('MCP: bearer tokens on a site that reads them from a cookie', function 
       cookie: `access_token=${TOKEN}`
     });
     assert.equal(response.status, 401);
-    assert.equal(response.headers.get('www-authenticate'), 'Bearer');
+    assert.equal(response.headers.get('www-authenticate'), challenge());
   });
 });

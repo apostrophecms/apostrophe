@@ -4,13 +4,20 @@ const fs = require('node:fs');
 const path = require('node:path');
 const t = require('../test-lib/test.js');
 const {
-  USERNAME, MODES, createMcpApos, withClient
+  USERNAME, MODES, createMcpApos, withClient, getUrl
 } = require('./utils/mcp.js');
 
 // The MCP server's own image tools. `save_image_to_media` adds an image to
 // the media library from base64, through the attachment module's intake and
 // the harness's write path; `get_image` reads one back as links, never as
 // bytes. Each test runs on both protocol versions.
+
+// Image links are absolute on the site's `baseUrl`, but the test server
+// listens on a port of its own: fetch the link's path there
+function fetchLink(apos, url) {
+  const { pathname, search } = new URL(url);
+  return fetch(getUrl(apos, pathname + search));
+}
 
 const JPG = fs.readFileSync(path.join(__dirname, 'public/test-image.jpg'));
 // 104 KB, over the limit these tests set
@@ -287,7 +294,7 @@ describe('MCP: image tools', function () {
         );
         for (const { url } of image.sizes) {
           assert.match(url, /^http:\/\/localhost:\d+\/uploads\/attachments\//);
-          const response = await fetch(url);
+          const response = await fetchLink(apos, url);
           assert.equal(response.status, 200);
           assert.match(response.headers.get('content-type'), /^image\/jpeg/);
         }
@@ -309,7 +316,7 @@ describe('MCP: image tools', function () {
           .structuredContent;
 
         assert.deepEqual(sizes.map(size => size.name), [ 'original' ]);
-        assert.equal((await fetch(sizes[0].url)).status, 200);
+        assert.equal((await fetchLink(apos, sizes[0].url)).status, 200);
       });
 
       it('refuses a document that isn\'t an image', async function () {
@@ -483,7 +490,7 @@ describe('MCP: image tools with a project\'s own image sizes', function () {
           ]
         );
         for (const { url } of sizes) {
-          const response = await fetch(url);
+          const response = await fetchLink(apos, url);
           assert.equal(response.status, 200);
         }
       });
@@ -510,7 +517,7 @@ describe('MCP: image tools with a payload of several MB', function () {
   });
 
   it('takes up to 10 MB by default, as Finder counts them', async function () {
-    assert.equal(apos.mcp.maxImageSize, 10 * 1000 * 1000);
+    assert.equal(apos.modules['@apostrophecms/mcp'].maxImageSize, 10 * 1000 * 1000);
     const { tools } = await withClient(apos, 'auto', client => client.listTools());
     const save = tools.find(tool => tool.name === 'save_image_to_media');
     assert.match(save.description, /up to 10 MB\./);
@@ -555,21 +562,21 @@ describe('MCP: image tools with the attachment module\'s maxSize', function () {
   });
 
   it('refuses an image over the attachment module\'s maxSize', async function () {
-    assert.equal(apos.mcp.maxImageSize, 50 * 1000);
+    assert.equal(apos.modules['@apostrophecms/mcp'].maxImageSize, 50 * 1000);
     const result = await save(PNG, 'big.png');
     assert.equal(result.isError, true);
     assert.match(result.content[0].text, /^The image is 104 KB, over the limit of 50 KB\./);
   });
 
   it('takes maxImageSize over maxSize, and ignores a maxSize that isn\'t bytes', function () {
-    const { options } = apos.mcp;
+    const { options } = apos.modules['@apostrophecms/mcp'];
     const { options: attachment } = apos.attachment;
     try {
       options.maxImageSize = 2 * 1000 * 1000;
-      assert.equal(apos.mcp.getMaxImageSize(), 2 * 1000 * 1000);
+      assert.equal(apos.modules['@apostrophecms/mcp'].getMaxImageSize(), 2 * 1000 * 1000);
       delete options.maxImageSize;
       attachment.maxSize = '10MB';
-      assert.equal(apos.mcp.getMaxImageSize(), 10 * 1000 * 1000);
+      assert.equal(apos.modules['@apostrophecms/mcp'].getMaxImageSize(), 10 * 1000 * 1000);
     } finally {
       delete options.maxImageSize;
       attachment.maxSize = 50 * 1000;
@@ -578,7 +585,7 @@ describe('MCP: image tools with the attachment module\'s maxSize', function () {
 
   it('gives exact byte counts when both round to the same figure', async function () {
     // The PNG is 104,260 bytes: "104 KB", as the limit would be
-    apos.mcp.maxImageSize = 104 * 1000;
+    apos.modules['@apostrophecms/mcp'].maxImageSize = 104 * 1000;
     try {
       const result = await save(PNG, 'just-over.png');
       assert.match(
@@ -586,15 +593,15 @@ describe('MCP: image tools with the attachment module\'s maxSize', function () {
         /^The image is 104,260 bytes, over the limit of 104,000 bytes\./
       );
     } finally {
-      apos.mcp.maxImageSize = 50 * 1000;
+      apos.modules['@apostrophecms/mcp'].maxImageSize = 50 * 1000;
     }
   });
 
   it('formats sizes in decimal units', function () {
-    assert.equal(apos.mcp.formatSize(999), '999 bytes');
-    assert.equal(apos.mcp.formatSize(104260), '104 KB');
-    assert.equal(apos.mcp.formatSize(10 * 1000 * 1000), '10 MB');
-    assert.equal(apos.mcp.formatSize(10300000), '10.3 MB');
+    assert.equal(apos.modules['@apostrophecms/mcp'].formatSize(999), '999 bytes');
+    assert.equal(apos.modules['@apostrophecms/mcp'].formatSize(104260), '104 KB');
+    assert.equal(apos.modules['@apostrophecms/mcp'].formatSize(10 * 1000 * 1000), '10 MB');
+    assert.equal(apos.modules['@apostrophecms/mcp'].formatSize(10300000), '10.3 MB');
   });
 
   function save(file, fileName) {
