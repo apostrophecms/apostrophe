@@ -292,7 +292,7 @@ module.exports = (self) => {
         link: {
           _id: saved._id,
           type: '@apostrophecms/image',
-          label: 'apostrophe:assistantOpenInMedia'
+          label: 'apostrophe:edit'
         }
       });
       return {

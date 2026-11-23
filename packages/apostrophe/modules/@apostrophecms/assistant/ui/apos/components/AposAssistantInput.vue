@@ -239,11 +239,13 @@ function insertMention(mention) {
 }
 
 // With `at`, the caret goes that many characters into the draft's first
-// line
+// line, or to its end with 'end'
 function focus(at = null) {
-  editor.commands.focus(at === null
-    ? null
-    : Math.min(at + 1, editor.state.doc.content.size - 1));
+  if ((at === null) || (at === 'end')) {
+    editor.commands.focus(at);
+    return;
+  }
+  editor.commands.focus(Math.min(at + 1, editor.state.doc.content.size - 1));
 }
 
 function toDoc(draft) {

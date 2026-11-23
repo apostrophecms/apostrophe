@@ -14,8 +14,9 @@
 const getCallDocumentIds = require('./call-documents');
 
 const DOOR = 'assistant';
-// The documents a gate's confirmation names, then "and N more"
-const TITLES_MAX = 5;
+// The documents a gate's confirmation names, then "and N more"; the panel
+// lists a few and expands to the rest
+const TITLES_MAX = 100;
 
 module.exports = (self) => {
   return {

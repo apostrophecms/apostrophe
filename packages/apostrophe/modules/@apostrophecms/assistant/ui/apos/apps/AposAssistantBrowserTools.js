@@ -31,7 +31,7 @@ export default () => {
     return;
   }
   if (navigation.panel) {
-    apos.modal.execute('AposAssistant', {});
+    apos.modal.execute('AposAssistant', { resumed: true });
   }
   store.start();
 };

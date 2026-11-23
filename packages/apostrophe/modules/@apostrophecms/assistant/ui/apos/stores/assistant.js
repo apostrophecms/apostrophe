@@ -85,6 +85,8 @@ export const useAssistantStore = defineStore('assistant', () => {
   // A prompt asked for from outside the panel, for the composer of the chat
   // tab it names to translate and put in: `{ chatId, key, count }`
   const askedPrompt = ref(null);
+  // The editor's own action asks for the composer, taken once by it
+  const composerFocus = ref(false);
   // Why the last send of a chat tab was refused: `{ title, text }`
   const refusals = ref({});
   // What a running request is doing now, by request id: `{ label }`, or
@@ -2407,6 +2409,18 @@ export const useAssistantStore = defineStore('assistant', () => {
     };
   }
 
+  // The editor opened the panel or a chat tab: the composer takes focus,
+  // once it is there
+  function focusComposer() {
+    composerFocus.value = true;
+  }
+
+  function takeComposerFocus() {
+    const asked = composerFocus.value;
+    composerFocus.value = false;
+    return asked;
+  }
+
   // The prompt asked for a chat tab, taken once by its composer
   function takeAskedPrompt(id) {
     if (askedPrompt.value?.chatId !== id) {
@@ -2531,6 +2545,9 @@ export const useAssistantStore = defineStore('assistant', () => {
     setDraft,
     askPrompt,
     askedPrompt,
+    composerFocus,
+    focusComposer,
+    takeComposerFocus,
     takeAskedPrompt,
     prefill,
     runNoticeAction,

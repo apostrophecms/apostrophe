@@ -394,8 +394,8 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
             label: 'apostrophe:aiToolUpdateDocument',
             count: 20,
             typeLabel: 'Notes',
-            titles: [ 'Note 1', 'Note 2', 'Note 3', 'Note 4', 'Note 5' ],
-            more: 15
+            titles: Array.from({ length: 20 }, (each, i) => `Note ${i + 1}`),
+            more: 0
           }
         }
       } ]);

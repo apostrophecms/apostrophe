@@ -204,14 +204,15 @@ import AposAssistantInput from './AposAssistantInput.vue';
 import AposAssistantSelection from './AposAssistantSelection.vue';
 import AposAssistantGauge from './AposAssistantGauge.vue';
 import AposAssistantFiles from './AposAssistantFiles.vue';
-import { getFileUrl } from '../lib/attachments.js';
+import { getFileUrl, isPicture } from '../lib/attachments.js';
 
 // Stands for `{{ caret }}` in a translated prompt; no translation carries it
 const CARET = '\uE000';
 
 // The composer of the active chat tab. It never takes focus on its own:
-// only the editor's click or Tab puts it there, or a prompt the editor asked
-// for from outside the panel (`askPrompt`)
+// the editor's click or Tab puts it there, their opening the panel or a chat
+// tab (`focusComposer`), or a prompt they asked for from outside the panel
+// (`askPrompt`)
 const props = defineProps({
   chatId: {
     type: String,
@@ -287,15 +288,21 @@ const accept = apos.modules['@apostrophecms/assistant'].attachments.extensions
 const picker = ref(null);
 // The chat tab's files, an image shown from the browser until the server
 // has its thumbnail
-const files = computed(() => store.getAttached(props.chatId).map(file => ({
-  key: file.key,
-  name: file.name,
-  size: file.size,
-  uploading: file.status === 'uploading',
-  src: file.preview || (file.attachment
-    ? getFileUrl(file.chatId, file.attachment._id, 'thumbnail')
-    : null)
-})));
+// Once uploaded, a file opens as a sent one does: an image large, any
+// other file in a tab of its own
+const files = computed(() => store.getAttached(props.chatId).map(file => {
+  const id = file.attachment?._id;
+  const picture = isPicture(file.name);
+  return {
+    key: file.key,
+    name: file.name,
+    size: file.size,
+    uploading: file.status === 'uploading',
+    src: file.preview || (id ? getFileUrl(file.chatId, id, 'thumbnail') : null),
+    large: (id && picture) ? getFileUrl(file.chatId, id, 'preview') : null,
+    href: (id && !picture) ? getFileUrl(file.chatId, id) : null
+  };
+}));
 const sendTitle = computed(() => {
   if (stopShown.value) {
     return $t('apostrophe:assistantStop');
@@ -404,6 +411,29 @@ watch(() => [ store.askedPrompt, props.chatId ], async () => {
   flush: 'post'
 });
 
+watch(() => store.composerFocus, async () => {
+  if (!store.takeComposerFocus()) {
+    return;
+  }
+  await nextTick();
+  input.value?.focus('end');
+}, {
+  immediate: true,
+  flush: 'post'
+});
+
+// Answered, skipped or cancelled, a dock leaves with the button that had
+// focus: focus comes back to the composer rather than to the page
+watch(() => Boolean(question.value || images.value), async (shown, was) => {
+  if (!was || shown) {
+    return;
+  }
+  await nextTick();
+  if (!document.activeElement || (document.activeElement === document.body)) {
+    input.value?.focus('end');
+  }
+}, { flush: 'post' });
+
 onBeforeUnmount(() => {
   apos.bus.$off('refreshed', readEditMode);
   clearTimeout(searchTimer);
@@ -459,7 +489,7 @@ function search(value) {
         searchFailed.value = true;
       }
     }
-  }, 120);
+  }, 300);
 }
 
 // The list takes its keys before the editing area does
