@@ -725,6 +725,22 @@ describe('Assistant: working in open editors', function () {
         await writeRefusal([ editorModal() ], 'update_document', update),
         /"Open note" is open in an editor on the user's screen: change it with edit_open_document/
       );
+      // Before its gate asks: the user publishes from the editor, or once a
+      // widget or array editor is done
+      const publish = { targets: [ { _id: note._id } ] };
+      assert.match(
+        await writeRefusal([ editorModal() ], 'publish_document', publish),
+        /"Open note" is open in an editor on the user's screen, so nothing was published: that editor's own button \(Publish or Update\) publishes what it holds/
+      );
+      assert.match(
+        await writeRefusal([ editorModal(), {
+          kind: 'widgetEditor',
+          docId: note._id,
+          widgetId: 'card-1',
+          field: 'body'
+        } ], 'publish_document', publish),
+        /has its widget editor open on the user's screen, so nothing was published: it can be published once the user is done in that editor\./
+      );
       assert.match(
         await writeRefusal([ editorModal(), {
           kind: 'arrayEditor',

@@ -15,7 +15,7 @@ module.exports = (self) => {
   return {
     // Registers the gate on direct writes of Global Styles
     addGlobalStylesGate() {
-      self.addGate(TOOL, async (args, {
+      self.addGate(TOOL, 'globalStyles', async (args, {
         req, ids, getScreen
       }) => {
         const docs = [];

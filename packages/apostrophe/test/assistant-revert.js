@@ -92,6 +92,23 @@ describe('Assistant: revert', function () {
                 return { written: written.length };
               }
             });
+            self.apos.ai.addTool({
+              name: 't_publish',
+              description: 'Publishes a document.',
+              tags: [ 'assistant' ],
+              input: {
+                type: 'object',
+                properties: {
+                  _id: { type: 'string' }
+                },
+                required: [ '_id' ]
+              },
+              handler: async (req, { _id }) => {
+                const { published } = await self.apos.aposHarness
+                  .publishDocuments(req, [ _id ]);
+                return { published: published.length };
+              }
+            });
           }
         }
       }
@@ -158,26 +175,36 @@ describe('Assistant: revert', function () {
   }
 
   // A request writing `patch` to the document, run to its end
-  async function write(chat, _id, patch) {
+  function write(chat, _id, patch) {
+    return runTool(chat, 't_write', {
+      _id,
+      patch
+    }, 'Write it');
+  }
+
+  // A request publishing the document, run to its end
+  function publish(chat, _id) {
+    return runTool(chat, 't_publish', { _id }, 'Publish it');
+  }
+
+  // A request making one call of the tool `name`, run to its end
+  async function runTool(chat, name, input, message) {
     const turns = [ {
       content: [ {
         type: 'toolCall',
-        id: 'call-write',
-        name: 't_write',
-        input: {
-          _id,
-          patch
-        }
+        id: `call-${name}`,
+        name,
+        input
       } ],
       finishReason: 'toolCalls',
       usage: {
         inputTokens: 1,
         outputTokens: 1
       }
-    }, { text: 'Written.' } ];
+    }, { text: 'Done.' } ];
     script = () => turns.shift() || { text: 'Done.' };
     const request = await apos.aposAssistant.send(userReq(), chat._id, {
-      message: 'Write it',
+      message,
       screen: { tabId: 'tab-1' }
     });
     await waitFor(async () => {
@@ -556,6 +583,51 @@ describe('Assistant: revert', function () {
       apos.aposAssistant.dismissRevert(userReq(), elsewhere._id, { revertId: done._id }),
       { name: 'notfound' }
     );
+  });
+
+  it('should keep what a request published, with its Document Versions to take it back', async function () {
+    const chat = await apos.aposAssistant.createChat(userReq());
+    // A page, which See Changes would show if it were the way back
+    const { _id: pageId } = await apos.page.insert(userReq(), '_home', 'lastChild', {
+      type: 'revert-page',
+      title: 'Published page'
+    });
+    const request = await publish(chat, pageId);
+
+    const checked = await apos.aposAssistant.checkRevert(userReq(), chat._id, {
+      requestId: request._id,
+      tabId: 'tab-1'
+    });
+    const done = await revert(chat, request);
+
+    const summary = ({
+      docId, outcome, published
+    }) => [ docId, outcome, published ];
+    assert.deepEqual(checked.documents.map(summary), [ [ pageId, 'reverted', true ] ]);
+    assert.equal(done.status, 'done');
+    assert.deepEqual(done.documents.map(summary), [ [ pageId, 'reverted', true ] ]);
+    assert.equal(done.documents[0].view, null);
+    assert.equal(done.documents[0].publishedView, 'versions');
+    assert(await find(pageId.replace(':draft', ':published')));
+  });
+
+  it('should keep the chat\'s stamps of what it read or wrote through a revert', async function () {
+    const chat = await apos.aposAssistant.createChat(userReq());
+    const first = await insertNote('First');
+    const second = await insertNote('Second');
+    await write(chat, first, { title: 'First, shorter' });
+    const request = await write(chat, second, { title: 'Second, shorter' });
+    const stamps = async () => Object.fromEntries(
+      ((await apos.aposAssistant.chats.findOne({ _id: chat._id })).seen || [])
+        .map(({ _id, updatedAt }) => [ _id, updatedAt ])
+    );
+    const before = await stamps();
+
+    await revert(chat, request);
+
+    assert.equal((await find(second)).title, 'Second');
+    assert.deepEqual(await stamps(), before);
+    assert.deepEqual(Object.keys(before).sort(), [ first, second ].sort());
   });
 
   it('should not retry a failed revert once a request was sent after it', async function () {

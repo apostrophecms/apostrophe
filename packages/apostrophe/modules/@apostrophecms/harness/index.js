@@ -61,8 +61,7 @@ module.exports = {
             return;
           }
           expected.checked = true;
-          const saved = new Date(doc.updatedAt ?? NaN).getTime();
-          if (!isNaN(saved) && (saved !== new Date(expected.updatedAt).getTime())) {
+          if (self.isSavedSince(doc, expected.updatedAt)) {
             throw self.apos.error('conflict');
           }
         }

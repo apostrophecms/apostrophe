@@ -370,11 +370,70 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
     });
   });
 
+  // Before the gates' tests, which take every gate off after each
+  describe('publishing', function () {
+    it('asks before every publish, then publishes without switching the page to edit mode', async function () {
+      const req = userReq(editor);
+      const chat = await apos.aposAssistant.createChat(req);
+      const note = await apos.modules['assistant-note'].insert(apos.task.getReq({ mode: 'draft' }), {
+        title: 'To publish'
+      });
+      script = sequence([
+        toolTurn('publish_document', { targets: [ { _id: note._id } ] }, 'publish'),
+        { text: 'Published.' }
+      ]);
+      await apos.aposAssistant.send(req, chat._id, {
+        message: 'Publish this note',
+        screen: {
+          tabId: 'tab-1',
+          document: { _id: note._id }
+        }
+      });
+      const waiting = await waitForEnd(req, chat);
+      assert.deepEqual(waiting.asks, [ {
+        callId: 'call-publish',
+        name: 'publish_document',
+        kind: 'confirm',
+        payload: {
+          kind: 'confirm',
+          gate: {
+            tool: 'publish_document',
+            label: 'apostrophe:aiToolPublishDocument',
+            count: 1,
+            typeLabel: 'Notes',
+            titles: [ 'To publish' ],
+            more: 0,
+            title: {
+              key: 'apostrophe:assistantGatePublish',
+              values: { count: 1 }
+            },
+            approve: 'apostrophe:publish'
+          }
+        }
+      } ]);
+      const publishedId = note._id.replace(':draft', ':published');
+      assert.equal(await apos.doc.db.findOne({ _id: publishedId }), null);
+
+      await apos.aposAssistant.answer(req, chat._id, {
+        tabId: 'tab-1',
+        callId: 'call-publish',
+        answer: { approved: true }
+      });
+      // Done on the one answer: no edit mode step waits
+      const done = await waitForEnd(req, chat);
+      assert.equal(done.status, 'completed');
+      assert.equal(resultOf(done, 'call-publish').output.published[0].status, 'published');
+      assert(await apos.doc.db.findOne({ _id: publishedId }));
+    });
+  });
+
   describe('gates', function () {
     afterEach(function () {
       apos.aposAssistant.options.maxDocsWithoutConfirm = 5;
       apos.aposAssistant.gates = {};
-      apos.aposAssistant.ungated = new Set();
+      apos.aposAssistant.removedGates = {};
+      apos.aposAssistant.addGlobalStylesGate();
+      apos.aposAssistant.addPublishGate();
     });
 
     it('asks before one call changes more documents than maxDocsWithoutConfirm, naming them', async function () {
@@ -483,10 +542,14 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
     it('adds a project\'s gate beside the standard one, and removeGate takes them all off', async function () {
       const req = userReq(editor);
       const seen = [];
-      apos.aposAssistant.addGate('update_document', (args, { documentCount }) => {
-        seen.push(documentCount);
-        return args.targets.some(target => target.values.title === 'Gated');
-      });
+      apos.aposAssistant.addGate(
+        'update_document',
+        'gatedTitle',
+        (args, { documentCount }) => {
+          seen.push(documentCount);
+          return args.targets.some(target => target.values.title === 'Gated');
+        }
+      );
       const one = await apos.aposAssistant.createChat(req);
       script = sequence([ updateTurn(notes.slice(0, 1), 'Gated') ]);
       const waiting = await runToEnd(req, one, 'Rename one note');
@@ -508,9 +571,62 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
       assert.equal(await countTitled('Gated'), 20);
     });
 
+    it('takes one gate off by name, the standard one too, and replaces a gate added under its name', async function () {
+      const req = userReq(editor);
+      assert.throws(() => apos.aposAssistant.addGate('update_document', () => true), {
+        message: 'A gate of the tool "update_document" needs a name.'
+      });
+      const drafts = [];
+      for (let i = 1; i <= 6; i++) {
+        drafts.push(await apos.modules['assistant-note']
+          .insert(apos.task.getReq({ mode: 'draft' }), { title: `To publish ${i}` }));
+      }
+      const publishAll = async () => {
+        const chat = await apos.aposAssistant.createChat(req);
+        script = sequence([
+          toolTurn('publish_document', {
+            targets: drafts.map(doc => ({ _id: doc._id }))
+          }, 'publish'),
+          { text: 'Published.' }
+        ]);
+        return {
+          chat,
+          request: await runToEnd(req, chat, 'Publish them')
+        };
+      };
+      const worded = {
+        key: 'apostrophe:assistantGateStylesLocale',
+        values: { locale: 'English' }
+      };
+
+      // Worded again under its own name: replaced, not added beside it
+      apos.aposAssistant.addGate('publish_document', 'publish', () => ({ title: worded }));
+      let { chat, request } = await publishAll();
+      assert.deepEqual(request.asks[0].payload.gate.title, worded);
+      await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
+
+      // Without it, the standard gate asks: six documents, over five
+      apos.aposAssistant.removeGate('publish_document', 'publish');
+      ({ chat, request } = await publishAll());
+      assert.equal(request.status, 'waiting');
+      assert.equal(request.asks[0].payload.gate.title, undefined);
+      assert.equal(request.asks[0].payload.gate.count, 6);
+      await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
+
+      // Without that one too, nothing asks
+      apos.aposAssistant.removeGate('publish_document', 'documentCount');
+      ({ request } = await publishAll());
+      assert.equal(request.status, 'completed');
+      assert.equal(await apos.doc.db.countDocuments({
+        type: 'assistant-note',
+        aposMode: 'published',
+        title: /^To publish /
+      }), 6);
+    });
+
     it('words a gate\'s own confirmation, and answers an alternative as a decline with its message', async function () {
       const req = userReq(editor);
-      apos.aposAssistant.addGate('update_document', () => ({
+      apos.aposAssistant.addGate('update_document', 'worded', () => ({
         title: {
           key: 'apostrophe:assistantGateStylesLocale',
           values: { locale: 'English' }
@@ -569,7 +685,7 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
 
     it('gates any tool by name, never outside the assistant\'s door', async function () {
       const req = userReq(editor);
-      apos.aposAssistant.addGate('write_plan', args => args.steps.length > 2);
+      apos.aposAssistant.addGate('write_plan', 'longPlan', args => args.steps.length > 2);
       const chat = await apos.aposAssistant.createChat(req);
       const steps = [ 'One', 'Two', 'Three' ].map(title => ({ title }));
       script = sequence([ toolTurn('write_plan', { steps }, 'plan') ]);

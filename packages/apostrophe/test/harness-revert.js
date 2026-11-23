@@ -135,13 +135,15 @@ describe('Harness: revert', function () {
   }
 
   function outcomeOf({
-    docId, outcome, reason, lockedBy, rows
+    docId, outcome, reason, lockedBy, published, live, rows
   }) {
     return {
       docId,
       outcome,
       reason,
       lockedBy,
+      published,
+      live,
       rows: rows.map(row => row.outcome)
     };
   }
@@ -301,6 +303,73 @@ describe('Harness: revert', function () {
     assert.equal(result.outcome, 'reverted');
     assert.deepEqual(result.rows.map(row => row.outcome), [ 'reverted' ]);
     assert.equal(await countVersions(article), versions);
+  });
+
+  it('should mark a document whose live version keeps a change it put back', async function () {
+    const [ published, draftOnly, earlier ] = await insertArticles(3, 'Live');
+    // Published before the request wrote it: the change is in the draft only
+    await apos.modules['revert-article'].publish(userReq(), await find(earlier._id));
+    const req = door();
+    for (const article of [ published, draftOnly, earlier ]) {
+      await write(req, article._id, { body: 'AI body' });
+    }
+    // The request's own publish
+    const { refused } = await apos.aposHarness.publishDocuments(req, [ published._id ]);
+    assert.deepEqual(refused, []);
+
+    const results = await revert([ req ]);
+
+    assert.deepEqual(
+      [ published, draftOnly, earlier ].map(article => {
+        const { outcome, live } = byDoc(results, article._id);
+        return [ outcome, live ];
+      }),
+      [ [ 'putBack', true ], [ 'putBack', undefined ], [ 'putBack', undefined ] ]
+    );
+    const draft = await find(published._id);
+    assert.equal(draft.body, 'Original');
+    assert.equal(draft.modified, true);
+    assert.equal((await find(published._id.replace(':draft', ':published'))).body, 'AI body');
+  });
+
+  it('should say the request published a document whatever its outcome, taking no lock for one it only published', async function () {
+    const [ only, first, edited ] = await insertArticles(3, 'Published');
+    const req = door();
+    const publish = async (article) => {
+      const { refused } = await apos.aposHarness.publishDocuments(req, [ article._id ]);
+      assert.deepEqual(refused, []);
+    };
+    await publish(only);
+    // Published, then written in the same request
+    await publish(first);
+    await write(req, first._id, { body: 'After the publish' });
+    // Written and published, then edited since
+    await write(req, edited._id, { body: 'AI body' });
+    await publish(edited);
+    await write(userReq(), edited._id, { body: 'Ann wrote this' });
+    // Nothing would be written to it: someone's lock doesn't hold it back
+    await apos.doc.lock(userReq('bob'), await find(only._id), 'bob-tab');
+
+    const results = await revert([ req ]);
+
+    assert.deepEqual(
+      [ only, first, edited ].map(article => {
+        const {
+          outcome, reason, published, live
+        } = byDoc(results, article._id);
+        return [ outcome, reason, published, live ];
+      }),
+      [
+        [ 'reverted', undefined, true, undefined ],
+        [ 'putBack', undefined, true, undefined ],
+        [ 'kept', 'edited', true, undefined ]
+      ]
+    );
+    assert.deepEqual(byDoc(results, only._id).rows, []);
+    assert(await find(only._id.replace(':draft', ':published')));
+    assert.equal((await find(only._id)).modified, false);
+    assert.equal((await find(first._id)).body, 'Original');
+    await apos.doc.unlock(userReq('bob'), await find(only._id), 'bob-tab');
   });
 
   it('should keep a document archived or removed since', async function () {

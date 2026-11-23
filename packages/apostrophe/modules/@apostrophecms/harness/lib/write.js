@@ -4,9 +4,18 @@
 const REFUSALS = new Set([ 'notfound', 'forbidden', 'locked', 'invalid', 'conflict' ]);
 
 const LIVE_NOTICE = 'The change is live on the site now.';
-const DRAFT_NOTICE = 'The change is saved in the draft; it goes live when an editor publishes it.';
+const DRAFT_NOTICE = 'The change is saved in the draft; it goes live once the draft is ' +
+  'published.';
 const MIXED_NOTICE = 'Changes with "published": true are live on the site now; the others ' +
-  'are saved in drafts and go live when an editor publishes them.';
+  'are saved in drafts and go live once published.';
+const PUBLISHED_NOTICE = 'The published documents are live on the site now.';
+// A publish refused because the draft was saved since the door read it: the
+// user decides, whatever the door
+const PUBLISH_CHANGED = 'The document was saved by someone else since you last read it, ' +
+  'so it was not published: publishing now would make their changes live too. Tell the ' +
+  'user what changed (get_changes since the publication) and publish only if they ask; ' +
+  'read it again with get_document first.';
+const PUBLISH_FORBIDDEN = 'The user may not publish this document.';
 
 module.exports = (self) => {
   return {
@@ -94,6 +103,193 @@ module.exports = (self) => {
           };
         });
       }
+    },
+
+    /**
+     * Publishes documents, one at a time, in the order given: with the AI
+     * permission checks for editing and publishing, under the lock a write
+     * takes, through the type's own publish. The publication is not marked
+     * as AI's: it puts the draft live as it is, at the user's request. The
+     * draft is read again under the lock; a door's publish of a draft saved
+     * since the door last read or wrote it, by anyone but the user, is
+     * refused as `changed` (see `isSavedOnlyBy`), and what goes live is the
+     * draft as checked. A draft whose live version already matches it, and
+     * a document of a type that is always live, are reported and left as
+     * they are.
+     *
+     * @param {object} req
+     * @param {string[]} ids Each names a document in any mode, or by
+     *   `aposDocId` in the locale of `req`.
+     * @returns {Promise<{ published: object[], refused: object[] }>}
+     *   `published`: `{ _id, title, type, locale, status }`, `status`
+     *   `published`, `unchanged` or `alwaysLive`. `refused` as
+     *   `writeDocuments` refuses, a page whose parents are not published
+     *   with their `{ _id, title }` as `parents`.
+     */
+    async publishDocuments(req, ids) {
+      const published = [];
+      const refused = [];
+      for (const _id of [ ...new Set(ids) ]) {
+        let found = null;
+        try {
+          found = await self.findDraft(req, _id);
+          published.push(await self.writeDraft(found, publishOne));
+        } catch (e) {
+          const refusal = getRefusal(self, e);
+          if (!refusal) {
+            throw e;
+          }
+          refused.push({
+            _id: found?.doc._id || _id,
+            ...(found && { title: found.doc.title }),
+            ...refusal,
+            ...getPublishRefusal(e)
+          });
+        }
+      }
+      return {
+        published,
+        refused
+      };
+
+      async function publishOne({
+        doc, manager, draftReq
+      }) {
+        const done = (draft, status) => ({
+          _id: draft._id,
+          title: draft.title,
+          type: draft.type,
+          locale: self.getLocaleOf(draft),
+          status
+        });
+        if (self.getPublishing(doc.type) !== 'drafts') {
+          return done(doc, 'alwaysLive');
+        }
+        if (!self.apos.ai.can(draftReq, 'publish', doc)) {
+          throw self.apos.error('forbidden', { publish: true });
+        }
+        // As the editor's Publish loads it: a page with its ancestors
+        const finder = self.apos.instanceOf(manager, '@apostrophecms/page-type')
+          ? self.apos.page
+          : manager;
+        const draft = await finder.findOneForEditing(draftReq, { _id: doc._id });
+        if (!draft) {
+          throw self.apos.error('notfound');
+        }
+        const door = self.getDoor(draftReq);
+        const seen = door && !door.revert && door.seen.get(draft._id);
+        if (
+          seen &&
+          self.isSavedSince(draft, seen) &&
+          !await self.isSavedOnlyBy(draftReq, manager, draft, seen)
+        ) {
+          throw self.apos.error('conflict');
+        }
+        if (draft.lastPublishedAt && !draft.modified) {
+          return done(draft, 'unchanged');
+        }
+        const saveReq = self.getSaveRequest(draftReq).clone({ aposAi: false });
+        await finder.publish(saveReq, draft);
+        if (saveReq.aposSaveMarker) {
+          await self.recordPublish(saveReq, draft);
+        }
+        await self.publishChangePublished(draftReq, draft);
+        return done(draft, 'published');
+      }
+
+      // What a publish says beside the write path's refusal: its own words
+      // for `changed` and `forbidden`, and the parents a page waits for
+      function getPublishRefusal(e) {
+        if (e.name === 'conflict') {
+          return { message: PUBLISH_CHANGED };
+        }
+        if (e.name === 'forbidden' && e.data?.publish) {
+          return { message: PUBLISH_FORBIDDEN };
+        }
+        const parents = e.data?.unpublishedAncestors;
+        return Array.isArray(parents)
+          ? {
+            parents: parents.map(parent => ({
+              _id: parent._id,
+              title: parent.title
+            }))
+          }
+          : {};
+      }
+    },
+
+    /**
+     * The publish tool's result: each document with its status, the refused
+     * ones with their reason, and the sentence the model repeats once any
+     * document went live.
+     *
+     * @param {{ published: object[], refused: object[] }} result
+     * @returns {{ published: object[], refused?: object[], notice?: string }}
+     */
+    getPublishResult({ published, refused }) {
+      return {
+        published,
+        ...(refused.length && { refused }),
+        ...(published.some(item => item.status === 'published') && {
+          notice: PUBLISHED_NOTICE
+        })
+      };
+    },
+
+    /**
+     * Whether `doc` was saved since `updatedAt`, the `updatedAt` a door read
+     * or wrote it with. A document without `updatedAt` is not checked.
+     *
+     * @param {object} doc
+     * @param {Date|string} updatedAt
+     * @returns {boolean}
+     */
+    isSavedSince(doc, updatedAt) {
+      const saved = new Date(doc.updatedAt ?? NaN).getTime();
+      return !isNaN(saved) && (saved !== new Date(updatedAt).getTime());
+    },
+
+    /**
+     * Whether every save of `draft` since `updatedAt` is the user's own, as
+     * Document Versions records them: each draft version saved after it by
+     * the user of `req`, none marked as AI's, the newest one the draft as it
+     * is. A save by someone else always starts a version of its own. When
+     * the type has no draft versions, or they don't account for the draft,
+     * nothing tells the saves apart: `false`.
+     *
+     * @param {object} req
+     * @param {object} manager The draft's type manager.
+     * @param {object} draft
+     * @param {Date|string} updatedAt
+     * @returns {Promise<boolean>}
+     */
+    async isSavedOnlyBy(req, manager, draft, updatedAt) {
+      const { docVersions } = self.apos;
+      if (!req.user || !docVersions?.hasDraftVersions(manager.options)) {
+        return false;
+      }
+      const since = new Date(updatedAt);
+      // A version replaced in place keeps its `createdAt`
+      const versions = await docVersions.find(req, {
+        ...docVersions.getTimelineCriteria(draft),
+        mode: 'draft',
+        $or: [
+          { createdAt: { $gt: since } },
+          { updatedAt: { $gt: since } }
+        ]
+      }, {
+        project: {
+          authorId: 1,
+          ai: 1,
+          doc: 1
+        }
+      });
+      // A version is stamped after its save: the save's own time tells
+      const after = versions
+        .filter(version => new Date(version.doc?.updatedAt ?? NaN) > since);
+      return after.length > 0 &&
+        after.every(version => (version.authorId === req.user._id) && !version.ai) &&
+        after.some(version => !self.isSavedSince(draft, version.doc.updatedAt));
     },
 
     /**
@@ -515,4 +711,11 @@ function isEmpty(value) {
 }
 
 // What the model reads of a write, for tests of what each door reads
-module.exports.MODEL_TEXTS = [ LIVE_NOTICE, DRAFT_NOTICE, MIXED_NOTICE ];
+module.exports.MODEL_TEXTS = [
+  LIVE_NOTICE,
+  DRAFT_NOTICE,
+  MIXED_NOTICE,
+  PUBLISHED_NOTICE,
+  PUBLISH_CHANGED,
+  PUBLISH_FORBIDDEN
+];

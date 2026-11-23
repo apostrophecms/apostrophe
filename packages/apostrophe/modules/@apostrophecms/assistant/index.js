@@ -79,9 +79,10 @@ module.exports = {
     self.noticeActions = {};
     // Browser tools that turn the answer into their result, by name
     self.browserToolAccepts = {};
-    // Gates added by name, and the tools whose gates were all taken off
+    // Gates by tool and name, and by tool the names taken off (see
+    // lib/gates.js)
     self.gates = {};
-    self.ungated = new Set();
+    self.removedGates = {};
     // Widget menu entries that open the panel with a prompt, by name (see
     // lib/widget-operations.js)
     self.widgetOperations = {};
@@ -102,6 +103,7 @@ module.exports = {
     self.addAttachmentTools();
     self.addImageTools();
     self.addGlobalStylesGate();
+    self.addPublishGate();
     self.enableBrowserData();
   },
   handlers(self) {
@@ -122,10 +124,12 @@ module.exports = {
         }
       },
       '@apostrophecms/harness:documentSeen': {
-        // The chat keeps what it saw of each document for its next requests
+        // The chat keeps what it saw of each document for its next requests.
+        // A revert's saves are not the model's reads: the chat's stamps stay,
+        // and a document the revert wrote is read again before it is written
         async storeSeen(req) {
           const door = self.apos.aposHarness.getDoor(req);
-          if (!self.active || (door?.door !== 'assistant')) {
+          if (!self.active || (door?.door !== 'assistant') || door.revert) {
             return;
           }
           await self.chats.updateOne({ _id: door.chat }, {

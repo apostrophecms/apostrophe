@@ -121,7 +121,7 @@ module.exports = (self) => {
       name: 'list_types',
       label: 'apostrophe:aiToolListTypes',
       description: 'The page, piece and widget types with their labels; for doc types, ' +
-        'how they go live ("drafts": an editor publishes, "autopublish": live on save, ' +
+        'how they go live ("drafts": live once published, "autopublish": live on save, ' +
         '"noDrafts": always live), and for piece types the slugs of the pages listing them.',
       input: {
         type: 'object',

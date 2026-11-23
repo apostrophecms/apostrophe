@@ -497,5 +497,38 @@ describe('Harness: the change log', function () {
       assert.equal((await entriesOf(mcp)).length, 1);
       assert.equal((await eventsOf(mcp)).length, 0);
     });
+
+    it('should say a publish settled with no parts, and record it as an entry of its own', async function () {
+      const [ article ] = await insertArticles(1);
+      const req = door();
+
+      const { published } = await apos.aposHarness.publishDocuments(req, [ article._id ]);
+      // A save after the publish starts an entry of its own
+      await write(req, article._id, { body: 'After the publish' });
+
+      assert.equal(published[0].status, 'published');
+      assert.deepEqual((await eventsOf(req)).map(event => event.event)[0], {
+        name: 'content-change-settled',
+        data: {
+          docId: article._id,
+          type: 'log-article',
+          written: true,
+          published: true,
+          parts: [],
+          requestId: apos.aposHarness.getDoor(req).requestId
+        }
+      });
+      const entries = await entriesOf(req);
+      assert.deepEqual(
+        entries.map(entry => [ entry.sequence, entry.effect, entry.rows.length ]),
+        [
+          [ 1, 'publish', 0 ],
+          [ 2, 'update', 1 ]
+        ]
+      );
+      assert.equal(entries[0].ai, true);
+      assert.equal(entries[0].head, undefined);
+      await apos.aposHarness.endRequest(req);
+    });
   });
 });

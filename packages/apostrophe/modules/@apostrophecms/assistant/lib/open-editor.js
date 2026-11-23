@@ -18,6 +18,7 @@ const getCallDocumentIds = require('./call-documents');
 const { getDocumentKey } = getCallDocumentIds;
 const DOOR = 'assistant';
 const TOOL = 'edit_open_document';
+const PUBLISH_TOOL = 'publish_document';
 const ACTIONS = [ 'get_document', 'update_document', 'add_widgets', 'move_widgets',
   'remove_widgets' ];
 // The modal kinds that edit a document, and the root each one holds
@@ -337,7 +338,8 @@ module.exports = (self) => {
      * Before a write tool of the assistant runs (`beforeToolCall`): a
      * document held by an editor in the stack of the request's browser tab
      * is refused, with the pointer to `edit_open_document` when its editor
-     * is on top, else with what to close first.
+     * is on top, else with what to close first. A publish of one is refused
+     * with where the user publishes it.
      *
      * @param {object} req
      * @param {object} payload The engine's `{ tool, args }`.
@@ -368,6 +370,16 @@ module.exports = (self) => {
         const { part: modal, over: overs } = holder;
         const title = modal.title ? `"${modal.title}"` : 'The document';
         const part = PARTS[modal.kind];
+        if (tool.name === PUBLISH_TOOL) {
+          // The document's own editor publishes what it holds; a widget or
+          // array goes into the draft, which is published once it is done
+          throw self.apos.error('aiToolError', part
+            ? `${title} has its ${part} editor open on the user's screen, so nothing was ` +
+              'published: it can be published once the user is done in that editor.'
+            : `${title} is open in an editor on the user's screen, so nothing was ` +
+              'published: that editor\'s own button (Publish or Update) publishes what it ' +
+              'holds; tell the user to use it.');
+        }
         if (!overs.length) {
           throw self.apos.error('aiToolError', part
             ? `${title} has its ${part} editor open on the user's screen: change that ${part} ` +

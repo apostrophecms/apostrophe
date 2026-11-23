@@ -450,7 +450,10 @@ module.exports = (self) => {
         for (const document of documents) {
           fresh.set(document.docId, {
             ...document,
-            view: await getView(document)
+            view: await getView(document),
+            ...(document.published && {
+              publishedView: await getView(document, { published: true })
+            })
           });
         }
         set.documents = retried
@@ -493,11 +496,13 @@ module.exports = (self) => {
     // `seeChanges` for one changed since, when its page shows them;
     // `versions`, its Document Versions, for one locked, archived or not
     // restorable, where See Changes can't be entered; `null` for one gone
-    // or without versions
+    // or without versions. With `published`, for one the requests
+    // published: `versions`, where its earlier version is restored and
+    // published
     async function getView({
       docId, type, locale, outcome, reason
-    }) {
-      if (![ 'kept', 'unrestorable', 'locked' ].includes(outcome)) {
+    }, { published = false } = {}) {
+      if (!published && ![ 'kept', 'unrestorable', 'locked' ].includes(outcome)) {
         return null;
       }
       const manager = self.apos.doc.getManager(type);
@@ -518,6 +523,9 @@ module.exports = (self) => {
         .toObject();
       if (!doc) {
         return null;
+      }
+      if (published) {
+        return 'versions';
       }
       const changed = (outcome === 'kept') && (reason !== 'archived') && !doc.archived;
       return (changed && doc._url && docVersions.hasDraftVersions(manager.options))

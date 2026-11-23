@@ -7,13 +7,19 @@
 // instead. Gates are the assistant's: the harness's tools never ask, and the
 // MCP door has none.
 //
-// One gate ships on every write tool (an action tagged `content`): it fires
-// when one call would change more documents than `maxDocsWithoutConfirm`;
-// `0` turns it off. Widgets and fields inside one document count as one.
+// Gates have names, one gate per name and tool. One gate ships on every write
+// tool (an action tagged `content`), `documentCount`: it fires when one call
+// would change more documents than `maxDocsWithoutConfirm`; `0` turns it
+// off. Widgets and fields inside one document count as one. Publishing has a
+// gate of its own, `publish`, that always asks. `removeGate` takes any of
+// them off by name, and a gate added under a name replaces it.
 
 const getCallDocumentIds = require('./call-documents');
 
 const DOOR = 'assistant';
+const PUBLISH_TOOL = 'publish_document';
+// The standard gate's name
+const COUNT_GATE = 'documentCount';
 // The documents a gate's confirmation names, then "and N more"; the panel
 // lists a few and expands to the rest
 const TITLES_MAX = 100;
@@ -23,7 +29,9 @@ module.exports = (self) => {
     /**
      * Adds a gate to a tool: before each of its calls in the assistant,
      * `predicate(args, context)` decides whether the editor is asked first.
-     * A tool may have several gates; the first one firing asks.
+     * A tool may have several gates; the first one firing asks, a tool's
+     * own before the standard `documentCount`. A gate added under a name the
+     * tool's gates already have replaces that gate, the standard one too.
      *
      * The predicate returns `true` to ask with the standard confirmation, or
      * an object to word its own, every key optional: `title`, `{ key,
@@ -35,6 +43,7 @@ module.exports = (self) => {
      * declined.
      *
      * @param {string} toolName
+     * @param {string} name The gate's name among the tool's gates.
      * @param {(args: object, context: { req: object, documentCount: number,
      *   ids: string[], getScreen: () => Promise<object|null> })
      *   => boolean|object|Promise<boolean|object>} predicate `args` are the
@@ -42,22 +51,49 @@ module.exports = (self) => {
      *   changes, `ids` the ids it names them by; `getScreen` reads the
      *   request's verified screen.
      */
-    addGate(toolName, predicate) {
-      if (typeof predicate !== 'function') {
-        throw new Error(`The gate of the tool "${toolName}" needs a predicate function.`);
+    addGate(toolName, name, predicate) {
+      if ((typeof name !== 'string') || !name) {
+        throw new Error(`A gate of the tool "${toolName}" needs a name.`);
       }
-      self.gates[toolName] = [ ...(self.gates[toolName] || []), predicate ];
+      if (typeof predicate !== 'function') {
+        throw new Error(
+          `The gate "${name}" of the tool "${toolName}" needs a predicate function.`
+        );
+      }
+      self.gates[toolName] ??= new Map();
+      self.gates[toolName].set(name, predicate);
+      self.removedGates[toolName]?.delete(name);
+    },
+
+    // Registers the gate on publishing: it asks every time, as a publish puts
+    // drafts live and a revert doesn't take it back
+    addPublishGate() {
+      self.addGate(PUBLISH_TOOL, 'publish', (args, { documentCount }) => ({
+        title: {
+          key: 'apostrophe:assistantGatePublish',
+          values: { count: documentCount }
+        },
+        approve: 'apostrophe:publish'
+      }));
     },
 
     /**
-     * Takes every gate off a tool, the standard one included; gates added
-     * after it stand alone.
+     * Takes the gate `name` off a tool, the standard `documentCount` too.
+     * Without a name, every gate of the tool, the standard one included;
+     * gates added after it stand alone.
      *
      * @param {string} toolName
+     * @param {string} [name]
      */
-    removeGate(toolName) {
-      delete self.gates[toolName];
-      self.ungated.add(toolName);
+    removeGate(toolName, name) {
+      const names = name
+        ? [ name ]
+        : [ ...(self.gates[toolName]?.keys() || []), COUNT_GATE ];
+      for (const each of names) {
+        self.gates[toolName]?.delete(each);
+        self.removedGates[toolName] ??= new Set();
+        self.removedGates[toolName].add(each);
+      }
     },
 
     /**
@@ -121,11 +157,13 @@ module.exports = (self) => {
       }
 
       function getGates() {
+        const own = self.gates[tool.name] || new Map();
+        // Unless removed, or replaced by a gate of the tool's own
         const standard = (tool.kind === 'action') && tool.tags?.includes('content') &&
-          !self.ungated.has(tool.name);
+          !own.has(COUNT_GATE) && !self.removedGates[tool.name]?.has(COUNT_GATE);
         // The tool's own gates first: their wording is the more specific
         return [
-          ...(self.gates[tool.name] || []),
+          ...own.values(),
           ...(standard ? [ exceedsDocuments ] : [])
         ];
       }

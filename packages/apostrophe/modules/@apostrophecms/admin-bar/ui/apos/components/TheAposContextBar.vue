@@ -847,12 +847,28 @@ export default {
     //
     // What the editor is typing where the write landed is saved first, the
     // later save of the two. The write is then shown in place only while the
-    // draft still holds it, else the page renders the draft as saved
+    // draft still holds it, else the page renders the draft as saved.
+    //
+    // A publish from outside (`published`) changes no draft content: the
+    // page's document is read again in its mode, with its published copy,
+    // and a page showing the published copy renders it again
     async onContentChangeSettled({
-      docId, requestId, written, entryId, parts
+      docId, requestId, written, published, entryId, parts
     } = {}) {
       const busy = busyWrites.get(docId);
       try {
+        if (written && published) {
+          const document = _id => _id.replace(/:(draft|published)$/, '');
+          if (document(docId) !== document(this.context._id)) {
+            return;
+          }
+          this.context = await apos.http.get(`${this.action}/${this.context._id}`, {});
+          this.published = await this.getPublished();
+          if (this.draftMode === 'published') {
+            await this.refresh();
+          }
+          return;
+        }
         if (!written || (docId !== this.context._id)) {
           return;
         }

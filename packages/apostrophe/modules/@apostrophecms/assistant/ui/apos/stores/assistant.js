@@ -2008,10 +2008,13 @@ export const useAssistantStore = defineStore('assistant', () => {
         }
       }),
       // In the tick the dry run settles, so its busy state gives way to the
-      // revert's line or its confirmation with no gap
+      // revert's line or its confirmation with no gap. A document still live
+      // as published, by the assistant or with the changes it puts back, is
+      // confirmed first
       taken(check) {
         const clean = check.documents
-          .every(document => [ 'putBack', 'reverted' ].includes(document.outcome));
+          .every(document => [ 'putBack', 'reverted' ].includes(document.outcome) &&
+            !document.live && !document.published);
         if (clean) {
           runRevert(id, requestId, check.requestIds, cause);
         } else {
