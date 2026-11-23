@@ -258,7 +258,7 @@ module.exports = (self) => {
         async function describe(_id) {
           let found;
           try {
-            found = await self.apos.harness.findReadable(req, _id);
+            found = await self.apos.aposHarness.findReadable(req, _id);
           } catch (e) {
             if (e.name !== 'aiToolError') {
               throw e;
@@ -425,14 +425,14 @@ module.exports = (self) => {
         instructions, effort, _context
       }) {
         const level = effort || self.options.delegationEffort;
-        const tools = self.apos.harness.getDoorTools('assistant')
+        const tools = self.apos.aposHarness.getDoorTools('assistant')
           .filter(tool => (tool.kind === 'query') && !tool.tags?.includes('browser') &&
             !tool.tags?.includes('assistant'))
           .map(tool => tool.name);
         let result;
         try {
           result = await self.apos.ai.generate(req, instructions, {
-            system: [ DELEGATE_SYSTEM, self.apos.harness.getSiteInstructions(req) ]
+            system: [ DELEGATE_SYSTEM, self.apos.aposHarness.getSiteInstructions(req) ]
               .filter(Boolean)
               .join('\n\n'),
             tools,
@@ -460,7 +460,7 @@ module.exports = (self) => {
     // Adds what the agent tools spent to the request's `agentUsage`, which
     // the panel counts with the run's own
     async addAgentUsage(req, usages) {
-      const door = self.apos.harness.getDoor(req);
+      const door = self.apos.aposHarness.getDoor(req);
       if (!door?.requestId) {
         return;
       }

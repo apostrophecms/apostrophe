@@ -13,6 +13,8 @@ const BASE = [
     'title, slug or type, never by id.',
   'Every write result has a "notice" saying whether the change is live on the site or ' +
     'waits in the draft: tell the user what it says.',
+  'Publish only when the user asks, with a publish tool if you have one; without one, ' +
+    'tell the user that an editor publishes.',
   'Content keeps the locale of its document: every read names the locale it read, every ' +
     'write the locale it wrote.'
 ];

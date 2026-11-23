@@ -268,7 +268,7 @@ module.exports = (self) => {
         ownerId: chat.ownerId
       });
       await self.deleteChatAttachments(chat);
-      await self.apos.harness.deleteChatChanges(req, chat._id);
+      await self.apos.aposHarness.deleteChatChanges(req, chat._id);
       await self.chats.deleteOne({
         _id: chat._id,
         ownerId: chat.ownerId
@@ -306,7 +306,7 @@ module.exports = (self) => {
      *   requests: number, calls: number, retired: boolean }> }>}
      */
     async getToolUsage() {
-      const registered = self.apos.harness.getDoorTools('assistant').map(tool => tool.name);
+      const registered = self.apos.aposHarness.getDoorTools('assistant').map(tool => tool.name);
       const usage = new Map(registered.map(name => [ name, {
         name,
         requests: 0,

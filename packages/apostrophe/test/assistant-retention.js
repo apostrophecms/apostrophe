@@ -70,16 +70,16 @@ describe('Assistant: retention', function () {
 
   beforeEach(function () {
     script = null;
-    apos.assistant.options.chatExpireAfter = 0;
+    apos.aposAssistant.options.chatExpireAfter = 0;
   });
 
   it('sweeps on an interval, stopped when the app is destroyed', function () {
-    assert(apos.assistant.sweepInterval);
+    assert(apos.aposAssistant.sweepInterval);
   });
 
   it('deletes a chat\'s requests, reverts, files and change rows, and Document Versions keeps the AI saves', async function () {
     const req = userReq(editor);
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     const image = await attach(req, chat, 'photo.png');
     script = sequence([
       toolTurn('save_attachment_to_media', { attachment: image._id }, 'save'),
@@ -92,17 +92,28 @@ describe('Assistant: retention', function () {
     }).toObject();
     await revertRequest(req, chat, request);
     await attach(req, chat, 'unsent.png');
-    const records = await apos.assistant.attachments.find({ chatId: chat._id }).toArray();
+    const records = await apos.aposAssistant.attachments
+      .find({ chatId: chat._id })
+      .toArray();
     assert.equal(records.length, 2);
-    assert.equal(await apos.assistant.reverts.countDocuments({ chatId: chat._id }), 1);
-    assert(await apos.harness.changes.countDocuments({ chat: chat._id }) > 0);
+    assert.equal(
+      await apos.aposAssistant.reverts.countDocuments({ chatId: chat._id }),
+      1
+    );
+    assert(await apos.aposHarness.changes.countDocuments({ chat: chat._id }) > 0);
 
-    await apos.assistant.deleteChat(req, chat._id);
-    assert.equal(await apos.assistant.chats.countDocuments({ _id: chat._id }), 0);
-    assert.equal(await apos.assistant.requests.countDocuments({ chatId: chat._id }), 0);
-    assert.equal(await apos.assistant.reverts.countDocuments({ chatId: chat._id }), 0);
+    await apos.aposAssistant.deleteChat(req, chat._id);
+    assert.equal(await apos.aposAssistant.chats.countDocuments({ _id: chat._id }), 0);
+    assert.equal(
+      await apos.aposAssistant.requests.countDocuments({ chatId: chat._id }),
+      0
+    );
+    assert.equal(
+      await apos.aposAssistant.reverts.countDocuments({ chatId: chat._id }),
+      0
+    );
     assert.equal(await countFiles({ chatId: chat._id }), 0);
-    assert.equal(await apos.harness.changes.countDocuments({ chat: chat._id }), 0);
+    assert.equal(await apos.aposHarness.changes.countDocuments({ chat: chat._id }), 0);
     for (const { storage } of records) {
       await assertGone(storage);
     }
@@ -115,52 +126,61 @@ describe('Assistant: retention', function () {
 
   it('deletes chats past chatExpireAfter on a sweep, and none with 0', async function () {
     const req = userReq(editor);
-    const old = await apos.assistant.createChat(req);
+    const old = await apos.aposAssistant.createChat(req);
     const image = await attach(req, old, 'photo.png');
     await runToEnd(req, old, 'Look', [ image._id ]);
-    const fresh = await apos.assistant.createChat(req);
+    const fresh = await apos.aposAssistant.createChat(req);
     await runToEnd(req, fresh, 'Hello');
-    await apos.assistant.chats.updateOne({ _id: old._id }, {
+    await apos.aposAssistant.chats.updateOne({ _id: old._id }, {
       $set: { lastRequestAt: new Date(Date.now() - 2 * DAY) }
     });
     // A chat from before the last request's time was written
-    const older = await apos.assistant.createChat(req);
-    await apos.assistant.chats.updateOne({ _id: older._id }, {
+    const older = await apos.aposAssistant.createChat(req);
+    await apos.aposAssistant.chats.updateOne({ _id: older._id }, {
       $set: { updatedAt: new Date(Date.now() - 2 * DAY) },
       $unset: { lastRequestAt: 1 }
     });
 
-    assert.deepEqual(await apos.assistant.expireChats(), {
+    assert.deepEqual(await apos.aposAssistant.expireChats(), {
       chats: 0,
       files: 0
     });
-    assert(await apos.assistant.chats.findOne({ _id: old._id }));
+    assert(await apos.aposAssistant.chats.findOne({ _id: old._id }));
 
-    apos.assistant.options.chatExpireAfter = DAY / 1000;
-    const swept = await apos.assistant.expireChats();
+    apos.aposAssistant.options.chatExpireAfter = DAY / 1000;
+    const swept = await apos.aposAssistant.expireChats();
     assert.equal(swept.chats, 2);
-    assert.equal(await apos.assistant.chats.countDocuments({ _id: old._id }), 0);
-    assert.equal(await apos.assistant.chats.countDocuments({ _id: older._id }), 0);
-    assert.equal(await apos.assistant.requests.countDocuments({ chatId: old._id }), 0);
-    assert.equal(await apos.assistant.attachments.countDocuments({ chatId: old._id }), 0);
-    assert(await apos.assistant.chats.findOne({ _id: fresh._id }));
-    await apos.assistant.deleteChat(req, fresh._id);
+    assert.equal(await apos.aposAssistant.chats.countDocuments({ _id: old._id }), 0);
+    assert.equal(await apos.aposAssistant.chats.countDocuments({ _id: older._id }), 0);
+    assert.equal(
+      await apos.aposAssistant.requests.countDocuments({ chatId: old._id }),
+      0
+    );
+    assert.equal(
+      await apos.aposAssistant.attachments.countDocuments({ chatId: old._id }),
+      0
+    );
+    assert(await apos.aposAssistant.chats.findOne({ _id: fresh._id }));
+    await apos.aposAssistant.deleteChat(req, fresh._id);
   });
 
   it('finishes a delete interrupted after the bytes, and retries orphans, leaving no file unnamed', async function () {
     const req = userReq(editor);
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     const image = await attach(req, chat, 'photo.png');
     await runToEnd(req, chat, 'Look', [ image._id ]);
     // Interrupted: the requests and the bytes are gone, the records not
-    await apos.assistant.chats.updateOne({ _id: chat._id }, { $set: { deleting: true } });
-    await apos.assistant.requests.deleteMany({ chatId: chat._id });
-    const record = await apos.assistant.attachments.findOne({ _id: image._id });
-    await apos.assistant.removeChatFile(record.storage);
+    await apos.aposAssistant.chats.updateOne(
+      { _id: chat._id },
+      { $set: { deleting: true } }
+    );
+    await apos.aposAssistant.requests.deleteMany({ chatId: chat._id });
+    const record = await apos.aposAssistant.attachments.findOne({ _id: image._id });
+    await apos.aposAssistant.removeChatFile(record.storage);
     // A file another delete could not remove
-    const left = await apos.assistant.createChat(req);
+    const left = await apos.aposAssistant.createChat(req);
     const orphan = await attach(req, left, 'orphan.png');
-    await apos.assistant.attachments.updateOne({ _id: orphan._id }, {
+    await apos.aposAssistant.attachments.updateOne({ _id: orphan._id }, {
       $set: {
         status: 'orphan',
         removeFailedAt: new Date()
@@ -169,56 +189,56 @@ describe('Assistant: retention', function () {
     });
     const orphanStorage = await storageOf(orphan);
 
-    const swept = await apos.assistant.expireChats();
+    const swept = await apos.aposAssistant.expireChats();
     assert.deepEqual(swept, {
       chats: 1,
       files: 1
     });
-    assert.equal(await apos.assistant.chats.countDocuments({ _id: chat._id }), 0);
-    assert.equal(await apos.assistant.attachments.countDocuments({
+    assert.equal(await apos.aposAssistant.chats.countDocuments({ _id: chat._id }), 0);
+    assert.equal(await apos.aposAssistant.attachments.countDocuments({
       _id: { $in: [ image._id, orphan._id ] }
     }), 0);
     await assertGone(orphanStorage);
     await assertEveryFileNamed();
-    await apos.assistant.deleteChat(req, left._id);
+    await apos.aposAssistant.deleteChat(req, left._id);
   });
 
   it('removes a file never sent once it is a day old, one left writing or missing too', async function () {
     const req = userReq(editor);
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     const stale = await attach(req, chat, 'stale.png');
     const recent = await attach(req, chat, 'recent.png');
     // A crash between the record and the bytes, and bytes gone from storage
     const writing = await attach(req, chat, 'writing.png');
     const missing = await attach(req, chat, 'missing.png');
     const leftovers = [ stale, writing, missing ].map(({ _id }) => _id);
-    await apos.assistant.attachments.updateMany({ _id: { $in: leftovers } }, {
+    await apos.aposAssistant.attachments.updateMany({ _id: { $in: leftovers } }, {
       $set: { createdAt: new Date(Date.now() - 2 * DAY) }
     });
-    await apos.assistant.attachments.updateOne({ _id: writing._id }, {
+    await apos.aposAssistant.attachments.updateOne({ _id: writing._id }, {
       $set: { status: 'writing' }
     });
-    await apos.assistant.attachments.updateOne({ _id: missing._id }, {
+    await apos.aposAssistant.attachments.updateOne({ _id: missing._id }, {
       $set: { status: 'missing' }
     });
     const storage = await storageOf(stale);
-    assert.equal((await apos.assistant.expireChats()).files, 3);
-    assert.equal(await apos.assistant.attachments.countDocuments({
+    assert.equal((await apos.aposAssistant.expireChats()).files, 3);
+    assert.equal(await apos.aposAssistant.attachments.countDocuments({
       _id: { $in: leftovers }
     }), 0);
     await assertGone(storage);
-    assert(await apos.assistant.attachments.findOne({ _id: recent._id }));
-    await apos.assistant.deleteChat(req, chat._id);
+    assert(await apos.aposAssistant.attachments.findOne({ _id: recent._id }));
+    await apos.aposAssistant.deleteChat(req, chat._id);
   });
 
   it('skips a sweep while another process holds its lock', async function () {
     const req = userReq(editor);
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     await runToEnd(req, chat, 'Hello');
-    await apos.assistant.chats.updateOne({ _id: chat._id }, {
+    await apos.aposAssistant.chats.updateOne({ _id: chat._id }, {
       $set: { lastRequestAt: new Date(Date.now() - 2 * DAY) }
     });
-    apos.assistant.options.chatExpireAfter = DAY / 1000;
+    apos.aposAssistant.options.chatExpireAfter = DAY / 1000;
     // Another process's sweep, as this process sees its lock
     await apos.lock.db.insertOne({
       _id: LOCK,
@@ -227,20 +247,20 @@ describe('Assistant: retention', function () {
       unique: 'other-process'
     });
     try {
-      assert.equal(await apos.assistant.expireChats(), null);
-      assert(await apos.assistant.chats.findOne({ _id: chat._id }));
+      assert.equal(await apos.aposAssistant.expireChats(), null);
+      assert(await apos.aposAssistant.chats.findOne({ _id: chat._id }));
     } finally {
       await apos.lock.db.deleteOne({ _id: LOCK });
     }
-    assert.equal((await apos.assistant.expireChats()).chats, 1);
+    assert.equal((await apos.aposAssistant.expireChats()).chats, 1);
     assert.equal(await apos.lock.db.countDocuments({ _id: LOCK }), 0);
   });
 
   it('exports, then deletes, exactly one user\'s chats', async function () {
-    const mine = await apos.assistant.createChat(userReq(editor));
+    const mine = await apos.aposAssistant.createChat(userReq(editor));
     const image = await attach(userReq(editor), mine, 'photo.png');
     await runToEnd(userReq(editor), mine, 'Look', [ image._id ]);
-    const theirs = await apos.assistant.createChat(userReq(other));
+    const theirs = await apos.aposAssistant.createChat(userReq(other));
     const theirImage = await attach(userReq(other), theirs, 'theirs.png');
     await runToEnd(userReq(other), theirs, 'Look', [ theirImage._id ]);
 
@@ -262,14 +282,17 @@ describe('Assistant: retention', function () {
     const copied = await fs.readFile(path.join(dir, chat.attachments[0].file));
     assert.deepEqual(copied, await fs.readFile(path.join(FIXTURES, 'upload_image.png')));
     // An export goes only into an empty directory
-    await assert.rejects(apos.assistant.exportUserChats(editor._id, dir), { name: 'invalid' });
+    await assert.rejects(apos.aposAssistant.exportUserChats(editor._id, dir), { name: 'invalid' });
 
     await apos.task.invoke('@apostrophecms/assistant:delete-chats', { user: editor._id });
-    assert.equal(await apos.assistant.chats.countDocuments({ ownerId: editor._id }), 0);
+    assert.equal(
+      await apos.aposAssistant.chats.countDocuments({ ownerId: editor._id }),
+      0
+    );
     assert.equal(await countFiles({ ownerId: editor._id }), 0);
-    assert(await apos.assistant.chats.findOne({ _id: theirs._id }));
-    assert(await apos.assistant.attachments.findOne({ _id: theirImage._id }));
-    await apos.assistant.deleteChat(userReq(other), theirs._id);
+    assert(await apos.aposAssistant.chats.findOne({ _id: theirs._id }));
+    assert(await apos.aposAssistant.attachments.findOne({ _id: theirImage._id }));
+    await apos.aposAssistant.deleteChat(userReq(other), theirs._id);
   });
 
   function userReq(user) {
@@ -280,31 +303,32 @@ describe('Assistant: retention', function () {
   }
 
   function countFiles(criteria) {
-    return apos.assistant.attachments.countDocuments(criteria);
+    return apos.aposAssistant.attachments.countDocuments(criteria);
   }
 
   async function storageOf(attachment) {
-    return (await apos.assistant.attachments.findOne({ _id: attachment._id })).storage;
+    return (await apos.aposAssistant.attachments.findOne({ _id: attachment._id }))
+      .storage;
   }
 
   async function attach(req, chat, name) {
     const file = path.join(scratch, `${apos.util.generateId()}-${name}`);
     await fs.copyFile(path.join(FIXTURES, 'upload_image.png'), file);
-    return apos.assistant.attach(req, chat._id, {
+    return apos.aposAssistant.attach(req, chat._id, {
       originalname: name,
       path: file
     });
   }
 
   async function runToEnd(req, chat, message, attachments = []) {
-    await apos.assistant.send(req, chat._id, {
+    await apos.aposAssistant.send(req, chat._id, {
       message,
       screen: { tabId: 'tab-1' },
       attachments
     });
     let request;
     await waitFor(async () => {
-      const requests = await apos.assistant.getChatRequests(req, chat._id);
+      const requests = await apos.aposAssistant.getChatRequests(req, chat._id);
       request = requests.at(-1);
       const job = request?.jobId &&
         await apos.modules['@apostrophecms/job'].db.findOne({ _id: request.jobId });
@@ -314,12 +338,12 @@ describe('Assistant: retention', function () {
   }
 
   async function revertRequest(req, chat, request) {
-    const started = await apos.assistant.revert(req, chat._id, {
+    const started = await apos.aposAssistant.revert(req, chat._id, {
       requestId: request._id,
       tabId: 'tab-1'
     });
     await waitFor(async () => {
-      const stored = await apos.assistant.getRevert(req, started._id);
+      const stored = await apos.aposAssistant.getRevert(req, started._id);
       const job = stored.jobId &&
         await apos.modules['@apostrophecms/job'].db.findOne({ _id: stored.jobId });
       return (stored.status !== 'running') && (!job || job.ended);
@@ -335,7 +359,7 @@ describe('Assistant: retention', function () {
   // Every file in the store is named by a record
   async function assertEveryFileNamed() {
     const named = new Set();
-    for (const { storage } of await apos.assistant.attachments.find({}).toArray()) {
+    for (const { storage } of await apos.aposAssistant.attachments.find({}).toArray()) {
       for (const stored of [ storage.path, ...Object.values(storage.sizes || {}) ]) {
         named.add(stored);
       }

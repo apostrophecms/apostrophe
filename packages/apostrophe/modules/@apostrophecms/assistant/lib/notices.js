@@ -41,7 +41,7 @@ module.exports = (self) => {
      *   link, action }`; `action.data` is the action's own.
      */
     async addNotice(req, notice) {
-      const door = self.apos.harness.getDoor(req);
+      const door = self.apos.aposHarness.getDoor(req);
       if (!door?.requestId) {
         return;
       }

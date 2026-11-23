@@ -116,7 +116,7 @@ module.exports = (self) => {
       async function generateImage(req, args) {
         const { _context } = args;
         const callId = _context.call.id;
-        const { requestId } = self.apos.harness.getDoor(req);
+        const { requestId } = self.apos.aposHarness.getDoor(req);
         if (_context.input === undefined) {
           return start();
         }
@@ -398,7 +398,7 @@ module.exports = (self) => {
 
         // The fields of a file the ask holds
         function heldBy() {
-          const door = self.apos.harness.getDoor(req);
+          const door = self.apos.aposHarness.getDoor(req);
           return {
             ownerId: self.getOwnerId(req),
             chatId: door.chat,
@@ -419,11 +419,15 @@ module.exports = (self) => {
       }
 
       function noteRound(req, callId, round) {
-        return self.changeImageAsk(req, self.apos.harness.getDoor(req).requestId, callId,
+        return self.changeImageAsk(
+          req,
+          self.apos.aposHarness.getDoor(req).requestId,
+          callId,
           ask => ({
             ...ask,
             rounds: [ ...ask.rounds, round ]
-          }));
+          })
+        );
       }
 
     },
@@ -684,7 +688,7 @@ module.exports = (self) => {
 
     // Notes a new image ask on the door's request, for the thread
     async noteImageAsk(req, ask) {
-      const door = self.apos.harness.getDoor(req);
+      const door = self.apos.aposHarness.getDoor(req);
       await self.requests.updateOne({
         _id: door.requestId,
         ownerId: self.getOwnerId(req)

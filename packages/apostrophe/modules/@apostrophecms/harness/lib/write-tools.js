@@ -125,6 +125,37 @@ module.exports = (self) => {
       handler: handler('updateDocument')
     },
     {
+      name: 'publish_document',
+      label: 'apostrophe:aiToolPublishDocument',
+      description: 'Publish documents: each draft goes live on the site as it is, with ' +
+        'every change in it, whoever made it. Only when the user asks. Documents are ' +
+        'published in the order given, and a page only once its parents are: list ' +
+        'parents first. Each result\'s "status": "published"; "unchanged", the live ' +
+        'version already matched the draft; "alwaysLive", its type is live on save.',
+      input: {
+        type: 'object',
+        properties: {
+          targets: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                _id: id('A document id')
+              },
+              required: [ '_id' ],
+              additionalProperties: false
+            },
+            minItems: 1,
+            maxItems: 50
+          }
+        },
+        required: [ 'targets' ],
+        additionalProperties: false
+      },
+      kind: 'action',
+      handler: handler('publishDocument')
+    },
+    {
       name: 'add_widgets',
       label: 'apostrophe:aiToolAddWidgets',
       description: 'Add new widgets to an area, at the end unless a place is given. Each ' +

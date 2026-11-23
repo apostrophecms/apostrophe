@@ -217,7 +217,7 @@ module.exports = (self) => {
           ...chat,
           requests: await self.requests.find(byChat).sort({ sequence: 1 }).toArray(),
           reverts: await self.reverts.find(byChat).sort({ createdAt: 1 }).toArray(),
-          changes: await self.apos.harness.changes
+          changes: await self.apos.aposHarness.changes
             .find({
               chat: chat._id,
               userId: ownerId

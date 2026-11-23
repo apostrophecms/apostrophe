@@ -41,7 +41,7 @@ module.exports = (self) => {
         throw self.getRefusal(chat, {});
       }
       const requestIds = await getRequestIds(req, chat, requestId);
-      const documents = await self.apos.harness.revertRequests(
+      const documents = await self.apos.aposHarness.revertRequests(
         getDoorReq(req, chat, clean, self.apos.util.generateId()),
         requestIds,
         {
@@ -340,7 +340,7 @@ module.exports = (self) => {
   // The `req` a revert writes with: the user's, through the assistant's
   // door, as the user's own change
   function getDoorReq(req, chat, tabId, revertId) {
-    return self.apos.harness.withDoor(req, {
+    return self.apos.aposHarness.withDoor(req, {
       door: DOOR,
       lockId: chat._id,
       family: tabId,
@@ -366,37 +366,41 @@ module.exports = (self) => {
           }, {
             $set: { jobId: info.jobId }
           });
-          documents = await self.apos.harness.revertRequests(doorReq, record.requestIds, {
-            docIds,
-            isHeld: getHeld(held),
-            onProgress: async ({ done, total }) => {
-              if (done === 1) {
-                await reporting.setTotal(total);
-              }
-              await reporting.success();
-              await self.reverts.updateOne({
-                _id: record._id,
-                ownerId: record.ownerId
-              }, {
-                $set: {
-                  progress: {
-                    done,
-                    total
-                  }
+          documents = await self.apos.aposHarness.revertRequests(
+            doorReq,
+            record.requestIds,
+            {
+              docIds,
+              isHeld: getHeld(held),
+              onProgress: async ({ done, total }) => {
+                if (done === 1) {
+                  await reporting.setTotal(total);
                 }
-              });
-              await self.publish(req, chat._id, 'revertProgress', {
-                revertId: record._id,
-                done,
-                total
-              });
+                await reporting.success();
+                await self.reverts.updateOne({
+                  _id: record._id,
+                  ownerId: record.ownerId
+                }, {
+                  $set: {
+                    progress: {
+                      done,
+                      total
+                    }
+                  }
+                });
+                await self.publish(req, chat._id, 'revertProgress', {
+                  revertId: record._id,
+                  done,
+                  total
+                });
+              }
             }
-          });
+          );
         } catch (error) {
           await endRevert(req, chat, record, { error });
           throw error;
         } finally {
-          await self.apos.harness.endRequest(doorReq);
+          await self.apos.aposHarness.endRequest(doorReq);
         }
         await endRevert(req, chat, record, {
           documents,
@@ -446,7 +450,10 @@ module.exports = (self) => {
         for (const document of documents) {
           fresh.set(document.docId, {
             ...document,
-            view: await getView(document)
+            view: await getView(document),
+            ...(document.published && {
+              publishedView: await getView(document, { published: true })
+            })
           });
         }
         set.documents = retried
@@ -489,11 +496,13 @@ module.exports = (self) => {
     // `seeChanges` for one changed since, when its page shows them;
     // `versions`, its Document Versions, for one locked, archived or not
     // restorable, where See Changes can't be entered; `null` for one gone
-    // or without versions
+    // or without versions. With `published`, for one the requests
+    // published: `versions`, where its earlier version is restored and
+    // published
     async function getView({
       docId, type, locale, outcome, reason
-    }) {
-      if (![ 'kept', 'unrestorable', 'locked' ].includes(outcome)) {
+    }, { published = false } = {}) {
+      if (!published && ![ 'kept', 'unrestorable', 'locked' ].includes(outcome)) {
         return null;
       }
       const manager = self.apos.doc.getManager(type);
@@ -514,6 +523,9 @@ module.exports = (self) => {
         .toObject();
       if (!doc) {
         return null;
+      }
+      if (published) {
+        return 'versions';
       }
       const changed = (outcome === 'kept') && (reason !== 'archived') && !doc.archived;
       return (changed && doc._url && docVersions.hasDraftVersions(manager.options))

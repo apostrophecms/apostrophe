@@ -6,12 +6,14 @@
 // tab; its answer is taken off the call's input before the write runs, and
 // the write runs whatever the answer. A hidden browser tab, or a page that
 // could not switch, gets the write without the step: the chat's revert
-// takes it back.
+// takes it back. A publish changes nothing of the page's content and runs
+// without the step.
 
 const getCallDocumentIds = require('./call-documents');
 
 const { getDocumentKey } = getCallDocumentIds;
 const DOOR = 'assistant';
+const PUBLISH_TOOL = 'publish_document';
 
 module.exports = (self) => {
   return {
@@ -25,9 +27,9 @@ module.exports = (self) => {
      * @param {object} payload The engine's `{ tool, args }`.
      */
     async checkEditMode(req, { tool, args }) {
-      const door = self.apos.harness.getDoor(req);
+      const door = self.apos.aposHarness.getDoor(req);
       if (!self.active || (door?.door !== DOOR) || (tool.kind !== 'action') ||
-        !tool.tags?.includes('content')) {
+        !tool.tags?.includes('content') || (tool.name === PUBLISH_TOOL)) {
         return;
       }
       const { _context, ...validated } = args;

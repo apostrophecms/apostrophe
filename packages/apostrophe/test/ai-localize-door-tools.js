@@ -121,7 +121,7 @@ describe('AI Localize: get_localization', function () {
   }
 
   function door(req = userReq()) {
-    return apos.harness.withDoor(req, {
+    return apos.aposHarness.withDoor(req, {
       door: 'assistant',
       lockId: 'chat-1',
       chat: 'chat-1',
@@ -218,7 +218,7 @@ describe('AI Localize: get_localization', function () {
 
   it('should be a tool of both doors', function () {
     for (const name of [ 'assistant', 'mcp' ]) {
-      const names = apos.harness.getDoorTools(name).map(tool => tool.name);
+      const names = apos.aposHarness.getDoorTools(name).map(tool => tool.name);
       assert(names.includes('get_localization'), name);
     }
     // Several locales, but no assistant enabled: no Localize in widget menus
@@ -847,7 +847,7 @@ describe('AI Localize: get_localization', function () {
       locale: 'fr'
     }, req);
 
-    const { seen } = apos.harness.getDoor(req);
+    const { seen } = apos.aposHarness.getDoor(req);
     assert(seen.has(article._id));
     assert(seen.has(french._id));
   });

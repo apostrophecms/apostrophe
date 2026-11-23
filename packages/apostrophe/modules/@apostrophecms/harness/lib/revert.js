@@ -12,6 +12,9 @@
 // drafts is archived. A copy the requests made of a document into another
 // locale is deleted whatever its type: the document lives on where it was
 // copied from, and an archived copy would stand in the way of the next one.
+//
+// A publish is never taken back: what the requests published stays live,
+// and the revert says so.
 
 const _ = require('lodash');
 
@@ -50,7 +53,12 @@ module.exports = (self) => {
      *   `used`; `unrestorable`, `reason` as `checkChangeRows` gives it, or
      *   `permission` or `invalid`; `locked`, `lockedBy` the holder's name,
      *   `null` for the user's own, `reason` `editor` for one `isHeld`;
-     *   `deleted` or `archived`, a created document removed. `rows`:
+     *   `deleted` or `archived`, a created document removed. `published`,
+     *   whatever the outcome, when the requests published the document: a
+     *   revert never takes a publish back, and a document they only
+     *   published is `reverted` with no lock taken. `live`, on a document
+     *   that was not created, when a change put back was published before
+     *   the revert: its live version keeps it. `rows`:
      *   `{ entryId, index, outcome, reason? }` per change row checked,
      *   `outcome` `putBack`, `reverted`, `edited`, `gone` or
      *   `unrestorable`. `title` is the document's own, else the
@@ -88,8 +96,9 @@ module.exports = (self) => {
       }
       const documents = [ ...byDoc.values() ].map(list => ({
         newest: list[0],
-        changes: list.filter(entry => entry.effect !== 'create'),
-        create: list.find(entry => entry.effect === 'create') || null
+        changes: list.filter(entry => ![ 'create', 'publish' ].includes(entry.effect)),
+        create: list.find(entry => entry.effect === 'create') || null,
+        published: list.some(entry => entry.effect === 'publish')
       }));
       const order = [
         ...documents.filter(document => !document.create),
@@ -113,7 +122,7 @@ module.exports = (self) => {
       return results;
 
       async function revertDocument({
-        newest, changes, create
+        newest, changes, create, published
       }) {
         const result = {
           docId: newest.docId,
@@ -121,7 +130,10 @@ module.exports = (self) => {
           locale: newest.locale,
           type: newest.type,
           title: newest.title,
-          created: Boolean(create)
+          created: Boolean(create),
+          // A publish is never taken back: the outcome says the requests
+          // published the document, whatever else happens to it
+          ...(published && { published: true })
         };
         const end = (outcome, more = {}) => ({
           ...result,
@@ -143,6 +155,10 @@ module.exports = (self) => {
             : end('kept', { reason: stored ? 'archived' : 'removed' });
         }
         result.title = stored.title;
+        // Only published: nothing to write, so no lock to wait for
+        if (!changes.length && !create) {
+          return end('reverted');
+        }
         if (isHeld?.(result)) {
           return end('locked', {
             lockedBy: null,
@@ -256,6 +272,7 @@ module.exports = (self) => {
           const [ outcome, more ] = summarize(rows);
           return end(outcome, {
             ...more,
+            ...(isLive(doc, rows) && { live: true }),
             rows
           });
         }
@@ -322,11 +339,25 @@ module.exports = (self) => {
           };
         }
 
+        // Whether a change the revert takes out of the draft was published
+        // before it: the live version keeps it until the draft is published
+        // again. The change log holds no publish, the draft's own date tells
+        function isLive(doc, rows) {
+          if ((self.getPublishing(doc.type) !== 'drafts') || !doc.lastPublishedAt) {
+            return false;
+          }
+          const putBack = new Set(rows
+            .filter(row => row.outcome === 'putBack')
+            .map(row => row.entryId));
+          return changes.some(entry => putBack.has(entry._id) &&
+            (entry.at < doc.lastPublishedAt));
+        }
+
         // Why a created document stays, `null` when it goes. `created`: its
         // creation's rows checked against the document as the revert leaves it
         async function getKeepReason(doc, created) {
-          // The requests never publish: a published draft was published by
-          // someone. A type that publishes on save published with them
+          // A published draft stays, whoever published it: a request's own
+          // publish too. A type that publishes on save published with them
           if ((self.getPublishing(doc.type) === 'drafts') && doc.lastPublishedAt) {
             return 'published';
           }

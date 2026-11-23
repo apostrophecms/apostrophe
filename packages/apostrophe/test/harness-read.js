@@ -836,7 +836,7 @@ describe('Harness: read tools and the schema read', function () {
     });
 
     it('should list versions with who, when and the AI mark', async function () {
-      await apos.harness.writeDocuments(userReq('bob'), [ {
+      await apos.aposHarness.writeDocuments(userReq('bob'), [ {
         _id: article._id,
         patch: { body: 'Written by AI' }
       } ]);

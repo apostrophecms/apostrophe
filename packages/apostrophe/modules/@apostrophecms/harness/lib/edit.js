@@ -124,6 +124,11 @@ module.exports = (self) => {
       return self.getWriteResult(result);
     },
 
+    async publishDocument(req, { targets }) {
+      const result = await self.publishDocuments(req, targets.map(({ _id }) => _id));
+      return self.getPublishResult(result);
+    },
+
     async addWidgets(req, {
       _id, area, widgets, position, before, after
     }) {

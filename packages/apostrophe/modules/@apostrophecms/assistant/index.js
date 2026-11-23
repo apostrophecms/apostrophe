@@ -1,4 +1,4 @@
-// This module provides `apos.assistant`, the assistant of the admin UI: an
+// This module provides `apos.aposAssistant`, the assistant of the admin UI: an
 // editor's chats with AI, each request run as one background job on the
 // harness's tools and guidance, through the `assistant` door.
 //
@@ -18,7 +18,7 @@
 
 module.exports = {
   options: {
-    alias: 'assistant',
+    alias: 'aposAssistant',
     enabled: false,
     // effort: the effort route requests run on; the engine's default when
     //   unset
@@ -79,9 +79,10 @@ module.exports = {
     self.noticeActions = {};
     // Browser tools that turn the answer into their result, by name
     self.browserToolAccepts = {};
-    // Gates added by name, and the tools whose gates were all taken off
+    // Gates by tool and name, and by tool the names taken off (see
+    // lib/gates.js)
     self.gates = {};
-    self.ungated = new Set();
+    self.removedGates = {};
     // Widget menu entries that open the panel with a prompt, by name (see
     // lib/widget-operations.js)
     self.widgetOperations = {};
@@ -102,6 +103,7 @@ module.exports = {
     self.addAttachmentTools();
     self.addImageTools();
     self.addGlobalStylesGate();
+    self.addPublishGate();
     self.enableBrowserData();
   },
   handlers(self) {
@@ -122,10 +124,12 @@ module.exports = {
         }
       },
       '@apostrophecms/harness:documentSeen': {
-        // The chat keeps what it saw of each document for its next requests
+        // The chat keeps what it saw of each document for its next requests.
+        // A revert's saves are not the model's reads: the chat's stamps stay,
+        // and a document the revert wrote is read again before it is written
         async storeSeen(req) {
-          const door = self.apos.harness.getDoor(req);
-          if (!self.active || (door?.door !== 'assistant')) {
+          const door = self.apos.aposHarness.getDoor(req);
+          if (!self.active || (door?.door !== 'assistant') || door.revert) {
             return;
           }
           await self.chats.updateOne({ _id: door.chat }, {
@@ -153,7 +157,7 @@ module.exports = {
           const { result } = payload;
           // Not to a subagent's result (its `generate` runs inside a tool),
           // which the run's model never sees
-          if (!self.active || (self.apos.harness.getDoor(req)?.door !== 'assistant') ||
+          if (!self.active || (self.apos.aposHarness.getDoor(req)?.door !== 'assistant') ||
             req.aposAiDepth || payload.tool.tags?.includes('browser') ||
             !result || (typeof result !== 'object') || Array.isArray(result)) {
             return;

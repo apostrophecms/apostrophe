@@ -143,7 +143,7 @@ describe('Harness: doors, the write path and guards', function () {
                 properties: {
                   type: {
                     type: 'string',
-                    enum: self.apos.harness.getDocTypeNames()
+                    enum: self.apos.aposHarness.getDocTypeNames()
                   }
                 }
               })
@@ -166,7 +166,7 @@ describe('Harness: doors, the write path and guards', function () {
                 required: [ '_id', 'body' ]
               },
               handler: async (req, args) => {
-                const { harness } = self.apos;
+                const { aposHarness: harness } = self.apos;
                 const { written, refused } = await harness.writeDocuments(req, [ {
                   _id: args._id,
                   patch: { body: args.body }
@@ -209,7 +209,7 @@ describe('Harness: doors, the write path and guards', function () {
   }
 
   function door(req, context = {}) {
-    return apos.harness.withDoor(req, {
+    return apos.aposHarness.withDoor(req, {
       door: 'assistant',
       lockId: 'chat-1',
       family: 'tab-1',
@@ -236,7 +236,7 @@ describe('Harness: doors, the write path and guards', function () {
 
   describe('doors', function () {
     it('should select the harness tools for both doors, each door its own, and an MCP tool for MCP alone', function () {
-      const names = door => apos.harness.getDoorTools(door).map(tool => tool.name);
+      const names = door => apos.aposHarness.getDoorTools(door).map(tool => tool.name);
       const test = door => names(door).filter(name => name.startsWith('t_'));
       const harness = door => names(door).filter(name => !name.startsWith('t_'));
 
@@ -250,7 +250,7 @@ describe('Harness: doors, the write path and guards', function () {
 
     it('should give every harness tool a label the admin UI translates', function () {
       const keys = require('../modules/@apostrophecms/i18n/i18n/en.json');
-      const tools = apos.harness.getDoorTools('mcp')
+      const tools = apos.aposHarness.getDoorTools('mcp')
         .filter(tool => !tool.name.startsWith('t_'));
       assert(tools.length);
       for (const { name, label } of tools) {
@@ -261,9 +261,9 @@ describe('Harness: doors, the write path and guards', function () {
     });
 
     it('should leave out a removed tool everywhere', function () {
-      for (const door of apos.harness.getDoorNames()) {
+      for (const door of apos.aposHarness.getDoorNames()) {
         assert.equal(
-          apos.harness.getDoorTools(door).some(tool => tool.name === 't_removed'),
+          apos.aposHarness.getDoorTools(door).some(tool => tool.name === 't_removed'),
           false
         );
       }
@@ -271,11 +271,11 @@ describe('Harness: doors, the write path and guards', function () {
     });
 
     it('should refuse an unknown door', function () {
-      assert.throws(() => apos.harness.getDoorTools('nope'), { name: 'invalid' });
+      assert.throws(() => apos.aposHarness.getDoorTools('nope'), { name: 'invalid' });
     });
 
     it('should list the values an argument takes, in its definition and list-tools', async function () {
-      const types = apos.harness.getDocTypeNames();
+      const types = apos.aposHarness.getDocTypeNames();
       assert(types.includes('harness-article'));
       assert(types.includes('@apostrophecms/home-page'));
       assert.equal(types.includes('@apostrophecms/user'), false);
@@ -283,7 +283,7 @@ describe('Harness: doors, the write path and guards', function () {
       // Denied by the project
       assert.equal(types.includes('harness-secret'), false);
 
-      const listed = apos.harness.getDoorTools('mcp')
+      const listed = apos.aposHarness.getDoorTools('mcp')
         .find(tool => tool.name === 't_content');
       assert.deepEqual(listed.input.properties.type.enum, types);
 
@@ -310,8 +310,8 @@ describe('Harness: doors, the write path and guards', function () {
         }
       });
 
-      assert.equal(apos.harness.getDoor(req), null);
-      assert.deepEqual(apos.harness.getDoor(doorReq), {
+      assert.equal(apos.aposHarness.getDoor(req), null);
+      assert.deepEqual(apos.aposHarness.getDoor(doorReq), {
         door: 'assistant',
         lockId: 'chat-1',
         family: 'tab-1',
@@ -389,7 +389,7 @@ describe('Harness: doors, the write path and guards', function () {
   describe('the write path', function () {
     it('should write the draft, marked as AI in Document Versions', async function () {
       const article = await insertArticle();
-      const { written, refused } = await apos.harness.writeDocuments(userReq('ann'), [ {
+      const { written, refused } = await apos.aposHarness.writeDocuments(userReq('ann'), [ {
         _id: article._id,
         patch: { body: 'Written' }
       } ]);
@@ -410,7 +410,7 @@ describe('Harness: doors, the write path and guards', function () {
     it('should find a document by its aposDocId or in its published mode', async function () {
       const article = await insertArticle();
       for (const _id of [ article.aposDocId, article._id.replace(':draft', ':published') ]) {
-        const { written } = await apos.harness.writeDocuments(userReq('ann'), [ {
+        const { written } = await apos.aposHarness.writeDocuments(userReq('ann'), [ {
           _id,
           patch: { body: _id }
         } ]);
@@ -422,7 +422,7 @@ describe('Harness: doors, the write path and guards', function () {
       const req = userReq('ann');
       const notice = await apos.modules['harness-notice'].insert(req, { title: 'Notice' });
       const setting = await apos.modules['harness-setting'].insert(req, { title: 'Setting' });
-      const { written } = await apos.harness.writeDocuments(req, [
+      const { written } = await apos.aposHarness.writeDocuments(req, [
         {
           _id: notice._id,
           patch: { title: 'Notice 2' }
@@ -451,11 +451,11 @@ describe('Harness: doors, the write path and guards', function () {
         role: 'editor'
       });
 
-      const asGuest = await apos.harness.writeDocuments(guest, [ {
+      const asGuest = await apos.aposHarness.writeDocuments(guest, [ {
         _id: article._id,
         patch: { body: 'Guest' }
       } ]);
-      const asAdmin = await apos.harness.writeDocuments(userReq('ann'), [ {
+      const asAdmin = await apos.aposHarness.writeDocuments(userReq('ann'), [ {
         _id: user._id,
         patch: { title: 'Renamed' }
       } ]);
@@ -463,7 +463,7 @@ describe('Harness: doors, the write path and guards', function () {
       const secret = await apos.modules['harness-secret'].insert(userReq('ann'), {
         title: 'Secret'
       });
-      const denied = await apos.harness.writeDocuments(userReq('ann'), [ {
+      const denied = await apos.aposHarness.writeDocuments(userReq('ann'), [ {
         _id: secret._id,
         patch: { title: 'Revealed' }
       } ]);
@@ -481,7 +481,7 @@ describe('Harness: doors, the write path and guards', function () {
     it('should write the patches of one document in one save', async function () {
       const article = await insertArticle();
       saves.length = 0;
-      const { written } = await apos.harness.writeDocuments(userReq('ann'), [
+      const { written } = await apos.aposHarness.writeDocuments(userReq('ann'), [
         {
           _id: article._id,
           patch: { body: 'One' }
@@ -502,13 +502,13 @@ describe('Harness: doors, the write path and guards', function () {
     it('should name the fields a validation refuses, and save nothing', async function () {
       const article = await insertArticle();
       saves.length = 0;
-      const { refused } = await apos.harness.writeDocuments(userReq('ann'), [
+      const { refused } = await apos.aposHarness.writeDocuments(userReq('ann'), [
         {
           _id: article._id,
           patch: { title: '' }
         }
       ]);
-      const pushed = await apos.harness.writeDocuments(userReq('ann'), [
+      const pushed = await apos.aposHarness.writeDocuments(userReq('ann'), [
         {
           _id: article._id,
           patch: {
@@ -539,7 +539,7 @@ describe('Harness: doors, the write path and guards', function () {
     it('should lock a door\'s write in the family\'s slot only while it writes', async function () {
       const article = await insertArticle();
       const req = door(userReq('ann'));
-      await apos.harness.writeDocuments(req, [ {
+      await apos.aposHarness.writeDocuments(req, [ {
         _id: article._id,
         patch: { body: 'Locked' }
       } ]);
@@ -552,14 +552,14 @@ describe('Harness: doors, the write path and guards', function () {
     it('should keep a saved write when the lock can\'t be released', async function () {
       const article = await insertArticle();
       const { unlock } = apos.doc;
-      const { logError } = apos.harness;
+      const { logError } = apos.aposHarness;
       const logged = [];
       apos.doc.unlock = async () => {
         throw new Error('database gone');
       };
-      apos.harness.logError = (req, type) => logged.push(type);
+      apos.aposHarness.logError = (req, type) => logged.push(type);
       try {
-        const { written, refused } = await apos.harness.writeDocuments(door(userReq('ann')), [ {
+        const { written, refused } = await apos.aposHarness.writeDocuments(door(userReq('ann')), [ {
           _id: article._id,
           patch: { body: 'Saved' }
         } ]);
@@ -569,7 +569,7 @@ describe('Harness: doors, the write path and guards', function () {
         assert.deepEqual(logged, [ 'lock-release-failed' ]);
       } finally {
         apos.doc.unlock = unlock;
-        apos.harness.logError = logError;
+        apos.aposHarness.logError = logError;
       }
       assert.equal((await findDraft(article._id)).body, 'Saved');
     });
@@ -583,7 +583,7 @@ describe('Harness: doors, the write path and guards', function () {
       const req = door(userReq('ann'));
       await apos.doc.lock(userReq('bob'), two, 'bob-tab');
 
-      const { written, refused } = await apos.harness.writeDocuments(req, [
+      const { written, refused } = await apos.aposHarness.writeDocuments(req, [
         one, two, three
       ].map(doc => ({
         _id: doc._id,
@@ -603,7 +603,7 @@ describe('Harness: doors, the write path and guards', function () {
       const article = await insertArticle();
       let seen = null;
 
-      const { written } = await apos.harness.writeDocuments(door(userReq('ann')), [ {
+      const { written } = await apos.aposHarness.writeDocuments(door(userReq('ann')), [ {
         _id: article._id,
         patch: async () => {
           try {
@@ -631,7 +631,7 @@ describe('Harness: doors, the write path and guards', function () {
         seen: new Map([ [ article._id, seen.updatedAt.toISOString() ] ])
       });
 
-      const { written, refused } = await apos.harness.writeDocuments(req, [ {
+      const { written, refused } = await apos.aposHarness.writeDocuments(req, [ {
         _id: article._id,
         // Bob saves after the write found the draft, before it saves
         patch: async () => {
@@ -659,13 +659,13 @@ describe('Harness: doors, the write path and guards', function () {
       await apos.modules['harness-article'].update(userReq('bob'), draft);
 
       // The read and the write in one step
-      await apos.harness.getDocument(req, { _id: article._id });
-      const step = await apos.harness.writeDocuments(req, [ {
+      await apos.aposHarness.getDocument(req, { _id: article._id });
+      const step = await apos.aposHarness.writeDocuments(req, [ {
         _id: article._id,
         patch: { body: 'From the model' }
       } ]);
-      await apos.harness.commitSeen(req);
-      const next = await apos.harness.writeDocuments(req, [ {
+      await apos.aposHarness.commitSeen(req);
+      const next = await apos.aposHarness.writeDocuments(req, [ {
         _id: article._id,
         patch: { body: 'From the model' }
       } ]);
@@ -679,15 +679,15 @@ describe('Harness: doors, the write path and guards', function () {
       const article = await insertArticle();
       const req = door(userReq('ann'), { deferSeen: true });
 
-      await apos.harness.getDocument(req, { _id: article._id });
-      await apos.harness.writeDocuments(req, [ {
+      await apos.aposHarness.getDocument(req, { _id: article._id });
+      await apos.aposHarness.writeDocuments(req, [ {
         _id: article._id,
         patch: { body: 'From the model' }
       } ]);
-      await apos.harness.commitSeen(req);
+      await apos.aposHarness.commitSeen(req);
 
       const { updatedAt } = await findDraft(article._id);
-      const { seen } = apos.harness.getDoor(req);
+      const { seen } = apos.aposHarness.getDoor(req);
       assert.equal(seen.get(article._id), updatedAt.toISOString());
     });
 
@@ -695,7 +695,7 @@ describe('Harness: doors, the write path and guards', function () {
       const article = await insertArticle();
       await apos.doc.lock(userReq('ann'), article, 'tab-2');
 
-      const { written, refused } = await apos.harness.writeDocuments(door(userReq('ann')), [ {
+      const { written, refused } = await apos.aposHarness.writeDocuments(door(userReq('ann')), [ {
         _id: article._id,
         patch: { body: 'Chat one' }
       } ]);
@@ -711,7 +711,7 @@ describe('Harness: doors, the write path and guards', function () {
       // The page in edit mode
       await apos.doc.lock(userReq('ann'), article, 'tab-1');
 
-      const { written } = await apos.harness.writeDocuments(door(userReq('ann')), [ {
+      const { written } = await apos.aposHarness.writeDocuments(door(userReq('ann')), [ {
         _id: article._id,
         patch: { body: 'Chat one' }
       } ]);
@@ -728,7 +728,7 @@ describe('Harness: doors, the write path and guards', function () {
       // The other chat's write in flight
       await apos.doc.lock(userReq('ann'), article, 'chat-2', { family: 'tab-1' });
 
-      const { written, refused } = await apos.harness.writeDocuments(door(userReq('ann')), [ {
+      const { written, refused } = await apos.aposHarness.writeDocuments(door(userReq('ann')), [ {
         _id: article._id,
         patch: { body: 'Chat one' }
       } ]);
@@ -743,7 +743,7 @@ describe('Harness: doors, the write path and guards', function () {
 
   describe('guards', function () {
     it('should make a new widget whole and replace every id the model sent', function () {
-      const { widget, ids } = apos.harness.newWidget(userReq('ann'), {
+      const { widget, ids } = apos.aposHarness.newWidget(userReq('ann'), {
         _id: 'model-widget',
         type: 'harness-card',
         heading: 'Heading',
@@ -785,7 +785,7 @@ describe('Harness: doors, the write path and guards', function () {
     });
 
     it('should keep the own id of a widget replaced in place', function () {
-      const { widget } = apos.harness.newWidget(userReq('ann'), {
+      const { widget } = apos.aposHarness.newWidget(userReq('ann'), {
         _id: 'model-widget',
         type: 'harness-card'
       }, { _id: 'kept' });
@@ -794,14 +794,14 @@ describe('Harness: doors, the write path and guards', function () {
 
     it('should refuse a widget type without a module', function () {
       assert.throws(
-        () => apos.harness.newWidget(userReq('ann'), { type: 'nope' }),
+        () => apos.aposHarness.newWidget(userReq('ann'), { type: 'nope' }),
         { name: 'invalid' }
       );
     });
 
     it('should save the ids it assigned', async function () {
       const article = await insertArticle();
-      const { widget, ids } = apos.harness.newWidget(userReq('ann'), {
+      const { widget, ids } = apos.aposHarness.newWidget(userReq('ann'), {
         type: 'harness-card',
         heading: 'Pushed',
         body: {
@@ -811,7 +811,7 @@ describe('Harness: doors, the write path and guards', function () {
           } ]
         }
       });
-      await apos.harness.writeDocuments(userReq('ann'), [ {
+      await apos.aposHarness.writeDocuments(userReq('ann'), [ {
         _id: article._id,
         patch: { $push: { 'main.items': widget } }
       } ]);
@@ -866,7 +866,7 @@ describe('Harness: doors, the write path and guards', function () {
       });
       const doc = await apos.doc.find(userReq('ann'), { _id: article._id }).toObject();
 
-      const projected = apos.harness.projectDocument(userReq('ann'), doc);
+      const projected = apos.aposHarness.projectDocument(userReq('ann'), doc);
 
       assert.equal('oldField' in projected, false);
       assert.equal(projected.body, 'Body');
@@ -909,7 +909,7 @@ describe('Harness: doors, the write path and guards', function () {
         }
       });
       await apos.modules['harness-article'].publish(req, article);
-      await apos.harness.writeDocuments(req, [ {
+      await apos.aposHarness.writeDocuments(req, [ {
         _id: article._id,
         patch: { '@card-b.heading': 'B changed' }
       } ]);
@@ -917,7 +917,7 @@ describe('Harness: doors, the write path and guards', function () {
       const { rows } = await apos.docVersions.getDraftChanges(req, article._id);
       assert.equal(rows.length, 1);
       assert.equal(rows[0].patchKey, '@card-b.heading');
-      await apos.harness.writeDocuments(req, [ {
+      await apos.aposHarness.writeDocuments(req, [ {
         _id: article._id,
         patch: { [rows[0].patchKey]: 'B again' }
       } ]);

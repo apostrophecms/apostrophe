@@ -1,4 +1,4 @@
-// This module provides `apos.harness`: what AI can see and do in the CMS,
+// This module provides `apos.aposHarness`: what AI can see and do in the CMS,
 // what it must follow and what gets recorded, shared by every door (the
 // assistant, the MCP server). Its tools are registered on the AI engine
 // with the `content` tag; each door selects them with its own tags (see
@@ -16,7 +16,7 @@
 
 module.exports = {
   options: {
-    alias: 'harness',
+    alias: 'aposHarness',
     // Site-level text, added after the base instructions on every request
     // through either door
     guidance: null
@@ -61,8 +61,7 @@ module.exports = {
             return;
           }
           expected.checked = true;
-          const saved = new Date(doc.updatedAt ?? NaN).getTime();
-          if (!isNaN(saved) && (saved !== new Date(expected.updatedAt).getTime())) {
+          if (self.isSavedSince(doc, expected.updatedAt)) {
             throw self.apos.error('conflict');
           }
         }

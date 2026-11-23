@@ -124,7 +124,7 @@ describe('Assistant: describe_images and delegate', function () {
 
   it('marks the usage of the run, a vision call and a subagent by purpose', async function () {
     const req = userReq(editor);
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     script = {
       run: sequence([
         toolTurn('describe_images', { images: [ images[0]._id ] }),
@@ -142,8 +142,8 @@ describe('Assistant: describe_images and delegate', function () {
   });
 
   it('neither tool reaches the MCP door', function () {
-    const mcp = apos.harness.getDoorTools('mcp').map(tool => tool.name);
-    const assistant = apos.harness.getDoorTools('assistant').map(tool => tool.name);
+    const mcp = apos.aposHarness.getDoorTools('mcp').map(tool => tool.name);
+    const assistant = apos.aposHarness.getDoorTools('assistant').map(tool => tool.name);
     for (const name of [ 'describe_images', 'delegate' ]) {
       assert(!mcp.includes(name), name);
       assert(assistant.includes(name), name);
@@ -154,7 +154,7 @@ describe('Assistant: describe_images and delegate', function () {
   describe('describe_images', function () {
     it('makes one vision call per image on delegationEffort, from the one-half size, and stores text only', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = {
         run: sequence([
           toolTurn('describe_images', { images: images.slice(0, 2).map(image => image._id) }),
@@ -211,7 +211,7 @@ describe('Assistant: describe_images and delegate', function () {
 
     it('describes what it can and names why it skipped the rest', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = {
         run: sequence([
           toolTurn('describe_images', {
@@ -235,7 +235,7 @@ describe('Assistant: describe_images and delegate', function () {
 
     it('asks the model\'s question of each image in place of a description', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = {
         run: sequence([
           toolTurn('describe_images', {
@@ -264,7 +264,7 @@ describe('Assistant: describe_images and delegate', function () {
 
     it('counts the vision calls\' tokens with the request\'s own', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = {
         run: sequence([
           toolTurn('describe_images', { images: [ images[0]._id ] }),
@@ -293,7 +293,7 @@ describe('Assistant: describe_images and delegate', function () {
         inputTokens: 300,
         outputTokens: 40
       });
-      const rendered = apos.assistant.renderRequest(request);
+      const rendered = apos.aposAssistant.renderRequest(request);
       assert.equal(rendered.agentUsage, undefined);
       assert.equal(rendered.usage.inputTokens, request.usage.inputTokens + 300);
       assert.equal(rendered.usage.outputTokens, request.usage.outputTokens + 40);
@@ -309,7 +309,7 @@ describe('Assistant: describe_images and delegate', function () {
 
     it('runs on delegationEffort with its own instructions, the site\'s and the read tools only, and stops at delegationMaxSteps', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = {
         run: sequence([
           toolTurn('delegate', { instructions: 'Find the notes about launches' }),
@@ -332,7 +332,7 @@ describe('Assistant: describe_images and delegate', function () {
       // the site provides
       assert.doesNotMatch(first.system, /Every write result/);
       assert.match(first.system, /in the language the task is written in/);
-      assert(first.system.endsWith(`\n\n${apos.harness.getSiteInstructions(req)}`));
+      assert(first.system.endsWith(`\n\n${apos.aposHarness.getSiteInstructions(req)}`));
       assert.match(first.system, /\n\nSections start at a widget with an h2\.\n\n/);
       assert.match(first.system, /\nassistant-note: Short internal notes\. \(aiHow\)/);
       const tools = first.tools.map(tool => tool.name);
@@ -348,7 +348,7 @@ describe('Assistant: describe_images and delegate', function () {
 
     it('runs on the effort the model names', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = {
         run: sequence([
           toolTurn('delegate', {
@@ -374,7 +374,7 @@ describe('Assistant: describe_images and delegate', function () {
 
     it('counts its reads as the chat\'s, and keeps a changed screen for the request\'s run', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       let read;
       script = {
         run: sequence([
@@ -394,8 +394,8 @@ describe('Assistant: describe_images and delegate', function () {
         subagent: sequence([
           async (req) => {
             // The browser tab's screen changes while the subagent works
-            await apos.assistant.requests.updateOne({
-              _id: apos.harness.getDoor(req).requestId
+            await apos.aposAssistant.requests.updateOne({
+              _id: apos.aposHarness.getDoor(req).requestId
             }, { $set: { screenChanged: true } });
             return toolTurn('get_document', { _id: note._id }, 'read');
           },
@@ -423,13 +423,13 @@ describe('Assistant: describe_images and delegate', function () {
   }
 
   async function runToEnd(req, chat, message, tabId = 'tab-1') {
-    await apos.assistant.send(req, chat._id, {
+    await apos.aposAssistant.send(req, chat._id, {
       message,
       screen: { tabId }
     });
     let request;
     await waitFor(async () => {
-      const requests = await apos.assistant.getChatRequests(req, chat._id);
+      const requests = await apos.aposAssistant.getChatRequests(req, chat._id);
       request = requests.at(-1);
       const job = request?.jobId &&
         await apos.modules['@apostrophecms/job'].db.findOne({ _id: request.jobId });

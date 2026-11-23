@@ -16,7 +16,7 @@ module.exports = (self) => {
   // A request's tool calls in order, each with its arguments and its result
   // or error as the transcript holds them
   function readSteps(messages) {
-    const labels = new Map(self.apos.harness.getDoorTools(DOOR)
+    const labels = new Map(self.apos.aposHarness.getDoorTools(DOOR)
       .map(tool => [ tool.name, tool.label ]));
     const steps = [];
     const byId = new Map();

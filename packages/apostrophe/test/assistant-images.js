@@ -83,7 +83,7 @@ describe('Assistant: images', function () {
 
   it('holds the options until Use, which saves the picked one to Media through the change log', async function () {
     const req = userReq(editor);
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     const before = await countImages();
     script = sequence([ toolTurn('generate_image', INPUT, 'gen'), { text: 'Done.' } ]);
     const waiting = await runToEnd(req, chat, 'Make a launch image');
@@ -92,20 +92,20 @@ describe('Assistant: images', function () {
     assert.equal(ask.kind, 'images');
     assert.equal(ask.payload.title, 'Night launch');
     assert.equal(ask.payload.round, 1);
-    assert.equal(ask.payload.candidates.length, apos.assistant.options.genImageCount);
-    assert.equal(imageCalls[0].count, apos.assistant.options.genImageCount);
+    assert.equal(ask.payload.candidates.length, apos.aposAssistant.options.genImageCount);
+    assert.equal(imageCalls[0].count, apos.aposAssistant.options.genImageCount);
     assert.equal(imageCalls[0].images, undefined);
     // Nothing in Media yet; the options are the owner's to look at
     assert.equal(await countImages(), before);
-    const held = await apos.assistant.attachments
+    const held = await apos.aposAssistant.attachments
       .find({ requestId: waiting._id })
       .toArray();
     assert.equal(held.length, 4);
     assert(held.every(record => record.kind === 'candidate' && record.callId === 'call-gen'));
-    const { data } = await apos.assistant.readAttachment(req, chat._id,
+    const { data } = await apos.aposAssistant.readAttachment(req, chat._id,
       ask.payload.candidates[1]._id, { size: 'thumbnail' });
     assert(data.length > 0);
-    await assert.rejects(apos.assistant.readAttachment(userReq(other), chat._id,
+    await assert.rejects(apos.aposAssistant.readAttachment(userReq(other), chat._id,
       ask.payload.candidates[1]._id), { name: 'notfound' });
 
     const done = await answer(req, chat, 'call-gen', {
@@ -124,7 +124,7 @@ describe('Assistant: images', function () {
       _id: result.written[0]._id
     }).toObject();
     assert.equal(image.alt, 'A rocket lifting off at night');
-    const logged = await apos.harness.changes.find({ requestId: done._id }).toArray();
+    const logged = await apos.aposHarness.changes.find({ requestId: done._id }).toArray();
     assert(logged.some(row => row.aposDocId === image.aposDocId));
     // Every option is gone, the used one too: Media holds it now
     assert.equal(await countRequestFiles(done), 0);
@@ -171,10 +171,10 @@ describe('Assistant: images', function () {
     const req = userReq(editor);
     const before = await countImages();
     for (const end of [ 'cancel', 'skip' ]) {
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ toolTurn('generate_image', INPUT, 'gen'), { text: 'Done.' } ]);
       const waiting = await runToEnd(req, chat, 'Make a launch image');
-      const held = await apos.assistant.attachments
+      const held = await apos.aposAssistant.attachments
         .find({ requestId: waiting._id })
         .toArray();
       assert.equal(held.length, 4);
@@ -184,8 +184,8 @@ describe('Assistant: images', function () {
         assert.equal(done.status, 'completed');
         assert.equal(resultOf(done, 'call-gen').output.used, false);
       } else {
-        await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
-        done = await apos.assistant.getRequest(req, waiting._id);
+        await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
+        done = await apos.aposAssistant.getRequest(req, waiting._id);
         assert.equal(done.status, 'skipped');
       }
       assert.equal(done.imageAsks[0].outcome.action, (end === 'cancel') ? 'cancel' : 'skipped');
@@ -199,7 +199,7 @@ describe('Assistant: images', function () {
 
   it('makes new options on Try again and Refine, from the picked image or from the original', async function () {
     const req = userReq(editor);
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     script = sequence([ toolTurn('generate_image', INPUT, 'gen'), { text: 'Done.' } ]);
     const first = (await runToEnd(req, chat, 'Make a launch image')).asks[0].payload;
 
@@ -218,7 +218,7 @@ describe('Assistant: images', function () {
     assert.equal(fromPick.source, picked);
     assert.equal(imageCalls[2].images.length, 1);
     assert.match(imageCalls[2].prompt, /Add a full moon/);
-    const kept = await apos.assistant.attachments.findOne({ _id: picked });
+    const kept = await apos.aposAssistant.attachments.findOne({ _id: picked });
     assert.equal(kept.kept, true);
     assert.equal(await countHeld(again.candidates), 1);
 
@@ -246,15 +246,17 @@ describe('Assistant: images', function () {
       }
     ]);
     // The image picked on Refine stays with the chat, as the thread shows it
-    const left = await apos.assistant.attachments.find({ requestId: done._id }).toArray();
+    const left = await apos.aposAssistant.attachments
+      .find({ requestId: done._id })
+      .toArray();
     assert.deepEqual(left.map(record => record._id), [ picked ]);
-    await apos.assistant.deleteChat(req, chat._id);
+    await apos.aposAssistant.deleteChat(req, chat._id);
     await assertGone(kept.storage);
   });
 
   it('refuses answers that name no image of the round or no notes', async function () {
     const req = userReq(editor);
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     script = sequence([ toolTurn('generate_image', INPUT, 'gen'), { text: 'Done.' } ]);
     await runToEnd(req, chat, 'Make a launch image');
     for (const bad of [
@@ -266,19 +268,19 @@ describe('Assistant: images', function () {
       { action: 'refine' },
       { action: 'pick' }
     ]) {
-      await assert.rejects(apos.assistant.answer(req, chat._id, {
+      await assert.rejects(apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-gen',
         answer: bad
       }), { name: 'invalid' });
     }
-    await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+    await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
   });
 
   it('edits a Media image in place on Use, and revert brings its file back', async function () {
     const req = userReq(editor);
     const hero = await insertImage('Hero product shot');
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     script = sequence([
       toolTurn('generate_image', {
         ...INPUT,
@@ -323,7 +325,7 @@ describe('Assistant: images', function () {
     const hero = await insertImage('Locked hero');
     const draft = await findImage(hero);
     await apos.doc.lock(userReq(other), draft, 'other-tab');
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     script = sequence([
       toolTurn('generate_image', {
         ...INPUT,
@@ -340,7 +342,7 @@ describe('Assistant: images', function () {
     const result = resultOf(done, 'call-gen').output;
     assert.equal(result.saved, false);
     assert.match(result.error, /being edited by other/);
-    const kept = await apos.assistant.attachments.findOne({ _id: result.attachment });
+    const kept = await apos.aposAssistant.attachments.findOne({ _id: result.attachment });
     assert.equal(kept.kind, 'attachment');
     assert.equal(kept.replaces, draft._id);
     assert.equal(kept.name, 'night-launch.png');
@@ -360,7 +362,7 @@ describe('Assistant: images', function () {
     });
     assert.equal(failed.action.name, 'saveToMedia');
     // The action's data is the server's
-    assert.deepEqual(apos.assistant.renderRequest(done).notices[0].action, {
+    assert.deepEqual(apos.aposAssistant.renderRequest(done).notices[0].action, {
       name: 'saveToMedia',
       label: 'apostrophe:assistantRetry'
     });
@@ -378,8 +380,8 @@ describe('Assistant: images', function () {
     assert.equal(again.notices[0].action.name, 'saveToMedia');
     // Run once: a second click finds it gone
     await assert.rejects(retry(req, chat, done, failed), { name: 'invalid' });
-    const first = await apos.assistant.getRequest(req, done._id);
-    assert.equal(apos.assistant.renderRequest(first).notices[0].action, null);
+    const first = await apos.aposAssistant.getRequest(req, done._id);
+    assert.equal(apos.aposAssistant.renderRequest(first).notices[0].action, null);
 
     await apos.doc.unlock(userReq(other), draft, 'other-tab');
     const saved = await retry(req, chat, again, again.notices[0]);
@@ -389,9 +391,12 @@ describe('Assistant: images', function () {
     assert.notEqual(updated.attachment._id, hero.attachment._id);
     // Named after the image it replaced
     assert.match(updated.attachment.name, /^locked-hero/);
-    assert.equal(await apos.assistant.attachments.countDocuments({ _id: kept._id }), 0);
+    assert.equal(
+      await apos.aposAssistant.attachments.countDocuments({ _id: kept._id }),
+      0
+    );
     // The round it was picked in shows the Media image now
-    const picked = await apos.assistant.getRequest(req, done._id);
+    const picked = await apos.aposAssistant.getRequest(req, done._id);
     assert.equal(picked.imageAsks[0].outcome.imageId, updated._id);
     assert.equal(picked.imageAsks[0].outcome.attachmentId, null);
     // What the model replays: the user's line, the save's call and its result
@@ -416,10 +421,10 @@ describe('Assistant: images', function () {
 
   it('gives a notice its button back when its action throws, to run it again', async function () {
     const req = userReq(editor);
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     const done = await runToEnd(req, chat, 'Hello');
     let throws = true;
-    apos.assistant.addNoticeAction('flaky', {
+    apos.aposAssistant.addNoticeAction('flaky', {
       async run() {
         if (throws) {
           throws = false;
@@ -441,33 +446,33 @@ describe('Assistant: images', function () {
         label: 'apostrophe:assistantRetry'
       }
     };
-    await apos.assistant.requests.updateOne({ _id: done._id }, {
+    await apos.aposAssistant.requests.updateOne({ _id: done._id }, {
       $push: { notices: notice }
     });
     try {
       const failed = await retry(req, chat, done, notice);
       assert.equal(failed.status, 'failed');
-      const source = await apos.assistant.getRequest(req, done._id);
-      assert.deepEqual(apos.assistant.renderRequest(source).notices[0].action, {
+      const source = await apos.aposAssistant.getRequest(req, done._id);
+      assert.deepEqual(apos.aposAssistant.renderRequest(source).notices[0].action, {
         name: 'flaky',
         label: 'apostrophe:assistantRetry'
       });
       const ran = await retry(req, chat, done, notice);
       assert.equal(ran.status, 'completed');
-      const taken = await apos.assistant.getRequest(req, done._id);
-      assert.equal(apos.assistant.renderRequest(taken).notices[0].action, null);
+      const taken = await apos.aposAssistant.getRequest(req, done._id);
+      assert.equal(apos.aposAssistant.renderRequest(taken).notices[0].action, null);
     } finally {
-      delete apos.assistant.noticeActions.flaky;
+      delete apos.aposAssistant.noticeActions.flaky;
     }
   });
 
   it('saves an attached image into a Media image it replaces', async function () {
     const req = userReq(editor);
     const hero = await insertImage('Team photo');
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     const file = path.join(UPLOADS, `${apos.util.generateId()}.png`);
     await fs.copyFile(path.join(FIXTURES, 'upload_image.png'), file);
-    const attached = await apos.assistant.attach(req, chat._id, {
+    const attached = await apos.aposAssistant.attach(req, chat._id, {
       originalname: 'new-team.png',
       path: file
     });
@@ -490,14 +495,14 @@ describe('Assistant: images', function () {
 
   it('generates nothing for a user who may not upload, and refuses a bad source', async function () {
     const guestReq = userReq(guest);
-    let chat = await apos.assistant.createChat(guestReq);
+    let chat = await apos.aposAssistant.createChat(guestReq);
     script = sequence([ toolTurn('generate_image', INPUT, 'gen'), { text: 'Done.' } ]);
     let done = await runToEnd(guestReq, chat, 'Make an image');
     assert.match(resultOf(done, 'call-gen').error, /may not upload images, so no image was generated/);
     assert.equal(imageCalls.length, 0);
 
     const req = userReq(editor);
-    chat = await apos.assistant.createChat(req);
+    chat = await apos.aposAssistant.createChat(req);
     const hero = await insertImage('Source');
     script = sequence([
       toolTurn('generate_image', {
@@ -523,8 +528,8 @@ describe('Assistant: images', function () {
   });
 
   it('is the assistant\'s alone', function () {
-    const mcp = apos.harness.getDoorTools('mcp').map(tool => tool.name);
-    const assistant = apos.harness.getDoorTools('assistant').map(tool => tool.name);
+    const mcp = apos.aposHarness.getDoorTools('mcp').map(tool => tool.name);
+    const assistant = apos.aposHarness.getDoorTools('assistant').map(tool => tool.name);
     assert(assistant.includes('generate_image'));
     assert(!mcp.includes('generate_image'));
   });
@@ -541,11 +546,11 @@ describe('Assistant: images', function () {
   }
 
   function countRequestFiles(request) {
-    return apos.assistant.attachments.countDocuments({ requestId: request._id });
+    return apos.aposAssistant.attachments.countDocuments({ requestId: request._id });
   }
 
   async function countHeld(candidates) {
-    return apos.assistant.attachments.countDocuments({
+    return apos.aposAssistant.attachments.countDocuments({
       _id: { $in: candidates.map(each => each._id) }
     });
   }
@@ -570,7 +575,7 @@ describe('Assistant: images', function () {
   }
 
   async function runToEnd(req, chat, message, attachments = []) {
-    await apos.assistant.send(req, chat._id, {
+    await apos.aposAssistant.send(req, chat._id, {
       message,
       screen: { tabId: 'tab-1' },
       attachments
@@ -579,7 +584,7 @@ describe('Assistant: images', function () {
   }
 
   async function answer(req, chat, callId, value) {
-    await apos.assistant.answer(req, chat._id, {
+    await apos.aposAssistant.answer(req, chat._id, {
       tabId: 'tab-1',
       callId,
       answer: value
@@ -592,18 +597,19 @@ describe('Assistant: images', function () {
   }
 
   async function retry(req, chat, request, notice) {
-    const started = await apos.assistant.runNoticeAction(req, chat._id, {
+    const started = await apos.aposAssistant.runNoticeAction(req, chat._id, {
       requestId: request._id,
       noticeId: notice._id,
       screen: { tabId: 'tab-1' }
     });
-    return waitForEnd(req, chat).then(() => apos.assistant.getRequest(req, started._id));
+    return waitForEnd(req, chat)
+      .then(() => apos.aposAssistant.getRequest(req, started._id));
   }
 
   async function waitForEnd(req, chat) {
     let request;
     await waitFor(async () => {
-      const requests = await apos.assistant.getChatRequests(req, chat._id);
+      const requests = await apos.aposAssistant.getChatRequests(req, chat._id);
       request = requests.at(-1);
       const job = request?.jobId &&
         await apos.modules['@apostrophecms/job'].db.findOne({ _id: request.jobId });
@@ -613,17 +619,17 @@ describe('Assistant: images', function () {
   }
 
   async function revert(req, chat, request) {
-    const started = await apos.assistant.revert(req, chat._id, {
+    const started = await apos.aposAssistant.revert(req, chat._id, {
       requestId: request._id,
       tabId: 'tab-1'
     });
     await waitFor(async () => {
-      const stored = await apos.assistant.getRevert(req, started._id);
+      const stored = await apos.aposAssistant.getRevert(req, started._id);
       const job = stored.jobId &&
         await apos.modules['@apostrophecms/job'].db.findOne({ _id: stored.jobId });
       return (stored.status !== 'running') && (!job || job.ended);
     });
-    const ended = await apos.assistant.getRevert(req, started._id);
+    const ended = await apos.aposAssistant.getRevert(req, started._id);
     assert.equal(ended.status, 'done');
     return ended;
   }

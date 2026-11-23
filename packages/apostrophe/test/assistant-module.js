@@ -17,7 +17,7 @@ describe('Assistant: module and options', function () {
   it('adds nothing when not enabled', async function () {
     process.env.APOS_AI_MOCK = '1';
     await withApos({}, async (apos) => {
-      assert.equal(apos.assistant.active, false);
+      assert.equal(apos.aposAssistant.active, false);
       await assertAbsent(apos);
       assert.equal(apos.ai.getTool('read_screen'), undefined);
       assert.equal(apos.ai.getTool('t_show'), undefined);
@@ -27,7 +27,7 @@ describe('Assistant: module and options', function () {
   it('adds nothing when enabled with no active AI engine', async function () {
     await withApos({ enabled: true }, async (apos) => {
       assert.equal(apos.ai.active, false);
-      assert.equal(apos.assistant.active, false);
+      assert.equal(apos.aposAssistant.active, false);
       await assertAbsent(apos);
     });
   });
@@ -35,7 +35,7 @@ describe('Assistant: module and options', function () {
   it('is active when enabled with an active AI engine', async function () {
     process.env.APOS_AI_MOCK = '1';
     await withApos({ enabled: true }, async (apos) => {
-      assert.equal(apos.assistant.active, true);
+      assert.equal(apos.aposAssistant.active, true);
       const jar = await login(apos);
       const { chats } = await apos.http.get('/api/v1/@apostrophecms/assistant/chat', { jar });
       assert.deepEqual(chats, []);
@@ -75,7 +75,7 @@ describe('Assistant: module and options', function () {
           ],
           unreadable: {}
         },
-        alias: 'assistant'
+        alias: 'aposAssistant'
       });
       // Attaching takes the right to upload a file
       const guest = await apos.template.getBodyData(apos.task.getReq({
@@ -100,7 +100,7 @@ describe('Assistant: module and options', function () {
       messages: []
     };
     await withApos({ enabled: true }, (apos) => {
-      const rendered = apos.assistant.renderRequest(request);
+      const rendered = apos.aposAssistant.renderRequest(request);
       assert.equal(rendered._id, 'r1');
       assert.equal('provider' in rendered, false);
       assert.equal('model' in rendered, false);
@@ -109,7 +109,7 @@ describe('Assistant: module and options', function () {
       enabled: true,
       modelDisplay: true
     }, (apos) => {
-      const rendered = apos.assistant.renderRequest(request);
+      const rendered = apos.aposAssistant.renderRequest(request);
       assert.equal(rendered.provider, 'fake');
       assert.equal(rendered.model, 'fake-large');
     });
@@ -170,7 +170,7 @@ describe('Assistant: module and options', function () {
       ]
     };
     await withApos({ enabled: true }, (apos) => {
-      const rendered = apos.assistant.renderRequest(request);
+      const rendered = apos.aposAssistant.renderRequest(request);
       for (const name of [ 'messages', 'screen', 'screenChanged', 'prior', 'jobId',
         'replyMentions', 'ownerId', 'schemaVersion' ]) {
         assert.equal(name in rendered, false, name);
@@ -183,13 +183,13 @@ describe('Assistant: module and options', function () {
         name: 'list_types',
         label: 'apostrophe:aiToolListTypes'
       } ]);
-      assert.deepEqual(apos.assistant.renderStep(request, 'call-1'), {
+      assert.deepEqual(apos.aposAssistant.renderStep(request, 'call-1'), {
         input: JSON.stringify({ all: true }, null, 2),
         output: JSON.stringify({ types: [ 'page' ] }, null, 2),
         error: null
       });
-      assert.equal(apos.assistant.renderStep(request, 'call-2'), null);
-      assert.equal(apos.assistant.renderRequest({ messages: [] }).reply, null);
+      assert.equal(apos.aposAssistant.renderStep(request, 'call-2'), null);
+      assert.equal(apos.aposAssistant.renderRequest({ messages: [] }).reply, null);
     });
   });
 
@@ -215,7 +215,7 @@ describe('Assistant: module and options', function () {
       delegationEffort: 'medium',
       summaryEffort: 'low'
     }, (apos) => {
-      assert.equal(apos.assistant.active, true);
+      assert.equal(apos.aposAssistant.active, true);
     }, { provider: true });
   });
 
@@ -273,7 +273,7 @@ function browserToolModule(screenEffect, extra = {}) {
   return {
     'assistant-test-tools': {
       init(self) {
-        self.apos.assistant.addBrowserTool({
+        self.apos.aposAssistant.addBrowserTool({
           name: 't_show',
           description: 'Shows things.',
           screenEffect,
@@ -326,7 +326,7 @@ async function assertAbsent(apos) {
     apos.http.get('/api/v1/@apostrophecms/assistant/chat', { jar }),
     { status: 404 }
   );
-  assert.equal(apos.assistant.chats, undefined);
+  assert.equal(apos.aposAssistant.chats, undefined);
   assert(!apos.modal.triggers.some(trigger => trigger.name === 'assistant'));
   const data = await apos.template.getBodyData(apos.task.getReq());
   assert.equal(data.modules['@apostrophecms/assistant'], undefined);

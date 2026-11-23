@@ -113,7 +113,7 @@ describe('Harness: copy_widgets', function () {
   }
 
   function door(req = userReq()) {
-    return apos.harness.withDoor(req, {
+    return apos.aposHarness.withDoor(req, {
       door: 'assistant',
       lockId: 'chat-1',
       chat: 'chat-1',
@@ -186,7 +186,7 @@ describe('Harness: copy_widgets', function () {
 
   it('should be a tool of both doors', function () {
     for (const name of [ 'assistant', 'mcp' ]) {
-      const names = apos.harness.getDoorTools(name).map(tool => tool.name);
+      const names = apos.aposHarness.getDoorTools(name).map(tool => tool.name);
       assert(names.includes('copy_widgets'), name);
     }
   });
@@ -257,8 +257,8 @@ describe('Harness: copy_widgets', function () {
       area: 'main'
     }, req);
 
-    const { requestId } = apos.harness.getDoor(req);
-    const entries = await apos.harness.changes.find({ requestId }).toArray();
+    const { requestId } = apos.aposHarness.getDoor(req);
+    const entries = await apos.aposHarness.changes.find({ requestId }).toArray();
     assert.equal(entries.length, 1);
     assert.equal(entries[0].docId, other._id);
     assert.equal(entries[0].ai, true);

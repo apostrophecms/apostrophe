@@ -527,7 +527,7 @@ module.exports = (self) => {
     }) {
       const { effort } = self.options;
       const doorReq = self.getRunReq(req, chat, request);
-      const tools = self.apos.harness.getDoorTools(DOOR);
+      const tools = self.apos.aposHarness.getDoorTools(DOOR);
       const system = self.getRunInstructions(doorReq, chat);
       const toolNames = self.getRunTools();
       const taken = (request.messages || [])
@@ -574,7 +574,7 @@ module.exports = (self) => {
           betweenSteps: async ({
             usage, messages: sofar, signal
           }) => {
-            await self.apos.harness.commitSeen(doorReq);
+            await self.apos.aposHarness.commitSeen(doorReq);
             if (await self.shortenInRequest(doorReq, chat, request, {
               usage,
               messages: sofar,
@@ -674,7 +674,7 @@ module.exports = (self) => {
       const model = self.getModel();
       // Every run of a request works in the locale it was sent in, an
       // answer from another locale included
-      return self.apos.harness.withDoor(req.clone({
+      return self.apos.aposHarness.withDoor(req.clone({
         locale: request.screen.locale
       }), {
         door: DOOR,
@@ -696,7 +696,7 @@ module.exports = (self) => {
     // how to build from an attached source once the chat has files, the
     // chat's current summary, or the one it carried over, last
     getRunInstructions(doorReq, chat) {
-      return self.apos.harness.getInstructions(doorReq, [
+      return self.apos.aposHarness.getInstructions(doorReq, [
         self.getReplySection(),
         self.getScreenSection(),
         self.getLocalizationSection(),
@@ -706,7 +706,7 @@ module.exports = (self) => {
     },
 
     getRunTools() {
-      return self.apos.harness.getDoorTools(DOOR).map(tool => tool.name);
+      return self.apos.aposHarness.getDoorTools(DOOR).map(tool => tool.name);
     },
 
     /**
@@ -987,7 +987,7 @@ module.exports = (self) => {
           updatedAt: new Date()
         }
       });
-      await self.apos.harness.endRequest(self.apos.harness.withDoor(req, {
+      await self.apos.aposHarness.endRequest(self.apos.aposHarness.withDoor(req, {
         door: DOOR,
         lockId: chat._id,
         chat: chat._id,

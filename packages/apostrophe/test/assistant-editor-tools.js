@@ -110,7 +110,7 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
 
     it('asks up to four questions in one ask, and refuses a fifth, bare options or a lone one', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([
         toolTurn('ask_editor', { questions: [ ...questions, { question: 'And?' } ] }, 'five'),
         toolTurn('ask_editor', {
@@ -171,15 +171,15 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
           ]
         }
       } ]);
-      await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+      await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
     });
 
     it('takes a choice, Other, free text and "You decide", all sent once', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ toolTurn('ask_editor', { questions }, 'ask'), { text: 'Thanks.' } ]);
       await runToEnd(req, chat, 'Redo the hero');
-      await apos.assistant.answer(req, chat._id, {
+      await apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-ask',
         answer: {
@@ -217,17 +217,17 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
     });
 
     it('counts the steps of a request across its answers', async function () {
-      apos.assistant.options.maxSteps = 2;
+      apos.aposAssistant.options.maxSteps = 2;
       try {
         const req = userReq(editor);
-        const chat = await apos.assistant.createChat(req);
+        const chat = await apos.aposAssistant.createChat(req);
         script = sequence([
           toolTurn('ask_editor', { questions }, 'ask'),
           toolTurn('ask_editor', { questions }, 'again')
         ]);
         const waiting = await runToEnd(req, chat, 'Redo the hero');
         assert.equal(waiting.status, 'waiting');
-        await apos.assistant.answer(req, chat._id, {
+        await apos.aposAssistant.answer(req, chat._id, {
           tabId: 'tab-1',
           callId: 'call-ask',
           answer: {
@@ -241,13 +241,13 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
         assert.equal(done.finishReason, 'maxSteps');
         assert.equal(done.asks, null);
       } finally {
-        apos.assistant.options.maxSteps = 30;
+        apos.aposAssistant.options.maxSteps = 30;
       }
     });
 
     it('refuses an incomplete or mistaken answer and keeps the question waiting', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ toolTurn('ask_editor', { questions }, 'ask') ]);
       await runToEnd(req, chat, 'Redo the hero');
       const good = [ { choice: 0 }, { choice: 0 }, { text: 'Hi' }, { choice: 0 } ];
@@ -265,32 +265,32 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
         [ { youDecide: true }, ...good.slice(1) ]
       ];
       for (const answers of refused) {
-        await assert.rejects(apos.assistant.answer(req, chat._id, {
+        await assert.rejects(apos.aposAssistant.answer(req, chat._id, {
           tabId: 'tab-1',
           callId: 'call-ask',
           answer: { answers }
         }), { name: 'invalid' });
       }
       // Only the owning browser tab answers
-      await assert.rejects(apos.assistant.answer(req, chat._id, {
+      await assert.rejects(apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-2',
         callId: 'call-ask',
         answer: { answers: good }
       }), { name: 'conflict' });
-      assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest.status, 'waiting');
-      await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+      assert.equal((await apos.aposAssistant.getChat(req, chat._id)).openRequest.status, 'waiting');
+      await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
     });
 
     it('ends the request when the questions are skipped', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ toolTurn('ask_editor', { questions }, 'ask') ]);
       await runToEnd(req, chat, 'Redo the hero');
-      const skipped = await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+      const skipped = await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
       assert.equal(skipped.status, 'skipped');
       assert.equal(skipped.asks, null);
       assert.deepEqual(resultOf(skipped, 'call-ask').output, { answered: false });
-      assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest, null);
+      assert.equal((await apos.aposAssistant.getChat(req, chat._id)).openRequest, null);
     });
   });
 
@@ -298,7 +298,7 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
     it('goes on when approved and hears a no when declined', async function () {
       const req = userReq(editor);
       for (const approved of [ true, false ]) {
-        const chat = await apos.assistant.createChat(req);
+        const chat = await apos.aposAssistant.createChat(req);
         script = sequence([
           toolTurn('confirm', {
             action: 'Archive the 3 old landing pages?',
@@ -312,12 +312,12 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
           action: 'Archive the 3 old landing pages?',
           details: 'They have had no visits this year.'
         });
-        await assert.rejects(apos.assistant.answer(req, chat._id, {
+        await assert.rejects(apos.aposAssistant.answer(req, chat._id, {
           tabId: 'tab-1',
           callId: 'call-confirm',
           answer: { approved: 'yes' }
         }), { name: 'invalid' });
-        await apos.assistant.answer(req, chat._id, {
+        await apos.aposAssistant.answer(req, chat._id, {
           tabId: 'tab-1',
           callId: 'call-confirm',
           answer: { approved }
@@ -334,7 +334,7 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
   describe('write_plan', function () {
     it('keeps the plan on the request, and drops it on an empty list', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const steps = [
         {
           title: 'Read the home page',
@@ -370,16 +370,75 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
     });
   });
 
+  // Before the gates' tests, which take every gate off after each
+  describe('publishing', function () {
+    it('asks before every publish, then publishes without switching the page to edit mode', async function () {
+      const req = userReq(editor);
+      const chat = await apos.aposAssistant.createChat(req);
+      const note = await apos.modules['assistant-note'].insert(apos.task.getReq({ mode: 'draft' }), {
+        title: 'To publish'
+      });
+      script = sequence([
+        toolTurn('publish_document', { targets: [ { _id: note._id } ] }, 'publish'),
+        { text: 'Published.' }
+      ]);
+      await apos.aposAssistant.send(req, chat._id, {
+        message: 'Publish this note',
+        screen: {
+          tabId: 'tab-1',
+          document: { _id: note._id }
+        }
+      });
+      const waiting = await waitForEnd(req, chat);
+      assert.deepEqual(waiting.asks, [ {
+        callId: 'call-publish',
+        name: 'publish_document',
+        kind: 'confirm',
+        payload: {
+          kind: 'confirm',
+          gate: {
+            tool: 'publish_document',
+            label: 'apostrophe:aiToolPublishDocument',
+            count: 1,
+            typeLabel: 'Notes',
+            titles: [ 'To publish' ],
+            more: 0,
+            title: {
+              key: 'apostrophe:assistantGatePublish',
+              values: { count: 1 }
+            },
+            approve: 'apostrophe:publish'
+          }
+        }
+      } ]);
+      const publishedId = note._id.replace(':draft', ':published');
+      assert.equal(await apos.doc.db.findOne({ _id: publishedId }), null);
+
+      await apos.aposAssistant.answer(req, chat._id, {
+        tabId: 'tab-1',
+        callId: 'call-publish',
+        answer: { approved: true }
+      });
+      // Done on the one answer: no edit mode step waits
+      const done = await waitForEnd(req, chat);
+      assert.equal(done.status, 'completed');
+      assert.equal(resultOf(done, 'call-publish').output.published[0].status, 'published');
+      assert(await apos.doc.db.findOne({ _id: publishedId }));
+    });
+  });
+
   describe('gates', function () {
     afterEach(function () {
-      apos.assistant.options.maxDocsWithoutConfirm = 5;
-      apos.assistant.gates = {};
-      apos.assistant.ungated = new Set();
+      apos.aposAssistant.options.maxDocsWithoutConfirm = 5;
+      apos.aposAssistant.gates = {};
+      apos.aposAssistant.removedGates = {};
+      apos.aposAssistant.addGlobalStylesGate();
+      apos.aposAssistant.addPublishGate();
     });
 
     it('asks before one call changes more documents than maxDocsWithoutConfirm, naming them', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ updateTurn(notes, 'Renamed') ]);
       const waiting = await runToEnd(req, chat, 'Rename every note');
       assert.equal(waiting.status, 'waiting');
@@ -401,15 +460,15 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
       } ]);
       // Nothing is written while it waits
       assert.equal(await countTitled('Renamed'), 0);
-      await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+      await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
     });
 
     it('runs the call once approved', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ updateTurn(notes, 'Approved'), { text: 'Renamed them.' } ]);
       await runToEnd(req, chat, 'Rename every note');
-      await apos.assistant.answer(req, chat._id, {
+      await apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-update',
         answer: { approved: true }
@@ -422,10 +481,10 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
 
     it('writes nothing when declined, and the model hears so', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ updateTurn(notes, 'Declined'), { text: 'Left them as they are.' } ]);
       await runToEnd(req, chat, 'Rename every note');
-      await apos.assistant.answer(req, chat._id, {
+      await apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-update',
         answer: { approved: false }
@@ -438,7 +497,7 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
 
     it('counts a document once, whatever the number of its widgets or the form of its id', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const [ note ] = notes;
       script = sequence([
         // Twelve widgets on one document
@@ -471,9 +530,9 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
     });
 
     it('never asks with maxDocsWithoutConfirm 0', async function () {
-      apos.assistant.options.maxDocsWithoutConfirm = 0;
+      apos.aposAssistant.options.maxDocsWithoutConfirm = 0;
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ updateTurn(notes, 'Unasked') ]);
       const done = await runToEnd(req, chat, 'Rename every note');
       assert.equal(done.status, 'completed');
@@ -483,34 +542,91 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
     it('adds a project\'s gate beside the standard one, and removeGate takes them all off', async function () {
       const req = userReq(editor);
       const seen = [];
-      apos.assistant.addGate('update_document', (args, { documentCount }) => {
-        seen.push(documentCount);
-        return args.targets.some(target => target.values.title === 'Gated');
-      });
-      const one = await apos.assistant.createChat(req);
+      apos.aposAssistant.addGate(
+        'update_document',
+        'gatedTitle',
+        (args, { documentCount }) => {
+          seen.push(documentCount);
+          return args.targets.some(target => target.values.title === 'Gated');
+        }
+      );
+      const one = await apos.aposAssistant.createChat(req);
       script = sequence([ updateTurn(notes.slice(0, 1), 'Gated') ]);
       const waiting = await runToEnd(req, one, 'Rename one note');
       assert.equal(waiting.status, 'waiting');
       assert.equal(waiting.asks[0].payload.gate.count, 1);
       assert.deepEqual(seen, [ 1 ]);
-      await apos.assistant.skip(req, one._id, { tabId: 'tab-1' });
+      await apos.aposAssistant.skip(req, one._id, { tabId: 'tab-1' });
 
       // The standard gate still fires on its own
-      const many = await apos.assistant.createChat(req);
+      const many = await apos.aposAssistant.createChat(req);
       script = sequence([ updateTurn(notes, 'Many') ]);
       assert.equal((await runToEnd(req, many, 'Rename every note')).status, 'waiting');
-      await apos.assistant.skip(req, many._id, { tabId: 'tab-1' });
+      await apos.aposAssistant.skip(req, many._id, { tabId: 'tab-1' });
 
-      apos.assistant.removeGate('update_document');
-      const free = await apos.assistant.createChat(req);
+      apos.aposAssistant.removeGate('update_document');
+      const free = await apos.aposAssistant.createChat(req);
       script = sequence([ updateTurn(notes, 'Gated') ]);
       assert.equal((await runToEnd(req, free, 'Rename every note')).status, 'completed');
       assert.equal(await countTitled('Gated'), 20);
     });
 
+    it('takes one gate off by name, the standard one too, and replaces a gate added under its name', async function () {
+      const req = userReq(editor);
+      assert.throws(() => apos.aposAssistant.addGate('update_document', () => true), {
+        message: 'A gate of the tool "update_document" needs a name.'
+      });
+      const drafts = [];
+      for (let i = 1; i <= 6; i++) {
+        drafts.push(await apos.modules['assistant-note']
+          .insert(apos.task.getReq({ mode: 'draft' }), { title: `To publish ${i}` }));
+      }
+      const publishAll = async () => {
+        const chat = await apos.aposAssistant.createChat(req);
+        script = sequence([
+          toolTurn('publish_document', {
+            targets: drafts.map(doc => ({ _id: doc._id }))
+          }, 'publish'),
+          { text: 'Published.' }
+        ]);
+        return {
+          chat,
+          request: await runToEnd(req, chat, 'Publish them')
+        };
+      };
+      const worded = {
+        key: 'apostrophe:assistantGateStylesLocale',
+        values: { locale: 'English' }
+      };
+
+      // Worded again under its own name: replaced, not added beside it
+      apos.aposAssistant.addGate('publish_document', 'publish', () => ({ title: worded }));
+      let { chat, request } = await publishAll();
+      assert.deepEqual(request.asks[0].payload.gate.title, worded);
+      await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
+
+      // Without it, the standard gate asks: six documents, over five
+      apos.aposAssistant.removeGate('publish_document', 'publish');
+      ({ chat, request } = await publishAll());
+      assert.equal(request.status, 'waiting');
+      assert.equal(request.asks[0].payload.gate.title, undefined);
+      assert.equal(request.asks[0].payload.gate.count, 6);
+      await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
+
+      // Without that one too, nothing asks
+      apos.aposAssistant.removeGate('publish_document', 'documentCount');
+      ({ request } = await publishAll());
+      assert.equal(request.status, 'completed');
+      assert.equal(await apos.doc.db.countDocuments({
+        type: 'assistant-note',
+        aposMode: 'published',
+        title: /^To publish /
+      }), 6);
+    });
+
     it('words a gate\'s own confirmation, and answers an alternative as a decline with its message', async function () {
       const req = userReq(editor);
-      apos.assistant.addGate('update_document', () => ({
+      apos.aposAssistant.addGate('update_document', 'worded', () => ({
         title: {
           key: 'apostrophe:assistantGateStylesLocale',
           values: { locale: 'English' }
@@ -525,7 +641,7 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
           message: 'the user wants it done elsewhere'
         } ]
       }));
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ updateTurn(notes.slice(0, 1), 'Worded'), { text: 'Fine.' } ]);
       const waiting = await runToEnd(req, chat, 'Rename one note');
       const { gate } = waiting.asks[0].payload;
@@ -547,13 +663,13 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
           alternative: 'elsewhere'
         }
       ]) {
-        await assert.rejects(apos.assistant.answer(req, chat._id, {
+        await assert.rejects(apos.aposAssistant.answer(req, chat._id, {
           tabId: 'tab-1',
           callId: 'call-update',
           answer
         }), { name: 'invalid' });
       }
-      await apos.assistant.answer(req, chat._id, {
+      await apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-update',
         answer: {
@@ -569,8 +685,8 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
 
     it('gates any tool by name, never outside the assistant\'s door', async function () {
       const req = userReq(editor);
-      apos.assistant.addGate('write_plan', args => args.steps.length > 2);
-      const chat = await apos.assistant.createChat(req);
+      apos.aposAssistant.addGate('write_plan', 'longPlan', args => args.steps.length > 2);
+      const chat = await apos.aposAssistant.createChat(req);
       const steps = [ 'One', 'Two', 'Three' ].map(title => ({ title }));
       script = sequence([ toolTurn('write_plan', { steps }, 'plan') ]);
       const waiting = await runToEnd(req, chat, 'Plan it');
@@ -582,10 +698,10 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
         titles: [],
         more: 0
       });
-      await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+      await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
 
       // The MCP door runs the same write without a question
-      const mcpReq = apos.harness.withDoor(userReq(editor), {
+      const mcpReq = apos.aposHarness.withDoor(userReq(editor), {
         door: 'mcp',
         lockId: 'mcp-test',
         requestId: 'mcp-request'
@@ -603,7 +719,7 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
             }))
           }
         } ]);
-      await apos.harness.endRequest(mcpReq);
+      await apos.aposHarness.endRequest(mcpReq);
       assert.equal(result[0].suspended, undefined);
       assert.equal(await countTitled('Through MCP'), 20);
     });
@@ -611,7 +727,7 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
 
   describe('edit mode before a write to the page', function () {
     afterEach(function () {
-      apos.assistant.options.maxDocsWithoutConfirm = 5;
+      apos.aposAssistant.options.maxDocsWithoutConfirm = 5;
     });
 
     // The screen of a browser tab showing `doc`
@@ -625,10 +741,10 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
 
     it('switches the page to edit mode before writing the document it shows, then writes', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const note = notes[0];
       script = sequence([ updateTurn([ note ], 'In edit mode'), { text: 'Renamed.' } ]);
-      await apos.assistant.send(req, chat._id, {
+      await apos.aposAssistant.send(req, chat._id, {
         message: 'Rename this note',
         screen: showing(note)
       });
@@ -649,12 +765,12 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
       } ]);
       assert.equal(await countTitled('In edit mode'), 0);
       // The answer carries the screen it left
-      await assert.rejects(apos.assistant.answer(req, chat._id, {
+      await assert.rejects(apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-update',
         answer: { executed: true }
       }), { name: 'invalid' });
-      await apos.assistant.answer(req, chat._id, {
+      await apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-update',
         answer: { executed: true },
@@ -675,9 +791,9 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
         [ 'While hidden', showing(note, { visible: false }) ],
         [ 'Shown elsewhere', showing(other) ]
       ]) {
-        const chat = await apos.assistant.createChat(req);
+        const chat = await apos.aposAssistant.createChat(req);
         script = sequence([ updateTurn([ note ], title), { text: 'Renamed.' } ]);
-        await apos.assistant.send(req, chat._id, {
+        await apos.aposAssistant.send(req, chat._id, {
           message: 'Rename the note',
           screen
         });
@@ -687,24 +803,24 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
     });
 
     it('asks for edit mode only once an approved gate lets the write run', async function () {
-      apos.assistant.options.maxDocsWithoutConfirm = 1;
+      apos.aposAssistant.options.maxDocsWithoutConfirm = 1;
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const [ note, other ] = notes;
       script = sequence([ updateTurn([ note, other ], 'Gated'), { text: 'Renamed.' } ]);
-      await apos.assistant.send(req, chat._id, {
+      await apos.aposAssistant.send(req, chat._id, {
         message: 'Rename both',
         screen: showing(note)
       });
       assert.equal((await waitForEnd(req, chat)).asks[0].kind, 'confirm');
-      await apos.assistant.answer(req, chat._id, {
+      await apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-update',
         answer: { approved: true }
       });
       assert.equal((await waitForEnd(req, chat)).asks[0].kind, 'editMode');
       assert.equal(await countTitled('Gated'), 0);
-      await apos.assistant.answer(req, chat._id, {
+      await apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-update',
         // A page that could not switch still gets the write
@@ -727,11 +843,11 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
   }
 
   async function getChat(req, chatId) {
-    const chat = await apos.assistant.getChat(req, chatId);
-    const requests = await apos.assistant.getChatRequests(req, chatId);
+    const chat = await apos.aposAssistant.getChat(req, chatId);
+    const requests = await apos.aposAssistant.getChatRequests(req, chatId);
     return {
       chat,
-      requests: requests.map(apos.assistant.renderRequest)
+      requests: requests.map(apos.aposAssistant.renderRequest)
     };
   }
 
@@ -744,7 +860,7 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
   }
 
   async function runToEnd(req, chat, message, tabId = 'tab-1') {
-    await apos.assistant.send(req, chat._id, {
+    await apos.aposAssistant.send(req, chat._id, {
       message,
       screen: { tabId }
     });
@@ -756,9 +872,9 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
   async function waitForEnd(req, chat) {
     let request;
     await waitFor(async () => {
-      const requests = await apos.assistant.getChatRequests(req, chat._id);
+      const requests = await apos.aposAssistant.getChatRequests(req, chat._id);
       request = requests.at(-1);
-      const open = (await apos.assistant.getChat(req, chat._id)).openRequest;
+      const open = (await apos.aposAssistant.getChat(req, chat._id)).openRequest;
       const job = request?.jobId &&
         await apos.modules['@apostrophecms/job'].db.findOne({ _id: request.jobId });
       return request && (request.status !== 'running') &&

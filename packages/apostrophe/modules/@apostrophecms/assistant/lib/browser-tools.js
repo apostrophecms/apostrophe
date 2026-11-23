@@ -3,7 +3,7 @@
 // action on the AI engine tagged `assistant` and `browser`, so only the
 // assistant's door selects it. Its call suspends the run with a `browser`
 // ask; the browser tab that owns the request runs the tool's executor
-// (`apos.assistant.browserTools` in the admin UI) and answers with the
+// (`apos.aposAssistant.browserTools` in the admin UI) and answers with the
 // outcome and the screen after it, which continues the run.
 //
 // Every result has a shared half: `answered` (the outcome is known; `false`
@@ -122,7 +122,7 @@ module.exports = (self) => {
           }
           const prepared = prepare ? await prepare(req, args) : args;
           const { screen } = await self.requests.findOne({
-            _id: self.apos.harness.getDoor(req).requestId,
+            _id: self.apos.aposHarness.getDoor(req).requestId,
             ownerId: self.getOwnerId(req)
           }, { projection: { screen: 1 } });
           if (screen.visible === false) {

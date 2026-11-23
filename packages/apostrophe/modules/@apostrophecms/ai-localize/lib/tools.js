@@ -7,7 +7,7 @@
 //
 // Every handler acts as the editor who started the localization, and reads
 // and writes as every AI tool does: through the schema AI reads a type by
-// (see `apos.harness.getAiSchemaOf`), so a field kept away from AI is neither
+// (see `apos.aposHarness.getAiSchemaOf`), so a field kept away from AI is neither
 // shown to the model nor written by it, and on the harness's write path (see
 // `writeTarget`).
 
@@ -481,7 +481,7 @@ module.exports = (self) => {
       const { doc, draftReq } = await self.fetchCopy(req, copy);
       // As AI reads the document, which is also how the write tools take
       // a value
-      const shown = self.apos.harness.projectDocument(draftReq, doc);
+      const shown = self.apos.aposHarness.projectDocument(draftReq, doc);
       return {
         copy,
         values: paths.map((path) => {
@@ -562,7 +562,7 @@ module.exports = (self) => {
             throw self.apos.error('aiToolError', `${address}: ${e.message}`);
           }
         }
-        return self.apos.harness.getToolPatches(draftReq, doc, {
+        return self.apos.aposHarness.getToolPatches(draftReq, doc, {
           action: 'update_document',
           values: patch
         }).patches;
@@ -601,7 +601,7 @@ module.exports = (self) => {
       if (Boolean(copyOf) === Boolean(widget)) {
         throw self.apos.error('aiToolError', 'give exactly one of "copyOf" or "widget"');
       }
-      const { harness } = self.apos;
+      const { aposHarness: harness } = self.apos;
       const source = copyOf && await self.fetchCopy(req, 'source');
       const copied = source &&
         findWidget(self, source.draftReq, source.manager, source.doc, copyOf);
@@ -667,7 +667,7 @@ module.exports = (self) => {
 
     async removeWidget(req, { widgetId }) {
       await self.writeTarget(req, ({ doc, draftReq }) => {
-        return self.apos.harness.getToolPatches(draftReq, doc, {
+        return self.apos.aposHarness.getToolPatches(draftReq, doc, {
           action: 'remove_widgets',
           widgets: [ widgetId ]
         }).patches;
@@ -675,16 +675,16 @@ module.exports = (self) => {
       return { removed: widgetId };
     },
 
-    // The one write path, the harness's (see `apos.harness.writeDraft`):
+    // The one write path, the harness's (see `apos.aposHarness.writeDraft`):
     // the editor's right to edit the target, its lock held while it is
     // written, a save that drops nothing the patches supply and is marked
     // as AI's in version history. `getPatches` returns the patches for the
-    // target as it is (see `apos.harness.getToolPatches`). Returns the saved
+    // target as it is (see `apos.aposHarness.getToolPatches`). Returns the saved
     // draft. What the model can act on is a tool error; a target another
     // editor has open throws `locked`, which ends the pass
     async writeTarget(req, getPatches) {
       const pass = self.pass(req);
-      const { harness } = self.apos;
+      const { aposHarness: harness } = self.apos;
       try {
         const found = await harness.findDraft(req, pass.targetId);
         const saved = await harness.writeDraft(found, async ({
@@ -730,7 +730,7 @@ module.exports = (self) => {
 
 // The schema AI reads and writes a doc or widget type through
 function aiSchema(self, req, manager) {
-  return self.apos.harness.getAiSchemaOf(req, manager);
+  return self.apos.aposHarness.getAiSchemaOf(req, manager);
 }
 
 // The widgets of an area AI reads: those of a type the area allows that

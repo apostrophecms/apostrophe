@@ -183,7 +183,7 @@ module.exports = (self) => {
 
       // A document's own locale, none for a type that isn't localized
       function getLocale(doc) {
-        const locale = self.apos.harness.getLocaleOf(doc);
+        const locale = self.apos.aposHarness.getLocaleOf(doc);
         return locale ? { locale } : {};
       }
 
@@ -240,7 +240,7 @@ module.exports = (self) => {
      */
     async findScreenDoc(req, _id) {
       try {
-        const { doc, draftReq } = await self.apos.harness.findDraft(req, _id);
+        const { doc, draftReq } = await self.apos.aposHarness.findDraft(req, _id);
         if (!self.apos.ai.can(draftReq, 'view', doc)) {
           return null;
         }
@@ -364,7 +364,7 @@ module.exports = (self) => {
         .sort({ sequence: 1 })
         .toArray();
       const entries = requests.length
-        ? await self.apos.harness.changes
+        ? await self.apos.aposHarness.changes
           .find({
             docId,
             requestId: { $in: requests.map(request => request._id) }
@@ -379,7 +379,7 @@ module.exports = (self) => {
       if (!requestIds.length) {
         return none;
       }
-      const doorReq = self.apos.harness.withDoor(req, {
+      const doorReq = self.apos.aposHarness.withDoor(req, {
         door: 'assistant',
         lockId: chat._id,
         family: screen.tabId,
@@ -387,11 +387,15 @@ module.exports = (self) => {
         requestId: self.apos.util.generateId(),
         revert: true
       });
-      const [ document ] = await self.apos.harness.revertRequests(doorReq, requestIds, {
-        dryRun: true,
-        ignoreLocks: true,
-        docIds: [ docId ]
-      });
+      const [ document ] = await self.apos.aposHarness.revertRequests(
+        doorReq,
+        requestIds,
+        {
+          dryRun: true,
+          ignoreLocks: true,
+          docIds: [ docId ]
+        }
+      );
       const checked = [ ...(document?.rows || []), ...(document?.createdRows || []) ]
         .filter(row => row.outcome);
       if (!checked.length) {
@@ -409,7 +413,7 @@ module.exports = (self) => {
         const now = PAGE_NOW_NAMES[row.outcome];
         const entry = byId.get(row.entryId);
         const described = (was !== row.outcome) && now &&
-          self.apos.harness.describeChangeRow(req, manager, entry.rows[row.index]);
+          self.apos.aposHarness.describeChangeRow(req, manager, entry.rows[row.index]);
         if (described) {
           moved.push({
             requestId: entry.requestId,
@@ -481,7 +485,7 @@ module.exports = (self) => {
      */
     async takeChangedScreen(req) {
       const filter = {
-        _id: self.apos.harness.getDoor(req).requestId,
+        _id: self.apos.aposHarness.getDoor(req).requestId,
         ownerId: self.getOwnerId(req)
       };
       const { matchedCount } = await self.requests.updateOne({
