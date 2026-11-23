@@ -12,8 +12,8 @@ module.exports = {
     alias: 'mcp',
     enabled: false,
     // Seconds an MCP write's change log entries are kept; 0 keeps them for
-    // good. 180 days by default (see lib/retention.js)
-    changeLogExpireAfter: 180 * 24 * 60 * 60
+    // good. 60 days by default (see lib/retention.js)
+    changeLogExpireAfter: 60 * 24 * 60 * 60
     // allowedOrigins: the hostnames a browser-sent `Origin` header may name.
     //   Requests with no `Origin` (every non-browser client) always pass.
     //   Defaults to the hostname of `baseUrl`, or localhost when unset.

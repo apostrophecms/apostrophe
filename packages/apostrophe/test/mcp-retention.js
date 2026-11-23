@@ -55,9 +55,9 @@ describe('MCP: change log retention', function () {
     return (await changes.find({}).toArray()).map(({ _id }) => _id).sort();
   }
 
-  it('keeps entries for 180 days by default', function () {
+  it('keeps entries for 60 days by default', function () {
     const { options } = require('../modules/@apostrophecms/mcp/index.js');
-    assert.equal(options.changeLogExpireAfter, 180 * DAY);
+    assert.equal(options.changeLogExpireAfter, 60 * DAY);
   });
 
   it('deletes MCP entries past the window, and only those', async function () {
