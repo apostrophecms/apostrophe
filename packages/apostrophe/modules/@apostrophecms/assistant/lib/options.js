@@ -2,12 +2,16 @@
 
 const EFFORT_OPTIONS = [ 'effort', 'titleEffort', 'delegationEffort', 'summaryEffort' ];
 const USAGE_DISPLAYS = [ 'tokens', 'none' ];
+// In tokens, the least a chat holds before it is shortened, whatever the
+// options: the instructions and tools alone take about half of it
+const MIN_THRESHOLD = 20000;
 
 module.exports = (self) => {
   return {
     validateOptions() {
       const {
-        enabled, maxSteps, delegationMaxSteps, screenWait, usageDisplay, modelDisplay
+        enabled, maxSteps, delegationMaxSteps, screenWait, usageDisplay, modelDisplay,
+        contextLimit, contextThreshold
       } = self.options;
       for (const [ name, value ] of Object.entries({
         enabled,
@@ -20,7 +24,11 @@ module.exports = (self) => {
       for (const [ name, value ] of Object.entries({
         maxSteps,
         delegationMaxSteps,
-        screenWait
+        screenWait,
+        attachmentMaxBytes: self.options.attachmentMaxBytes,
+        attachmentMaxTextBytes: self.options.attachmentMaxTextBytes,
+        attachmentMaxCount: self.options.attachmentMaxCount,
+        genImageCount: self.options.genImageCount
       })) {
         if (!Number.isInteger(value) || (value < 1)) {
           fail(name, 'must be a positive integer');
@@ -29,6 +37,21 @@ module.exports = (self) => {
       if (!Number.isInteger(self.options.maxDocsWithoutConfirm) ||
         (self.options.maxDocsWithoutConfirm < 0)) {
         fail('maxDocsWithoutConfirm', 'must be a whole number, 0 or more');
+      }
+      if (!Number.isInteger(self.options.chatExpireAfter) ||
+        (self.options.chatExpireAfter < 0)) {
+        fail('chatExpireAfter', 'must be a whole number of seconds, 0 or more');
+      }
+      if (!Number.isInteger(contextLimit) || (contextLimit < 1)) {
+        fail('contextLimit', 'must be a positive integer');
+      }
+      if (!Number.isInteger(contextThreshold) || (contextThreshold < 10) ||
+        (contextThreshold > 90)) {
+        fail('contextThreshold', 'must be a whole number from 10 to 90');
+      }
+      if ((contextLimit * contextThreshold / 100) < MIN_THRESHOLD) {
+        fail('contextLimit', `times contextThreshold percent must be at least ${
+          MIN_THRESHOLD} tokens: a chat is shortened from there`);
       }
       if (!USAGE_DISPLAYS.includes(usageDisplay)) {
         fail('usageDisplay', `must be one of: ${USAGE_DISPLAYS.join(', ')}`);

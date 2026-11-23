@@ -707,7 +707,10 @@ describe('moog', function() {
       const one = await moog.create('subOne', {});
       const two = await moog.create('subTwo', {});
       const base = await moog.create('base', {});
-      assert.deepStrictEqual(one.options.nested, { a: 1, b: 2 });
+      assert.deepStrictEqual(one.options.nested, {
+        a: 1,
+        b: 2
+      });
       assert.deepStrictEqual(one.options.list, [ 'x', 'y' ]);
       assert.deepStrictEqual(two.options.nested, { a: 1 });
       assert.deepStrictEqual(two.options.list, [ 'x' ]);

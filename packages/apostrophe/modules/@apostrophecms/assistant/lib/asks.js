@@ -7,7 +7,9 @@
 // request, every ask included.
 //
 // Each kind of ask is registered with `addAskKind`; its `accept` turns a
-// posted answer into the input the tool reads on `args._context.input`.
+// posted answer into the input the tool reads on `args._context.input`, and
+// its `discard`, if any, lets go of what an ask held when it ends
+// unanswered.
 // An answer may carry the screen as it is now, which becomes the request's
 // screen, its locale included, for the rest of its runs.
 
@@ -23,9 +25,16 @@ module.exports = (self) => {
      *   the input the asking tool reads, or throws `invalid` to leave the
      *   ask waiting. `screen` is the verified screen posted with the
      *   answer, if any.
+     * @param {(req: object, request: object, ask: object, status: string)
+     *   => Promise<void>} [definition.discard] Lets go of what the ask held
+     *   once its request ends without an answer, `skipped` or `stopped`.
+     *   Never fails the end: an error is logged.
      */
-    addAskKind(name, { accept }) {
-      self.askKinds[name] = { accept };
+    addAskKind(name, { accept, discard = null }) {
+      self.askKinds[name] = {
+        accept,
+        discard
+      };
     },
 
     /**
@@ -72,11 +81,14 @@ module.exports = (self) => {
           status: 'running',
           asks: null,
           updatedAt: new Date(),
+          workStartedAt: new Date(),
           ...(verified && { screen: verified })
         },
-        // The earlier run's job is over; this run's is stored by `startRun`.
-        // The run reads the screen as stored now, a shared one included
+        // The earlier run is over; this run's id and job are stored by
+        // `startRun`. The run reads the screen as stored now, a shared one
+        // included
         $unset: {
+          runId: 1,
           jobId: 1,
           prior: 1,
           screenChanged: 1
@@ -88,12 +100,7 @@ module.exports = (self) => {
       }
       await self.publishRequest(req, running);
       try {
-        const transcript = await self.getTranscript(chat, running);
-        await self.startRun(req, chat, running, {
-          messages: [ ...transcript, ...running.messages ],
-          prior: transcript.length,
-          toolInput: { [ask.callId]: input }
-        });
+        await self.continueRun(req, running, { toolInput: { [ask.callId]: input } });
       } catch (e) {
         await self.endRun(req, chat, running, { error: e });
         throw e;
@@ -158,6 +165,17 @@ module.exports = (self) => {
           endedAt: now
         }
       });
+      for (const ask of request.asks) {
+        const discard = self.askKinds[ask.kind]?.discard;
+        try {
+          await discard?.(req, request, ask, status);
+        } catch (e) {
+          self.logError(req, 'ask-discard', e.message, {
+            kind: ask.kind,
+            stack: e.stack
+          });
+        }
+      }
       await self.closeRequest(req, chat, request);
       await self.publishRequest(req, request);
       return self.getRequest(req, request._id);

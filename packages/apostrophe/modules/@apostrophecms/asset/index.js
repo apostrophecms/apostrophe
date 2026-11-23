@@ -833,6 +833,15 @@ module.exports = {
         if (viaEnv) {
           return viaEnv;
         }
+        // The rest reads the disk or even runs git, and the answer cannot
+        // change while the process runs, so only work it out once. Called
+        // on every page request (asset URLs, ETags)
+        self.releaseIdDetected ??= self.detectReleaseId();
+        return self.releaseIdDetected;
+      },
+      // Implementation detail of `getReleaseId`, when no environment
+      // variable supplies the release id
+      detectReleaseId() {
         try {
           return fs.readFileSync(`${self.apos.rootDir}/release-id`, 'utf8').trim();
         } catch (e) {

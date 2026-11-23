@@ -1446,50 +1446,21 @@ module.exports = {
         } = versionId
           ? await getVersionBaseline()
           : await getPublicationBaseline();
-        const records = await self.find(draftReq, {
-          ...criteria,
-          ...(after && { createdAt: { $gt: after } })
-        }, {
-          sort: { createdAt: 1 }
+        const { rows, counts } = await self.getChangesSince(draftReq, draft, older, {
+          after
         });
-        const contents = [
-          older,
-          ...records.map(record => record.doc),
-          draft
-        ];
-        // The last pair, the draft ahead of its newest version, has no
-        // version to credit
-        const pairs = contents.slice(1).map((newer, i) => {
-          const record = records[i];
-          return {
-            older: contents[i],
-            newer,
-            ai: Boolean(record?.ai),
-            aiFields: record?.aiFields,
-            ...(record && {
-              author: {
-                _id: record.authorId ?? null,
-                title: record.author
-              },
-              changedAt: record.updatedAt || record.createdAt
-            })
-          };
-        });
-
-        const { rows, counts } = await self.getChangeList(draftReq, pairs);
         const ctx = self.getDiffContext(draftReq, draft);
-        diff.attribute(manager.schema, pairs, rows, ctx);
         diff.addFieldData(manager.schema, rows, draft, ctx);
         // The order of an area has no `patchKey` and can be restored
         if (rows.some(row => row.patchKey || (row.kind === 'area'))) {
           // Both sides: a widget modified whole keeps the draft's fields
           const options = await self.getRestoreOptions(draftReq, found, relatedId => {
-            return new Set([ contents[0], draft ].flatMap(doc => [
+            return new Set([ older, draft ].flatMap(doc => [
               ...diff.getRelatedIds(manager.schema, doc, ctx, relatedId)
             ]));
           });
           diff.addRestore(manager.schema, rows, {
-            older: contents[0],
+            older,
             newer: draft,
             ...options
           }, ctx);
@@ -1500,7 +1471,7 @@ module.exports = {
           counts,
           baseline,
           ...(annotate && {
-            doc: self.getAnnotatedDoc(draftReq, contents[0], draft, { rows })
+            doc: self.getAnnotatedDoc(draftReq, older, draft, { rows })
           })
         };
 
@@ -1554,6 +1525,58 @@ module.exports = {
               : { kind: 'default' }
           };
         }
+      },
+      // The change list from `older`, an earlier content of a document, to
+      // `draft`, its draft as stored now (see `getChangeList`), each changed
+      // path credited to the versions recorded in between (see `attribute`
+      // in `lib/diff.js`): `{ rows, counts }`. `after` is when the document
+      // held `older`, every version when not given; with `savedOver`, a
+      // version created by then and saved over since counts too, for an
+      // `after` that is no publication. Checks no permission
+      async getChangesSince(req, draft, older, { after = null, savedOver = false } = {}) {
+        const manager = self.getManager(draft.type);
+        const records = await self.find(req, {
+          ...self.getTimelineCriteria(draft),
+          ...(after && (savedOver
+            ? {
+              $or: [
+                { createdAt: { $gt: after } },
+                { updatedAt: { $gt: after } }
+              ]
+            }
+            : { createdAt: { $gt: after } }))
+        }, {
+          sort: { createdAt: 1 }
+        });
+        const contents = [
+          older,
+          ...records.map(record => record.doc),
+          draft
+        ];
+        // The last pair, the draft ahead of its newest version, has no
+        // version to credit
+        const pairs = contents.slice(1).map((newer, i) => {
+          const record = records[i];
+          return {
+            older: contents[i],
+            newer,
+            ai: Boolean(record?.ai),
+            aiFields: record?.aiFields,
+            ...(record && {
+              author: {
+                _id: record.authorId ?? null,
+                title: record.author
+              },
+              changedAt: record.updatedAt || record.createdAt
+            })
+          };
+        });
+        const { rows, counts } = await self.getChangeList(req, pairs);
+        diff.attribute(manager.schema, pairs, rows, self.getDiffContext(req, draft));
+        return {
+          rows,
+          counts
+        };
       },
       // What `addRestore` and `check` of `lib/diff.js` need to know of `req`
       // for `doc`, a document as `req` finds it in its mode:

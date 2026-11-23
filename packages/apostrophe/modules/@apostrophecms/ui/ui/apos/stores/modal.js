@@ -4,6 +4,13 @@ import { createId } from 'apostrophe/lib/beneath.js';
 
 export const useModalStore = defineStore('modal', () => {
   const stack = ref([]);
+  // Windows outside the stack, each mounted by an app of its own, such as
+  // Global Styles: `{ id, screen, outside, opened }`, in the order opened
+  const standaloneWindows = ref([]);
+  // Stamps stack entries and standalone windows in the order they open
+  let opened = 0;
+  // How a document type edited in a standalone window opens, by type
+  const standaloneEditors = {};
 
   // The modal the editor works in: the last one opened, leaving out windows
   // stacked above every modal
@@ -33,7 +40,53 @@ export const useModalStore = defineStore('modal', () => {
   });
 
   function add(modal) {
-    stack.value.push(modal);
+    stack.value.push({
+      opened: ++opened,
+      ...modal
+    });
+  }
+
+  // A window outside the stack opened, or what it reports changed: its
+  // `screen` part (see `useScreen`) and the `outside` handle of what it
+  // edits, if any
+  function addStandaloneWindow({
+    id, screen = null, outside = null
+  }) {
+    const existing = standaloneWindows.value.find(entry => entry.id === id);
+    const entry = {
+      id,
+      screen,
+      outside,
+      opened: existing?.opened || ++opened
+    };
+    standaloneWindows.value = existing
+      ? standaloneWindows.value.map(item => (item.id === id ? entry : item))
+      : [ ...standaloneWindows.value, entry ];
+  }
+
+  // A window outside the stack closed; `result` says how, as a modal's
+  // result does (truthy once saved), with `standalone-window-closed`
+  function removeStandaloneWindow(id, result = null) {
+    if (!standaloneWindows.value.some(entry => entry.id === id)) {
+      return;
+    }
+    standaloneWindows.value = standaloneWindows.value.filter(entry => entry.id !== id);
+    apos.bus.$emit('standalone-window-closed', {
+      id,
+      result
+    });
+  }
+
+  // A document type whose documents are edited in a standalone window
+  // registers how it opens: `open({ _id })` opens it for that document and
+  // returns `{ id }`, the window's id in `standaloneWindows` once it
+  // reports itself, or `{ reason }` when it can't
+  function setStandaloneEditor(type, open) {
+    standaloneEditors[type] = open;
+  }
+
+  function getStandaloneEditor(type) {
+    return standaloneEditors[type] || null;
   }
 
   function remove(id) {
@@ -164,6 +217,7 @@ export const useModalStore = defineStore('modal', () => {
         apos.i18n.locale;
       const item = {
         id: `modal:${createId()}`,
+        opened: ++opened,
         componentName,
         resolve,
         props: props || {},
@@ -320,6 +374,7 @@ export const useModalStore = defineStore('modal', () => {
 
   return {
     stack,
+    standaloneWindows,
     activeId,
     activeModal,
     hasChooserModal,
@@ -330,6 +385,10 @@ export const useModalStore = defineStore('modal', () => {
     getAdminFieldDirectionClass,
     add,
     remove,
+    addStandaloneWindow,
+    removeStandaloneWindow,
+    setStandaloneEditor,
+    getStandaloneEditor,
     get,
     getAt,
     getDepth,

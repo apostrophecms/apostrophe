@@ -227,6 +227,90 @@ describe('AI adapter: anthropic', function() {
       ]);
     });
 
+    it('translates a document part to a base64 document block, its name as the title', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'user',
+          content: [
+            text('summarize these'),
+            {
+              type: 'document',
+              document: {
+                data: 'JVBERi0=',
+                mediaType: 'application/pdf',
+                name: 'brief.pdf'
+              }
+            },
+            {
+              type: 'document',
+              document: {
+                data: 'JVBERi0=',
+                mediaType: 'application/pdf'
+              }
+            }
+          ]
+        } ]
+      }));
+      assert.deepEqual(body.messages[0].content.slice(1), [
+        {
+          type: 'document',
+          source: {
+            type: 'base64',
+            media_type: 'application/pdf',
+            data: 'JVBERi0='
+          },
+          title: 'brief.pdf'
+        },
+        {
+          type: 'document',
+          source: {
+            type: 'base64',
+            media_type: 'application/pdf',
+            data: 'JVBERi0='
+          }
+        }
+      ]);
+    });
+
+    it('sends any text document as a plain-text source', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'user',
+          content: [ 'text/plain', 'text/html' ].map((mediaType) => ({
+            type: 'document',
+            document: {
+              data: Buffer.from('<p>Ünïcode</p>').toString('base64'),
+              mediaType
+            }
+          }))
+        } ]
+      }));
+      const source = {
+        type: 'text',
+        media_type: 'text/plain',
+        data: '<p>Ünïcode</p>'
+      };
+      assert.deepEqual(body.messages[0].content, [
+        {
+          type: 'document',
+          source
+        },
+        {
+          type: 'document',
+          source
+        }
+      ]);
+    });
+
+    it('declares document input and its limits on every model', function() {
+      const { capabilities, models } = apos.ai.getAdapter('anthropic');
+      assert.equal(capabilities.documentInput, true);
+      for (const id of [ 'claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5' ]) {
+        assert.equal(models[id].maxDocumentPages, 600);
+        assert.equal(models[id].maxDocumentBytes, 128000000);
+      }
+    });
+
     it('maps reasoning levels to thinking budgets', function() {
       for (const [ level, budget ] of [
         [ 'low', 1024 ],

@@ -36,6 +36,11 @@ const THINKING_LEVELS = Object.freeze([
 const FLASH_THINKING_LEVELS = Object.freeze([
   'low', 'medium', 'high'
 ]);
+// The document limits Gemini documents, per file
+const DOCUMENTS = Object.freeze({
+  maxDocumentPages: 1000,
+  maxDocumentBytes: 50000000
+});
 // The normalized quality tiers → the dialect's output resolution
 // (the uppercase K is required)
 const IMAGE_SIZES = {
@@ -96,6 +101,7 @@ module.exports = {
             structured: true,
             stream: true,
             imageInput: true,
+            documentInput: true,
             image: true,
             caching: true
           },
@@ -113,13 +119,15 @@ module.exports = {
               label: 'Gemini 3.5 Flash-Lite',
               contextWindow: 1048576,
               maxOutputTokens: 65536,
-              reasoning: THINKING_LEVELS
+              reasoning: THINKING_LEVELS,
+              ...DOCUMENTS
             },
             'gemini-3.8-flash': {
               label: 'Gemini 3.8 Flash',
               contextWindow: 1048576,
               maxOutputTokens: 65536,
-              reasoning: FLASH_THINKING_LEVELS
+              reasoning: FLASH_THINKING_LEVELS,
+              ...DOCUMENTS
             },
             'gemini-3.1-flash-image': {
               label: 'Gemini 3.1 Flash Image',
@@ -347,6 +355,13 @@ module.exports = {
             return {
               type: 'text',
               text: part.text
+            };
+          }
+          if (part.type === 'document') {
+            return {
+              type: 'document',
+              data: part.document.data,
+              mime_type: part.document.mediaType
             };
           }
           // part.type === 'image', in one of the two normalized forms

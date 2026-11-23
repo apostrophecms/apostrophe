@@ -16,8 +16,14 @@
     >
       <div
         class="apos-assistant-request__message"
+        :class="{ 'apos-assistant-request__message--finished': finished }"
         data-apos-test="assistant-request-message"
       >
+        <AposAssistantFiles
+          v-if="sentFiles.length"
+          class="apos-assistant-request__files"
+          :files="sentFiles"
+        />
         <AposAssistantMessage
           class="apos-assistant-request__text"
           :text="request.message"
@@ -39,7 +45,25 @@
           />
         </button>
         <button
-          v-else-if="finished"
+          v-if="finished"
+          type="button"
+          class="apos-assistant-request__continue"
+          :aria-label="continueLabel"
+          :title="continueLabel"
+          :aria-disabled="revertBlocked ? 'true' : null"
+          data-apos-test="assistant-request-continue"
+          @click="continueInNewChat"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2M20 16H5.2L4 17.2V4H20V16M8 9V11H12.5L10.7 12.8L12 14L16 10L12 6L10.8 7.2L12.5 9H8Z" />
+          </svg>
+        </button>
+        <button
+          v-if="finished"
           ref="revertButton"
           type="button"
           class="apos-assistant-request__revert"
@@ -69,6 +93,26 @@
     >
       {{ $t(running ? 'apostrophe:assistantRetrying' : 'apostrophe:assistantRetried') }}
     </p>
+    <AposAssistantSteps
+      v-if="!running && request.steps?.length"
+      :request="request"
+    />
+    <!-- What the model wrote before an ask comes before what came of it -->
+    <!-- eslint-disable vue/no-v-html -- sanitized on the server -->
+    <div
+      v-if="reply && (request.status === 'waiting')"
+      ref="replyText"
+      class="apos-assistant-request__reply"
+      data-apos-test="assistant-request-reply"
+      @click="onChipClick"
+      v-html="reply"
+    />
+    <!-- eslint-enable vue/no-v-html -->
+    <AposAssistantImageRounds
+      v-if="request.imageAsks?.length"
+      :request="request"
+    />
+    <!-- Below what the editor answered an image round with -->
     <p
       v-if="running"
       class="apos-assistant-request__status"
@@ -85,13 +129,13 @@
         </Transition>
       </span>
     </p>
-    <AposAssistantSteps
-      v-if="!running && request.steps?.length"
+    <AposAssistantNotices
+      v-if="!running"
       :request="request"
     />
     <!-- eslint-disable vue/no-v-html -- sanitized on the server -->
     <div
-      v-if="reply"
+      v-if="reply && (request.status !== 'waiting')"
       ref="replyText"
       class="apos-assistant-request__reply"
       data-apos-test="assistant-request-reply"
@@ -104,7 +148,36 @@
       :key="activity.name"
       v-bind="activity"
       @action="onAction"
-    />
+    >
+      <template v-if="(activity.name === 'confirm') && gateNames">
+        <ul
+          class="apos-assistant-request__gate-list"
+          data-apos-test="assistant-gate-list"
+        >
+          <li
+            v-for="(name, index) in shownGateNames"
+            :key="index"
+          >
+            {{ name }}
+          </li>
+        </ul>
+        <button
+          v-if="hiddenGateCount"
+          type="button"
+          class="apos-assistant-request__gate-more"
+          data-apos-test="assistant-gate-more"
+          @click="gateExpanded = true"
+        >
+          {{ $t('apostrophe:assistantGateShowMore', { count: hiddenGateCount }) }}
+        </button>
+        <p
+          v-else-if="gateNames.more"
+          class="apos-assistant-request__gate-rest"
+        >
+          {{ $t('apostrophe:assistantGateAndMore', { count: gateNames.more }) }}
+        </p>
+      </template>
+    </AposAssistantActivity>
     <p
       v-if="request.status === 'stopped'"
       class="apos-assistant-request__notice"
@@ -112,13 +185,62 @@
     >
       {{ $t(request.planCancelled ? 'apostrophe:assistantPlanCancelledNotice' : 'apostrophe:assistantStopped') }}
     </p>
-    <p
+    <div
       v-if="footer"
       class="apos-assistant-request__footer"
       data-apos-test="assistant-request-footer"
     >
-      {{ footer }}
-    </p>
+      <button
+        v-if="footer.rows.length"
+        type="button"
+        class="apos-assistant-request__footer-trigger"
+        :aria-expanded="footerOpen ? 'true' : 'false'"
+        :aria-controls="footerId"
+        data-apos-test="assistant-request-footer-trigger"
+        @click="footerOpen = !footerOpen"
+      >
+        <span>{{ footer.line }}</span>
+        <AposIndicator
+          class="apos-assistant-request__chevron"
+          :class="{ 'apos-assistant-request__chevron--open': footerOpen }"
+          icon="chevron-down-icon"
+          :icon-size="14"
+        />
+      </button>
+      <span
+        v-else
+        class="apos-assistant-request__footer-line"
+      >{{ footer.line }}</span>
+      <dl
+        v-if="footer.rows.length && footerOpen"
+        :id="footerId"
+        class="apos-assistant-request__footer-detail"
+        data-apos-test="assistant-request-footer-detail"
+      >
+        <div
+          v-for="row in footer.rows"
+          :key="row.label"
+        >
+          <dt>{{ row.label }}</dt>
+          <dd>{{ row.value }}</dd>
+        </div>
+      </dl>
+    </div>
+    <AposAssistantActivity
+      v-if="suggestion"
+      tone="general"
+      :title="$t('apostrophe:assistantSuggestTitle')"
+      :text="$t('apostrophe:assistantSuggestText')"
+      :actions="[ {
+        name: 'continueInNewChat',
+        label: $t('apostrophe:assistantContinueInNewChat'),
+        disabled: revertBlocked
+      } ]"
+      :dismiss-label="$t('apostrophe:assistantNotNow')"
+      data-apos-test="assistant-suggestion"
+      @action="onAction"
+      @dismiss="store.dismissSuggestion(request.chatId, suggestion._id)"
+    />
     <AposAssistantActivity
       v-if="confirmation"
       tone="warning"
@@ -185,7 +307,12 @@ import {
 } from 'vue';
 import { useAssistantStore } from '../stores/assistant.js';
 import { createChipIcon } from '../lib/chip.js';
+import { createId } from 'apostrophe/lib/beneath.js';
 import AposAssistantMessage from './AposAssistantMessage.vue';
+import AposAssistantFiles from './AposAssistantFiles.vue';
+import AposAssistantNotices from './AposAssistantNotices.vue';
+import AposAssistantImageRounds from './AposAssistantImageRounds.vue';
+import { getFileUrl, isPicture } from '../lib/attachments.js';
 import {
   formatNames, getConfirmLines, getRevertFailure, getRevertStatus, splitCount
 } from '../lib/revert.js';
@@ -231,9 +358,17 @@ const props = defineProps({
   revert: {
     type: Object,
     default: null
+  },
+  // The suggestion to continue in a new chat shown under its reply
+  // (`{ _id, sequence }`)
+  suggestion: {
+    type: Object,
+    default: null
   }
 });
 
+// The action name of a gate's alternative, before the alternative's own
+const ALTERNATIVE = 'alternative-';
 // Why a request failed, in the editor's words, by the stored error's name
 const ERRORS = {
   aiRetry: {
@@ -263,6 +398,8 @@ const store = useAssistantStore();
 const { usageDisplay, modelDisplay } = apos.modules['@apostrophecms/assistant'];
 const replyText = ref(null);
 const revertButton = ref(null);
+const footerOpen = ref(false);
+const footerId = `apos-assistant-usage-${createId()}`;
 
 const chat = computed(() => store.getChat(props.request.chatId));
 // An action of the editor's on its way
@@ -287,6 +424,17 @@ const checking = computed(() => store.isPending(props.request.chatId, 'revertChe
 // Revert waits for the chat's open request or revert to end
 const revertBlocked = computed(() => Boolean(chat.value?.openRequest ||
   chat.value?.openRevert));
+// Available exactly when Revert is: a new chat started during a run
+// wouldn't know the work in progress
+const continueLabel = computed(() => {
+  if (chat.value?.openRevert) {
+    return $t('apostrophe:assistantRevertBusy');
+  }
+  if (chat.value?.openRequest) {
+    return $t('apostrophe:assistantContinueUnavailable');
+  }
+  return $t('apostrophe:assistantContinueFrom');
+});
 const revertLabel = computed(() => {
   if (chat.value?.openRevert) {
     return $t('apostrophe:assistantRevertBusy');
@@ -359,6 +507,27 @@ const status = computed(() => {
     : $t('apostrophe:assistantThinking');
 });
 
+// The files sent with the message: an image's thumbnail shown from the
+// browser while this page has it, opening large; any other file
+// downloading; one no longer stored as such
+const sentFiles = computed(() => {
+  const { chatId, unavailable = [] } = props.request;
+  return (props.request.attachments || []).map((file) => {
+    const picture = isPicture(file.name);
+    return {
+      key: file._id,
+      name: file.name,
+      size: file.size,
+      gone: unavailable.includes(file._id),
+      src: picture
+        ? (store.previews[file._id] || getFileUrl(chatId, file._id, 'thumbnail'))
+        : null,
+      large: picture ? getFileUrl(chatId, file._id, 'preview') : null,
+      href: picture ? null : getFileUrl(chatId, file._id)
+    };
+  });
+});
+
 // The run's last words to the editor
 const reply = computed(() => {
   if (running.value) {
@@ -376,6 +545,28 @@ const confirmAsk = computed(() => {
   return request.asks?.find(ask => ask.kind === 'confirm') || null;
 });
 
+// The documents a gate's confirmation names, a few shown until the editor
+// asks for the rest: `{ names, more }`, `more` those past what the server
+// sent
+const GATE_SHOWN = 5;
+const gateExpanded = ref(false);
+const gateNames = computed(() => {
+  const gate = confirmAsk.value?.payload.gate;
+  if (!gate || gate.title || !gate.titles?.length) {
+    return null;
+  }
+  return {
+    names: gate.titles.map(each => each || $t('apostrophe:assistantUntitled')),
+    more: gate.more || 0
+  };
+});
+const shownGateNames = computed(() => (gateExpanded.value
+  ? gateNames.value.names
+  : gateNames.value.names.slice(0, GATE_SHOWN)));
+const hiddenGateCount = computed(() => (gateNames.value
+  ? gateNames.value.names.length - shownGateNames.value.length
+  : 0));
+
 // The documents the request left because someone was editing them, as one
 // list of titles
 const lockedTitles = computed(() => {
@@ -392,6 +583,10 @@ const activities = computed(() => {
   const { request } = props;
   const list = [];
   if (confirmAsk.value) {
+    // A gate's alternatives and its approval are equal routes: the
+    // approval is filled only when it is the one way forward
+    const gate = confirmAsk.value.payload.gate;
+    const alternatives = gate?.alternatives || [];
     list.push({
       name: 'confirm',
       tone: 'warning',
@@ -403,10 +598,16 @@ const activities = computed(() => {
           kind: 'quiet',
           disabled: answering.value
         },
+        ...alternatives.map(alternative => ({
+          name: `${ALTERNATIVE}${alternative.name}`,
+          label: $t(alternative.label),
+          kind: 'accent',
+          disabled: answering.value
+        })),
         {
           name: 'continue',
-          label: $t('apostrophe:assistantContinue'),
-          kind: 'primary',
+          label: $t(gate?.approve || 'apostrophe:assistantContinue'),
+          kind: alternatives.length ? 'accent' : 'primary',
           disabled: answering.value
         }
       ]
@@ -486,31 +687,82 @@ const activities = computed(() => {
   return list;
 });
 
-// Once the request has ended: one waiting for an answer goes on after it
+// Once the request has ended: one waiting for an answer goes on after it.
+// The model and the token count open into their detail with the time the
+// assistant worked; without either, the time alone. `{ line, rows }`
 const footer = computed(() => {
   if (running.value || !reply.value || (props.request.status === 'waiting')) {
     return null;
   }
   const parts = [];
+  const rows = [];
   const {
-    provider, model, usage
+    provider, model, usage, workedMs
   } = props.request;
+  const format = new Intl.NumberFormat(apos.i18n.adminLocale, {
+    notation: 'compact',
+    maximumFractionDigits: 1
+  });
   if (modelDisplay && model) {
-    parts.push([ provider, model ].filter(Boolean).join(' - '));
+    const name = [ provider, model ].filter(Boolean).join(' - ');
+    parts.push(name);
+    rows.push({
+      label: $t('apostrophe:assistantUsageModel'),
+      value: name
+    });
   }
   if ((usageDisplay === 'tokens') && usage) {
-    const tokens = (usage.inputTokens || 0) + (usage.outputTokens || 0);
-    const format = new Intl.NumberFormat(apos.i18n.adminLocale, {
-      notation: 'compact',
-      maximumFractionDigits: 1
-    });
+    const input = usage.inputTokens || 0;
+    const output = usage.outputTokens || 0;
     parts.push($t('apostrophe:assistantTokens', {
-      count: tokens,
-      tokens: format.format(tokens)
+      count: input + output,
+      tokens: format.format(input + output)
     }));
+    rows.push({
+      label: $t('apostrophe:assistantUsageInput'),
+      value: usage.cacheReadTokens
+        ? $t('apostrophe:assistantUsageCached', {
+          input: format.format(input),
+          cached: format.format(usage.cacheReadTokens)
+        })
+        : format.format(input)
+    }, {
+      label: $t('apostrophe:assistantUsageOutput'),
+      value: format.format(output)
+    });
   }
-  return parts.join(' · ') || null;
+  const duration = Number.isFinite(workedMs) ? formatDuration(workedMs) : null;
+  if (!rows.length) {
+    return duration
+      ? {
+        line: duration,
+        rows
+      }
+      : null;
+  }
+  if (duration) {
+    rows.push({
+      label: $t('apostrophe:assistantUsageDuration'),
+      value: duration
+    });
+  }
+  return {
+    line: parts.join(' · '),
+    rows
+  };
 });
+
+function formatDuration(ms) {
+  const total = Math.round(ms / 1000);
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return minutes
+    ? $t('apostrophe:assistantDurationMinutes', {
+      minutes,
+      seconds
+    })
+    : $t('apostrophe:assistantDurationSeconds', { seconds });
+}
 
 function stop() {
   if (!stopping.value) {
@@ -547,6 +799,16 @@ function getConfirmText(payload) {
       text: payload.details || null
     };
   }
+  if (gate.title) {
+    return {
+      title: $t(gate.title.key, getValues(gate.title.values)),
+      text: (gate.text || [])
+        .map(line => (line.list
+          ? getList(line.list)
+          : $t(line.key, getValues(line.values))))
+        .join('\n') || null
+    };
+  }
   const title = (gate.count > 1)
     ? $t('apostrophe:assistantGateDocuments', {
       count: gate.count,
@@ -557,27 +819,34 @@ function getConfirmText(payload) {
     : $t('apostrophe:assistantGateStep', {
       label: gate.label ? $t(gate.label) : gate.tool
     });
-  const names = gate.titles.map(each => each || $t('apostrophe:assistantUntitled'));
-  let text = null;
-  if (names.length && gate.more) {
-    text = $t('apostrophe:assistantGateNamesMore', {
-      titles: names.join(', '),
-      count: gate.more
-    });
-  } else if (names.length) {
-    text = new Intl.ListFormat(apos.i18n.adminLocale, {
-      type: 'conjunction'
-    }).format(names);
-  }
+  // The titles are a list of their own (`gateNames`)
   return {
     title,
-    text
+    text: null
   };
+}
+
+// A gate's i18n values, a list among them joined in the admin UI's language
+function getValues(values = {}) {
+  return Object.fromEntries(Object.entries(values)
+    .map(([ name, value ]) => [ name, Array.isArray(value) ? getList(value) : value ]));
+}
+
+function getList(items) {
+  return new Intl.ListFormat(apos.i18n.adminLocale, {
+    type: 'conjunction'
+  }).format(items);
 }
 
 function startRevert() {
   if (!revertBlocked.value && !checking.value) {
     store.startRevert(props.request.chatId, props.revertFrom);
+  }
+}
+
+function continueInNewChat() {
+  if (!revertBlocked.value) {
+    store.continueInNewChat(props.request.chatId, props.request._id);
   }
 }
 
@@ -596,9 +865,20 @@ async function onAction(name) {
     store.retryRevert(props.request.chatId, props.revert._id);
     return;
   }
+  if (name === 'continueInNewChat') {
+    continueInNewChat();
+    return;
+  }
   if ([ 'continue', 'notNow' ].includes(name)) {
     store.answer(props.request.chatId, confirmAsk.value.callId, {
       approved: name === 'continue'
+    });
+    return;
+  }
+  if (name.startsWith(ALTERNATIVE)) {
+    store.answer(props.request.chatId, confirmAsk.value.callId, {
+      approved: false,
+      alternative: name.slice(ALTERNATIVE.length)
     });
     return;
   }
@@ -713,6 +993,11 @@ function onChipClick(event) {
     }
   }
 
+  // Room for Continue in a new chat and Revert
+  .apos-assistant-request__message--finished {
+    padding-right: 75px;
+  }
+
   // Shown on hover and keyboard focus, as the prototype's Stop on a
   // running message
   .apos-assistant-request__stop {
@@ -797,8 +1082,51 @@ function onChipClick(event) {
     }
   }
 
+  // Left of Revert, in its grey, its glyph a size down so the two weigh the
+  // same
+  .apos-assistant-request__continue {
+    @include apos-button-reset();
+
+    & {
+      position: absolute;
+      right: 40px;
+      bottom: 10px;
+      display: grid;
+      place-items: center;
+      width: 27px;
+      height: 27px;
+      border-radius: 50%;
+      color: var(--a-base-3);
+      opacity: 0;
+      transition: opacity 200ms, background-color 200ms, color 200ms;
+      pointer-events: none;
+    }
+
+    svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    &:hover:not([aria-disabled]) {
+      color: var(--a-text-primary);
+      background-color: var(--a-base-10);
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--a-base-7);
+      outline-offset: 1px;
+    }
+
+    &[aria-disabled] {
+      color: var(--a-base-6);
+      cursor: default;
+    }
+  }
+
   .apos-assistant-request__message:hover .apos-assistant-request__stop,
   .apos-assistant-request__message:focus-within .apos-assistant-request__stop,
+  .apos-assistant-request__message:hover .apos-assistant-request__continue,
+  .apos-assistant-request__message:focus-within .apos-assistant-request__continue,
   .apos-assistant-request__message:hover .apos-assistant-request__revert,
   .apos-assistant-request__message:focus-within .apos-assistant-request__revert {
     opacity: 1;
@@ -830,7 +1158,7 @@ function onChipClick(event) {
     gap: 6px;
     min-width: 0;
     margin: 0;
-    padding: 4px 2px 0;
+    padding: 4px 0 0;
   }
 
   .apos-assistant-request__status-shell {
@@ -868,6 +1196,10 @@ function onChipClick(event) {
   }
 
   // Markdown, the message's and the reply's
+  .apos-assistant-request__files {
+    margin-bottom: 10px;
+  }
+
   .apos-assistant-request__text,
   .apos-assistant-request__reply {
     @include type-label;
@@ -960,9 +1292,67 @@ function onChipClick(event) {
 
     & {
       margin: 0;
-      padding: 4px 2px 0;
+      padding: 4px 0 0;
       color: var(--a-base-1);
       font-style: italic;
+    }
+  }
+
+  // The names line up with the title, their bullets hang in the padding
+  .apos-assistant-request__gate-list {
+    @include type-base;
+
+    & {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin: 2px 0;
+      padding: 0;
+      color: var(--a-base-1);
+      line-height: var(--a-line-tall);
+      list-style: none;
+      overflow-wrap: anywhere;
+    }
+
+    li {
+      position: relative;
+    }
+
+    li::before {
+      content: '';
+      position: absolute;
+      top: calc(0.5lh - 2px);
+      left: -10px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background-color: var(--a-base-1);
+    }
+  }
+
+  .apos-assistant-request__gate-more {
+    @include apos-button-reset();
+    @include type-base;
+
+    & {
+      align-self: flex-start;
+      color: var(--a-primary);
+      line-height: var(--a-line-tall);
+    }
+
+    &:hover,
+    &:focus-visible {
+      text-decoration: underline;
+    }
+  }
+
+  .apos-assistant-request__gate-rest {
+    @include type-base;
+
+    & {
+      margin: 0;
+      color: var(--a-base-1);
+      line-height: var(--a-line-tall);
     }
   }
 
@@ -971,8 +1361,92 @@ function onChipClick(event) {
 
     & {
       margin: -4px 0 0;
-      padding: 0 2px;
+      padding: 0;
       color: var(--a-base-2);
+    }
+  }
+
+  .apos-assistant-request__footer-line {
+    display: inline-block;
+    padding: 2px 0;
+    line-height: var(--a-line-tall);
+  }
+
+  // The prototype's usage toggle
+  .apos-assistant-request__footer-trigger {
+    @include apos-button-reset();
+    @include type-small;
+
+    & {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 5px;
+      max-width: 100%;
+      padding: 2px 0;
+      border-radius: var(--a-border-radius);
+      color: var(--a-base-2);
+      line-height: var(--a-line-tall);
+      text-align: left;
+      transition: color 200ms;
+    }
+
+    &:hover,
+    &[aria-expanded='true'] {
+      color: var(--a-text-primary);
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--a-primary);
+      outline-offset: 2px;
+    }
+  }
+
+  .apos-assistant-request__chevron {
+    flex-shrink: 0;
+    color: var(--a-base-3);
+    opacity: 0;
+    transition: opacity 200ms ease, transform 200ms ease;
+    transform: rotate(-90deg);
+  }
+
+  .apos-assistant-request__chevron--open {
+    transform: rotate(0deg);
+  }
+
+  .apos-assistant-request__footer-trigger:hover .apos-assistant-request__chevron,
+  .apos-assistant-request__footer-trigger:focus-visible .apos-assistant-request__chevron,
+  .apos-assistant-request__footer-trigger[aria-expanded='true'] .apos-assistant-request__chevron {
+    opacity: 1;
+  }
+
+  .apos-assistant-request__footer-detail {
+    @include type-small;
+
+    & {
+      display: grid;
+      gap: 2px;
+      margin: 4px 0 0;
+      padding: 8px 10px;
+      border: 1px solid var(--a-base-8);
+      border-radius: var(--a-border-radius-large);
+      line-height: var(--a-line-tall);
+    }
+
+    div {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    dt {
+      color: var(--a-base-2);
+    }
+
+    dd {
+      margin: 0;
+      color: var(--a-text-primary);
+      text-align: right;
     }
   }
 

@@ -1,7 +1,8 @@
 // The change log: one entry per document a door's request saved, with the
 // change rows between the document before the request's first save and
 // after its last. Entries are written by the save-settled event, so they
-// hold what storage did, every save handler included.
+// hold what storage did, every save handler included. A publish is an entry
+// of its own, with no rows: it changes no content of the draft.
 
 // Raised when an entry's shape changes; a migration upgrades older entries
 const SCHEMA_VERSION = 1;
@@ -114,6 +115,7 @@ module.exports = (self) => {
         aposDocId: after.aposDocId,
         locale: self.getLocaleOf(after),
         type: after.type,
+        ...(!before && await isLocalized(after) && { localized: true }),
         toolCalls: toolCall ? [ toolCall ] : [],
         drops,
         ...(!ended && {
@@ -141,6 +143,18 @@ module.exports = (self) => {
         return 'update';
       }
 
+      // Whether a document just created is a copy into its locale of one
+      // another locale already holds: a revert removes such a copy whole
+      async function isLocalized(doc) {
+        const locale = self.getLocaleOf(doc);
+        return Boolean(locale && await self.apos.doc.db.findOne({
+          aposDocId: doc.aposDocId,
+          aposLocale: {
+            $nin: [ 'draft', 'published', 'previous' ].map(mode => `${locale}:${mode}`)
+          }
+        }, { projection: { _id: 1 } }));
+      }
+
       // The Document Versions version this save landed in, `null` when
       // it recorded none
       async function getVersionId(doc) {
@@ -158,6 +172,53 @@ module.exports = (self) => {
         const at = version && (version.updatedAt || version.createdAt);
         return (at && (at >= doc.updatedAt)) ? version._id : null;
       }
+    },
+
+    /**
+     * Records a door request's publish of `draft` in the change log: an
+     * entry of its own, `effect` `publish`, with no rows, closed at once, so
+     * a later save of the document starts an entry of its own.
+     *
+     * @param {object} req The publish's `req`, carrying the save marker.
+     * @param {object} draft The draft published.
+     * @returns {Promise<string>} The entry's `_id`.
+     */
+    async recordPublish(req, draft) {
+      const marker = req.aposSaveMarker;
+      const last = await self.changes.findOne({
+        requestId: marker.requestId,
+        docId: draft._id
+      }, {
+        sort: { sequence: -1 },
+        projection: { sequence: 1 }
+      });
+      const now = new Date();
+      const _id = self.apos.util.generateId();
+      await self.changes.insertOne({
+        _id,
+        schemaVersion: SCHEMA_VERSION,
+        requestId: marker.requestId,
+        sequence: (last?.sequence || 0) + 1,
+        door: marker.door,
+        chat: marker.chat || null,
+        model: marker.model || null,
+        ai: !marker.revert,
+        userId: req.user?._id || null,
+        userTitle: req.user?.title || null,
+        at: now,
+        updatedAt: now,
+        docId: draft._id,
+        aposDocId: draft.aposDocId,
+        locale: self.getLocaleOf(draft),
+        type: draft.type,
+        title: draft.title,
+        effect: 'publish',
+        rows: [],
+        toolCalls: req.aposAiToolCall ? [ req.aposAiToolCall ] : [],
+        drops: [],
+        versionId: null
+      });
+      return _id;
     },
 
     /**

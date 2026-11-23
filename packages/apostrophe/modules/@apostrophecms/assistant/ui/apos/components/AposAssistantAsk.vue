@@ -401,8 +401,8 @@ function skip() {
     flex: 0 1 auto;
     min-height: 0;
     max-height: 45vh;
-    margin: 0 -4px;
-    padding: 2px 4px;
+    margin: -4px;
+    padding: 4px;
   }
 
   .apos-assistant-ask__question {

@@ -1,5 +1,5 @@
-// `get_changes`: the change rows of one document as AI reads them, through
-// its AI-facing schema, each at a path `update_document` takes as a key.
+// The change rows of a document as AI reads them, through its AI-facing
+// schema, each at a path `update_document` takes as a key, and `get_changes`.
 
 const _ = require('lodash');
 
@@ -28,29 +28,20 @@ module.exports = (self) => {
       const { rows, ...baseline } = requestId
         ? await getRequestRows()
         : await getDraftRows();
-      const all = rows.flatMap(render);
+      const all = rows.flatMap(({ row, ...credit }) => {
+        return self.renderChangeRow(draftReq, doc, row, credit);
+      });
       // Rows are added while the result stays within the tool's budget
       const room = self.apos.ai.getTool('get_changes').maxResultChars - HEADROOM;
-      const page = [];
-      let size = 0;
-      let index = offset;
-      for (; index < all.length; index++) {
-        const row = fit(all[index], room);
-        const rowSize = getSize(row);
-        if (page.length && (size + rowSize > room)) {
-          break;
-        }
-        page.push(row);
-        size += rowSize;
-      }
+      const page = self.pageChangeRows(all, offset, room);
       return {
         _id: doc._id,
         type: doc.type,
         title: doc.title,
         locale: self.getLocaleOf(doc),
         ...baseline,
-        rows: page,
-        ...((index < all.length) && { next: index })
+        rows: page.rows,
+        ...((page.next !== undefined) && { next: page.next })
       };
 
       // Since publication or a version: the rows See Changes lists
@@ -89,12 +80,7 @@ module.exports = (self) => {
                 ? { publishedAt: baseline.at }
                 : { neverPublished: true })
             }),
-          rows: changes.rows.map(row => ({
-            row,
-            by: row.authors?.map(author => author.title).join(', '),
-            at: row.changedAt,
-            ai: getAi(row.ai)
-          }))
+          rows: changes.rows.map(row => ({ row }))
         };
       }
 
@@ -127,71 +113,88 @@ module.exports = (self) => {
           })))
         };
       }
+    },
 
-      // The rows AI reads for one row of Document Versions: none for a value
-      // outside the AI-facing schema or managed by the system
-      function render({
-        row, by, at, ai
-      }) {
-        const found = !row.system && locate(row.path);
-        if (!found) {
-          return [];
-        }
-        const meta = {
-          ...(by && { by }),
-          ...(at && { at }),
-          ...(ai && { ai })
-        };
-        const change = getChange(row);
-        const { key, widget } = found;
-        if ([ 'area', 'array' ].includes(row.kind)) {
-          return [ {
-            path: key,
-            change,
-            before: row.old,
-            after: row.new,
-            ...meta
-          } ];
-        }
-        if (row.type === 'moved') {
-          return [ {
-            path: key,
-            change,
-            from: locate(row.from.slice(0, -1))?.key,
-            to: locate(row.path.slice(0, -1))?.key,
-            ...meta
-          } ];
-        }
-        if (row.kind === 'richText') {
-          // The markup is the widget's shadow field of rich text, when AI sees it
-          const field = getShadowFields(widget)
-            .find(field => field.type === 'richText');
-          return field
-            ? [ {
-              path: `${key}.${field.name}`,
-              change,
-              ...values(row.old, row.new),
-              ...meta
-            } ]
-            : [];
-        }
-        if ((row.kind === 'widget') && (row.type === 'modified')) {
-          return renderOutside(row, found, meta);
-        }
-        const place = (row.kind === 'widget') && (row.type === 'added') && getPlace(row);
+    /**
+     * A change row of Document Versions as AI reads it: the rows of
+     * `get_changes` for it, each with the `update_document` key reaching the
+     * value (`path`), the `change`, the values `before` and `after` through
+     * the AI-facing schema, and an added widget's `place` in `doc`, as
+     * `add_widgets` takes it. None for a value outside the AI-facing schema
+     * or managed by the system.
+     *
+     * @param {object} req In draft mode, in the document's locale.
+     * @param {object} doc The document the row is of, as it is now.
+     * @param {object} row A row of Document Versions' change list.
+     * @param {object} [credit] Who changed it (`by`), when (`at`) and AI's
+     *   part in it as the model reads it (`ai`); what the row itself says
+     *   when omitted.
+     * @returns {object[]}
+     */
+    renderChangeRow(req, doc, row, {
+      by = row.authors?.map(author => author.title).join(', '),
+      at = row.changedAt,
+      ai = getAi(row.ai)
+    } = {}) {
+      const manager = self.apos.doc.getManager(doc.type);
+      const found = !row.system && locate(row.path);
+      if (!found) {
+        return [];
+      }
+      const meta = {
+        ...(by && { by }),
+        ...(at && { at }),
+        ...(ai && { ai })
+      };
+      const change = getChange(row);
+      const { key, widget } = found;
+      if ([ 'area', 'array' ].includes(row.kind)) {
         return [ {
           path: key,
           change,
-          ...values(project(row.old, found, row), project(row.new, found, row)),
-          ...(place && { place }),
+          before: row.old,
+          after: row.new,
           ...meta
         } ];
       }
+      if (row.type === 'moved') {
+        return [ {
+          path: key,
+          change,
+          from: locate(row.from.slice(0, -1))?.key,
+          to: locate(row.path.slice(0, -1))?.key,
+          ...meta
+        } ];
+      }
+      if (row.kind === 'richText') {
+        // The markup is the widget's shadow field of rich text, when AI sees it
+        const field = getShadowFields(widget)
+          .find(field => field.type === 'richText');
+        return field
+          ? [ {
+            path: `${key}.${field.name}`,
+            change,
+            ...values(row.old, row.new),
+            ...meta
+          } ]
+          : [];
+      }
+      if ((row.kind === 'widget') && (row.type === 'modified')) {
+        return renderOutside();
+      }
+      const place = (row.kind === 'widget') && (row.type === 'added') && getPlace();
+      return [ {
+        path: key,
+        change,
+        ...values(project(row.old), project(row.new)),
+        ...(place && { place }),
+        ...meta
+      } ];
 
-      // Where an added widget is in the draft, as add_widgets takes it: the
-      // area, and the widget before it or the first position. None when it
-      // is no longer in the draft
-      function getPlace(row) {
+      // Where an added widget is in the document, as add_widgets takes it:
+      // the area, and the widget before it or the first position. None when
+      // it is no longer there
+      function getPlace() {
         const widgetId = row.path.at(-1).name;
         let items = null;
         self.apos.doc.walk(doc, (object, key, value) => {
@@ -219,7 +222,7 @@ module.exports = (self) => {
       // A widget whose data outside its schema changed: a row for each of
       // its shadow fields that changed, else one saying only that it did,
       // since data no shadow field describes is the widget's own
-      function renderOutside(row, { key, widget }, meta) {
+      function renderOutside() {
         const changed = getShadowFields(widget).filter(field => {
           return !_.isEqual(row.old?.[field.name], row.new?.[field.name]);
         });
@@ -235,38 +238,67 @@ module.exports = (self) => {
           path: `${key}.${field.name}`,
           change: 'modified',
           ...values(
-            self.projectFields(draftReq, [ field ], row.old || {})[field.name],
-            self.projectFields(draftReq, [ field ], row.new || {})[field.name]
+            self.projectFields(req, [ field ], row.old || {})[field.name],
+            self.projectFields(req, [ field ], row.new || {})[field.name]
           ),
           ...meta
         }));
       }
 
-      // A value of a row as AI reads it
-      function project(value, {
-        field, widget, item
-      }, row) {
+      // A value of the row as AI reads it
+      function project(value) {
         if ((value === undefined) || (value === null)) {
           return value;
         }
         if (widget) {
-          return self.projectWidget(draftReq, value);
+          return self.projectWidget(req, value);
         }
-        if (item) {
+        if (found.item) {
           return {
             _id: value._id,
-            ...self.projectFields(draftReq, item, value)
+            ...self.projectFields(req, found.item, value)
           };
         }
         if (row.kind === 'object') {
-          return self.projectFields(draftReq, field.schema, value);
+          return self.projectFields(req, found.field.schema, value);
         }
         return value;
       }
 
       function locate(path) {
-        return self.locateChangePath(draftReq, manager, path);
+        return self.locateChangePath(req, manager, path);
       }
+    },
+
+    /**
+     * The rows of `renderChangeRow` from `offset` that fit in `room`
+     * characters of a result, at least one: `{ rows, size, next }`, `next`
+     * the offset of the first row left out, when there is one. A row too
+     * large for any page keeps its path and change, and says so.
+     *
+     * @param {object[]} rows
+     * @param {number} offset
+     * @param {number} room
+     * @returns {{ rows: object[], size: number, next?: number }}
+     */
+    pageChangeRows(rows, offset, room) {
+      const page = [];
+      let size = 0;
+      let index = offset;
+      for (; index < rows.length; index++) {
+        const row = fit(rows[index], room);
+        const rowSize = getSize(row);
+        if (page.length && (size + rowSize > room)) {
+          break;
+        }
+        page.push(row);
+        size += rowSize;
+      }
+      return {
+        rows: page,
+        size,
+        ...((index < rows.length) && { next: index })
+      };
     },
 
     /**

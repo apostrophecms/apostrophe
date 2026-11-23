@@ -39,6 +39,8 @@ module.exports = (self) => {
         chatId: 1,
         createdAt: 1
       });
+      await self.chats.createIndex({ lastRequestAt: 1 });
+      await self.ensureAttachmentCollection();
     },
 
     // The owner of everything the assistant stores: a real user. A task's
@@ -58,9 +60,11 @@ module.exports = (self) => {
      * @param {object} req
      * @param {object} [options]
      * @param {string} [options._id]
+     * @param {object} [options.continuedFrom] A new chat continuing
+     *   another (see continue.js).
      * @returns {Promise<object>} The chat record.
      */
-    async createChat(req, { _id = null } = {}) {
+    async createChat(req, { _id = null, continuedFrom = null } = {}) {
       const named = _id && self.apos.launder.id(_id);
       if (_id && !named) {
         throw self.apos.error('invalid', 'the chat id is not valid');
@@ -73,7 +77,20 @@ module.exports = (self) => {
         title: null,
         openRequest: null,
         openRevert: null,
+        // A continued chat's carry while it runs or once it failed
+        carry: continuedFrom
+          ? {
+            status: 'running',
+            updatedAt: now
+          }
+          : null,
+        ...(continuedFrom && { continuedFrom }),
         requestCount: 0,
+        // Set once a request brings files: the model is told how to build
+        // from a source from then on
+        hasAttachments: false,
+        // When its last request was sent, which retention counts from
+        lastRequestAt: now,
         createdAt: now,
         updatedAt: now
       };
@@ -90,11 +107,16 @@ module.exports = (self) => {
     },
 
     // The user's chats, newest first, without what each chat saw of the
-    // documents it read
+    // documents it read, what its checkpoints shortened and the summary it
+    // carried over
     async listChats(req) {
       return self.chats
         .find({ ownerId: self.getOwnerId(req) })
-        .project({ seen: 0 })
+        .project({
+          seen: 0,
+          checkpoints: 0,
+          carried: 0
+        })
         .sort({ createdAt: -1 })
         .toArray();
     },
@@ -200,17 +222,28 @@ module.exports = (self) => {
     },
 
     /**
-     * Deletes a chat with everything it owns: its requests and reverts, then
-     * its change log entries, then the chat. A chat whose request or revert
-     * is running is refused (Stop first); one waiting for an answer is not,
-     * since nothing runs. A chat being deleted takes no send or answer, and an
-     * interrupted delete is finished by the next.
+     * Deletes a chat of the user with everything it owns
+     * (`deleteChatRecords`).
      *
      * @param {object} req
      * @param {string} _id The chat's id.
      */
     async deleteChat(req, _id) {
-      const chat = await self.getChat(req, _id);
+      await self.deleteChatRecords(req, await self.getChat(req, _id));
+    },
+
+    /**
+     * Deletes a chat with everything it owns: its requests and reverts, then
+     * its files (bytes before records), then its change log entries, then
+     * the chat. A chat whose request or revert is running is refused (Stop
+     * first); one waiting for an answer is not, since nothing runs. A chat
+     * being deleted takes no send or answer, and an interrupted delete is
+     * finished by the next.
+     *
+     * @param {object} req A request of the chat's owner.
+     * @param {object} chat The chat record.
+     */
+    async deleteChatRecords(req, chat) {
       const { matchedCount } = await self.chats.updateOne({
         _id: chat._id,
         ownerId: chat.ownerId,
@@ -234,7 +267,8 @@ module.exports = (self) => {
         chatId: chat._id,
         ownerId: chat.ownerId
       });
-      await self.apos.harness.deleteChatChanges(req, chat._id);
+      await self.deleteChatAttachments(chat);
+      await self.apos.aposHarness.deleteChatChanges(req, chat._id);
       await self.chats.deleteOne({
         _id: chat._id,
         ownerId: chat.ownerId
@@ -272,7 +306,7 @@ module.exports = (self) => {
      *   requests: number, calls: number, retired: boolean }> }>}
      */
     async getToolUsage() {
-      const registered = self.apos.harness.getDoorTools('assistant').map(tool => tool.name);
+      const registered = self.apos.aposHarness.getDoorTools('assistant').map(tool => tool.name);
       const usage = new Map(registered.map(name => [ name, {
         name,
         requests: 0,
@@ -340,6 +374,11 @@ module.exports = (self) => {
         screen,
         ...(retryOf && { retryOf }),
         status: 'running',
+        // The time the assistant worked on it, waits for the editor left
+        // out: each stretch from here, or from an answer, to a wait or
+        // the end
+        workStartedAt: now,
+        workedMs: 0,
         messages: [],
         asks: null,
         // Present from the start: the SQL backends `$inc` a nested field

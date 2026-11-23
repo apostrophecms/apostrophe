@@ -22,6 +22,13 @@
 // usage record. The key is a Bedrock API key (`APOS_BEDROCK_KEY`), or an
 // `apiKey` function minting short-term Bedrock tokens.
 
+// The document limits Bedrock documents for Claude; of the two request sizes
+// it gives, the smaller. It documents none for the OpenAI models
+const ANTHROPIC_DOCUMENTS = Object.freeze({
+  maxDocumentPages: 100,
+  maxDocumentBytes: 20000000
+});
+
 module.exports = {
   options: {
     // The catalog ids of the anthropic and openai adapters that Bedrock
@@ -65,7 +72,11 @@ module.exports = {
             image: false
           },
           effort: vendor.effort,
-          models: served(vendor.models, self.options.anthropicModels),
+          models: served(
+            vendor.models,
+            self.options.anthropicModels,
+            ANTHROPIC_DOCUMENTS
+          ),
           validate() {
             validate(this, 'anthropicModels');
           },
@@ -119,7 +130,7 @@ module.exports = {
             image: false
           },
           effort: vendor.effort,
-          models: served(vendor.models, self.options.openaiModels),
+          models: served(vendor.models, self.options.openaiModels, {}),
           validate() {
             validate(this, 'openaiModels');
           },
@@ -209,10 +220,20 @@ module.exports = {
       }
     };
 
-    // The vendor catalog narrowed to the ids Bedrock serves
-    function served(models, ids) {
+    // The vendor catalog narrowed to the ids Bedrock serves, the vendor's
+    // document limits replaced by Bedrock's own
+    function served(models, ids, documents) {
       return Object.fromEntries(Object.entries(models)
-        .filter(([ id ]) => ids.includes(id)));
+        .filter(([ id ]) => ids.includes(id))
+        .map(([ id, meta ]) => {
+          const {
+            maxDocumentPages, maxDocumentBytes, ...rest
+          } = meta;
+          return [ id, {
+            ...rest,
+            ...documents
+          } ];
+        }));
     }
     // An entry's own baseUrl (an egress proxy, say) wins over the
     // runtime endpoint of its region

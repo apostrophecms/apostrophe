@@ -3,8 +3,14 @@
     <div
       ref="strip"
       class="apos-assistant-tabs__scroll"
+      :class="{
+        'apos-assistant-tabs__scroll--before': hidden.before,
+        'apos-assistant-tabs__scroll--after': hidden.after
+      }"
       role="group"
       :aria-label="$t('apostrophe:assistantChatTabs')"
+      @wheel="onWheel"
+      @scroll.passive="measure"
     >
       <div
         v-for="tab in tabs"
@@ -18,11 +24,11 @@
         :data-apos-chat-id="tab.id"
       >
         <button
-          v-apos-tooltip="tab.waiting"
+          v-apos-tooltip="tab.waiting || tab.title"
           type="button"
           class="apos-assistant-tabs__select"
           :aria-current="tab.active ? 'true' : undefined"
-          @click="store.activate(tab.id)"
+          @click="select(tab.id)"
         >
           <!-- Paused until the editor comes to it or the screen is free -->
           <svg
@@ -57,9 +63,12 @@
           class="apos-assistant-tabs__close"
           :aria-label="$t('apostrophe:assistantCloseTab', { title: tab.title })"
           data-apos-test="assistant-tab-close"
-          @click="store.closeTab(tab.id)"
+          @click="closeTab(tab.id)"
         >
-          ×
+          <AposIndicator
+            icon="close-icon"
+            :icon-size="12"
+          />
         </button>
       </div>
     </div>
@@ -70,7 +79,7 @@
         class="apos-assistant-tabs__action"
         :aria-label="$t('apostrophe:assistantNewChat')"
         data-apos-test="assistant-new-chat"
-        @click="store.newChat()"
+        @click="newChat"
       >
         <AposIndicator
           icon="plus-icon"
@@ -104,9 +113,10 @@
 
 <script setup>
 import {
-  computed, inject, nextTick, ref, watch
+  computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch
 } from 'vue';
 import { useAssistantStore, NEW_CHAT } from '../stores/assistant.js';
+import { getChatTitle } from '../lib/chat-title.js';
 
 // The chat tabs of this browser tab, with New chat and All chats
 const $t = inject('i18n');
@@ -124,6 +134,46 @@ watch(() => store.activeId, async () => {
       inline: 'nearest'
     });
 });
+
+// Which ends of the strip hide tabs, for its fades
+const hidden = ref({
+  before: false,
+  after: false
+});
+let resizeObserver;
+
+onMounted(() => {
+  resizeObserver = new ResizeObserver(measure);
+  resizeObserver.observe(strip.value);
+  measure();
+});
+onBeforeUnmount(() => resizeObserver?.disconnect());
+watch(() => store.tabs.length, async () => {
+  await nextTick();
+  measure();
+});
+
+function measure() {
+  const el = strip.value;
+  if (!el) {
+    return;
+  }
+  hidden.value = {
+    before: el.scrollLeft > 0,
+    after: el.scrollLeft + el.clientWidth < el.scrollWidth - 1
+  };
+}
+
+// A mouse wheel scrolls the strip sideways; a trackpad already does
+function onWheel(event) {
+  const el = strip.value;
+  if (!el || (el.scrollWidth <= el.clientWidth) ||
+    (Math.abs(event.deltaX) >= Math.abs(event.deltaY))) {
+    return;
+  }
+  event.preventDefault();
+  el.scrollLeft += event.deltaY;
+}
 
 const tabs = computed(() => store.tabs.map(id => {
   const chat = store.getChat(id);
@@ -151,6 +201,23 @@ function getWaiting(step) {
   return null;
 }
 
+function select(id) {
+  store.activate(id);
+  store.focusComposer();
+}
+
+function newChat() {
+  store.newChat();
+  store.focusComposer();
+}
+
+// Its × leaves with it: focus goes to the composer of the chat tab that
+// takes its place
+function closeTab(id) {
+  store.closeTab(id);
+  store.focusComposer();
+}
+
 function closeMenu({ focus }) {
   menuOpen.value = false;
   if (focus) {
@@ -163,7 +230,7 @@ function getTitle(id, chat) {
     return $t('apostrophe:assistantNewChat');
   }
   // A chat not read yet keeps the title it last showed
-  return store.getTabTitle(id) ||
+  return store.getTabTitle(id) || getChatTitle(chat, $t) ||
     $t(chat ? 'apostrophe:assistantNewChat' : 'apostrophe:assistantLoading');
 }
 </script>
@@ -191,6 +258,19 @@ function getTitle(id, chat) {
     &::-webkit-scrollbar {
       display: none;
     }
+  }
+
+  // Tabs out of view fade at the end that hides them
+  .apos-assistant-tabs__scroll--before {
+    mask-image: linear-gradient(to right, transparent, #000 32px);
+  }
+
+  .apos-assistant-tabs__scroll--after {
+    mask-image: linear-gradient(to left, transparent, #000 32px);
+  }
+
+  .apos-assistant-tabs__scroll--before.apos-assistant-tabs__scroll--after {
+    mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent);
   }
 
   .apos-assistant-tabs__tab {
@@ -267,10 +347,12 @@ function getTitle(id, chat) {
     @include type-base;
 
     & {
+      display: inline-flex;
       flex-shrink: 0;
+      align-items: center;
+      align-self: stretch;
       padding: 0 8px 0 2px;
       color: var(--a-base-3);
-      line-height: 1;
       opacity: 0;
       transition: opacity 200ms;
     }

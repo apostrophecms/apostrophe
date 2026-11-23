@@ -38,7 +38,25 @@ describe('MCP: module and transport', function () {
     let apos;
 
     before(async function () {
-      apos = await createMcpApos(module);
+      apos = await createMcpApos(module, {
+        modules: {
+          // Guidance for MCP alone, and for the assistant alone
+          'mcp-recipe': {
+            extend: '@apostrophecms/piece-type',
+            options: {
+              aiWhen: 'A recipe.',
+              aiHowMcp: 'Read the dishes before the prices.'
+            }
+          },
+          'assistant-recipe': {
+            extend: '@apostrophecms/piece-type',
+            options: {
+              aiWhen: 'A recipe for the assistant.',
+              aiHowAssistant: 'Open the editor first.'
+            }
+          }
+        }
+      });
     });
 
     after(async function () {
@@ -57,6 +75,14 @@ describe('MCP: module and transport', function () {
       await withClient(apos, 'legacy', (client) => {
         assert.match(client.getNegotiatedProtocolVersion(), /^2025-/);
         assert.equal(client.getInstructions(), expectedInstructions(apos));
+      });
+    });
+
+    it('marks the types with guidance for the mcp door', async function () {
+      await withClient(apos, 'auto', (client) => {
+        const instructions = client.getInstructions();
+        assert.match(instructions, /^mcp-recipe: A recipe\. \(aiHow\)$/m);
+        assert.match(instructions, /^assistant-recipe: A recipe for the assistant\.$/m);
       });
     });
 
@@ -132,7 +158,11 @@ describe('MCP: module and transport', function () {
   });
 });
 
-// As the connected user's request builds them
+// As the connected user's request builds them, through the mcp door
 function expectedInstructions(apos) {
-  return apos.harness.getInstructions(apos.task.getReq());
+  return apos.aposHarness.getInstructions(apos.aposHarness.withDoor(apos.task.getReq(), {
+    door: 'mcp',
+    lockId: 'instructions',
+    requestId: 'instructions'
+  }));
 }
