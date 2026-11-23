@@ -44,6 +44,8 @@
     "@babel/plugin-transform-react-jsx": "^7.29.7",
     "@ctrl/tinycolor": "^4.2.0",
     "@floating-ui/dom": "^1.8.0",
+    "@modelcontextprotocol/node": "^2.1.2",
+    "@modelcontextprotocol/server": "^2.4.0",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/semantic-conventions": "^1.43.0",
     "@paralleldrive/cuid2": "^3.3.0",
@@ -148,6 +150,7 @@
   },
   "devDependencies": {
     "@aws/bedrock-token-generator": "^1.1.0",
+    "@modelcontextprotocol/client": "^2.4.0",
     "chai": "^4.5.0",
     "eslint": "^9.39.5",
     "eslint-config-apostrophe": "workspace:^",
