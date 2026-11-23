@@ -35,7 +35,9 @@ describe('MCP: tools', function () {
     describe(`with a ${mode === 'auto' ? '2026-07-28' : '2025-era'} client`, function () {
       it('lists the door\'s tools', async function () {
         const { tools } = await withClient(apos, mode, client => client.listTools());
-        const expected = apos.harness.getDoorTools('mcp').map(tool => tool.name);
+        const expected = apos.harness.getDoorTools('mcp')
+          .filter(tool => tool.kind !== 'agent')
+          .map(tool => tool.name);
         assert.deepEqual(tools.map(tool => tool.name), expected);
         assert(expected.includes('mcp_echo'));
         assert(expected.includes('get_document'));
@@ -43,10 +45,19 @@ describe('MCP: tools', function () {
         assert(!expected.includes('browser_only'));
       });
 
+      // The harness selects it for the door by its tags; the MCP module
+      // drops it, so the assistant's selection is untouched
+      it('never lists a tool that runs Apostrophe\'s AI, whatever its tags', async function () {
+        const { tools } = await withClient(apos, mode, client => client.listTools());
+        assert(!tools.some(tool => tool.name === 'content_agent'));
+        assert(apos.harness.getDoorTools('mcp').some(tool => tool.name === 'content_agent'));
+        assert(apos.harness.getDoorTools('assistant').some(tool => tool.name === 'content_agent'));
+      });
+
       it('describes each tool as the engine holds it', async function () {
         const { tools } = await withClient(apos, mode, client => client.listTools());
         const byName = Object.fromEntries(tools.map(tool => [ tool.name, tool ]));
-        for (const definition of apos.harness.getDoorTools('mcp')) {
+        for (const definition of apos.modules['@apostrophecms/mcp'].getTools().values()) {
           const tool = byName[definition.name];
           assert.equal(tool.description, definition.description, definition.name);
           // As JSON carries it: a key set to `undefined` drops out
@@ -129,7 +140,7 @@ describe('MCP: tools', function () {
       // The SDK answers a name it has not registered, as the spec has it:
       // a protocol error
       it('refuses a tool outside the selection', async function () {
-        for (const name of [ 'assistant_only', 'no_such_tool' ]) {
+        for (const name of [ 'assistant_only', 'content_agent', 'no_such_tool' ]) {
           const outcome = await callOrError(apos, mode, name, {});
           assert.equal(outcome.error?.code, -32602, name);
         }
@@ -211,6 +222,18 @@ function addTestTools(apos) {
       door: apos.harness.getDoor(req),
       toolCallId: req.aposAiToolCall?.id
     })
+  });
+  // Tagged `content`, so both doors select it by its tags; `kind: 'agent'`
+  // marks it as running Apostrophe's AI
+  apos.ai.addTool({
+    name: 'content_agent',
+    description: 'Runs the site\'s own AI, for tests.',
+    tags: [ 'content' ],
+    kind: 'agent',
+    input: empty,
+    handler: async () => {
+      throw new Error('An agent tool ran over MCP.');
+    }
   });
   apos.ai.addTool({
     name: 'mcp_bulky',
