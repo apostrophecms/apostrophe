@@ -10,7 +10,10 @@
 module.exports = {
   options: {
     alias: 'mcp',
-    enabled: false
+    enabled: false,
+    // Seconds an MCP write's change log entries are kept; 0 keeps them for
+    // good. 180 days by default (see lib/retention.js)
+    changeLogExpireAfter: 180 * 24 * 60 * 60
     // allowedOrigins: the hostnames a browser-sent `Origin` header may name.
     //   Requests with no `Origin` (every non-browser client) always pass.
     //   Defaults to the hostname of `baseUrl`, or localhost when unset.
@@ -54,6 +57,40 @@ module.exports = {
       }
     };
   },
+  handlers(self) {
+    if (!self.options.enabled) {
+      return {};
+    }
+    return {
+      'apostrophe:ready': {
+        startSweeps() {
+          self.startSweeps();
+        }
+      },
+      'apostrophe:destroy': {
+        stopSweeps() {
+          self.stopSweeps();
+        }
+      }
+    };
+  },
+  tasks(self) {
+    return {
+      // Also on a site with the server off, for the entries it left
+      'expire-changes': {
+        usage: 'Delete the MCP change log entries past changeLogExpireAfter, as the ' +
+          'in-process sweep does.\n' +
+          'Usage: node app @apostrophecms/mcp:expire-changes',
+        async task() {
+          const deleted = await self.expireChanges();
+          // eslint-disable-next-line no-console
+          console.log((deleted === null)
+            ? 'Another process is sweeping; nothing done.'
+            : `${deleted} change log entries deleted.`);
+        }
+      }
+    };
+  },
   routes(self) {
     if (!self.options.enabled) {
       return {};
@@ -72,13 +109,17 @@ module.exports = {
       ...require('./lib/http')(self),
       ...require('./lib/auth')(self),
       ...require('./lib/tools')(self),
+      ...require('./lib/retention')(self),
 
       validateOptions() {
         const {
-          enabled, allowedOrigins, title
+          enabled, allowedOrigins, title, changeLogExpireAfter
         } = self.options;
         if (typeof enabled !== 'boolean') {
           throw new Error('The "@apostrophecms/mcp" module\'s enabled option must be a boolean.');
+        }
+        if (!(Number.isFinite(changeLogExpireAfter) && (changeLogExpireAfter >= 0))) {
+          throw new Error('The "@apostrophecms/mcp" module\'s changeLogExpireAfter option must be a number of seconds, 0 or more.');
         }
         if ((allowedOrigins != null) && !(
           Array.isArray(allowedOrigins) &&
