@@ -3,13 +3,16 @@
 // content with the harness's tools, through the `mcp` door. The outside tool
 // brings its own model; this module never calls Apostrophe's AI.
 //
-// Off by default. Unless `enabled` is set it adds no routes. It serves one
-// HTTP route, `self.action`, for both the current MCP spec (2026-07-28) and
-// 2025-era clients, on the official TypeScript SDK.
+// Off by default. Unless `enabled` is set it adds no routes and no tools. It
+// serves one HTTP route, `self.action`, for both the current MCP spec
+// (2026-07-28) and 2025-era clients, on the official TypeScript SDK.
 //
 // The route is an OAuth protected resource: the user approves the outside
 // tool through `@apostrophecms/oauth`, which the route's registration turns
 // on, and the tool sends that server's access tokens (see lib/auth.js).
+//
+// Besides the harness's tools, it has its own for the media library's
+// images (lib/image-tools.js), which only the `mcp` door selects.
 
 module.exports = {
   options: {
@@ -22,6 +25,12 @@ module.exports = {
     // may. `false` keeps the publishing tools off this server alone: the
     // assistant keeps them
     publish: true
+    // maxImageSize: the largest image `save_image_to_media` takes, in
+    //   bytes. Unset, it's the attachment module's `maxSize` when that is a
+    //   number of bytes, otherwise 10 MB (10,000,000 bytes). The image comes
+    //   as base64 in a JSON body, a third larger than the file, so a limit
+    //   over about 12 MB also needs the express module's
+    //   `bodyParser.json.limit` (16mb by default) raised.
     // allowedOrigins: the hostnames a browser-sent `Origin` header may name.
     //   Requests with no `Origin` (every non-browser client) always pass.
     //   Defaults to the hostname of `baseUrl`, or localhost when unset.
@@ -41,6 +50,8 @@ module.exports = {
       description: req => req.t('apostrophe:mcpOauthDescription')
     });
     await self.ensureSeenCollection();
+    self.maxImageSize = self.getMaxImageSize();
+    self.addImageTools();
     self.enableHttp();
   },
   handlers(self) {
@@ -100,6 +111,8 @@ module.exports = {
       ...require('./lib/auth')(self),
       ...require('./lib/tools')(self),
       ...require('./lib/seen')(self),
+      ...require('./lib/image-tools')(self),
+      ...require('./lib/images')(self),
 
       // New core modules can't have an alias, so @apostrophecms/oauth has none
       getOauth() {
@@ -108,7 +121,7 @@ module.exports = {
 
       validateOptions() {
         const {
-          enabled, allowedOrigins, title, seenLimit, publish
+          enabled, allowedOrigins, title, seenLimit, publish, maxImageSize
         } = self.options;
         if (typeof enabled !== 'boolean') {
           throw new Error('The "@apostrophecms/mcp" module\'s enabled option must be a boolean.');
@@ -118,6 +131,9 @@ module.exports = {
         }
         if (!(Number.isSafeInteger(seenLimit) && (seenLimit > 0))) {
           throw new Error('The "@apostrophecms/mcp" module\'s seenLimit option must be a positive whole number.');
+        }
+        if ((maxImageSize !== undefined) && !self.isBytes(maxImageSize)) {
+          throw new Error('The "@apostrophecms/mcp" module\'s maxImageSize option must be a positive whole number of bytes.');
         }
         if ((allowedOrigins != null) && !(
           Array.isArray(allowedOrigins) &&
