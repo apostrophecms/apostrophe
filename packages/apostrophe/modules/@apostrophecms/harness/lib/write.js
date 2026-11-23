@@ -5,6 +5,8 @@ const REFUSALS = new Set([ 'notfound', 'forbidden', 'locked', 'invalid', 'confli
 
 const LIVE_NOTICE = 'The change is live on the site now.';
 const DRAFT_NOTICE = 'The change is saved in the draft; it goes live when an editor publishes it.';
+const MIXED_NOTICE = 'Changes with "published": true are live on the site now; the others ' +
+  'are saved in drafts and go live when an editor publishes them.';
 
 module.exports = (self) => {
   return {
@@ -144,7 +146,7 @@ module.exports = (self) => {
           _lossless: true,
           ...input
         }));
-        const saveReq = getSaveRequest(self, draftReq, doc);
+        const saveReq = self.getSaveRequest(draftReq, doc);
         const body = (inputs.length === 1)
           ? inputs[0]
           : { _patches: inputs };
@@ -218,7 +220,7 @@ module.exports = (self) => {
           ...(locale && { locale })
         });
         if (!self.apos.ai.can(draftReq, 'create', type, 'draft')) {
-          throw self.apos.error('forbidden');
+          throw self.apos.error('forbidden', { create: true });
         }
         const schema = self.getAiSchemaOf(draftReq, manager);
         const input = {};
@@ -253,7 +255,7 @@ module.exports = (self) => {
             input[field.name] = defaults[field.name];
           }
         }
-        const saveReq = getSaveRequest(self, draftReq);
+        const saveReq = self.getSaveRequest(draftReq);
         const drops = [];
         await manager.convert(saveReq, input, doc, { drops });
         if (drops.length) {
@@ -344,6 +346,68 @@ module.exports = (self) => {
       };
     },
 
+    /**
+     * The request a save of `doc` runs on, as every harness write saves:
+     * marked as AI's unless the door's request reverts and, with a door
+     * context, carrying the marker the change log records and, for a
+     * document the door read or wrote, the `updatedAt` the save is checked
+     * against (see the harness's `checkUnchanged`). For code that saves
+     * through core's own methods, such as a copy into another locale.
+     *
+     * @param {object} draftReq A draft-mode `req` in the document's locale.
+     * @param {object} [doc] The document saved, `null` for a new one.
+     * @returns {object} A clone of `draftReq`.
+     */
+    getSaveRequest(draftReq, doc = null) {
+      const door = self.getDoor(draftReq);
+      const updatedAt = doc && !door?.revert && door?.seen.get(doc._id);
+      return draftReq.clone({
+        aposAi: !door?.revert,
+        ...(updatedAt && {
+          aposHarnessExpected: {
+            docId: doc._id,
+            updatedAt,
+            checked: false
+          }
+        }),
+        ...(door && {
+          aposSaveMarker: {
+            door: door.door,
+            requestId: door.requestId,
+            ...(door.chat && { chat: door.chat }),
+            ...(door.model && { model: door.model }),
+            ...(door.revert && { revert: true })
+          }
+        })
+      });
+    },
+
+    /**
+     * The tool result of `writeDocuments` or `createDocument`: each document
+     * written with where it landed and what `extra(doc)` adds for the tool,
+     * the refused ones with their reason, and the sentence the model
+     * repeats.
+     *
+     * @param {{ written: object[], refused: object[] }} result
+     * @param {Function} [extra] `(doc) => object`, `doc` the saved draft.
+     * @returns {{ written: object[], refused?: object[], notice?: string }}
+     */
+    getWriteResult({ written, refused }, extra = () => ({})) {
+      const published = new Set(written.map(item => item.published));
+      return {
+        written: written.map(({
+          doc, notice, ...item
+        }) => ({
+          ...item,
+          ...extra(doc)
+        })),
+        ...(refused.length && { refused }),
+        ...(written.length && {
+          notice: (published.size > 1) ? MIXED_NOTICE : written[0].notice
+        })
+      };
+    },
+
     // The locale of a document without its mode, `null` when the type is
     // not localized
     getLocaleOf(doc) {
@@ -384,11 +448,17 @@ module.exports = (self) => {
           ...(fields.length && { fields })
         };
       }
+      if (error.name === 'forbidden') {
+        return {
+          reason: 'forbidden',
+          message: error.data?.create
+            ? 'The user may not create a document of this type.'
+            : 'The user may not edit this document.'
+        };
+      }
       return {
         reason: error.name,
-        message: (error.name === 'forbidden')
-          ? 'The user may not edit this document.'
-          : 'No such document.'
+        message: 'No such document.'
       };
 
       // `{ path, reason }` for every field the error names: what the save
@@ -398,7 +468,8 @@ module.exports = (self) => {
         if (Array.isArray(error.data?.drops)) {
           return error.data.drops.map(drop => ({
             path: drop.path,
-            reason: drop.reason
+            reason: drop.reason,
+            ...(drop.message && { message: drop.message })
           }));
         }
         const errors = error.data?.errors;
@@ -424,34 +495,6 @@ module.exports = (self) => {
   };
 };
 
-// The request a door's save runs on: marked as AI's unless the request
-// reverts, and with a door context, carrying the marker the change log
-// records and, for a document the door read or wrote, the `updatedAt` the
-// save is checked against (see the harness's `checkUnchanged`)
-function getSaveRequest(self, draftReq, doc = null) {
-  const door = self.getDoor(draftReq);
-  const updatedAt = doc && !door?.revert && door?.seen.get(doc._id);
-  return draftReq.clone({
-    aposAi: !door?.revert,
-    ...(updatedAt && {
-      aposHarnessExpected: {
-        docId: doc._id,
-        updatedAt,
-        checked: false
-      }
-    }),
-    ...(door && {
-      aposSaveMarker: {
-        door: door.door,
-        requestId: door.requestId,
-        ...(door.chat && { chat: door.chat }),
-        ...(door.model && { model: door.model }),
-        ...(door.revert && { revert: true })
-      }
-    })
-  });
-}
-
 // `{ reason, message, fields? }` for an error that refuses a document,
 // `null` for one that stops the call. Conversion throws its field errors as
 // an array
@@ -470,3 +513,6 @@ function isEmpty(value) {
     (Array.isArray(value) && !value.length) ||
     ((value.metaType === 'area') && !value.items?.length);
 }
+
+// What the model reads of a write, for tests of what each door reads
+module.exports.MODEL_TEXTS = [ LIVE_NOTICE, DRAFT_NOTICE, MIXED_NOTICE ];

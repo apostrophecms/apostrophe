@@ -127,7 +127,7 @@ describe('Assistant: describe_images and delegate', function () {
     const chat = await apos.assistant.createChat(req);
     script = {
       run: sequence([
-        toolTurn('describe_images', { ids: [ images[0]._id ] }),
+        toolTurn('describe_images', { images: [ images[0]._id ] }),
         toolTurn('delegate', { instructions: 'Find the notes' }),
         { text: 'Done.' }
       ]),
@@ -157,7 +157,7 @@ describe('Assistant: describe_images and delegate', function () {
       const chat = await apos.assistant.createChat(req);
       script = {
         run: sequence([
-          toolTurn('describe_images', { ids: images.slice(0, 2).map(image => image._id) }),
+          toolTurn('describe_images', { images: images.slice(0, 2).map(image => image._id) }),
           { text: 'Both described.' }
         ]),
         vision: (req, request) => ({
@@ -215,7 +215,7 @@ describe('Assistant: describe_images and delegate', function () {
       script = {
         run: sequence([
           toolTurn('describe_images', {
-            ids: [ images[2]._id, 'nothing-here', note._id, images[0]._id ]
+            images: [ images[2]._id, 'nothing-here', note._id, images[0]._id ]
           }),
           { text: 'Done.' }
         ]),
@@ -239,7 +239,7 @@ describe('Assistant: describe_images and delegate', function () {
       script = {
         run: sequence([
           toolTurn('describe_images', {
-            ids: images.slice(0, 2).map(image => image._id),
+            images: images.slice(0, 2).map(image => image._id),
             question: 'Is there a person in it?'
           }),
           { text: 'Done.' }
@@ -267,7 +267,7 @@ describe('Assistant: describe_images and delegate', function () {
       const chat = await apos.assistant.createChat(req);
       script = {
         run: sequence([
-          toolTurn('describe_images', { ids: [ images[0]._id ] }),
+          toolTurn('describe_images', { images: [ images[0]._id ] }),
           {
             text: 'Done.',
             usage: {

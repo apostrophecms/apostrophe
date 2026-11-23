@@ -508,6 +508,65 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
       assert.equal(await countTitled('Gated'), 20);
     });
 
+    it('words a gate\'s own confirmation, and answers an alternative as a decline with its message', async function () {
+      const req = userReq(editor);
+      apos.assistant.addGate('update_document', () => ({
+        title: {
+          key: 'apostrophe:assistantGateStylesLocale',
+          values: { locale: 'English' }
+        },
+        text: {
+          key: 'apostrophe:assistantGateLive'
+        },
+        approve: 'apostrophe:assistantApplyNow',
+        alternatives: [ {
+          name: 'elsewhere',
+          label: 'apostrophe:assistantOpenStyles',
+          message: 'the user wants it done elsewhere'
+        } ]
+      }));
+      const chat = await apos.assistant.createChat(req);
+      script = sequence([ updateTurn(notes.slice(0, 1), 'Worded'), { text: 'Fine.' } ]);
+      const waiting = await runToEnd(req, chat, 'Rename one note');
+      const { gate } = waiting.asks[0].payload;
+      assert.deepEqual(gate.title, {
+        key: 'apostrophe:assistantGateStylesLocale',
+        values: { locale: 'English' }
+      });
+      // One line becomes a list of lines
+      assert.deepEqual(gate.text, [ { key: 'apostrophe:assistantGateLive' } ]);
+      assert.equal(gate.approve, 'apostrophe:assistantApplyNow');
+      assert.equal(gate.count, 1);
+      for (const answer of [
+        {
+          approved: false,
+          alternative: 'unknown'
+        },
+        {
+          approved: true,
+          alternative: 'elsewhere'
+        }
+      ]) {
+        await assert.rejects(apos.assistant.answer(req, chat._id, {
+          tabId: 'tab-1',
+          callId: 'call-update',
+          answer
+        }), { name: 'invalid' });
+      }
+      await apos.assistant.answer(req, chat._id, {
+        tabId: 'tab-1',
+        callId: 'call-update',
+        answer: {
+          approved: false,
+          alternative: 'elsewhere'
+        }
+      });
+      const done = await waitForEnd(req, chat);
+      assert.equal(done.status, 'completed');
+      assert.equal(resultOf(done, 'call-update').error, 'the user wants it done elsewhere');
+      assert.equal(await countTitled('Worded'), 0);
+    });
+
     it('gates any tool by name, never outside the assistant\'s door', async function () {
       const req = userReq(editor);
       apos.assistant.addGate('write_plan', args => args.steps.length > 2);

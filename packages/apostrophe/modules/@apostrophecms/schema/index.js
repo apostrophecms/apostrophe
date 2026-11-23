@@ -806,7 +806,10 @@ module.exports = {
       // path in `data` of the item or field, `dropPath` the dot path of
       // `data` itself when it is nested in a larger object. `reason` is
       // `notAllowed`, `unknownType`, `notFound`, `invalid`, `limit`,
-      // `readOnly` or `forbidden`.
+      // `readOnly` or `forbidden`. A field type may record a value it
+      // replaces as `invalid` with a `message` saying what it takes: an
+      // unknown choice, a number outside a range, something that is no
+      // color.
 
       async convert(
         req,

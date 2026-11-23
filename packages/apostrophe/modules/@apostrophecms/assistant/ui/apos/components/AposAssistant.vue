@@ -30,13 +30,22 @@
       />
     </template>
     <template #main>
-      <div class="apos-assistant__body">
+      <div
+        class="apos-assistant__body"
+        @dragenter="onDragOver"
+        @dragover="onDragOver"
+        @dragleave="onDragLeave"
+        @drop="onDrop"
+      >
         <AposAssistantTabs />
         <AposAssistantThread
           :key="store.activeId"
           :chat-id="store.activeId"
         />
-        <AposAssistantComposer :chat-id="store.activeId" />
+        <AposAssistantComposer
+          :chat-id="store.activeId"
+          :dropping="dropping"
+        />
       </div>
     </template>
   </AposModal>
@@ -65,6 +74,8 @@ const MARGIN = 16;
 const MIN_HEIGHT = 360;
 
 const store = useAssistantStore();
+// Files are dragged over the window and the active chat tab takes them
+const dropping = ref(false);
 
 const modal = ref({
   active: false,
@@ -91,6 +102,40 @@ onMounted(() => {
 
 function close() {
   modal.value.showModal = false;
+}
+
+// Files dropped anywhere on the window attach to the active chat tab;
+// text and links are left to the composer's input. Files are never left to
+// the browser, which would open them in place of the page
+function onDragOver(event) {
+  if (!hasFiles(event)) {
+    return;
+  }
+  event.preventDefault();
+  const allowed = store.canAttach(store.activeId);
+  event.dataTransfer.dropEffect = allowed ? 'copy' : 'none';
+  dropping.value = allowed;
+}
+
+function onDragLeave(event) {
+  if (!event.currentTarget.contains(event.relatedTarget)) {
+    dropping.value = false;
+  }
+}
+
+function onDrop(event) {
+  if (!hasFiles(event)) {
+    return;
+  }
+  event.preventDefault();
+  dropping.value = false;
+  if (store.canAttach(store.activeId)) {
+    store.attachFiles(store.activeId, [ ...event.dataTransfer.files ]);
+  }
+}
+
+function hasFiles(event) {
+  return Boolean(event.dataTransfer?.types?.includes('Files'));
 }
 
 function getSize() {

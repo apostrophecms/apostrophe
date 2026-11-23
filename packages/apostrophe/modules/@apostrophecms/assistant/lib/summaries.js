@@ -161,7 +161,7 @@ module.exports = (self) => {
         const result = await self.apos.ai.generate(req, {
           system,
           messages: [
-            ...messages,
+            ...await self.addAttachmentBytes(chat.ownerId, messages),
             {
               role: 'user',
               content: [ {

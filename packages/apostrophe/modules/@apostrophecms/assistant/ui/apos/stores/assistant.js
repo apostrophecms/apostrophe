@@ -6,6 +6,7 @@ import { getFirstTitle } from 'Modules/@apostrophecms/assistant/universal/messag
 import { useScreen, isWindow } from 'Modules/@apostrophecms/ui/composables/useScreen.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { browserTools, releaseAhead } from '../lib/browser-tools.js';
+import { createAttachments } from '../lib/attachments.js';
 
 /**
  * The assistant's chats as this browser tab sees them. The records on the
@@ -81,6 +82,9 @@ export const useAssistantStore = defineStore('assistant', () => {
   const activeId = ref(NEW_CHAT);
   // What the composer holds, by chat tab
   const drafts = ref({});
+  // A prompt asked for from outside the panel, for the composer of the chat
+  // tab it names to translate and put in: `{ chatId, key, count }`
+  const askedPrompt = ref(null);
   // Why the last send of a chat tab was refused: `{ title, text }`
   const refusals = ref({});
   // What a running request is doing now, by request id: `{ label }`, or
@@ -148,6 +152,15 @@ export const useAssistantStore = defineStore('assistant', () => {
   const served = new Map();
   // The reverts this page started, whose message returns once done
   const returning = new Set();
+  // The id the new chat's files upload to, named before the chat exists and
+  // kept with the chat tabs, so a page load finds its files
+  let newChatId = null;
+  const attachments = createAttachments({
+    getChatId: getUploadChatId,
+    report
+  });
+  // The chat tabs whose send waits for their uploads
+  const sendWaiting = ref({});
 
   function getAction() {
     return apos.modules['@apostrophecms/assistant'].action;
@@ -285,7 +298,8 @@ export const useAssistantStore = defineStore('assistant', () => {
     rename: foldRename,
     delete: foldDelete,
     continue: foldContinue,
-    dismissSuggestion: foldDismissSuggestion
+    dismissSuggestion: foldDismissSuggestion,
+    noticeAction: foldNoticeAction
   };
 
   // The chat's open request changed in the chat and in its record, when
@@ -328,13 +342,50 @@ export const useAssistantStore = defineStore('assistant', () => {
   }
 
   // An answer on its way: the ask leaves, and the request goes on
-  function foldAnswer(view, { key }) {
+  function foldAnswer(view, { key, data }) {
     return changeOpen(view, [ 'waiting' ], (request) => {
+      const answered = (request.asks || []).find(ask => ask.callId === key);
       const asks = (request.asks || []).filter(ask => ask.callId !== key);
       return {
         ...request,
         asks,
+        ...((answered?.kind === 'images') && {
+          imageAsks: foldImageAnswer(request.imageAsks || [], answered, data?.value)
+        }),
         status: asks.length ? request.status : 'running'
+      };
+    });
+  }
+
+  // An image round answered: Refine's notes beside the image kept for
+  // them, Try again's round, or the outcome, the picked image shown as used
+  // until Media has it
+  function foldImageAnswer(imageAsks, ask, value) {
+    const option = ask.payload.candidates
+      .findIndex(candidate => candidate._id === value?.candidate) + 1;
+    return imageAsks.map((each) => {
+      if (each.callId !== ask.callId) {
+        return each;
+      }
+      if ([ 'refine', 'again' ].includes(value?.action)) {
+        return {
+          ...each,
+          rounds: [ ...each.rounds, {
+            action: value.action,
+            notes: value.notes || null,
+            kept: (value.action === 'refine') ? (value.candidate || null) : null
+          } ]
+        };
+      }
+      return {
+        ...each,
+        outcome: {
+          action: value?.action,
+          ...(option && {
+            option,
+            candidate: value.candidate
+          })
+        }
       };
     });
   }
@@ -494,6 +545,58 @@ export const useAssistantStore = defineStore('assistant', () => {
           tabId: getTabId(),
           message: data.message,
           ...(data.retryOf && { retryOf: data.retryOf }),
+          attachments: data.attachments || [],
+          unavailable: [],
+          status: 'running',
+          sequence: PENDING_SEQUENCE,
+          asks: null,
+          pending: true
+        }
+      ]
+    };
+  }
+
+  // A notice's button on its way: busy, and its request runs at the end of
+  // the thread until its record settles it
+  function foldNoticeAction(view, { data }) {
+    const taken = view.requests.map(request => ((request._id === data.requestId)
+      ? markNoticeAction(request, data.noticeId, action => action && {
+        ...action,
+        pending: true
+      })
+      : request));
+    if (view.requests.some(request => request.action?.noticeId === data.noticeId)) {
+      return {
+        ...view,
+        requests: taken
+      };
+    }
+    const _id = `pending-${data.noticeId}`;
+    return {
+      ...view,
+      chat: view.chat && {
+        ...view.chat,
+        openRequest: view.chat.openRequest || {
+          _id,
+          tabId: getTabId(),
+          status: 'running'
+        }
+      },
+      requests: [
+        ...taken,
+        {
+          _id,
+          chatId: view.chat?._id,
+          tabId: getTabId(),
+          message: '',
+          action: {
+            name: data.name,
+            requestId: data.requestId,
+            noticeId: data.noticeId
+          },
+          attachments: [],
+          unavailable: [],
+          notices: [],
           status: 'running',
           sequence: PENDING_SEQUENCE,
           asks: null,
@@ -539,6 +642,7 @@ export const useAssistantStore = defineStore('assistant', () => {
     if (!started) {
       started = true;
       restoreTabs();
+      attachments.loadAttached(activeId.value);
       apos.bus.$on('assistant-chat', onEvent);
       document.addEventListener('visibilitychange', onVisibilityChange);
       // Back from another window (a terminal, say) is a focus with no
@@ -553,14 +657,17 @@ export const useAssistantStore = defineStore('assistant', () => {
       apos.bus.$on('modal-resolved', (item) => {
         modalOwners.value.delete(item.id);
       });
-      watch(() => JSON.stringify(getScreen().modals), postScreen);
+      watch(() => {
+        const { modals, window } = getScreen();
+        return JSON.stringify([ modals, window ]);
+      }, postScreen);
     }
     await catchUp();
   }
 
   // While it owns an open request, the browser tab posts its screen when its
-  // modal stack changes: the server never writes a document an editor
-  // opened meanwhile
+  // modals or its window change: the server never writes a document an
+  // editor opened meanwhile
   async function postScreen() {
     if (!chats.value.some(chat => getOwner(chat) === 'here')) {
       return;
@@ -1322,16 +1429,44 @@ export const useAssistantStore = defineStore('assistant', () => {
     delete reverts.value[id];
     delete confirmations.value[id];
     delete refusals.value[id];
+    attachments.forgetAttached(id);
     if (tabs.value.includes(id)) {
       closeTab(id);
     }
+  }
+
+  /**
+   * Whether files may be attached in a chat tab now: never by a user who
+   * may not upload files, nor while its chat has a request or a revert
+   * open, waits for what it carries over, or a revert waits on its
+   * confirmation, nor past `attachmentMaxCount`.
+   *
+   * @param {string} id
+   * @returns {boolean}
+   */
+  function canAttach(id) {
+    const chat = getChat(id);
+    return attachments.canUpload() && (getOwner(chat) === 'none') && !chat?.openRevert &&
+      !chat?.carry && !confirmations.value[id] && !attachments.isFull(id);
+  }
+
+  function getUploadChatId(id, { create = true } = {}) {
+    if (id !== NEW_CHAT) {
+      return id;
+    }
+    if (!newChatId && create) {
+      newChatId = createId();
+      rememberTabs();
+    }
+    return newChatId;
   }
 
   // A chat tab opened comes first; an empty new chat in front gives way to
   // it. One already open stays where it is
   function openChat(id) {
     if (!tabs.value.includes(id)) {
-      const blank = (activeId.value === NEW_CHAT) && !drafts.value[NEW_CHAT]?.trim();
+      const blank = (activeId.value === NEW_CHAT) && !drafts.value[NEW_CHAT]?.trim() &&
+        !attachments.getAttached(NEW_CHAT).length;
       if (blank) {
         tabs.value.splice(tabs.value.indexOf(NEW_CHAT), 1);
         delete refusals.value[NEW_CHAT];
@@ -1351,6 +1486,7 @@ export const useAssistantStore = defineStore('assistant', () => {
   function activate(id) {
     activeId.value = id;
     rememberTabs();
+    attachments.loadAttached(id);
     if (id !== NEW_CHAT) {
       loadChat(id);
     }
@@ -1372,6 +1508,8 @@ export const useAssistantStore = defineStore('assistant', () => {
     if (id === NEW_CHAT) {
       delete drafts.value[NEW_CHAT];
       delete refusals.value[NEW_CHAT];
+      attachments.discardAttached(NEW_CHAT);
+      newChatId = null;
     } else if (getOwner(getChatRecord(id)) !== 'here') {
       // Its thread is read again when it opens; a request this browser tab
       // runs keeps it meanwhile
@@ -1638,13 +1776,31 @@ export const useAssistantStore = defineStore('assistant', () => {
    * @param {string} [options.message]
    */
   async function send(id, { message: given = null } = {}) {
+    if (!(given ?? drafts.value[id] ?? '').trim()) {
+      return;
+    }
+    // Pressed while files upload: it goes once they are stored, with the
+    // draft as it is then
+    if (attachments.isUploading(id)) {
+      if (!sendWaiting.value[id]) {
+        sendWaiting.value[id] = true;
+        await attachments.whenUploaded(id);
+        delete sendWaiting.value[id];
+        await send(id, { message: given });
+      }
+      return;
+    }
     const message = (given ?? drafts.value[id] ?? '').trim();
     if (!message) {
       return;
     }
     const create = id === NEW_CHAT;
-    const chatId = create ? createId() : id;
+    const chatId = create ? (newChatId || createId()) : id;
+    if (create) {
+      newChatId = null;
+    }
     const requestId = createId();
+    const taken = attachments.takeAttached(id);
     delete refusals.value[id];
     if (given === null) {
       delete drafts.value[id];
@@ -1661,6 +1817,7 @@ export const useAssistantStore = defineStore('assistant', () => {
         chatId,
         requestId,
         message,
+        attachments: taken.map(file => file.attachment),
         title: create ? getFirstTitle(message) : null,
         createdAt: new Date().toISOString()
       },
@@ -1669,13 +1826,19 @@ export const useAssistantStore = defineStore('assistant', () => {
           message,
           screen: getScreen(),
           requestId,
+          ...(taken.length && { attachments: taken.map(file => file.attachment._id) }),
           ...(create && { create })
         }
       }),
       check: () => findSent(chatId, requestId),
       refused(e) {
-        // A new chat that never was: its chat tab is New chat again
+        // A new chat that never was: its chat tab is New chat again, its
+        // files still uploaded under its id
         const target = create ? NEW_CHAT : chatId;
+        if (!create || !newChatId) {
+          newChatId = create ? chatId : newChatId;
+          attachments.giveBack(target, taken);
+        }
         if (create) {
           const index = tabs.value.indexOf(chatId);
           if (tabs.value.includes(NEW_CHAT)) {
@@ -1690,6 +1853,9 @@ export const useAssistantStore = defineStore('assistant', () => {
         }
         if (given === null) {
           prependDraft(target, message);
+        }
+        if (e.body?.data?.reason === 'gone') {
+          attachments.loadAttached(target, { again: true });
         }
         refuse(target, e);
       }
@@ -1751,6 +1917,7 @@ export const useAssistantStore = defineStore('assistant', () => {
   async function answer(id, callId, value) {
     const { taken } = await act('answer', id, {
       key: callId,
+      data: { value },
       post: () => apos.http.post(`${getAction()}/chat/${id}/answer`, {
         body: {
           tabId: getTabId(),
@@ -1799,6 +1966,8 @@ export const useAssistantStore = defineStore('assistant', () => {
         chatId: id,
         requestId,
         message: requests.value[id]?.find(request => request._id === failedId)?.message || '',
+        attachments: requests.value[id]?.find(request => request._id === failedId)
+          ?.attachments || [],
         retryOf: failedId
       },
       post: () => apos.http.post(`${getAction()}/chat/${id}/retry`, {
@@ -2075,6 +2244,56 @@ export const useAssistantStore = defineStore('assistant', () => {
    *   acted elsewhere (All chats), which says it there.
    * @param {boolean} [options.always]
    */
+  /**
+   * Runs a notice's action, once, as a request of its own: its button goes
+   * at the click and a request runs at the end of the thread. A refusal
+   * says it was run already, in this browser tab or another: the records
+   * are read again.
+   *
+   * @param {string} id
+   * @param {object} request The request the notice is on.
+   * @param {object} notice
+   */
+  async function runNoticeAction(id, request, notice) {
+    await act('noticeAction', id, {
+      key: notice._id,
+      data: {
+        requestId: request._id,
+        noticeId: notice._id,
+        name: notice.action.name
+      },
+      post: () => apos.http.post(`${getAction()}/chat/${id}/notice-action`, {
+        body: {
+          requestId: request._id,
+          noticeId: notice._id,
+          screen: getScreen()
+        }
+      }),
+      // Run once: its button is gone, as the source's event says to every
+      // browser tab
+      taken() {
+        const source = requests.value[id]?.find(each => each._id === request._id);
+        if (source) {
+          setRequest(markNoticeAction(source, notice._id, () => null));
+        }
+      },
+      refused: e => fail(id, e)
+    });
+  }
+
+  // A request with one notice's action changed
+  function markNoticeAction(request, noticeId, change) {
+    return {
+      ...request,
+      notices: (request.notices || []).map(notice => ((notice._id === noticeId)
+        ? {
+          ...notice,
+          action: change(notice.action)
+        }
+        : notice))
+    };
+  }
+
   function fail(id, e, { dock = true, always = false } = {}) {
     if (e.status === 404) {
       if (dock && (activeId.value === id)) {
@@ -2164,6 +2383,48 @@ export const useAssistantStore = defineStore('assistant', () => {
     setDraft(id, draft.trim() ? `${message}\n\n${draft}` : message);
   }
 
+  /**
+   * Asks a composer for a prompt: it translates `key` with `count` and puts
+   * it in front of the draft, the caret where the translation has
+   * `{{ caret }}`. The active chat tab's, when it could send at once;
+   * otherwise the new chat tab's, which becomes active, so a running chat
+   * never holds the prompt.
+   *
+   * @param {string} key
+   * @param {number} count
+   */
+  function askPrompt(key, count) {
+    const chat = getChat(activeId.value);
+    const busy = (getOwner(chat) !== 'none') || chat?.openRevert || chat?.carry ||
+      confirmations.value[activeId.value];
+    if (busy) {
+      newChat();
+    }
+    askedPrompt.value = {
+      chatId: activeId.value,
+      key,
+      count
+    };
+  }
+
+  // The prompt asked for a chat tab, taken once by its composer
+  function takeAskedPrompt(id) {
+    if (askedPrompt.value?.chatId !== id) {
+      return null;
+    }
+    const asked = askedPrompt.value;
+    askedPrompt.value = null;
+    return asked;
+  }
+
+  // A prompt in front of a chat tab's draft; the same prompt twice in a row
+  // is put there once
+  function prefill(id, prompt) {
+    if (!(drafts.value[id] || '').startsWith(prompt)) {
+      prependDraft(id, prompt);
+    }
+  }
+
   function restoreTabs() {
     let stored = null;
     try {
@@ -2182,6 +2443,7 @@ export const useAssistantStore = defineStore('assistant', () => {
     tabTitles.value = (stored.titles && (typeof stored.titles === 'object'))
       ? stored.titles
       : {};
+    newChatId = (typeof stored.newChatId === 'string') ? stored.newChatId : null;
   }
 
   // The chat tabs, and their titles as shown now
@@ -2198,7 +2460,8 @@ export const useAssistantStore = defineStore('assistant', () => {
       window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
         tabs: tabs.value,
         activeId: activeId.value,
-        titles
+        titles,
+        newChatId
       }));
     } catch (e) {
       // The chat tabs last as long as the page
@@ -2219,6 +2482,10 @@ export const useAssistantStore = defineStore('assistant', () => {
     activeId,
     drafts,
     refusals,
+    sendWaiting,
+    attached: attachments.attached,
+    attachRefusals: attachments.attachRefusals,
+    previews: attachments.previews,
     progress,
     reverts,
     revertProgress,
@@ -2261,6 +2528,19 @@ export const useAssistantStore = defineStore('assistant', () => {
     retryCarry,
     dismissSuggestion,
     findMentions,
-    setDraft
+    setDraft,
+    askPrompt,
+    askedPrompt,
+    takeAskedPrompt,
+    prefill,
+    runNoticeAction,
+    canAttach,
+    canUpload: attachments.canUpload,
+    getAttached: attachments.getAttached,
+    isUploading: attachments.isUploading,
+    isFull: attachments.isFull,
+    attachFiles: attachments.attachFiles,
+    removeAttached: attachments.removeAttached,
+    dismissAttachRefusal: attachments.dismissAttachRefusal
   };
 });

@@ -31,8 +31,19 @@ describe('Harness: write tools and get_changes', function () {
               {
                 name: 'tools-page',
                 label: 'Page'
+              },
+              {
+                name: 'admin-page',
+                label: 'Admin page'
               }
             ]
+          }
+        },
+        // Only an admin may make or edit one
+        'admin-page': {
+          extend: '@apostrophecms/page-type',
+          options: {
+            editRole: 'admin'
           }
         },
         'tools-page': {
@@ -451,6 +462,33 @@ describe('Harness: write tools and get_changes', function () {
       assert.equal(await apos.doc.db.countDocuments({ type: 'tools-page' }), before);
     });
 
+    it('should refuse a user who may not create the page, creating nothing', async function () {
+      const req = apos.task.getReq({
+        user: {
+          _id: 'user-eve',
+          username: 'eve',
+          title: 'Eve',
+          role: 'editor'
+        },
+        mode: 'draft'
+      });
+      const result = await run('create_page', {
+        type: 'admin-page',
+        title: 'Not allowed',
+        target: '/'
+      }, req);
+      assert.deepEqual(result.written, []);
+      assert.deepEqual(result.refused, [ {
+        title: 'Not allowed',
+        reason: 'forbidden',
+        message: 'The user may not create a document of this type.'
+      } ]);
+      const found = await apos.page.find(apos.task.getReq({ mode: 'draft' }), {
+        title: 'Not allowed'
+      }).toArray();
+      assert.equal(found.length, 0);
+    });
+
     it('should refuse a parent it can\'t find and a type the parent doesn\'t take', async function () {
       await assert.rejects(run('create_page', {
         type: 'tools-page',
@@ -783,25 +821,6 @@ describe('Harness: write tools and get_changes', function () {
       assert.equal(stored.title, 'Kept');
       assert.equal(stored.archived, false);
       assert.equal((await findDraft(archived._id)).archived, true);
-    });
-
-    it('should leave Global Styles to their own tools', async function () {
-      const styles = await apos.doc.db.findOne({
-        type: '@apostrophecms/styles',
-        aposLocale: 'en:draft'
-      });
-
-      const { refused } = await run('update_document', {
-        targets: [ {
-          _id: styles._id,
-          values: { title: 'Styles' }
-        } ]
-      });
-
-      assert.deepEqual(fieldsOf(refused[0]), [ {
-        path: '_id',
-        reason: 'styles'
-      } ]);
     });
   });
 

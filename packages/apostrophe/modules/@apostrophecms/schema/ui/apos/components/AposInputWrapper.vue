@@ -161,15 +161,31 @@ export default {
   max-width: 100%;
 }
 
-// Room for the mark at the start of the label line
+// Room for the mark at the start of the label line, centred on that line
+// however tall its meta makes it: both share the first cell
 .apos-field__wrapper--outside > .apos-field > .apos-field__info {
   position: relative;
+  display: grid;
+
+  > * {
+    grid-column: 1;
+  }
 
   > .apos-field__label {
+    grid-row: 1;
     padding-left: 20px;
+  }
+
+  // The label's gap below it is in the cell too
+  > .apos-field__ai-mark {
+    position: static;
+    grid-row: 1;
+    place-self: center start;
+    margin-bottom: var(--apos-field-label-gap, #{$spacing-base});
   }
 }
 
+// Where the mark fades out once the field is no longer marked
 .apos-field__ai-mark {
   position: absolute;
   top: 1px;
@@ -220,7 +236,8 @@ export default {
     flex-wrap: nowrap;
     align-items: center;
     justify-content: space-between;
-    margin: 0 0 $spacing-base;
+    // Set where a field's context changes it, so the AI mark can follow
+    margin: 0 0 var(--apos-field-label-gap, #{$spacing-base});
     padding: 0;
     color: var(--a-text-primary);
     gap: $spacing-double;
@@ -302,11 +319,9 @@ export default {
   align-items: center;
   justify-content: space-between;
 
-  .apos-field__label {
-    margin-bottom: 0;
-  }
-
   .apos-field__info {
+    --apos-field-label-gap: 0;
+
     margin-right: 30px;
   }
 

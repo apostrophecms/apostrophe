@@ -57,11 +57,34 @@ describe('Assistant: module and options', function () {
         .some(trigger => trigger.name === 'assistant'));
       assert.deepEqual(data.modules['@apostrophecms/assistant'], {
         action: '/api/v1/@apostrophecms/assistant',
+        // One locale: no Localize in widget menus
+        widgetOperations: {},
         usageDisplay: 'tokens',
         modelDisplay: false,
         screenWait: 15000,
+        // With no provider routed, every kind of file
+        attachments: {
+          canUpload: true,
+          maxBytes: 8 * 1024 * 1024,
+          maxTextBytes: 2 * 1024 * 1024,
+          textExtensions: [ 'css', 'json', 'tokens', 'md', 'markdown' ],
+          maxCount: 4,
+          extensions: [
+            'png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'heic', 'heif', 'svg', 'pdf',
+            'html', 'htm', 'css', 'json', 'tokens', 'md', 'markdown'
+          ],
+          unreadable: {}
+        },
         alias: 'assistant'
       });
+      // Attaching takes the right to upload a file
+      const guest = await apos.template.getBodyData(apos.task.getReq({
+        user: {
+          _id: 'guest',
+          role: 'guest'
+        }
+      }));
+      assert.equal(guest.modules['@apostrophecms/assistant'].attachments.canUpload, false);
       const anonymous = await apos.template.getBodyData(apos.task.getAnonReq());
       assert.equal(anonymous.modules['@apostrophecms/modal'], undefined);
       assert.equal(anonymous.modules['@apostrophecms/assistant'], undefined);
@@ -202,6 +225,9 @@ describe('Assistant: module and options', function () {
       [ { modelDisplay: 1 }, /modelDisplay option must be a boolean/ ],
       [ { maxSteps: 0 }, /maxSteps option must be a positive integer/ ],
       [ { screenWait: 1.5 }, /screenWait option must be a positive integer/ ],
+      [ { attachmentMaxBytes: 0 }, /attachmentMaxBytes option must be a positive integer/ ],
+      [ { attachmentMaxTextBytes: -1 }, /attachmentMaxTextBytes option must be a positive integer/ ],
+      [ { attachmentMaxCount: 'four' }, /attachmentMaxCount option must be a positive integer/ ],
       [ { usageDisplay: 'cost' }, /usageDisplay option must be one of: tokens, none/ ],
       [ { titleEffort: '' }, /titleEffort option must be the name of an effort level/ ],
       [ { contextLimit: 0 }, /contextLimit option must be a positive integer/ ],

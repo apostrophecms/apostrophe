@@ -47,8 +47,10 @@ module.exports = (self) => {
         return;
       }
       const shown = getDocumentKey(req, screen.document._id);
-      const writes = getCallDocumentIds(req, validated)
-        .some(id => getDocumentKey(req, id) === shown);
+      // A call naming locales makes or records the document's copies there:
+      // nothing of the page as shown changes
+      const writes = !Array.isArray(validated.locales) &&
+        getCallDocumentIds(req, validated).some(id => getDocumentKey(req, id) === shown);
       if (writes) {
         throw self.apos.error('aiInput', 'waiting for the page to enter edit mode', {
           kind: 'editMode',

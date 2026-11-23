@@ -1,6 +1,21 @@
 const path = require('node:path');
 const fs = require('node:fs');
 
+function getAiHow({ columns, minSpan }) {
+  const half = Math.floor(columns / 2);
+  return [
+    `Places content side by side on a grid of ${columns} columns. A layout has exactly one`,
+    'row: it can\'t stack rows, so content in several rows takes one layout widget for each',
+    'row. Its "columns" area holds one "@apostrophecms/layout-column" widget per column, each',
+    `with "colstart" (1 for the first column of the grid), "colspan" (at least ${minSpan}),`,
+    '"rowstart" and "rowspan" of 1, and "order" (0 for the first column, then 1, 2 and so on',
+    'from left to right). Start each column where the one before it ends, and make the spans',
+    `add up to ${columns}; two halves are colstart 1, colspan ${half} and colstart ${half + 1},`,
+    `colspan ${columns - half}. Put each column's widgets in its "content" area. Use it for text`,
+    'beside an image, or for blocks shown side by side.'
+  ].join(' ');
+}
+
 module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
@@ -85,6 +100,9 @@ module.exports = {
   },
   async init(self) {
     self.columnWidgetName = '@apostrophecms/layout-column';
+    // How the AI assistant fills a layout, from this grid's options, unless
+    // the project wrote its own
+    self.options.aiHow ??= getAiHow(self.options);
 
     if (
       self.__meta.name === '@apostrophecms/layout-widget' &&

@@ -5,6 +5,24 @@
     @submit.prevent="send"
     @keyup.esc="onEscapeUp"
   >
+    <AposAssistantActivity
+      v-if="attachRefusal"
+      class="apos-assistant-composer__refusal"
+      tone="error"
+      :title="$t('apostrophe:assistantNotAttached')"
+      :dismiss-label="$t('apostrophe:close')"
+      data-apos-test="assistant-attach-refusal"
+      @dismiss="store.dismissAttachRefusal(chatId)"
+    >
+      <p
+        v-for="(line, index) in attachRefusal.lines"
+        :key="index"
+        class="apos-assistant-composer__refusal-line"
+        data-apos-test="assistant-attach-refusal-line"
+      >
+        {{ $t(line.key, line.values) }}
+      </p>
+    </AposAssistantActivity>
     <AposAssistantDock
       v-if="dock"
       v-bind="dock"
@@ -16,6 +34,12 @@
       :chat-id="chatId"
       :ask="question"
     />
+    <AposAssistantImageAsk
+      v-else-if="images"
+      :key="images.callId"
+      :chat-id="chatId"
+      :ask="images"
+    />
     <AposAssistantPlan
       v-else-if="plan"
       :request="plan.request"
@@ -24,7 +48,10 @@
       :cancelling="plan.cancelling"
       @cancel="cancelPlan"
     />
-    <div class="apos-assistant-composer__shell">
+    <div
+      class="apos-assistant-composer__shell"
+      :class="{ 'apos-assistant-composer__shell--drop': dropping }"
+    >
       <div
         v-if="listOpen"
         class="apos-assistant-mention"
@@ -71,21 +98,59 @@
           {{ $t('apostrophe:assistantSearching') }}
         </p>
       </div>
+      <AposAssistantFiles
+        v-if="files.length"
+        class="apos-assistant-composer__files"
+        :files="files"
+        removable
+        @remove="removeFile"
+      />
       <AposAssistantSelection @empty="input.focus()" />
       <AposAssistantInput
         ref="input"
         :model-value="draft"
         :chat-id="chatId"
-        :placeholder="$t('apostrophe:assistantPlaceholder')"
+        :placeholder="$t(dropping ? 'apostrophe:assistantDropToAttach' : 'apostrophe:assistantPlaceholder')"
         :label="$t('apostrophe:assistantMessage')"
         :aria="aria"
         @update:model-value="onInput"
         @send="send"
         @query="onQuery"
         @key="onKey"
+        @files="onFiles"
       />
       <div class="apos-assistant-composer__actions">
         <div class="apos-assistant-composer__tools">
+          <button
+            v-if="canUpload"
+            type="button"
+            class="apos-assistant-composer__tool"
+            :aria-label="attachTitle"
+            :title="attachTitle"
+            :aria-disabled="canAttach ? null : 'true'"
+            data-apos-test="assistant-attach"
+            @click="pickFiles"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+            </svg>
+          </button>
+          <input
+            v-if="canUpload"
+            ref="picker"
+            class="apos-assistant-composer__picker"
+            type="file"
+            multiple
+            tabindex="-1"
+            aria-hidden="true"
+            :accept="accept"
+            data-apos-test="assistant-attach-input"
+            @change="onPicked"
+          >
           <button
             v-if="canSelect"
             type="button"
@@ -112,7 +177,7 @@
         <button
           :type="stopShown ? 'button' : 'submit'"
           class="apos-assistant-composer__send"
-          :disabled="!stopShown && !canSend"
+          :disabled="!stopShown && (!canSend || uploading)"
           :aria-disabled="(stopShown && stopping) ? 'true' : null"
           :aria-label="$t(stopShown ? 'apostrophe:assistantStop' : 'apostrophe:assistantSend')"
           :title="sendTitle"
@@ -131,20 +196,31 @@
 
 <script setup>
 import {
-  computed, inject, onBeforeUnmount, onMounted, ref
+  computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch
 } from 'vue';
 import { createId } from 'apostrophe/lib/beneath.js';
 import { useAssistantStore } from '../stores/assistant.js';
 import AposAssistantInput from './AposAssistantInput.vue';
 import AposAssistantSelection from './AposAssistantSelection.vue';
 import AposAssistantGauge from './AposAssistantGauge.vue';
+import AposAssistantFiles from './AposAssistantFiles.vue';
+import { getFileUrl } from '../lib/attachments.js';
+
+// Stands for `{{ caret }}` in a translated prompt; no translation carries it
+const CARET = '\uE000';
 
 // The composer of the active chat tab. It never takes focus on its own:
-// only the editor's click or Tab puts it there
+// only the editor's click or Tab puts it there, or a prompt the editor asked
+// for from outside the panel (`askPrompt`)
 const props = defineProps({
   chatId: {
     type: String,
     required: true
+  },
+  // Files are dragged over the window, and would attach here
+  dropping: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -195,9 +271,37 @@ const running = computed(() => [ 'running', 'stopping' ].includes(chat.value?.op
   Boolean(store.getBrowserStep(chat.value)));
 const stopping = computed(() => chat.value?.openRequest?.status === 'stopping');
 const stopShown = computed(() => running.value && !draft.value.trim());
+const uploading = computed(() => store.isUploading(props.chatId));
+// A user who may not upload files has no attach button
+const canUpload = store.canUpload();
+const canAttach = computed(() => store.canAttach(props.chatId));
+const attachRefusal = computed(() => store.attachRefusals[props.chatId] || null);
+const attachTitle = computed(() => (store.isFull(props.chatId)
+  ? $t('apostrophe:assistantAttachFull', {
+    count: apos.modules['@apostrophecms/assistant'].attachments.maxCount
+  })
+  : $t('apostrophe:assistantAttach')));
+const accept = apos.modules['@apostrophecms/assistant'].attachments.extensions
+  .map(extension => `.${extension}`)
+  .join(',');
+const picker = ref(null);
+// The chat tab's files, an image shown from the browser until the server
+// has its thumbnail
+const files = computed(() => store.getAttached(props.chatId).map(file => ({
+  key: file.key,
+  name: file.name,
+  size: file.size,
+  uploading: file.status === 'uploading',
+  src: file.preview || (file.attachment
+    ? getFileUrl(file.chatId, file.attachment._id, 'thumbnail')
+    : null)
+})));
 const sendTitle = computed(() => {
   if (stopShown.value) {
     return $t('apostrophe:assistantStop');
+  }
+  if (uploading.value && draft.value.trim()) {
+    return $t('apostrophe:assistantUploading');
   }
   return (carrying.value && draft.value.trim())
     ? $t('apostrophe:assistantCarryingSend')
@@ -236,14 +340,9 @@ const dock = computed(() => {
 const latest = computed(() => store.getRequests(props.chatId).at(-1) || null);
 // The questions the chat's request waits on, when this browser tab answers
 // them
-const question = computed(() => {
-  const request = latest.value;
-  if ((owner.value !== 'here') || (request?.status !== 'waiting') ||
-    (chat.value.openRequest._id !== request._id)) {
-    return null;
-  }
-  return request.asks?.find(ask => ask.kind === 'question') || null;
-});
+const question = computed(() => getDockAsk('question'));
+// The round of images it waits on, likewise
+const images = computed(() => getDockAsk('images'));
 // The plan of the chat's latest request while it is open, folded once it
 // failed. Cancel reverts what it did, so not once a cancel is under way,
 // which the plan reads as cancelling until the revert takes over
@@ -273,7 +372,38 @@ const plan = computed(() => {
     : null;
 });
 
+function getDockAsk(kind) {
+  const request = latest.value;
+  if ((owner.value !== 'here') || (request?.status !== 'waiting') ||
+    (chat.value.openRequest._id !== request._id)) {
+    return null;
+  }
+  return request.asks?.find(ask => ask.kind === kind) || null;
+}
+
 onMounted(() => apos.bus.$on('refreshed', readEditMode));
+
+// A prompt asked for from outside the panel (`askPrompt`), in front of the
+// draft, the caret where its translation has `{{ caret }}`, else at its end
+watch(() => [ store.askedPrompt, props.chatId ], async () => {
+  const asked = store.takeAskedPrompt(props.chatId);
+  if (!asked) {
+    return;
+  }
+  const text = $t(asked.key, {
+    count: asked.count,
+    caret: CARET
+  });
+  const at = text.indexOf(CARET);
+  const prompt = text.replace(CARET, '');
+  store.prefill(props.chatId, prompt);
+  await nextTick();
+  input.value?.focus((at === -1) ? prompt.length : at);
+}, {
+  immediate: true,
+  flush: 'post'
+});
+
 onBeforeUnmount(() => {
   apos.bus.$off('refreshed', readEditMode);
   clearTimeout(searchTimer);
@@ -370,10 +500,35 @@ function pick(item) {
   });
 }
 
+// Pressed while files upload, the send goes once they are stored
 function send() {
   if (canSend.value) {
     store.send(props.chatId);
   }
+}
+
+function pickFiles() {
+  if (canAttach.value) {
+    picker.value.click();
+  }
+}
+
+function onPicked(event) {
+  const picked = [ ...event.target.files ];
+  event.target.value = '';
+  onFiles(picked);
+}
+
+// Pasted or picked; ignored while the composer is held
+function onFiles(given) {
+  if (given.length && canAttach.value) {
+    store.attachFiles(props.chatId, given);
+  }
+}
+
+function removeFile(key) {
+  store.removeAttached(props.chatId, key);
+  input.value.focus();
 }
 
 function stop() {
@@ -418,6 +573,34 @@ function cancelPlan() {
     &:focus-within {
       border-color: color-mix(in srgb, var(--a-primary) 75%, transparent);
       box-shadow: 0 0 0 2px color-mix(in srgb, var(--a-primary) 20%, transparent);
+    }
+  }
+
+  .apos-assistant-composer__shell--drop {
+    border-style: dashed;
+    border-color: var(--a-primary);
+  }
+
+  .apos-assistant-composer__files {
+    padding: 6px 6px 2px;
+  }
+
+  .apos-assistant-composer__picker {
+    display: none;
+  }
+
+  .apos-assistant-composer__refusal {
+    flex-shrink: 0;
+    margin-bottom: 10px;
+  }
+
+  .apos-assistant-composer__refusal-line {
+    @include type-base;
+
+    & {
+      margin: 0;
+      line-height: var(--a-line-tall);
+      overflow-wrap: anywhere;
     }
   }
 
@@ -536,9 +719,14 @@ function cancelPlan() {
       height: 14px;
     }
 
-    &:hover {
+    &:hover:not([aria-disabled]) {
       color: var(--a-primary);
       background-color: var(--a-base-10);
+    }
+
+    &[aria-disabled] {
+      color: var(--a-base-6);
+      cursor: default;
     }
 
     &:focus-visible {

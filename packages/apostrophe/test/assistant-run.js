@@ -471,6 +471,10 @@ describe('Assistant: chats and the run', function () {
         assert(names.includes(name), name);
       }
       assert.match(calls[0].system, /^You work on the content of this ApostropheCMS site/);
+      // One locale: nothing about copies in other locales
+      assert.equal(apos.assistant.getLocalizationSection(), null);
+      assert(!calls[0].system.includes('localize_document'));
+      assert.deepEqual(apos.area.widgetOperations, []);
     });
 
     it('keeps what the chat saw of each document on the chat, for its next request', async function () {

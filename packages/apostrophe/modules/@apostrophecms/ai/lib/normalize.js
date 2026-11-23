@@ -361,6 +361,27 @@ module.exports = (self) => {
               text: part.text
             });
           }
+          if (part.type === 'document') {
+            const document = part.document;
+            // Which types a provider reads is its own answer, not ours
+            if (!isObject(document) || typeof document.data !== 'string' ||
+              !document.data || typeof document.mediaType !== 'string' ||
+              !document.mediaType) {
+              invalid(`${partName}.document must be an object like { data, mediaType, name? }`);
+            }
+            if (document.name !== undefined &&
+              (typeof document.name !== 'string' || !document.name)) {
+              invalid(`${partName}.document.name must be a non-empty string`);
+            }
+            return withDialect(part, {
+              type: 'document',
+              document: {
+                data: document.data,
+                mediaType: document.mediaType,
+                ...(document.name !== undefined && { name: document.name })
+              }
+            });
+          }
           // image, the only remaining type
           const image = part.image;
           if (isObject(image) && typeof image.url === 'string') {

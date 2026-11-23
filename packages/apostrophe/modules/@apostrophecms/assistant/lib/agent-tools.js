@@ -1,9 +1,10 @@
 // The tools that spend model tokens on the server: `describe_images` looks at
-// Media images and says what each shows, or answers a question about it, and
-// `delegate` hands a research task to a read-only subagent. Each is an agent
-// on the AI engine (its handler makes its own `generate` calls) tagged
-// `assistant`, so only the assistant's door selects it. What they spend is
-// kept on the request beside the run's own usage.
+// Media images and images attached to the chat and says what each shows, or
+// answers a question about it, and `delegate` hands a research task to a
+// read-only subagent. Each is an agent on the AI engine (its handler makes
+// its own `generate` calls) tagged `assistant`, so only the assistant's door
+// selects it. What they spend is kept on the request beside the run's own
+// usage.
 
 const fs = require('node:fs/promises');
 const { promisify } = require('node:util');
@@ -62,27 +63,20 @@ module.exports = (self) => {
       self.apos.ai.addTool({
         name: 'describe_images',
         label: 'apostrophe:aiToolDescribeImages',
-        description: 'See Media images as text: what each one shows, any text in it ' +
-          'quoted. You never see image files yourself, so use this before writing alt ' +
-          'text, titles or tags for an image, or choosing among images by what they ' +
-          'show. Give a "question" when you need something specific instead of a ' +
-          'description. Each image costs a model call: look only at the images you need.',
+        description: 'See images as text: what each one shows, any text in it quoted. ' +
+          'Media images go in "images": you never see them yourself, so use this before ' +
+          'writing alt text, titles or tags for an image, or choosing among images by ' +
+          'what they show. Images attached to this chat go in "attachments": use it to ' +
+          'look at one again once it has left the chat. Give a "question" when you need ' +
+          'something specific instead of a description. Each image costs a model call: ' +
+          'look only at the images you need.',
         kind: 'agent',
         tags: [ 'assistant' ],
         input: {
           type: 'object',
           properties: {
-            ids: {
-              type: 'array',
-              minItems: 1,
-              maxItems: DESCRIBE_MAX_IMAGES,
-              uniqueItems: true,
-              items: {
-                type: 'string',
-                minLength: 1
-              },
-              description: 'The `_id`s of Media images'
-            },
+            images: ids('The `_id`s of Media images'),
+            attachments: ids('Attachment ids, from the message that attached the images'),
             question: {
               type: 'string',
               minLength: 1,
@@ -91,39 +85,15 @@ module.exports = (self) => {
                 'itself: "Is there a person in it?", "What does the sign say?"'
             }
           },
-          required: [ 'ids' ],
           additionalProperties: false
         },
         schema: {
           type: 'object',
           properties: {
-            images: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  _id: { type: 'string' },
-                  title: { type: 'string' },
-                  description: {
-                    type: 'string',
-                    description: 'What the image shows, without a question'
-                  },
-                  answer: {
-                    type: 'string',
-                    description: 'The answer to the question'
-                  },
-                  error: {
-                    type: 'string',
-                    description: 'Why this image was not looked at'
-                  }
-                },
-                required: [ '_id' ],
-                additionalProperties: false
-              },
-              description: 'One per id, in the order asked'
-            }
+            images: looked('One per Media image, in the order asked'),
+            attachments: looked('One per attachment, in the order asked; `title` is the ' +
+              'file name')
           },
-          required: [ 'images' ],
           additionalProperties: false
         },
         handler: describeImages
@@ -183,15 +153,65 @@ module.exports = (self) => {
         handler: delegate
       });
 
+      function ids(description) {
+        return {
+          type: 'array',
+          minItems: 1,
+          maxItems: DESCRIBE_MAX_IMAGES,
+          uniqueItems: true,
+          items: {
+            type: 'string',
+            minLength: 1
+          },
+          description
+        };
+      }
+
+      function looked(description) {
+        return {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              _id: { type: 'string' },
+              title: { type: 'string' },
+              description: {
+                type: 'string',
+                description: 'What the image shows, without a question'
+              },
+              answer: {
+                type: 'string',
+                description: 'The answer to the question'
+              },
+              error: {
+                type: 'string',
+                description: 'Why this image was not looked at'
+              }
+            },
+            required: [ '_id' ],
+            additionalProperties: false
+          },
+          description
+        };
+      }
+
       // The `describe_images` handler: one vision call per image, on the
       // `delegationEffort` route, against a size variant read on the server,
       // for a description or the answer to the model's question. An image
       // that can't be looked at gets an `error` and the rest go on. The image
       // bytes stay in the vision calls: the result is text.
       async function describeImages(req, {
-        ids, question, _context
+        images = [], attachments = [], question, _context
       }) {
         const effort = self.options.delegationEffort;
+        if (!images.length && !attachments.length) {
+          throw self.apos.error('aiToolError', 'Name at least one image, in "images" or ' +
+            '"attachments".');
+        }
+        if (images.length + attachments.length > DESCRIBE_MAX_IMAGES) {
+          throw self.apos.error('aiToolError', `At most ${DESCRIBE_MAX_IMAGES} images in ` +
+            'one call.');
+        }
         // Mock mode with no provider routes nothing, so there is no model to
         // ask
         const routed = Object.keys(self.apos.ai.modelCatalog().effort.levels).length > 0;
@@ -201,19 +221,26 @@ module.exports = (self) => {
         const size = getSize();
         const { uploadfs } = self.apos.attachment;
         const copyOut = promisify(uploadfs.copyOut.bind(uploadfs));
-        const images = new Array(ids.length);
+        const jobs = [
+          ...images.map(_id => () => describe(_id)),
+          ...attachments.map(_id => () => describeAttached(_id))
+        ];
+        const results = new Array(jobs.length);
         const usages = [];
         let next = 0;
         await Promise.all(Array.from({
-          length: Math.min(DESCRIBE_CONCURRENCY, ids.length)
+          length: Math.min(DESCRIBE_CONCURRENCY, jobs.length)
         }, async () => {
-          while (next < ids.length) {
+          while (next < jobs.length) {
             const index = next++;
-            images[index] = await describe(ids[index]);
+            results[index] = await jobs[index]();
           }
         }));
-        await addAgentUsage(req, usages);
-        return { images };
+        await self.addAgentUsage(req, usages);
+        return {
+          ...(images.length && { images: results.slice(0, images.length) }),
+          ...(attachments.length && { attachments: results.slice(images.length) })
+        };
 
         // The smallest of the project's image sizes at least DESCRIBE_MIN_SIDE
         // on both sides (`one-half` among core's), else the largest; none
@@ -227,6 +254,7 @@ module.exports = (self) => {
           return found?.name || null;
         }
 
+        // A Media image
         async function describe(_id) {
           let found;
           try {
@@ -282,6 +310,58 @@ module.exports = (self) => {
           } finally {
             await fs.rm(temp, { force: true });
           }
+          return look({
+            _id,
+            title: doc.title
+          }, data, MEDIA_TYPES[extension]);
+        }
+
+        // An image attached to the chat, read at its `preview` size, as the
+        // run's messages carry it, so text in a screenshot stays legible
+        async function describeAttached(_id) {
+          let record;
+          try {
+            record = await self.findChatAttachment(req, _id);
+          } catch (e) {
+            if (e.name !== 'aiToolError') {
+              throw e;
+            }
+            return {
+              _id,
+              error: e.message
+            };
+          }
+          const head = {
+            _id: record._id,
+            title: record.name
+          };
+          const kind = self.getAttachmentKind(record);
+          if (kind !== 'image') {
+            return {
+              ...head,
+              error: (kind === 'svg')
+                ? 'An SVG is read as source with read_attachment.'
+                : 'This attached file is not an image.'
+            };
+          }
+          let data;
+          try {
+            data = (await self.readRecordFile(record, { size: 'preview' }))
+              .toString('base64');
+          } catch (e) {
+            return {
+              ...head,
+              error: (e.name === 'notfound')
+                ? 'The file is no longer available.'
+                : 'The image file could not be read.'
+            };
+          }
+          return look(head, data, record.mediaType);
+        }
+
+        // The vision call on one image's bytes
+        async function look(head, data, mediaType) {
+          const { _id, title } = head;
           let result;
           try {
             result = await self.apos.ai.generate(req, {
@@ -294,7 +374,7 @@ module.exports = (self) => {
                     type: 'image',
                     image: {
                       data,
-                      mediaType: MEDIA_TYPES[extension]
+                      mediaType
                     }
                   },
                   {
@@ -314,7 +394,7 @@ module.exports = (self) => {
             usages.push(e.aposAiPartial?.usage);
             return {
               _id,
-              title: doc.title,
+              title,
               error
             };
           }
@@ -323,7 +403,7 @@ module.exports = (self) => {
           if ((result.finishReason !== 'stop') || !text) {
             return {
               _id,
-              title: doc.title,
+              title,
               error: (result.finishReason === 'cancel')
                 ? 'The request was stopped.'
                 : 'Nothing came back.'
@@ -331,7 +411,7 @@ module.exports = (self) => {
           }
           return {
             _id,
-            title: doc.title,
+            title,
             [question ? 'answer' : 'description']: text
           };
         }
@@ -346,7 +426,8 @@ module.exports = (self) => {
       }) {
         const level = effort || self.options.delegationEffort;
         const tools = self.apos.harness.getDoorTools('assistant')
-          .filter(tool => (tool.kind === 'query') && !tool.tags?.includes('browser'))
+          .filter(tool => (tool.kind === 'query') && !tool.tags?.includes('browser') &&
+            !tool.tags?.includes('assistant'))
           .map(tool => tool.name);
         let result;
         try {
@@ -365,34 +446,34 @@ module.exports = (self) => {
           if (!error) {
             throw e;
           }
-          await addAgentUsage(req, [ e.aposAiPartial?.usage ]);
+          await self.addAgentUsage(req, [ e.aposAiPartial?.usage ]);
           throw self.apos.error('aiToolError', `${error} Narrow the task or read yourself.`);
         }
-        await addAgentUsage(req, [ result.usage ]);
+        await self.addAgentUsage(req, [ result.usage ]);
         return {
           answer: result.text || '',
           finishReason: result.finishReason
         };
       }
+    },
 
-      // Adds what the agent tools spent to the request's `agentUsage`, which
-      // the panel counts with the run's own
-      async function addAgentUsage(req, usages) {
-        const door = self.apos.harness.getDoor(req);
-        if (!door?.requestId) {
-          return;
-        }
-        const $inc = {};
-        for (const usage of usages) {
-          for (const [ key, value ] of Object.entries(usage || {})) {
-            if (typeof value === 'number') {
-              $inc[`agentUsage.${key}`] = ($inc[`agentUsage.${key}`] || 0) + value;
-            }
+    // Adds what the agent tools spent to the request's `agentUsage`, which
+    // the panel counts with the run's own
+    async addAgentUsage(req, usages) {
+      const door = self.apos.harness.getDoor(req);
+      if (!door?.requestId) {
+        return;
+      }
+      const $inc = {};
+      for (const usage of usages) {
+        for (const [ key, value ] of Object.entries(usage || {})) {
+          if (typeof value === 'number') {
+            $inc[`agentUsage.${key}`] = ($inc[`agentUsage.${key}`] || 0) + value;
           }
         }
-        if (Object.keys($inc).length) {
-          await self.requests.updateOne({ _id: door.requestId }, { $inc });
-        }
+      }
+      if (Object.keys($inc).length) {
+        await self.requests.updateOne({ _id: door.requestId }, { $inc });
       }
     }
   };

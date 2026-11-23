@@ -30,6 +30,8 @@ module.exports = (self) => {
         to: 1,
         at: -1
       });
+      // The records of a door's request, which go with its revert
+      await self.recordsDb.createIndex({ requestId: 1 });
     },
 
     // A whole-document copy by core — the classic Localize flow, or the copy
@@ -52,9 +54,12 @@ module.exports = (self) => {
       });
     },
 
+    // Inserts a record. On a door's request (see `apos.harness.withDoor`)
+    // the record keeps its `requestId`: a revert of the request deletes it
     async insertRecord(req, {
       aposDocId, from, to, via, source, target
     }) {
+      const requestId = self.apos.harness.getDoor(req)?.requestId;
       const record = {
         _id: self.apos.util.generateId(),
         aposDocId,
@@ -64,11 +69,77 @@ module.exports = (self) => {
         at: new Date(),
         ownerId: req.user?._id || null,
         ai: via === 'ai',
+        ...(requestId && { requestId }),
         source: await self.apos.docVersions.pack(source),
         target: await self.apos.docVersions.pack(target)
       };
       await self.recordsDb.insertOne(record);
       return record;
+    },
+
+    // Deletes the records door requests made, for their revert: a record
+    // left behind would say two copies are in line while the target no
+    // longer holds what made them so, and hide the source's changes since
+    async deleteRequestRecords(requestIds) {
+      await self.recordsDb.deleteMany({ requestId: { $in: requestIds } });
+    },
+
+    // Copies `source`, a draft as its type's `findForEditing` loads it, into
+    // `locale` as the start of a translation: core's own copy, in the
+    // source language, and a "copy" record marking it untranslated until a
+    // localization that translates it is recorded. Saved as every harness
+    // write is (see `apos.harness.getSaveRequest`), so a door's copy is
+    // marked as AI's, lands in the change log and goes with a revert. An
+    // existing copy is replaced only with `update`, under its lock. Needs
+    // the edit right on `source` and the right to create, or edit, the copy.
+    // Returns the copy as stored. Throws `forbidden`, `locked`, and as
+    // core's `localize` does: `conflict` for an existing copy, `notfound`
+    // with `parentNotLocalized` for a page whose parent has no copy
+    async localizeUntranslated(req, source, locale, { update = false } = {}) {
+      const { harness } = self.apos;
+      const manager = self.apos.doc.getManager(source.type);
+      const from = harness.getLocaleOf(source);
+      // Core's copy takes a request in the source's locale
+      const sourceReq = req.clone({
+        locale: from,
+        mode: 'draft'
+      });
+      if (!self.apos.ai.can(sourceReq, 'edit', source)) {
+        throw self.apos.error('forbidden');
+      }
+      const targetId = `${source.aposDocId}:${locale}:draft`;
+      const copy = (saveReq) => manager.localize(
+        saveReq.clone({ aposAiLocalizeCopy: true }),
+        source,
+        locale,
+        { update }
+      );
+      if (update && await self.storedDraft(targetId)) {
+        const found = await harness.findDraft(req.clone({ locale }), targetId);
+        await harness.writeDraft(found, ({ doc }) => {
+          return copy(harness.getSaveRequest(sourceReq, doc));
+        });
+      } else {
+        const targetReq = req.clone({
+          locale,
+          mode: 'draft'
+        });
+        if (!self.apos.ai.can(targetReq, 'create', source.type, 'draft')) {
+          throw self.apos.error('forbidden', { create: true });
+        }
+        await copy(harness.getSaveRequest(sourceReq));
+      }
+      const target = await self.storedDraft(targetId);
+      await self.insertRecord(req, {
+        aposDocId: source.aposDocId,
+        from,
+        to: locale,
+        via: 'copy',
+        source: await self.storedDraft(source._id),
+        target
+      });
+      await harness.rememberSeen(req, target);
+      return target;
     },
 
     // The newest record for a pair. Its `via` says what made it: "localize",
@@ -125,6 +196,8 @@ module.exports = (self) => {
         return {
           basis: 'record',
           since: record.at,
+          ownerId: record.ownerId,
+          via: record.via,
           source: forward ? recordSource : recordTarget,
           target: forward ? recordTarget : recordSource
         };
@@ -176,7 +249,8 @@ module.exports = (self) => {
 
     // Core's change list from one stored content to another, as entries the
     // model can act on: the address the write tools take, the place in the
-    // editor's words, and the texts on both sides. Up to `budget`
+    // editor's words, and the texts on both sides. Only the changes AI
+    // reads: one in a field kept away from it is no entry. Up to `budget`
     // characters; `omitted` counts the rest
     async changesBetween(req, older, newer, budget) {
       if (!older) {
@@ -185,11 +259,14 @@ module.exports = (self) => {
           omitted: 0
         };
       }
-      const { rows } = await self.apos.docVersions.getChangeList(req, [ {
+      const manager = self.apos.doc.getManager(newer.type);
+      const { rows: all } = await self.apos.docVersions.getChangeList(req, [ {
         older,
         newer,
         ai: false
       } ]);
+      const rows = all
+        .filter((row) => self.apos.harness.describeChangeRow(req, manager, row));
       const changes = [];
       let size = 0;
       for (const row of rows) {

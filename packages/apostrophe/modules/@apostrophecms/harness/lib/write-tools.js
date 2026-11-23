@@ -27,13 +27,17 @@ module.exports = (self) => {
     before: id('The id of the widget they go before'),
     after: id('The id of the widget they go after')
   };
+  // A create makes a new document, never a locale copy of one that exists
+  const copies = (self.getLocaleNames().length > 1)
+    ? ' Never for a copy in another locale: that is localize_document.'
+    : '';
 
   return [
     {
       name: 'create_page',
       label: 'apostrophe:aiToolCreatePage',
       description: 'Create a page at "position" from "target": its first or last child, ' +
-        'or the page before or after it.',
+        `or the page before or after it.${copies}`,
       input: () => ({
         type: 'object',
         properties: {
@@ -65,7 +69,7 @@ module.exports = (self) => {
     {
       name: 'create_piece',
       label: 'apostrophe:aiToolCreatePiece',
-      description: 'Create a piece, a document outside the page tree.',
+      description: `Create a piece, a document outside the page tree.${copies}`,
       input: () => ({
         type: 'object',
         properties: {
@@ -172,6 +176,29 @@ module.exports = (self) => {
       },
       kind: 'action',
       handler: handler('moveWidgets')
+    },
+    {
+      name: 'copy_widgets',
+      label: 'apostrophe:aiToolCopyWidgets',
+      description: 'Copy widgets into an area of another document, or of their own: ' +
+        'whole, with what reads don\'t show, in the order given, at the end unless a ' +
+        'place is given. Relationships follow into the locale written; a related ' +
+        'document with no copy there refuses the write. Returns each copy\'s id: the ' +
+        'widget\'s own when the document written didn\'t hold it.',
+      input: {
+        type: 'object',
+        properties: {
+          from: id('The id of the document holding the widgets'),
+          widgets: widgetIds('The ids of the widgets to copy'),
+          _id: id('The id of the document they are copied into'),
+          area: id('The path of the area they go to, as its outline gives it'),
+          ...place
+        },
+        required: [ 'from', 'widgets', '_id', 'area' ],
+        additionalProperties: false
+      },
+      kind: 'action',
+      handler: handler('copyWidgets')
     },
     {
       name: 'remove_widgets',

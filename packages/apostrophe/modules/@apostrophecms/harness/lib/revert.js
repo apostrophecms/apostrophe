@@ -9,7 +9,9 @@
 // referencing them are reverted: removed unless published, edited, given
 // children or used elsewhere since. A never-published draft is deleted, as
 // the editor's Discard Draft does; a type that publishes on save or has no
-// drafts is archived.
+// drafts is archived. A copy the requests made of a document into another
+// locale is deleted whatever its type: the document lives on where it was
+// copied from, and an archived copy would stand in the way of the next one.
 
 const _ = require('lodash');
 
@@ -55,6 +57,8 @@ module.exports = (self) => {
      *   one its newest entry stored. With `dryRun`, a created document has
      *   `rows` whatever its outcome, and `createdRows`, its creation's rows
      *   checked the same way, `putBack` meaning still as created.
+     *
+     * Emits `beforeRevert` with `requestIds` before a revert that writes.
      */
     async revertRequests(req, requestIds, {
       dryRun = false, ignoreLocks = false, docIds = null, onProgress = null, isHeld = null
@@ -62,6 +66,11 @@ module.exports = (self) => {
       const door = self.getDoor(req);
       if (!door?.revert) {
         throw self.apos.error('invalid', 'a revert needs the door context of a revert');
+      }
+      // Before any document is written: what the requests left beside the
+      // change log goes even when the revert stops halfway
+      if (!dryRun) {
+        await self.emit('beforeRevert', req, requestIds);
       }
       const entries = await self.changes
         .find({
@@ -217,9 +226,15 @@ module.exports = (self) => {
             };
             const reason = await getKeepReason(doc, created);
             if (!reason) {
-              const outcome = (self.getPublishing(doc.type) === 'drafts') ? 'deleted' : 'archived';
+              const isDeleted = create.localized ||
+                (self.getPublishing(doc.type) === 'drafts');
+              const outcome = isDeleted ? 'deleted' : 'archived';
               removed.add(doc._id);
-              if (save && (outcome === 'deleted')) {
+              if (save && isDeleted) {
+                if (create.localized) {
+                  // What the copy's own save published goes with it
+                  await manager.unpublish(draftReq, doc);
+                }
                 await self.apos.doc.delete(draftReq, doc);
               } else if (save) {
                 await save([ { archived: true } ]);
@@ -363,6 +378,9 @@ module.exports = (self) => {
             .project({ _id: 1 })
             .toArray();
           return referrers.some(({ _id }) => {
+            if (removed.has(_id)) {
+              return false;
+            }
             const after = planned.get(_id);
             return !after ||
               after.manager.getRelatedDocsIds(req, after.doc).includes(doc.aposDocId);

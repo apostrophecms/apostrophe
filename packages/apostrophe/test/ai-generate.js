@@ -11,6 +11,7 @@ const fakeAdapter = (name, extras = {}) => ({
     tools: true,
     structured: true,
     imageInput: true,
+    documentInput: true,
     image: false,
     caching: true
   },
@@ -515,6 +516,81 @@ describe('AI generate', function() {
       } ]);
     });
 
+    it('rebuilds document parts in canonical form', function() {
+      const normalized = apos.ai.normalizeMessages([ {
+        role: 'user',
+        content: [
+          {
+            type: 'document',
+            document: {
+              data: 'JVBERi0=',
+              mediaType: 'application/pdf',
+              name: 'brief.pdf',
+              stray: true
+            }
+          },
+          {
+            type: 'document',
+            document: {
+              data: 'YSxi',
+              mediaType: 'text/csv'
+            }
+          }
+        ]
+      } ]);
+      // Any media type passes: the provider answers for what it reads
+      assert.deepEqual(normalized[0].content, [
+        {
+          type: 'document',
+          document: {
+            data: 'JVBERi0=',
+            mediaType: 'application/pdf',
+            name: 'brief.pdf'
+          }
+        },
+        {
+          type: 'document',
+          document: {
+            data: 'YSxi',
+            mediaType: 'text/csv'
+          }
+        }
+      ]);
+    });
+
+    it('rejects malformed document parts and documents outside user messages', function() {
+      const document = (fields) => [ {
+        role: 'user',
+        content: [ {
+          type: 'document',
+          document: {
+            data: 'JVBERi0=',
+            mediaType: 'application/pdf',
+            ...fields
+          }
+        } ]
+      } ];
+      throwsInvalid(
+        () => apos.ai.normalizeMessages([ {
+          role: 'assistant',
+          content: document()[0].content
+        } ]),
+        /a "document" part is not valid in a "assistant" message/
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeMessages(document({ data: '' })),
+        /\.document must be an object like \{ data, mediaType, name\? \}/
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeMessages(document({ mediaType: '' })),
+        /\.document must be an object like \{ data, mediaType, name\? \}/
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeMessages(document({ name: '' })),
+        /\.document\.name must be a non-empty string/
+      );
+    });
+
     it('normalizes tool messages and tool parts', function() {
       const messages = apos.ai.normalizeMessages([
         {
@@ -935,6 +1011,14 @@ describe('AI generate', function() {
                   adapter: 'fake',
                   apiKey: 'k3',
                   capabilities: { structured: false }
+                },
+                nomedia: {
+                  adapter: 'fake',
+                  apiKey: 'k5',
+                  capabilities: {
+                    imageInput: false,
+                    documentInput: false
+                  }
                 },
                 gateway: {
                   apiKey: 'k4',
@@ -1437,6 +1521,74 @@ describe('AI generate', function() {
       );
       assert.equal(chatCalls.length, 0);
       assert.equal(events.length, 0);
+    });
+
+    it('hands a document part to a provider declaring documentInput', async function() {
+      chatScript = [ () => turn() ];
+      const part = {
+        type: 'document',
+        document: {
+          data: 'JVBERi0=',
+          mediaType: 'application/pdf',
+          name: 'brief.pdf'
+        }
+      };
+      await apos.ai.generate(apos.task.getReq(), {
+        messages: [ {
+          role: 'user',
+          content: [ part, {
+            type: 'text',
+            text: 'summarize'
+          } ]
+        } ]
+      });
+      assert.deepEqual(chatCalls[0].messages[0].content[0], part);
+    });
+
+    it('refuses an image or document part on a provider without the input capability', async function() {
+      for (const [ part, capability ] of [
+        [ {
+          type: 'image',
+          image: {
+            data: 'aGk=',
+            mediaType: 'image/png'
+          }
+        }, 'imageInput' ],
+        [ {
+          type: 'document',
+          document: {
+            data: 'JVBERi0=',
+            mediaType: 'application/pdf'
+          }
+        }, 'documentInput' ]
+      ]) {
+        await assert.rejects(
+          apos.ai.generate(apos.task.getReq(), {
+            provider: 'nomedia',
+            model: 'fake-medium',
+            messages: [ {
+              role: 'user',
+              content: [ part ]
+            } ]
+          }),
+          (e) => {
+            assert.equal(e.name, 'invalid');
+            assert.equal(
+              e.message,
+              `provider "nomedia" does not declare the "${capability}" capability`
+            );
+            return true;
+          }
+        );
+      }
+      assert.equal(chatCalls.length, 0);
+      // Text alone still routes there
+      chatScript = [ () => turn() ];
+      await apos.ai.generate(apos.task.getReq(), 'p', {
+        provider: 'nomedia',
+        model: 'fake-medium'
+      });
+      assert.equal(chatCalls.length, 1);
     });
 
     describe('structured output', function() {

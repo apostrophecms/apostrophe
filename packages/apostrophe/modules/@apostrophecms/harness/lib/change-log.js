@@ -114,6 +114,7 @@ module.exports = (self) => {
         aposDocId: after.aposDocId,
         locale: self.getLocaleOf(after),
         type: after.type,
+        ...(!before && await isLocalized(after) && { localized: true }),
         toolCalls: toolCall ? [ toolCall ] : [],
         drops,
         ...(!ended && {
@@ -139,6 +140,18 @@ module.exports = (self) => {
           return 'submit';
         }
         return 'update';
+      }
+
+      // Whether a document just created is a copy into its locale of one
+      // another locale already holds: a revert removes such a copy whole
+      async function isLocalized(doc) {
+        const locale = self.getLocaleOf(doc);
+        return Boolean(locale && await self.apos.doc.db.findOne({
+          aposDocId: doc.aposDocId,
+          aposLocale: {
+            $nin: [ 'draft', 'published', 'previous' ].map(mode => `${locale}:${mode}`)
+          }
+        }, { projection: { _id: 1 } }));
       }
 
       // The Document Versions version this save landed in, `null` when

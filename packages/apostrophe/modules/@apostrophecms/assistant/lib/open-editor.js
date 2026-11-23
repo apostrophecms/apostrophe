@@ -8,8 +8,10 @@
 // result the model reads is the one the route kept on the ask.
 //
 // The modal rule: any editor in the stack of the request's browser tab holds
-// its document, and the document tools don't write a held document. The
-// harness is untouched: the MCP door has no screen.
+// its document, and the document tools don't write a held document. So does
+// the screen's window when it edits a document (Global Styles): it is the
+// editor on top while no modal is open. The harness is untouched: the MCP
+// door has no screen.
 
 const getCallDocumentIds = require('./call-documents');
 
@@ -115,9 +117,11 @@ module.exports = (self) => {
     /**
      * The editor on top of a verified screen, and the modal that names the
      * document it holds (the editor itself, or the one below it for a
-     * nested editor that names none). Throws `aiToolError` when no editor
-     * is on top, when something is open over it, or when AI may not read
-     * (an action whose document tool is a query) or change the document.
+     * nested editor that names none). With no editor among the modals, the
+     * screen's window when it edits a document and no modal is open over
+     * it. Throws `aiToolError` when no editor is on top, when something is
+     * open over it, or when AI may not read (an action whose document tool
+     * is a query) or change the document.
      *
      * @param {object} req
      * @param {object} screen
@@ -127,7 +131,8 @@ module.exports = (self) => {
     findOpenEditor(req, screen, action) {
       const modals = screen?.modals || [];
       const index = modals.findLastIndex(modal => getRoot(modal));
-      if (index === -1) {
+      const shown = getWindowEditor(screen);
+      if ((index === -1) && !shown) {
         throw self.apos.error('aiToolError', 'No editor is open on the user\'s screen; ' +
           'change documents with the document tools.');
       }
@@ -135,10 +140,12 @@ module.exports = (self) => {
         throw self.apos.error('aiToolError', `${describeModal(modals.at(-1))} is open over ` +
           'the editor; ask the user to close it first.');
       }
-      const editor = modals[index];
-      const held = modals
-        .slice(0, index + 1)
-        .findLast(modal => modal.docId || modal.docType) || null;
+      const editor = (index === -1) ? shown : modals[index];
+      const held = (index === -1)
+        ? shown
+        : modals
+          .slice(0, index + 1)
+          .findLast(modal => modal.docId || modal.docType) || null;
       const verb = isRead(action) ? 'view' : 'edit';
       if (!held?.docType || !self.apos.ai.can(req, verb, held.docType)) {
         throw self.apos.error('aiToolError', (verb === 'view')
@@ -299,9 +306,8 @@ module.exports = (self) => {
         return;
       }
       const key = getDocumentKey(req, args._id);
-      const holder = ((await getScreen(req))?.modals || [])
-        .findLast(modal => getRoot(modal) && modal.docId &&
-          (getDocumentKey(req, modal.docId) === key));
+      const holder = getHolders(await getScreen(req))
+        .findLast(({ part }) => getDocumentKey(req, part.docId) === key)?.part;
       if (!holder) {
         return;
       }
@@ -323,9 +329,8 @@ module.exports = (self) => {
      * @returns {string[]}
      */
     getHeldDocumentKeys(req, screen) {
-      return [ ...new Set((screen?.modals || [])
-        .filter(modal => getRoot(modal) && modal.docId)
-        .map(modal => getDocumentKey(req, modal.docId))) ];
+      return [ ...new Set(getHolders(screen)
+        .map(({ part }) => getDocumentKey(req, part.docId))) ];
     },
 
     /**
@@ -344,27 +349,26 @@ module.exports = (self) => {
         return;
       }
       const { _context, ...validated } = args;
-      const modals = (await getScreen(req))?.modals || [];
-      const holders = modals
-        .map((modal, index) => ({
-          modal,
-          index
-        }))
-        .filter(({ modal }) => getRoot(modal) && modal.docId);
+      const holders = getHolders(await getScreen(req));
       if (!holders.length) {
         return;
       }
-      for (const id of getCallDocumentIds(req, validated)) {
+      // A call naming locales also stands on the document's copies there:
+      // what one of them holds unsaved is not what is stored
+      const copies = ((typeof validated._id === 'string') && Array.isArray(validated.locales))
+        ? validated.locales.map(locale => `${validated._id.split(':')[0]}:${locale}`)
+        : [];
+      for (const id of [ ...getCallDocumentIds(req, validated), ...copies ]) {
         const key = getDocumentKey(req, id);
         const holder = holders
-          .findLast(({ modal }) => getDocumentKey(req, modal.docId) === key);
+          .findLast(({ part }) => getDocumentKey(req, part.docId) === key);
         if (!holder) {
           continue;
         }
-        const { modal, index } = holder;
+        const { part: modal, over: overs } = holder;
         const title = modal.title ? `"${modal.title}"` : 'The document';
         const part = PARTS[modal.kind];
-        if (index === modals.length - 1) {
+        if (!overs.length) {
           throw self.apos.error('aiToolError', part
             ? `${title} has its ${part} editor open on the user's screen: change that ${part} ` +
               `with ${TOOL}, unsaved; the rest of the document waits until the user closes ` +
@@ -372,7 +376,7 @@ module.exports = (self) => {
             : `${title} is open in an editor on the user's screen: change it with ${TOOL}, ` +
               'unsaved, and the user saves or cancels.');
         }
-        const over = modals.slice(index + 1).map(describeModal).join(', ');
+        const over = overs.map(describeModal).join(', ');
         throw self.apos.error('aiToolError', `${title} is open in an editor on the user's ` +
           `screen, under ${over}; ask the user to close what is over the editor first, ` +
           `then change it with ${TOOL}.`);
@@ -451,6 +455,34 @@ module.exports = (self) => {
       throw self.apos.error('invalid', 'the document in the editor is not the one the ' +
         'screen names');
     }
+  }
+
+  // What holds a document on a verified screen, bottom up: each editor
+  // modal naming one, then the window, under every modal; `over` lists the
+  // modals open over it
+  function getHolders(screen) {
+    const modals = screen?.modals || [];
+    const shown = getWindowEditor(screen);
+    return [
+      ...modals
+        .map((part, index) => ({
+          part,
+          over: modals.slice(index + 1)
+        }))
+        .filter(({ part }) => getRoot(part) && part.docId),
+      ...(shown?.docId
+        ? [ {
+          part: shown,
+          over: modals
+        } ]
+        : [])
+    ];
+  }
+
+  // The screen's window when it edits a document
+  function getWindowEditor(screen) {
+    const part = screen?.window;
+    return (part && (getRoot(part) === 'document')) ? part : null;
   }
 
   // The root an editor modal holds: of its kind, or the document open

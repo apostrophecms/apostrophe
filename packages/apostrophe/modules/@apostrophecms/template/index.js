@@ -39,7 +39,7 @@ const safeJsonForScript = require('../../../lib/safe-json-script');
 
 // Guidance for AI, on type modules and schema fields, is for the model
 // only: body data never carries it to the browser
-const AI_GUIDANCE_KEYS = [ 'aiWhen', 'aiHow' ];
+const AI_GUIDANCE_KEYS = [ 'aiWhen', 'aiHow', 'aiHowAssistant', 'aiHowMcp' ];
 
 function withoutAiGuidance(key, value) {
   return AI_GUIDANCE_KEYS.includes(key) ? undefined : value;

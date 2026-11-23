@@ -19,6 +19,11 @@
         :class="{ 'apos-assistant-request__message--finished': finished }"
         data-apos-test="assistant-request-message"
       >
+        <AposAssistantFiles
+          v-if="sentFiles.length"
+          class="apos-assistant-request__files"
+          :files="sentFiles"
+        />
         <AposAssistantMessage
           class="apos-assistant-request__text"
           :text="request.message"
@@ -88,6 +93,26 @@
     >
       {{ $t(running ? 'apostrophe:assistantRetrying' : 'apostrophe:assistantRetried') }}
     </p>
+    <AposAssistantSteps
+      v-if="!running && request.steps?.length"
+      :request="request"
+    />
+    <!-- What the model wrote before an ask comes before what came of it -->
+    <!-- eslint-disable vue/no-v-html -- sanitized on the server -->
+    <div
+      v-if="reply && (request.status === 'waiting')"
+      ref="replyText"
+      class="apos-assistant-request__reply"
+      data-apos-test="assistant-request-reply"
+      @click="onChipClick"
+      v-html="reply"
+    />
+    <!-- eslint-enable vue/no-v-html -->
+    <AposAssistantImageRounds
+      v-if="request.imageAsks?.length"
+      :request="request"
+    />
+    <!-- Below what the editor answered an image round with -->
     <p
       v-if="running"
       class="apos-assistant-request__status"
@@ -104,13 +129,13 @@
         </Transition>
       </span>
     </p>
-    <AposAssistantSteps
-      v-if="!running && request.steps?.length"
+    <AposAssistantNotices
+      v-if="!running"
       :request="request"
     />
     <!-- eslint-disable vue/no-v-html -- sanitized on the server -->
     <div
-      v-if="reply"
+      v-if="reply && (request.status !== 'waiting')"
       ref="replyText"
       class="apos-assistant-request__reply"
       data-apos-test="assistant-request-reply"
@@ -255,6 +280,10 @@ import { useAssistantStore } from '../stores/assistant.js';
 import { createChipIcon } from '../lib/chip.js';
 import { createId } from 'apostrophe/lib/beneath.js';
 import AposAssistantMessage from './AposAssistantMessage.vue';
+import AposAssistantFiles from './AposAssistantFiles.vue';
+import AposAssistantNotices from './AposAssistantNotices.vue';
+import AposAssistantImageRounds from './AposAssistantImageRounds.vue';
+import { getFileUrl, isPicture } from '../lib/attachments.js';
 import {
   formatNames, getConfirmLines, getRevertFailure, getRevertStatus, splitCount
 } from '../lib/revert.js';
@@ -309,6 +338,8 @@ const props = defineProps({
   }
 });
 
+// The action name of a gate's alternative, before the alternative's own
+const ALTERNATIVE = 'alternative-';
 // Why a request failed, in the editor's words, by the stored error's name
 const ERRORS = {
   aiRetry: {
@@ -447,6 +478,27 @@ const status = computed(() => {
     : $t('apostrophe:assistantThinking');
 });
 
+// The files sent with the message: an image's thumbnail shown from the
+// browser while this page has it, opening large; any other file
+// downloading; one no longer stored as such
+const sentFiles = computed(() => {
+  const { chatId, unavailable = [] } = props.request;
+  return (props.request.attachments || []).map((file) => {
+    const picture = isPicture(file.name);
+    return {
+      key: file._id,
+      name: file.name,
+      size: file.size,
+      gone: unavailable.includes(file._id),
+      src: picture
+        ? (store.previews[file._id] || getFileUrl(chatId, file._id, 'thumbnail'))
+        : null,
+      large: picture ? getFileUrl(chatId, file._id, 'preview') : null,
+      href: picture ? null : getFileUrl(chatId, file._id)
+    };
+  });
+});
+
 // The run's last words to the editor
 const reply = computed(() => {
   if (running.value) {
@@ -480,6 +532,10 @@ const activities = computed(() => {
   const { request } = props;
   const list = [];
   if (confirmAsk.value) {
+    // A gate's alternatives and its approval are equal routes: the
+    // approval is filled only when it is the one way forward
+    const gate = confirmAsk.value.payload.gate;
+    const alternatives = gate?.alternatives || [];
     list.push({
       name: 'confirm',
       tone: 'warning',
@@ -491,10 +547,16 @@ const activities = computed(() => {
           kind: 'quiet',
           disabled: answering.value
         },
+        ...alternatives.map(alternative => ({
+          name: `${ALTERNATIVE}${alternative.name}`,
+          label: $t(alternative.label),
+          kind: 'accent',
+          disabled: answering.value
+        })),
         {
           name: 'continue',
-          label: $t('apostrophe:assistantContinue'),
-          kind: 'primary',
+          label: $t(gate?.approve || 'apostrophe:assistantContinue'),
+          kind: alternatives.length ? 'accent' : 'primary',
           disabled: answering.value
         }
       ]
@@ -686,6 +748,16 @@ function getConfirmText(payload) {
       text: payload.details || null
     };
   }
+  if (gate.title) {
+    return {
+      title: $t(gate.title.key, getValues(gate.title.values)),
+      text: (gate.text || [])
+        .map(line => (line.list
+          ? getList(line.list)
+          : $t(line.key, getValues(line.values))))
+        .join('\n') || null
+    };
+  }
   const title = (gate.count > 1)
     ? $t('apostrophe:assistantGateDocuments', {
       count: gate.count,
@@ -712,6 +784,18 @@ function getConfirmText(payload) {
     title,
     text
   };
+}
+
+// A gate's i18n values, a list among them joined in the admin UI's language
+function getValues(values = {}) {
+  return Object.fromEntries(Object.entries(values)
+    .map(([ name, value ]) => [ name, Array.isArray(value) ? getList(value) : value ]));
+}
+
+function getList(items) {
+  return new Intl.ListFormat(apos.i18n.adminLocale, {
+    type: 'conjunction'
+  }).format(items);
 }
 
 function startRevert() {
@@ -748,6 +832,13 @@ async function onAction(name) {
   if ([ 'continue', 'notNow' ].includes(name)) {
     store.answer(props.request.chatId, confirmAsk.value.callId, {
       approved: name === 'continue'
+    });
+    return;
+  }
+  if (name.startsWith(ALTERNATIVE)) {
+    store.answer(props.request.chatId, confirmAsk.value.callId, {
+      approved: false,
+      alternative: name.slice(ALTERNATIVE.length)
     });
     return;
   }
@@ -1065,6 +1156,10 @@ function onChipClick(event) {
   }
 
   // Markdown, the message's and the reply's
+  .apos-assistant-request__files {
+    margin-bottom: 10px;
+  }
+
   .apos-assistant-request__text,
   .apos-assistant-request__reply {
     @include type-label;

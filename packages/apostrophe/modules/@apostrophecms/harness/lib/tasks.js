@@ -28,17 +28,29 @@ module.exports = (self) => {
       }
     },
     'print-instructions': {
-      usage: 'Print the instructions every door sends the model, with their size.\n' +
-        'Usage: node app @apostrophecms/harness:print-instructions\n' +
-        'Each door adds its own sections after them.',
-      task() {
-        const instructions = self.getInstructions(self.apos.task.getReq());
+      usage: 'Print the instructions a door sends the model, with their size.\n' +
+        'Usage: node app @apostrophecms/harness:print-instructions [--door=assistant|mcp]\n' +
+        'Without --door, every door is printed. Each door adds its own sections after them.',
+      task(argv) {
+        const doors = argv.door ? [ argv.door ] : self.getDoorNames();
+        const printed = doors.map(door => {
+          if (!self.getDoorNames().includes(door)) {
+            throw self.apos.error('invalid', `unknown door "${door}"`);
+          }
+          const req = self.withDoor(self.apos.task.getReq(), {
+            door,
+            lockId: 'print-instructions',
+            requestId: 'print-instructions'
+          });
+          const instructions = self.getInstructions(req);
+          return [
+            `# ${door}: ${instructions.length} characters, before the door's own sections`,
+            '',
+            instructions
+          ].join('\n');
+        });
         // eslint-disable-next-line no-console
-        console.log([
-          `# Instructions: ${instructions.length} characters, before each door's own sections`,
-          '',
-          instructions
-        ].join('\n'));
+        console.log(printed.join('\n\n'));
       }
     }
   };
