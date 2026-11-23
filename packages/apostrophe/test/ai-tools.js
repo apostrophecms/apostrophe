@@ -1692,7 +1692,19 @@ describe('AI tools', function() {
         betweenSteps: async (meta) => {
           // The step's tool results are already in the transcript
           assert.deepEqual(log, seen.map(() => 'start:echo').concat('start:echo'));
-          seen.push(meta);
+          assert.deepEqual(meta.messages.at(-1), {
+            role: 'tool',
+            content: [ {
+              type: 'toolResult',
+              toolCallId: `c${meta.step}`,
+              output: meta.messages.at(-1).content[0].output
+            } ]
+          });
+          seen.push({
+            step: meta.step,
+            usage: meta.usage,
+            roles: meta.messages.map(message => message.role)
+          });
           return meta.usage.inputTokens > 150 ? { stop: true } : undefined;
         }
       });
@@ -1704,7 +1716,8 @@ describe('AI tools', function() {
           usage: {
             inputTokens: 100,
             outputTokens: 4
-          }
+          },
+          roles: [ 'user', 'assistant', 'tool' ]
         },
         {
           step: 2,
@@ -1712,7 +1725,8 @@ describe('AI tools', function() {
             inputTokens: 180,
             outputTokens: 4,
             cacheReadTokens: 90
-          }
+          },
+          roles: [ 'user', 'assistant', 'tool', 'assistant', 'tool' ]
         }
       ]);
       assert.deepEqual(first.lastStepUsage, {
@@ -1772,6 +1786,36 @@ describe('AI tools', function() {
       });
       assert.equal(plain.finishReason, 'stop');
       assert.deepEqual(steps, [ 1 ]);
+    });
+
+    it('betweenSteps receives the signal of the call, for the work it starts', async function() {
+      const req = apos.task.getReq();
+      const controller = new AbortController();
+      chatScript = [
+        toolTurn(toolCall('c1', 'echo', { value: 'one' })),
+        textTurn('done')
+      ];
+      const signals = [];
+      await apos.ai.generate(req, 'go', {
+        tools: [ 'echo' ],
+        signal: controller.signal,
+        betweenSteps: async ({ signal }) => {
+          signals.push(signal);
+        }
+      });
+      assert.deepEqual(signals, [ controller.signal ]);
+
+      chatScript = [
+        toolTurn(toolCall('c2', 'echo', { value: 'two' })),
+        textTurn('done')
+      ];
+      await apos.ai.generate(req, 'go', {
+        tools: [ 'echo' ],
+        betweenSteps: async (meta) => {
+          signals.push('signal' in meta);
+        }
+      });
+      assert.equal(signals.at(-1), false);
     });
 
     it('a throwing betweenSteps stops the call', async function() {
@@ -2174,6 +2218,26 @@ describe('AI tools', function() {
       assert.equal(total, 60);
       // The stamp lives on the handler's req clone only
       assert.equal(req.aposAiCallId, undefined);
+    });
+
+    it('marks every step of a call with its usageMetadata, a subagent\'s calls apart', async function() {
+      chatScript = [
+        toolTurn(toolCall('c1', 'sub_agent')),
+        toolTurn(toolCall('c2', 'echo', { value: 'from below' })),
+        textTurn('inner done'),
+        textTurn('outer done')
+      ];
+      await apos.ai.generate(apos.task.getReq(), 'go', {
+        tools: [ 'sub_agent' ],
+        usageMetadata: { purpose: 'request' }
+      });
+      const [ outer, innerFirst, innerLast, outerLast ] = usageRecords;
+      assert.deepEqual(outer.metadata, { purpose: 'request' });
+      assert.deepEqual(outerLast.metadata, { purpose: 'request' });
+      // The subagent's own call passed none: its records are tied to the
+      // delegating call by parentCallId, not by the mark
+      assert.deepEqual(innerFirst.metadata, {});
+      assert.deepEqual(innerLast.metadata, {});
     });
 
     it('reports the billed turns of a call a handler stops', async function() {

@@ -18,6 +18,7 @@
 // by extending this module and overriding its methods.
 
 const image = require('./lib/image');
+const { fileFields } = require('./lib/file');
 
 // The `reasoning.effort` values a text model accepts; GPT-6.1 Sol and
 // GPT-6 Astra refuse `none`
@@ -27,6 +28,11 @@ const REASONING_EFFORTS = Object.freeze([
 const THINKING_EFFORTS = Object.freeze([
   'low', 'medium', 'high', 'xhigh', 'max'
 ]);
+// The document limit OpenAI documents, counted over every file of a
+// request; it documents no page limit
+const DOCUMENTS = Object.freeze({
+  maxDocumentBytes: 50000000
+});
 
 module.exports = {
   options: {
@@ -56,6 +62,7 @@ module.exports = {
             structured: true,
             stream: true,
             imageInput: true,
+            documentInput: true,
             image: true,
             caching: true
           },
@@ -72,25 +79,29 @@ module.exports = {
               label: 'GPT-6 Luna',
               contextWindow: 1050000,
               maxOutputTokens: 128000,
-              reasoning: REASONING_EFFORTS
+              reasoning: REASONING_EFFORTS,
+              ...DOCUMENTS
             },
             'gpt-6.1-sol': {
               label: 'GPT-6.1 Sol',
               contextWindow: 1050000,
               maxOutputTokens: 128000,
-              reasoning: THINKING_EFFORTS
+              reasoning: THINKING_EFFORTS,
+              ...DOCUMENTS
             },
             'gpt-6-astra': {
               label: 'GPT-6 Astra',
               contextWindow: 1050000,
               maxOutputTokens: 128000,
-              reasoning: THINKING_EFFORTS
+              reasoning: THINKING_EFFORTS,
+              ...DOCUMENTS
             },
             'gpt-5.6-terra': {
               label: 'GPT-5.6 Terra',
               contextWindow: 1050000,
               maxOutputTokens: 128000,
-              reasoning: REASONING_EFFORTS
+              reasoning: REASONING_EFFORTS,
+              ...DOCUMENTS
             },
             ...image.models
           },
@@ -245,6 +256,12 @@ module.exports = {
             return {
               type: 'input_text',
               text: part.text
+            };
+          }
+          if (part.type === 'document') {
+            return {
+              type: 'input_file',
+              ...fileFields(part.document)
             };
           }
           // part.type === 'image', in one of the two normalized forms

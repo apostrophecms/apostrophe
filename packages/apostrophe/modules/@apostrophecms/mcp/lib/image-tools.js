@@ -73,7 +73,7 @@ module.exports = (self) => {
       // The `locale` argument, only in a project with several locales, as
       // the harness's create tools take it
       function getLocale() {
-        const names = self.apos.harness.getLocaleNames();
+        const names = self.apos.aposHarness.getLocaleNames();
         return (names.length > 1)
           ? {
             locale: {

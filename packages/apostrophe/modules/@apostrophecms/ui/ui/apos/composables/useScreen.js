@@ -7,7 +7,9 @@
 // its ids; a modal that reports nothing is `other`. A widget or array editor
 // that names no document works on the document of the editor below it.
 // Windows are not modals of the screen: they sit beside what the editor is
-// looking at.
+// looking at. A window that reports a screen part, through its `screen`
+// prop or as a standalone window of the modal store, is the screen's
+// `window`: the last opened of those, one at most.
 //
 // `getScreen()` reads it when it is needed, as part of it lives outside any
 // reactive store (the admin bar's context).
@@ -48,6 +50,7 @@ export function useScreen() {
         }
         : null,
       modals,
+      window: getWindow(),
       selection: getSelection(entries, modals),
       field: getField(modals)
     };
@@ -56,14 +59,8 @@ export function useScreen() {
   function getModals(entries) {
     let owner = null;
     return entries.map(entry => {
-      const kind = entry.screen?.kind || 'other';
-      const modal = { kind };
-      for (const key of KEYS) {
-        const value = entry.screen?.[key];
-        if ((value !== null) && (value !== undefined)) {
-          modal[key] = value;
-        }
-      }
+      const modal = getPart(entry.screen);
+      const { kind } = modal;
       if (!modal.docId && owner && NESTED_KINDS.includes(kind)) {
         modal.docId = owner.docId;
         modal.docType = owner.docType;
@@ -73,6 +70,23 @@ export function useScreen() {
       }
       return modal;
     });
+  }
+
+  function getWindow() {
+    const entry = getScreenWindow(modalStore);
+    return entry ? getPart(entry.screen) : null;
+  }
+
+  // A modal's or a window's part, as it reports it
+  function getPart(screen) {
+    const part = { kind: screen?.kind || 'other' };
+    for (const key of KEYS) {
+      const value = screen?.[key];
+      if ((value !== null) && (value !== undefined)) {
+        part[key] = value;
+      }
+    }
+    return part;
   }
 
   // A manager or the versions in front, else the page, in See Changes or not
@@ -125,6 +139,18 @@ export function useScreen() {
       }
       : null;
   }
+}
+
+// The modal store's entry of the screen's window: the last opened of the
+// windows reporting a screen part, in the stack or standalone
+export function getScreenWindow(modalStore) {
+  return [
+    ...modalStore.stack.filter(entry => isWindow(entry)),
+    ...modalStore.standaloneWindows
+  ]
+    .filter(entry => entry.screen)
+    .sort((a, b) => (a.opened || 0) - (b.opened || 0))
+    .at(-1) || null;
 }
 
 /**

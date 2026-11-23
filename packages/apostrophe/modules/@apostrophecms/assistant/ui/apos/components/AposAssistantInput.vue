@@ -47,7 +47,7 @@ const props = defineProps({
     default: () => ({})
   }
 });
-const emit = defineEmits([ 'update:modelValue', 'send', 'query', 'key' ]);
+const emit = defineEmits([ 'update:modelValue', 'send', 'query', 'key', 'files' ]);
 
 const root = ref(null);
 let editor = null;
@@ -110,6 +110,8 @@ onMounted(() => {
 onBeforeUnmount(() => editor.destroy());
 
 watch(() => props.aria, setAria);
+// The placeholder is drawn from the state: a new one needs a redraw
+watch(() => props.placeholder, () => editor?.view.dispatch(editor.state.tr));
 
 // Another chat tab's draft, or a draft changed outside: a fresh state, so
 // undo never reaches into another draft
@@ -144,7 +146,8 @@ function createEditor() {
       Text,
       HardBreak,
       History,
-      Placeholder.configure({ placeholder: props.placeholder }),
+      // Read on every redraw, so a new placeholder shows at once
+      Placeholder.configure({ placeholder: () => props.placeholder }),
       Mention
     ],
     content: toDoc(props.modelValue),
@@ -168,6 +171,19 @@ function createEditor() {
           return true;
         }
         return false;
+      },
+      // Files go to the composer's attachments, never into the text
+      handlePaste(view, event) {
+        const files = [ ...(event.clipboardData?.files || []) ];
+        if (!files.length) {
+          return false;
+        }
+        emit('files', files);
+        return true;
+      },
+      // The window takes dropped files (AposAssistant.vue)
+      handleDrop(view, event) {
+        return Boolean(event.dataTransfer?.types?.includes('Files'));
       }
     },
     onUpdate({ editor }) {
@@ -222,8 +238,14 @@ function insertMention(mention) {
   ]).run();
 }
 
-function focus() {
-  editor.commands.focus();
+// With `at`, the caret goes that many characters into the draft's first
+// line, or to its end with 'end'
+function focus(at = null) {
+  if ((at === null) || (at === 'end')) {
+    editor.commands.focus(at);
+    return;
+  }
+  editor.commands.focus(Math.min(at + 1, editor.state.doc.content.size - 1));
 }
 
 function toDoc(draft) {

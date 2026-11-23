@@ -17,6 +17,12 @@
 //     (`requestId`, `step`, `text`, raw)
 //   'retry': the provider call is retried (`requestId`, `attempt`, `wait`,
 //     `step`)
+//   'summary': earlier messages are being summarized for the request
+//     (`requestId`)
+//   'carry': a continued chat's carry started again, ended or failed
+//     (`status`: 'running', 'done' or 'failed')
+//   'suggestion': the suggestion to continue in a new chat was dismissed
+//     (`dismissed`, its id)
 //   'revert': a revert record changed and the chat's revert slot was freed
 //     (`revertId`)
 //   'revertProgress': a revert finished one more document (`revertId`,

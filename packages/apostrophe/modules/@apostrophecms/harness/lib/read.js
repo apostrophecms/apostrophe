@@ -417,10 +417,11 @@ module.exports = (self) => {
     },
 
     async getGuidance(req, { types }) {
+      const door = self.getDoor(req)?.door;
       return {
         guidance: types.map(type => ({
           type,
-          aiHow: self.getTypeOptions(type).aiHow || null
+          aiHow: self.getTypeGuidance(type, door)
         }))
       };
     },

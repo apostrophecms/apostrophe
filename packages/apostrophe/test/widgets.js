@@ -614,5 +614,69 @@ describe('Widgets', function() {
 
       assert.deepEqual(actual, expected);
     });
+
+    it('should offer an operation added for every widget type after each type\'s own, the type\'s own winning', function() {
+      const shared = {
+        label: 'Shared',
+        icon: 'some-icon',
+        action: 'shared-action',
+        secondaryLevel: true,
+        multiple: true
+      };
+      const customOperations = (name, req) => _apos.modules[name].getBrowserData(req)
+        .widgetOperations
+        .filter(operation => !operation.nativeAction)
+        .map(operation => operation.name);
+      try {
+        _apos.area.addWidgetOperation('shared', shared);
+        _apos.area.addWidgetOperation('operation1', {
+          ...shared,
+          label: 'Not the type\'s own'
+        });
+        _apos.area.addWidgetOperation('restricted', {
+          ...shared,
+          permission: {
+            action: 'delete',
+            type: 'article'
+          }
+        });
+
+        assert.deepEqual(customOperations('test1-widget', _apos.task.getReq()),
+          [ 'operation1', 'shared', 'restricted' ]);
+        assert.deepEqual(customOperations('test2-widget', _apos.task.getContributorReq()),
+          [ 'operation1', 'shared' ]);
+        assert.equal(_apos.modules['test1-widget'].getBrowserData(_apos.task.getReq())
+          .widgetOperations.find(operation => operation.name === 'operation1').label,
+        'Operation 1');
+      } finally {
+        _apos.area.widgetOperations = [];
+      }
+    });
+
+    it('should refuse an operation for every widget type that isn\'t standard and invoked by action or modal', function() {
+      const operation = {
+        label: 'Operation',
+        icon: 'some-icon',
+        action: 'some-action'
+      };
+      for (const [ change, message ] of [
+        [ { placement: 'breadcrumb' }, /standard placement only/ ],
+        [ { type: 'switch' }, /standard placement only/ ],
+        [ { nativeAction: 'edit' }, /standard placement only/ ],
+        [ { action: null }, /needs either modal or action/ ],
+        [ { multiple: 'yes' }, /must be a boolean/ ],
+        [ { icon: null }, /requires the icon property/ ],
+        [ {
+          secondaryLevel: true,
+          label: null
+        }, /requires the label property/ ]
+      ]) {
+        assert.throws(() => _apos.area.addWidgetOperation('bad', {
+          ...operation,
+          ...change
+        }), message);
+      }
+      assert.deepEqual(_apos.area.widgetOperations, []);
+    });
   });
 });

@@ -836,7 +836,7 @@ describe('Harness: read tools and the schema read', function () {
     });
 
     it('should list versions with who, when and the AI mark', async function () {
-      await apos.harness.writeDocuments(userReq('bob'), [ {
+      await apos.aposHarness.writeDocuments(userReq('bob'), [ {
         _id: article._id,
         patch: { body: 'Written by AI' }
       } ]);
@@ -1036,13 +1036,23 @@ describe('Harness: read tools and the schema read', function () {
     it('should return the aiHow of the types that have one', async function () {
       const { input } = apos.ai.getTool('get_guidance');
 
-      assert.deepEqual(input.properties.types.items.enum, [ 'read-hero' ]);
+      assert.deepEqual(input.properties.types.items.enum, [ '@apostrophecms/layout', 'read-hero' ]);
       assert.deepEqual(await run('get_guidance', { types: [ 'read-hero' ] }), {
         guidance: [ {
           type: 'read-hero',
           aiHow: 'One hero per page, at the top.'
         } ]
       });
+    });
+
+    it('should explain the layout widget from its own grid options', async function () {
+      const [ { aiHow } ] = (await run('get_guidance', {
+        types: [ '@apostrophecms/layout' ]
+      })).guidance;
+
+      assert.match(aiHow, /^Places content side by side on a grid of 12 columns\./);
+      assert(aiHow.includes('"colspan" (at least 2)'));
+      assert(aiHow.includes('colstart 1, colspan 6 and colstart 7, colspan 6'));
     });
   });
 

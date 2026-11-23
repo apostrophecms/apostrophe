@@ -592,7 +592,7 @@ describe('@apostrophecms/seo - Integration Tests (Actual Page Output)', function
     it('should tell AI how to fill the meta title and description in the schema read', async function () {
       const req = apos.task.getReq();
 
-      const { schema, legend } = await apos.harness.getSchema(req, {
+      const { schema, legend } = await apos.aposHarness.getSchema(req, {
         types: [ 'default-page' ]
       });
       const lines = schema.split('\n');

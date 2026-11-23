@@ -111,7 +111,8 @@ describe('AI image dials', function() {
         images: undefined,
         provider: undefined,
         model: undefined,
-        signal: undefined
+        signal: undefined,
+        usageMetadata: undefined
       });
     });
 
@@ -177,7 +178,8 @@ describe('AI image dials', function() {
       [ 'a relative source url', 'a fox', { images: [ { url: '/uploads/fox.png' } ] } ],
       [ 'provider without model', 'a fox', { provider: 'openai' } ],
       [ 'model without provider', 'a fox', { model: 'gpt-image-1' } ],
-      [ 'a non-AbortSignal signal', 'a fox', { signal: {} } ]
+      [ 'a non-AbortSignal signal', 'a fox', { signal: {} } ],
+      [ 'a non-object usageMetadata', 'a fox', { usageMetadata: 'image' } ]
     ];
     for (const [ label, prompt, options ] of rejects) {
       it(`rejects ${label}`, function() {
@@ -402,6 +404,15 @@ describe('AI image dials', function() {
       assert.deepEqual(result.usage, adapterUsage);
       // A fresh copy, not the adapter's own object
       assert.notEqual(result.usage, adapterUsage);
+    });
+
+    it('marks its usage record with the call\'s usageMetadata', async function() {
+      imageScript = [ () => imageResult() ];
+      await apos.ai.generateImage(apos.task.getReq(), 'a fox', {
+        usageMetadata: { purpose: 'image' }
+      });
+      assert.equal(usageRecords.length, 1);
+      assert.deepEqual(usageRecords[0].metadata, { purpose: 'image' });
     });
 
     it('passes edit sources through to the adapter', async function() {

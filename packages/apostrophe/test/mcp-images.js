@@ -45,8 +45,8 @@ describe('MCP: image tools', function () {
   });
 
   it('lists the image tools for MCP, and not for the assistant', async function () {
-    const mcp = apos.harness.getDoorTools('mcp').map(tool => tool.name);
-    const assistant = apos.harness.getDoorTools('assistant').map(tool => tool.name);
+    const mcp = apos.aposHarness.getDoorTools('mcp').map(tool => tool.name);
+    const assistant = apos.aposHarness.getDoorTools('assistant').map(tool => tool.name);
     assert(mcp.includes('save_image_to_media'));
     assert(mcp.includes('get_image'));
     assert(!assistant.includes('save_image_to_media'));
@@ -67,8 +67,8 @@ describe('MCP: image tools', function () {
   it('removes the stored file when the image itself is refused', async function () {
     const filesBefore = countFiles();
     const before = await countAttachments();
-    const createDocument = apos.harness.createDocument;
-    apos.harness.createDocument = async () => ({
+    const createDocument = apos.aposHarness.createDocument;
+    apos.aposHarness.createDocument = async () => ({
       written: [],
       refused: [ {
         title: 'Refused',
@@ -89,7 +89,7 @@ describe('MCP: image tools', function () {
         alt: 'Refused'
       });
     } finally {
-      apos.harness.createDocument = createDocument;
+      apos.aposHarness.createDocument = createDocument;
     }
 
     assert.equal(result.isError, true);
@@ -140,7 +140,7 @@ describe('MCP: image tools', function () {
           alt: 'Logged'
         })).structuredContent;
 
-        const entry = await apos.harness.changes.findOne({
+        const entry = await apos.aposHarness.changes.findOne({
           requestId: image.requestId,
           docId: image._id
         });

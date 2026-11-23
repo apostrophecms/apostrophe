@@ -42,7 +42,7 @@ module.exports = (self) => {
       let written;
       try {
         const schema = self.apos.image.schema;
-        const result = await self.apos.harness.createDocument(imageReq, {
+        const result = await self.apos.aposHarness.createDocument(imageReq, {
           type: IMAGE,
           title,
           values: {
@@ -75,7 +75,7 @@ module.exports = (self) => {
     },
 
     async getImage(req, { _id }) {
-      const { doc, manager } = await self.apos.harness.findReadable(req, _id);
+      const { doc, manager } = await self.apos.aposHarness.findReadable(req, _id);
       if (!self.apos.instanceOf(manager, IMAGE)) {
         throw self.apos.error(
           'aiToolError',

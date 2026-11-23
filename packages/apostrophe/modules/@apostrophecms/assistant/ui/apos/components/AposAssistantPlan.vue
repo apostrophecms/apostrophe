@@ -131,7 +131,10 @@
           <path :d="ICONS[stateOf(step, index)]" />
         </svg>
         <span class="apos-sr-only">{{ $t(STATES[stateOf(step, index)]) }}</span>
-        <span class="apos-assistant-plan__title">{{ step.title }}</span>
+        <span
+          class="apos-assistant-plan__title"
+          :title="step.title"
+        >{{ step.title }}</span>
       </li>
     </ol>
   </AposAssistantDock>
@@ -433,8 +436,10 @@ function stateOf(step, index) {
     color: var(--a-success-dark);
   }
 
+  // The step in progress turns, as the request's own thinking mark does
   .apos-assistant-plan__icon--active {
     color: var(--a-base-4);
+    animation: apos-assistant-plan-spin 1000ms linear infinite;
   }
 
   .apos-assistant-plan__icon--pending {
@@ -443,5 +448,18 @@ function stateOf(step, index) {
 
   .apos-assistant-plan__icon--failed {
     color: var(--a-danger);
+  }
+
+  @keyframes apos-assistant-plan-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* stylelint-disable-next-line media-feature-name-allowed-list */
+  @media (prefers-reduced-motion: reduce) {
+    .apos-assistant-plan__icon--active {
+      animation: none;
+    }
   }
 </style>

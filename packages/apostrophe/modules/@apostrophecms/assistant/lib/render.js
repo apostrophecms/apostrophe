@@ -8,12 +8,15 @@ const DOOR = 'assistant';
 // A step's arguments and result are a trail, not a reader: a document read
 // can run to tens of thousands of characters
 const STEP_TEXT_MAX = 2000;
+// The panel suggests continuing in a new chat after this many summaries,
+// and again after as many more
+const SUGGEST_EVERY = 3;
 
 module.exports = (self) => {
   // A request's tool calls in order, each with its arguments and its result
   // or error as the transcript holds them
   function readSteps(messages) {
-    const labels = new Map(self.apos.harness.getDoorTools(DOOR)
+    const labels = new Map(self.apos.aposHarness.getDoorTools(DOOR)
       .map(tool => [ tool.name, tool.label ]));
     const steps = [];
     const byId = new Map();
@@ -50,7 +53,71 @@ module.exports = (self) => {
     return `${text.slice(0, STEP_TEXT_MAX)}\n…`;
   }
 
+  // A summary as the panel shows it: the editor's standing instructions,
+  // their own words. The other sections are the model's working notes
+  function previewSummary(summary) {
+    return summary
+      ? { instructions: summary.instructions || [] }
+      : null;
+  }
+
+  // Continue in a new chat is suggested under the request that wrote
+  // every third summary, until dismissed
+  function getSuggestion(chat) {
+    const written = (chat.checkpoints || []).filter(each => each.summaries);
+    const last = written.at(-1);
+    const count = written.reduce((sum, each) => sum + each.summaries, 0);
+    const reached = Math.floor(count / SUGGEST_EVERY) >
+      Math.floor((count - (last?.summaries || 0)) / SUGGEST_EVERY);
+    if (!reached || (chat.dismissedSuggestion === last._id)) {
+      return null;
+    }
+    return {
+      _id: last._id,
+      sequence: last.sequence
+    };
+  }
+
   return {
+    /**
+     * A chat as the panel reads it, without what it saw of each document,
+     * what its checkpoints shortened and the summary it carried over as
+     * the model reads it. A read of the chat's thread adds `summary`, the
+     * current summary's standing instructions and `covers`, the last
+     * request it covers; `carriedSummary`, the same of the summary a
+     * continued chat carried over; `suggestion`, `{ _id, sequence }` when
+     * continuing in a new chat is suggested under that request; and, when
+     * given, `length` for the gauge (`getChatLength`). The chat list reads
+     * none of them, and the panel keeps the ones it has.
+     *
+     * @param {object} chat The chat record.
+     * @param {object} [options]
+     * @param {boolean} [options.thread] Add what the thread shows.
+     * @param {object} [options.length]
+     * @returns {object}
+     */
+    renderChat(chat, { thread = false, length = null } = {}) {
+      const {
+        seen, checkpoints, carried, dismissedSuggestion, ...rest
+      } = chat;
+      if (!thread) {
+        return rest;
+      }
+      const summary = self.getCheckpoint(chat)?.summary;
+      return {
+        ...rest,
+        summary: summary
+          ? {
+            ...previewSummary(summary),
+            covers: summary.covers
+          }
+          : null,
+        carriedSummary: previewSummary(carried?.summary),
+        suggestion: getSuggestion(chat),
+        ...(length && { length })
+      };
+    },
+
     /**
      * A request as the panel reads it: what the thread shows, never the
      * transcript. Its message stays as typed, which the panel shows with its
@@ -61,7 +128,9 @@ module.exports = (self) => {
      * (`renderStep`); `locked` lists the documents a write was refused for a
      * lock and no later write of the request reached, `{ _id, title,
      * lockedBy }`, `lockedBy` the holder's name, `null` for the editor's own
-     * other browser tab or chat. The vendor and model are left out unless
+     * other browser tab or chat; `notices` the messages its tools posted
+     * (see notices.js), each `action` without its data, `null` once run.
+     * The vendor and model are left out unless
      * `modelDisplay` is set, and the screen it was sent with and what the
      * model was told of its changes to the page always. `usage` includes
      * what the agent tools spent.
@@ -73,13 +142,25 @@ module.exports = (self) => {
       const {
         provider, model, pageChanges, pageRows, agentUsage, messages = [],
         replyMentions, screen, screenChanged, prior, jobId, ownerId,
-        schemaVersion, ...rest
+        schemaVersion, takenActions, ...rest
       } = request;
       return {
         ...rest,
         // A result an ask keeps for the model is not the panel's
         ...(rest.asks && {
           asks: rest.asks.map(({ result, ...ask }) => ask)
+        }),
+        // An action's data is the server's, and an action runs once
+        ...(rest.notices && {
+          notices: rest.notices.map(notice => ({
+            ...notice,
+            action: (notice.action && !(takenActions || []).includes(notice._id))
+              ? {
+                name: notice.action.name,
+                label: notice.action.label
+              }
+              : null
+          }))
         }),
         ...(self.options.modelDisplay && {
           provider,
@@ -145,6 +226,41 @@ module.exports = (self) => {
         }
         return [ ...locked.values() ];
       }
+    },
+
+    /**
+     * Requests as a route answers with them: as `renderRequest` renders
+     * each, with `unavailable`, the ids of the chat files it names that are
+     * no longer stored (its attachments, the images its image asks kept),
+     * which the thread shows as no longer available.
+     *
+     * @param {object[]} requests
+     * @returns {Promise<object[]>}
+     */
+    async presentRequests(requests) {
+      const named = requests.map(request => [
+        ...(request.attachments || []).map(attachment => attachment._id),
+        ...(request.imageAsks || []).flatMap(ask => [
+          ...ask.rounds.map(round => round.kept),
+          ask.outcome?.attachmentId
+        ])
+      ].filter(Boolean));
+      const ids = [ ...new Set(named.flat()) ];
+      const stored = new Set(ids.length
+        ? (await self.attachments.find({
+          _id: { $in: ids },
+          status: 'stored'
+        }, { projection: { _id: 1 } }).toArray()).map(record => record._id)
+        : []);
+      return requests.map((request, i) => ({
+        ...self.renderRequest(request),
+        unavailable: named[i].filter(_id => !stored.has(_id))
+      }));
+    },
+
+    // One request as a route answers with it (see `presentRequests`)
+    async presentRequest(request) {
+      return (await self.presentRequests([ request ]))[0];
     },
 
     /**

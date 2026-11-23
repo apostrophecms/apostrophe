@@ -2,10 +2,15 @@
   <div
     ref="root"
     class="apos-assistant-thread"
-    :class="{ 'apos-assistant-thread--empty': !items.length }"
     data-apos-test="assistant-thread"
     @scroll.passive="onScroll"
   >
+    <AposAssistantSummary
+      v-if="chat?.continuedFrom && !chat.carry"
+      kind="continued"
+      :summary="chat.carriedSummary"
+      :source="chat.continuedFrom"
+    />
     <div
       v-if="!items.length"
       class="apos-assistant-thread__empty"
@@ -19,6 +24,28 @@
         <AposAssistantThinking />
         <span>{{ $t('apostrophe:assistantLoadingChat') }}</span>
       </p>
+      <p
+        v-else-if="chat?.carry?.status === 'running'"
+        class="apos-assistant-thread__loading"
+        role="status"
+        data-apos-test="assistant-thread-carrying"
+      >
+        <AposAssistantThinking />
+        <span>{{ $t('apostrophe:assistantCarrying') }}</span>
+      </p>
+      <AposAssistantActivity
+        v-else-if="chat?.carry?.status === 'failed'"
+        class="apos-assistant-thread__failed"
+        tone="error"
+        :title="$t('apostrophe:assistantCarryFailed')"
+        :text="$t('apostrophe:assistantCarryFailedText')"
+        :actions="[ {
+          name: 'retryCarry',
+          label: $t('apostrophe:assistantRetry')
+        } ]"
+        data-apos-test="assistant-carry-failed"
+        @action="store.retryCarry(chatId)"
+      />
       <AposAssistantActivity
         v-else-if="state === 'failed'"
         class="apos-assistant-thread__failed"
@@ -42,8 +69,12 @@
       v-for="item in items"
       :key="item.key"
     >
+      <AposAssistantActionRequest
+        v-if="item.message?.request.action"
+        :request="item.message.request"
+      />
       <AposAssistantRequest
-        v-if="item.message"
+        v-else-if="item.message"
         ref="messageItems"
         :request="item.message.request"
         :retried="item.message.retried"
@@ -54,6 +85,12 @@
           ? confirmation
           : null"
         :revert="(pending?.requestIds[0] === item.message._id) ? pending : null"
+        :suggestion="(item.message.request === suggested) ? chat.suggestion : null"
+      />
+      <AposAssistantSummary
+        v-else-if="item.divider"
+        kind="divider"
+        :summary="chat.summary"
       />
       <AposAssistantReverted
         v-else
@@ -90,6 +127,7 @@ const props = defineProps({
 const END_SLACK = 40;
 
 const store = useAssistantStore();
+const chat = computed(() => store.getChat(props.chatId));
 const root = ref(null);
 const messageItems = ref([]);
 let following = true;
@@ -153,8 +191,18 @@ const leaving = computed(() => {
   return new Set(ids.slice(1));
 });
 
-// Messages and done reverts in the order of their requests. Each message
-// knows how many follow it
+// The latest request, when continuing in a new chat is suggested under its
+// reply: the next request takes the suggestion away
+const suggested = computed(() => {
+  const latest = requests.value.at(-1);
+  return (chat.value?.suggestion && (latest?.sequence === chat.value.suggestion.sequence))
+    ? latest
+    : null;
+});
+
+// Messages and done reverts in the order of their requests, the divider
+// after the last request the current summary covers. Each message knows
+// how many follow it
 const items = computed(() => {
   const sequences = new Map(all.value.map(request => [ request._id, request.sequence ]));
   const shown = messages.value.filter(message => !leaving.value.has(message._id));
@@ -172,6 +220,14 @@ const items = computed(() => {
         revert
       });
     }
+  }
+  const covers = chat.value?.summary?.covers;
+  if (Number.isFinite(covers) && list.some(item => item.sequence <= covers)) {
+    list.push({
+      key: 'summary',
+      sequence: covers + 0.5,
+      divider: true
+    });
   }
   return list.sort((one, two) => one.sequence - two.sequence);
 });
@@ -276,14 +332,12 @@ function markPinned() {
     overscroll-behavior: contain;
   }
 
-  .apos-assistant-thread--empty {
-    justify-content: center;
-  }
-
   .apos-assistant-thread__empty {
     display: flex;
+    flex: 1 0 auto;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     width: 100%;
     padding: 20px 0;
   }

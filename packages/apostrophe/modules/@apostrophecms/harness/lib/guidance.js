@@ -1,5 +1,7 @@
 // The instructions both doors send the model, assembled in one fixed order.
 
+const { DOORS } = require('./tools');
+
 // Short and structural: what the tools leave to the model on every request
 const BASE = [
   'You work on the content of this ApostropheCMS site for the user, through the content ' +
@@ -11,9 +13,16 @@ const BASE = [
     'title, slug or type, never by id.',
   'Every write result has a "notice" saying whether the change is live on the site or ' +
     'waits in the draft: tell the user what it says.',
+  'Publish only when the user asks, with a publish tool if you have one; without one, ' +
+    'tell the user that an editor publishes.',
   'Content keeps the locale of its document: every read names the locale it read, every ' +
     'write the locale it wrote.'
 ];
+
+// On a site with several locales, where ai-localize registers its tools
+const LOCALES = 'A document exists once per locale, as copies of one document. Make its ' +
+  'copy in another locale with localize_document, never with a create tool; ' +
+  'get_localization says what changed in each copy since the two were last in line.';
 
 const TYPES_INTRO = 'When to use each type. A type marked "(aiHow)" has rules for working ' +
   'with it: read them with get_guidance first.';
@@ -31,7 +40,11 @@ module.exports = (self) => {
      */
     getInstructions(req, sections = []) {
       return [
-        [ ...BASE, getLanguageLine() ].join('\n'),
+        [
+          ...BASE,
+          (self.getLocaleNames().length > 1) && LOCALES,
+          getLanguageLine()
+        ].filter(Boolean).join('\n'),
         self.getSiteInstructions(req),
         ...sections
       ]
@@ -52,7 +65,8 @@ module.exports = (self) => {
     /**
      * What the site tells the model, in order: the `guidance` option, the
      * site rules kept in the CMS (none yet), every type's `aiWhen`. A type's
-     * `aiHow` is only marked; the model reads it with `get_guidance`. Part
+     * guidance for the door of `req` is only marked; the model reads it with
+     * `get_guidance`. Part
      * of `getInstructions`, and on its own for a run that needs the site's
      * knowledge without a door's base instructions, such as a subagent.
      *
@@ -70,20 +84,46 @@ module.exports = (self) => {
       return slots.length ? slots.join('\n\n') : null;
 
       // One line per type with guidance: `type: aiWhen`, marked `(aiHow)`
-      // when it has one
+      // when it has some for the door
       function getTypeLines() {
+        const door = self.getDoor(req)?.door;
         const lines = [];
         for (const type of self.getTypeNames()) {
-          const { aiWhen, aiHow } = self.getTypeOptions(type);
-          if (aiWhen?.trim() || aiHow?.trim()) {
+          const aiWhen = self.getTypeOptions(type).aiWhen?.trim();
+          const aiHow = self.getTypeGuidance(type, door);
+          if (aiWhen || aiHow) {
             lines.push([
-              aiWhen?.trim() ? `${type}: ${aiWhen.trim()}` : type,
-              aiHow?.trim() && '(aiHow)'
+              aiWhen ? `${type}: ${aiWhen}` : type,
+              aiHow && '(aiHow)'
             ].filter(Boolean).join(' '));
           }
         }
         return lines.length ? [ TYPES_INTRO, ...lines ].join('\n') : null;
       }
+    },
+
+    // The options of a type that guide the model: `aiWhen`, `aiHow` and each
+    // door's own procedure
+    getGuidanceOptionNames() {
+      return [ 'aiWhen', 'aiHow', ...Object.values(DOORS).map(({ howOption }) => howOption) ];
+    },
+
+    /**
+     * A type's guidance as a door reads it: its `aiHow`, for both doors,
+     * then the door's own (`aiHowAssistant`, `aiHowMcp`). A call without a
+     * door reads `aiHow` alone.
+     *
+     * @param {string} type
+     * @param {string} [door]
+     * @returns {string|null}
+     */
+    getTypeGuidance(type, door) {
+      const options = self.getTypeOptions(type);
+      const own = Object.hasOwn(DOORS, door) ? options[DOORS[door].howOption] : null;
+      return [ options.aiHow, own ]
+        .map(text => text?.trim())
+        .filter(Boolean)
+        .join('\n\n') || null;
     }
   };
 };
