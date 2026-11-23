@@ -118,18 +118,23 @@ function closePopover() {
     display: flex;
     flex-direction: column;
     gap: 5px;
+    text-align: start;
 
-    h4, p {
+    // Two classes, so a site rule such as `.hero h4 { text-align: center }`
+    // cannot outrank these on specificity alone
+    .apos-rich-text-insert-menu-label__title,
+    .apos-rich-text-insert-menu-label__desc {
       margin: 0;
       font-family: var(--a-family-default);
+      text-align: start;
     }
 
-    h4 {
+    .apos-rich-text-insert-menu-label__title {
       font-weight: 500;
       font-size: var(--a-type-large);
     }
 
-    p {
+    .apos-rich-text-insert-menu-label__desc {
       font-size: var(--a-type-label);
     }
   }

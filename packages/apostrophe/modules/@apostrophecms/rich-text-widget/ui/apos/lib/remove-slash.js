@@ -1,18 +1,26 @@
-// Delete the trailing "/" that opened the rich text insert menu.
+// Delete the "/" that opened the rich text insert menu, along with anything
+// typed after it to pick a choice.
 
 export default function removeSlash(editor) {
-  const state = editor.state;
-  const { $to } = state.selection;
-  if (state.selection.empty && $to?.nodeBefore?.text) {
-    const text = $to.nodeBefore.text;
-    if (text.slice(-1) === '/') {
-      const pos = editor.view.state.selection.$anchor.pos;
-      // Select the slash so an insert operation can replace it
-      editor.commands.setTextSelection({
-        from: pos - 1,
-        to: pos
-      });
-      editor.commands.deleteSelection();
-    }
+  const { selection } = editor.state;
+  const { $to } = selection;
+  if (!selection.empty || !$to.parent.isTextblock) {
+    return;
+  }
+  const before = $to.parent.textBetween(0, $to.parentOffset);
+  // The menu opens only on a blank line, so the line up to the cursor is
+  // the slash and the query
+  if (before.startsWith('/')) {
+    editor.commands.deleteRange({
+      from: $to.start(),
+      to: $to.pos
+    });
+    return;
+  }
+  if (before.endsWith('/')) {
+    editor.commands.deleteRange({
+      from: $to.pos - 1,
+      to: $to.pos
+    });
   }
 }

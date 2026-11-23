@@ -182,6 +182,45 @@ describe('Context history', function() {
       assert.deepEqual(replaced.changed, [ 'a', 'c' ]);
     });
 
+    // As the rich text insert menu does when it splits a widget around a new
+    // one: the widget changes and two widgets arrive, as one edit
+    it('replaces all of the items of the area, and puts them back', async function() {
+      const applyPatch = await getApplyPatch();
+      const original = items();
+      const split = [
+        {
+          ...original[0],
+          title: 'A, first half'
+        },
+        {
+          _id: 'new',
+          type: 'y'
+        },
+        {
+          _id: 'a2',
+          type: 'x',
+          title: 'A, second half'
+        },
+        original[1],
+        original[2]
+      ];
+      const area = list => ({
+        [`@${areaId}`]: {
+          _id: areaId,
+          metaType: 'area',
+          items: list
+        }
+      });
+      const done = applyPatch(areaId, original, area(split));
+      assert.deepEqual(ids(done), [ 'a', 'new', 'a2', 'b', 'c' ]);
+      assert.equal(done.items[0].title, 'A, first half');
+      assert.notEqual(done.items, split);
+      assert.equal(original[0].title, 'A');
+      const undone = applyPatch(areaId, done.items, area(items()));
+      assert.deepEqual(ids(undone), [ 'a', 'b', 'c' ]);
+      assert.equal(undone.items[0].title, 'A');
+    });
+
     it('reaches into nested areas only when asked to', async function() {
       const applyPatch = await getApplyPatch();
       const nested = [
