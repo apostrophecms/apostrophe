@@ -178,6 +178,9 @@ describe('MCP: OAuth', function () {
       const refused = await update(token, article._id, 'Over MCP');
       assert.deepEqual(refused.written, []);
       assert.equal(refused.refused[0].reason, 'changed');
+      // MCP asks before overwriting: no confirmation step of its own
+      assert.ok(refused.refused[0].savedBy);
+      assert.match(refused.refused[0].message, /only if the user asks you to/);
       assert.equal((await findDraft(article._id)).body, 'Bob\'s');
 
       // Read again, it writes

@@ -1127,12 +1127,11 @@ describe('Harness: write tools and get_changes', function () {
 
       assert.deepEqual(written.map(item => item._id), [ other._id ]);
       assert.equal(refused[0].reason, 'changed');
+      // A door without `askBeforeOverwrite` (the assistant): the saver is
+      // named, and the model reads again before writing, no question
       assert.equal(refused[0].savedBy, 'Bob');
-      // Not "read it, then write": the model stops and asks, so it can't
-      // replace someone else's work on its own
-      assert.match(refused[0].message, /saved by Bob since you last read it/);
-      assert.match(refused[0].message, /would replace their work/);
-      assert.match(refused[0].message, /only if the user asks you to/);
+      assert.equal(refused[0].message, 'The document was saved by Bob since you ' +
+        'last read it, so nothing was written to it. Read it again before writing it.');
       assert.equal((await findDraft(article._id)).body, 'Original');
 
       await read(article._id, req);
@@ -1141,9 +1140,29 @@ describe('Harness: write tools and get_changes', function () {
       assert.equal((await findDraft(article._id)).title, 'Retitled by Bob');
     });
 
-    it('should refuse after the user\'s own save too, and say to build on it, not ask', async function () {
+    it('should, for a door that asks before overwriting, name the saver and tell the model to ask', async function () {
       const article = await insertArticle({ body: 'Original' });
-      const req = door(userReq());
+      const req = door(userReq(), { askBeforeOverwrite: true });
+      await read(article._id, req);
+      await editAs('bob', article._id, draft => {
+        draft.title = 'Retitled by Bob';
+      });
+
+      const { written, refused } = await update(article._id, { body: 'From the model' }, req);
+      assert.equal(written.length, 0);
+      assert.equal(refused[0].reason, 'changed');
+      assert.equal(refused[0].savedBy, 'Bob');
+      // Not "read it, then write": the model stops and asks, so it can't
+      // replace someone else's work on its own
+      assert.match(refused[0].message, /saved by Bob since you last read it/);
+      assert.match(refused[0].message, /would replace their work/);
+      assert.match(refused[0].message, /only if the user asks you to/);
+      assert.equal((await findDraft(article._id)).body, 'Original');
+    });
+
+    it('should, for a door that asks before overwriting, say to build on the user\'s own save, not ask', async function () {
+      const article = await insertArticle({ body: 'Original' });
+      const req = door(userReq(), { askBeforeOverwrite: true });
       await read(article._id, req);
       // The same user, in the admin UI
       await editAs('ann', article._id, draft => {
@@ -1256,8 +1275,10 @@ describe('Harness: write tools and get_changes', function () {
       const { refused } = await update(article._id, { body: 'Chat one' }, one);
 
       assert.equal(refused[0].reason, 'changed');
-      // The same user's other chat: built on, not asked about
+      // The same user's other chat: not named as someone else
       assert.equal(refused[0].savedBy, null);
+      assert.match(refused[0].message, /saved as the user, in the admin UI or another of their chats or tools/);
+      assert.match(refused[0].message, /Read it again before writing it\.$/);
       assert.equal((await findDraft(article._id)).body, 'Chat two');
     });
 

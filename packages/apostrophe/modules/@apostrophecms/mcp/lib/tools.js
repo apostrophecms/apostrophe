@@ -115,6 +115,9 @@ module.exports = (self) => {
         door: 'mcp',
         lockId: requestId,
         requestId,
+        // No confirmation step over MCP: a refused write after another
+        // user's save tells the model to ask before replacing their work
+        askBeforeOverwrite: true,
         ...(req.aposMcpConnection && {
           seen: await self.getSeen(req.aposMcpConnection)
         })
