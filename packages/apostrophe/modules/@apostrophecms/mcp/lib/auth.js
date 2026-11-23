@@ -60,12 +60,12 @@ module.exports = (self) => {
       const token = self.getHeaderToken(req);
       if (!token) {
         // No error code when no credentials were sent (RFC 6750)
-        self.oauth.challenge(res, self.action);
+        self.getOauth().challenge(res, self.action);
         return false;
       }
       const identity = await self.verifyToken(token);
       if (!identity) {
-        self.oauth.challenge(res, self.action, { error: 'invalid_token' });
+        self.getOauth().challenge(res, self.action, { error: 'invalid_token' });
         return false;
       }
       req.user = identity.user;
@@ -96,8 +96,8 @@ module.exports = (self) => {
       if (!self.oauthResource) {
         return null;
       }
-      const verified = await self.oauth.verifyAccessToken(token, {
-        resource: self.oauth.getResourceUrl(self.action)
+      const verified = await self.getOauth().verifyAccessToken(token, {
+        resource: self.getOauth().getResourceUrl(self.action)
       });
       return verified && {
         user: verified.user,

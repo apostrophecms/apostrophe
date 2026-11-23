@@ -25,10 +25,6 @@ module.exports = {
     //   site's `shortName`, which is always the server's `name`.
   },
   async init(self) {
-    // New core modules can't have an alias, so @apostrophecms/oauth has none
-    Object.defineProperty(self, 'oauth', {
-      get: () => self.apos.modules['@apostrophecms/oauth']
-    });
     self.validateOptions();
     if (!self.options.enabled) {
       return;
@@ -36,7 +32,7 @@ module.exports = {
     self.devToken = self.getDevToken();
     // Turns the OAuth server on, unless the site turned it off. Then only
     // the development token works
-    self.oauthResource = self.oauth.addResource(self.action, {
+    self.oauthResource = self.getOauth().addResource(self.action, {
       name: 'Apostrophe MCP server',
       description: req => req.t('apostrophe:mcpOauthDescription')
     });
@@ -100,6 +96,11 @@ module.exports = {
       ...require('./lib/auth')(self),
       ...require('./lib/tools')(self),
       ...require('./lib/seen')(self),
+
+      // New core modules can't have an alias, so @apostrophecms/oauth has none
+      getOauth() {
+        return self.apos.modules['@apostrophecms/oauth'];
+      },
 
       validateOptions() {
         const {
