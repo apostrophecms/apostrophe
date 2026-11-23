@@ -1,4 +1,4 @@
-// This module provides `apos.assistant`, the assistant of the admin UI: an
+// This module provides `apos.aposAssistant`, the assistant of the admin UI: an
 // editor's chats with AI, each request run as one background job on the
 // harness's tools and guidance, through the `assistant` door.
 //
@@ -18,7 +18,7 @@
 
 module.exports = {
   options: {
-    alias: 'assistant',
+    alias: 'aposAssistant',
     enabled: false,
     // effort: the effort route requests run on; the engine's default when
     //   unset
@@ -42,7 +42,24 @@ module.exports = {
     screenWait: 15000,
     // A write changing more documents than this in one call asks the editor
     // first; 0 never asks
-    maxDocsWithoutConfirm: 5
+    maxDocsWithoutConfirm: 5,
+    // The most tokens a chat gives the model; the model's own window when
+    // that is lower
+    contextLimit: 250000,
+    // The percent of that budget past which a chat is shortened, 10 to 90,
+    // and at least 20000 tokens of it
+    contextThreshold: 75,
+    // The largest file a request may carry, in bytes
+    attachmentMaxBytes: 8 * 1024 * 1024,
+    // The largest CSS, JSON, tokens or Markdown file, in bytes
+    attachmentMaxTextBytes: 2 * 1024 * 1024,
+    // The files a request may carry
+    attachmentMaxCount: 4,
+    // The images each round of generate_image offers to pick from
+    genImageCount: 4,
+    // Seconds after a chat's last request until it is deleted; 0 keeps
+    // chats until their owner deletes them
+    chatExpireAfter: 0
   },
   icons: {
     'creation-icon': 'Creation',
@@ -58,11 +75,24 @@ module.exports = {
     // Set once the AI engine is active too
     self.active = false;
     self.askKinds = {};
+    // What a notice's button does, by name (see lib/notices.js)
+    self.noticeActions = {};
     // Browser tools that turn the answer into their result, by name
     self.browserToolAccepts = {};
-    // Gates added by name, and the tools whose gates were all taken off
+    // Gates by tool and name, and by tool the names taken off (see
+    // lib/gates.js)
     self.gates = {};
-    self.ungated = new Set();
+    self.removedGates = {};
+    // Widget menu entries that open the panel with a prompt, by name (see
+    // lib/widget-operations.js)
+    self.widgetOperations = {};
+    if (Object.keys(self.apos.i18n.locales).length > 1) {
+      self.addWidgetOperation('assistantLocalize', {
+        label: 'apostrophe:localize',
+        icon: 'translate-icon',
+        prompt: 'apostrophe:assistantLocalizePrompt'
+      });
+    }
     self.addAskKind('browser', { accept: self.acceptBrowserAnswer });
     self.addAskKind('editMode', { accept: self.acceptEditModeAnswer });
     for (const tool of require('./lib/standard-browser-tools')(self)) {
@@ -70,6 +100,10 @@ module.exports = {
     }
     self.addEditorTools();
     self.addAgentTools();
+    self.addAttachmentTools();
+    self.addImageTools();
+    self.addGlobalStylesGate();
+    self.addPublishGate();
     self.enableBrowserData();
   },
   handlers(self) {
@@ -90,10 +124,12 @@ module.exports = {
         }
       },
       '@apostrophecms/harness:documentSeen': {
-        // The chat keeps what it saw of each document for its next requests
+        // The chat keeps what it saw of each document for its next requests.
+        // A revert's saves are not the model's reads: the chat's stamps stay,
+        // and a document the revert wrote is read again before it is written
         async storeSeen(req) {
-          const door = self.apos.harness.getDoor(req);
-          if (!self.active || (door?.door !== 'assistant')) {
+          const door = self.apos.aposHarness.getDoor(req);
+          if (!self.active || (door?.door !== 'assistant') || door.revert) {
             return;
           }
           await self.chats.updateOne({ _id: door.chat }, {
@@ -111,13 +147,17 @@ module.exports = {
         async noteHeldDocument(req, payload) {
           await self.noteHeldDocument(req, payload);
         },
+        // A Global Styles write says whether this page's locale was written
+        async noteGlobalStylesWrite(req, payload) {
+          await self.noteGlobalStylesWrite(req, payload);
+        },
         // A screen another request of the browser tab changed comes with
         // this run's next tool result; a browser tool's carries its own
         async addChangedScreen(req, payload) {
           const { result } = payload;
           // Not to a subagent's result (its `generate` runs inside a tool),
           // which the run's model never sees
-          if (!self.active || (self.apos.harness.getDoor(req)?.door !== 'assistant') ||
+          if (!self.active || (self.apos.aposHarness.getDoor(req)?.door !== 'assistant') ||
             req.aposAiDepth || payload.tool.tags?.includes('browser') ||
             !result || (typeof result !== 'object') || Array.isArray(result)) {
             return;
@@ -131,6 +171,11 @@ module.exports = {
           }
         }
       },
+      'apostrophe:destroy': {
+        stopSweeps() {
+          self.stopSweeps();
+        }
+      },
       'apostrophe:ready': {
         // After the AI engine's own activation, which comes first in the
         // module order
@@ -142,11 +187,22 @@ module.exports = {
           await self.ensureCollections();
           await self.loadMarkdown();
           self.active = true;
+          self.startSweeps();
           self.apos.modal.addTrigger('assistant', {
             componentName: 'AposAssistant',
             label: 'apostrophe:assistantOpen',
             icon: 'creation-icon'
           });
+          // Every widget type's menus, now that the assistant can open
+          for (const [ name, { label, icon } ] of Object.entries(self.widgetOperations)) {
+            self.apos.area.addWidgetOperation(name, {
+              label,
+              icon,
+              action: 'assistant-widget-operation',
+              secondaryLevel: true,
+              multiple: true
+            });
+          }
         }
       }
     };
@@ -182,35 +238,36 @@ module.exports = {
         chat: route(async (req) => {
           const chats = [];
           for (const chat of await self.listChats(req)) {
-            chats.push(await self.reconcileChat(req, chat));
+            chats.push(self.renderChat(await self.reconcileChat(req, chat)));
           }
           return { chats };
         }),
         'chat/:_id': route(async (req) => {
-          const chat = await getReconciledChat(req);
+          const chat = await getReconciledChat(req, { length: true });
           const requests = await self.getChatRequests(req, chat._id);
           const reverts = await self.getChatReverts(req, chat._id);
           return {
             chat,
-            requests: requests.map(self.renderRequest),
+            requests: await self.presentRequests(requests),
             reverts: reverts.map(self.renderRevert)
           };
         }),
         // What a request event changed: the request, and its chat's slot
         'chat/:_id/request/:requestId': route(async (req) => {
-          const chat = await getReconciledChat(req);
+          const chat = await getReconciledChat(req, { length: true });
           const request = await self.getChatRequest(req, chat._id,
             req.params.requestId);
           return {
             chat,
-            request: self.renderRequest(request)
+            request: await self.presentRequest(request)
           };
         }),
         // A step's arguments and result, once the editor opens it
         'chat/:_id/request/:requestId/step/:stepId': route(async (req) => {
           const request = await self.getChatRequest(req, req.params._id,
             req.params.requestId);
-          const step = self.renderStep(request, self.apos.launder.string(req.params.stepId));
+          const stepId = self.apos.launder.string(req.params.stepId);
+          const step = self.renderStep(request, stepId);
           if (!step) {
             throw self.apos.error('notfound');
           }
@@ -218,21 +275,30 @@ module.exports = {
         }),
         mention: route(async (req) => ({
           results: await self.findMentions(req, req.query.q)
+        })),
+        // The chat's files not sent yet, which may be before the chat exists
+        'chat/:_id/attachment': route(async (req) => ({
+          attachments: await self.listUnsent(req, req.params._id)
         }))
       },
       post: {
         // A new chat is created by its first send, under the id the
         // browser named it by
         'chat/:_id/send': route(async (req) => withChat(req, {
-          request: self.renderRequest(await self.send(req, req.params._id, {
+          request: await self.presentRequest(await self.send(req, req.params._id, {
             message: req.body.message,
             screen: req.body.screen,
             requestId: req.body.requestId,
-            create: req.body.create === true
+            create: req.body.create === true,
+            attachments: req.body.attachments
           }))
         })),
+        // A file for the chat's next request, which may create the chat
+        'chat/:_id/attachment': route(async (req) => ({
+          attachment: await self.uploadAttachment(req, req.params._id)
+        })),
         'chat/:_id/answer': route(async (req) => withChat(req, {
-          request: self.renderRequest(await self.answer(req, req.params._id, {
+          request: await self.presentRequest(await self.answer(req, req.params._id, {
             tabId: req.body.tabId,
             callId: req.body.callId,
             answer: req.body.answer,
@@ -245,23 +311,33 @@ module.exports = {
           root: req.body.root
         })),
         'chat/:_id/skip': route(async (req) => withChat(req, {
-          request: self.renderRequest(await self.skip(req, req.params._id, {
+          request: await self.presentRequest(await self.skip(req, req.params._id, {
             tabId: req.body.tabId
           }))
         })),
+        // A notice's button, run once as a request of its own
+        'chat/:_id/notice-action': route(async (req) => withChat(req, {
+          request: await self.presentRequest(await self.runNoticeAction(req,
+            req.params._id, {
+              requestId: req.body.requestId,
+              noticeId: req.body.noticeId,
+              screen: req.body.screen
+            }))
+        })),
         'chat/:_id/continue-here': route(async (req) => withChat(req, {
-          request: self.renderRequest(await self.continueHere(req, req.params._id, {
-            tabId: req.body.tabId,
-            screen: req.body.screen
-          }))
+          request: await self.presentRequest(await self.continueHere(req,
+            req.params._id, {
+              tabId: req.body.tabId,
+              screen: req.body.screen
+            }))
         })),
         'chat/:_id/stop': route(async (req) => withChat(req, {
-          request: self.renderRequest(await self.stop(req, req.params._id, {
+          request: await self.presentRequest(await self.stop(req, req.params._id, {
             planCancel: req.body.planCancel === true
           }))
         })),
         'chat/:_id/retry': route(async (req) => withChat(req, {
-          request: self.renderRequest(await self.retry(req, req.params._id, {
+          request: await self.presentRequest(await self.retry(req, req.params._id, {
             retryOf: req.body.retryOf,
             requestId: req.body.requestId,
             screen: req.body.screen
@@ -298,6 +374,21 @@ module.exports = {
             revertId: req.body.revertId
           }))
         })),
+        // A new chat continuing this one from one of its requests, under
+        // the id the browser named it by: the answer is the new chat
+        'chat/:_id/continue': route(async (req) => {
+          const chat = await self.continueInNewChat(req, req.params._id, {
+            requestId: req.body.requestId,
+            chatId: req.body.chatId
+          });
+          return {
+            chat: self.renderChat(chat, { thread: true })
+          };
+        }),
+        'chat/:_id/suggestion-dismiss': route(async (req) => {
+          await self.dismissSuggestion(req, req.params._id, req.body.suggestionId);
+          return withChat(req, {});
+        }),
         screen: route(async (req) => {
           await self.postScreen(req, {
             tabId: req.body.tabId,
@@ -322,24 +413,31 @@ module.exports = {
         'chat/:_id': route(async (req) => {
           await self.deleteChat(req, req.params._id);
           return {};
+        }),
+        // A file the composer dropped after its upload, never sent
+        'chat/:_id/attachment/:attachmentId': route(async (req) => {
+          await self.detach(req, req.params._id, req.params.attachmentId);
+          return {};
         })
       }
     };
 
-    // A chat as the panel reads it, without what it saw of each document
-    async function getReconciledChat(req) {
-      const found = await self.getChat(req, req.params._id);
-      const { seen, ...chat } = await self.reconcileChat(req, found);
-      return chat;
+    // A chat as its thread reads it, the gauge's length with it while the
+    // chat is idle: a run holds the last one
+    async function getReconciledChat(req, { length = false } = {}) {
+      const chat = await self.reconcileChat(req, await self.getChat(req, req.params._id));
+      return self.renderChat(chat, {
+        thread: true,
+        length: (length && !chat.openRequest) ? await self.getChatLength(chat) : null
+      });
     }
 
     // An action's answer carries its chat as it is now, so the browser
     // shows the action's effect without reading again
     async function withChat(req, answer) {
-      const { seen, ...chat } = await self.getChat(req, req.params._id);
       return {
         ...answer,
-        chat
+        chat: self.renderChat(await self.getChat(req, req.params._id), { thread: true })
       };
     }
 
@@ -355,6 +453,17 @@ module.exports = {
       };
     }
   },
+  routes(self) {
+    if (!self.options.enabled) {
+      return {};
+    }
+    return {
+      get: {
+        // A chat's file, for its owner only
+        'chat/:_id/attachment/:attachmentId': (req, res) => self.serveAttachment(req, res)
+      }
+    };
+  },
   tasks(self) {
     return require('./lib/tasks')(self);
   },
@@ -362,18 +471,30 @@ module.exports = {
     return {
       ...require('./lib/options')(self),
       ...require('./lib/store')(self),
+      ...require('./lib/files')(self),
       ...require('./lib/run')(self),
       ...require('./lib/asks')(self),
+      ...require('./lib/notices')(self),
       ...require('./lib/browser-tools')(self),
       ...require('./lib/editor-tools')(self),
       ...require('./lib/agent-tools')(self),
+      ...require('./lib/attachments')(self),
+      ...require('./lib/attachment-tools')(self),
+      ...require('./lib/image-tools')(self),
+      ...require('./lib/retention')(self),
       ...require('./lib/gates')(self),
+      ...require('./lib/global-styles')(self),
+      ...require('./lib/localization')(self),
+      ...require('./lib/widget-operations')(self),
       ...require('./lib/edit-mode')(self),
       ...require('./lib/open-editor')(self),
       ...require('./lib/outside')(self),
       ...require('./lib/screen')(self),
       ...require('./lib/reconcile')(self),
+      ...require('./lib/long-chats')(self),
+      ...require('./lib/summaries')(self),
       ...require('./lib/revert')(self),
+      ...require('./lib/continue')(self),
       ...require('./lib/events')(self),
       ...require('./lib/markdown')(self),
       ...require('./lib/mentions')(self),
@@ -385,9 +506,22 @@ module.exports = {
         }
         return {
           action: self.action,
+          // The prompt of each widget menu entry, by its name
+          widgetOperations: Object.fromEntries(Object.entries(self.widgetOperations)
+            .map(([ name, { prompt } ]) => [ name, prompt ])),
           usageDisplay: self.options.usageDisplay,
           modelDisplay: self.options.modelDisplay,
-          screenWait: self.options.screenWait
+          screenWait: self.options.screenWait,
+          attachments: {
+            // Attaching a file takes the right to upload one
+            canUpload: self.apos.permission.can(req, 'upload-attachment'),
+            maxBytes: self.options.attachmentMaxBytes,
+            maxTextBytes: self.options.attachmentMaxTextBytes,
+            textExtensions: self.getTextExtensions(),
+            maxCount: self.options.attachmentMaxCount,
+            extensions: self.getAttachmentExtensions(),
+            unreadable: self.getUnreadableExtensions()
+          }
         };
       }
     };

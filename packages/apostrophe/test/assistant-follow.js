@@ -123,7 +123,7 @@ describe('Assistant: following a request', function () {
                 required: [ '_id', 'patch' ]
               },
               handler: async (req, { _id, patch }) => {
-                const { written } = await self.apos.harness.writeDocuments(req, [ {
+                const { written } = await self.apos.aposHarness.writeDocuments(req, [ {
                   _id,
                   patch
                 } ]);
@@ -146,7 +146,7 @@ describe('Assistant: following a request', function () {
                 return input;
               }
             });
-            self.apos.assistant.addAskKind('test-question', {
+            self.apos.aposAssistant.addAskKind('test-question', {
               accept: (req, ask, answer) => ({ answer })
             });
           }
@@ -174,9 +174,9 @@ describe('Assistant: following a request', function () {
         events.push({
           ...event.data,
           stored: {
-            chat: await apos.assistant.chats.findOne({ _id: chatId }),
+            chat: await apos.aposAssistant.chats.findOne({ _id: chatId }),
             request: requestId
-              ? await apos.assistant.requests.findOne({ _id: requestId })
+              ? await apos.aposAssistant.requests.findOne({ _id: requestId })
               : null
           },
           tab: options.tab
@@ -203,7 +203,7 @@ describe('Assistant: following a request', function () {
       const req = userReq(editor);
       const draft = await findDraft(note);
       const [ one, two ] = draft.body.items;
-      const verified = await apos.assistant.verifyScreen(req, {
+      const verified = await apos.aposAssistant.verifyScreen(req, {
         tabId: 'tab-1',
         visible: false,
         url: '/notes/a-note',
@@ -293,6 +293,7 @@ describe('Assistant: following a request', function () {
           { kind: 'manager' },
           { kind: 'other' }
         ],
+        window: null,
         selection: {
           docId: draft._id,
           areaId: draft.body._id,
@@ -301,7 +302,7 @@ describe('Assistant: following a request', function () {
         field: null
       });
 
-      const bare = await apos.assistant.verifyScreen(req, {
+      const bare = await apos.aposAssistant.verifyScreen(req, {
         tabId: 'tab-1',
         locale: 'xx',
         mode: 'preview',
@@ -317,14 +318,42 @@ describe('Assistant: following a request', function () {
       assert.equal(bare.document, null);
       assert.equal(bare.selection, null);
       assert.equal(bare.visible, true);
-      await assert.rejects(apos.assistant.verifyScreen(req, {}), { name: 'invalid' });
+      await assert.rejects(apos.aposAssistant.verifyScreen(req, {}), { name: 'invalid' });
+    });
+
+    it('keeps the window that reports itself, verified as a modal', async function () {
+      const req = userReq(editor);
+      const styles = await apos.modules['@apostrophecms/styles'].find(req, {}).toObject();
+      const verified = await apos.aposAssistant.verifyScreen(req, {
+        tabId: 'tab-1',
+        window: {
+          kind: 'editor',
+          docId: styles._id,
+          docType: 'forged'
+        }
+      });
+      assert.deepEqual(verified.window, {
+        kind: 'editor',
+        docId: styles._id,
+        title: styles.title,
+        locale: 'en',
+        docType: '@apostrophecms/styles'
+      });
+      assert.deepEqual(apos.aposAssistant.renderScreen(verified).window, verified.window);
+
+      const forged = await apos.aposAssistant.verifyScreen(req, {
+        tabId: 'tab-1',
+        window: 'editor'
+      });
+      assert.equal(forged.window, null);
+      assert.equal(apos.aposAssistant.renderScreen(forged).window, undefined);
     });
 
     it('stores the screen on the request and gives it with each message, the prompt cacheable', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const draft = await findDraft(note);
-      await apos.assistant.send(req, chat._id, {
+      await apos.aposAssistant.send(req, chat._id, {
         message: 'Shorten this',
         screen: {
           tabId: 'tab-1',
@@ -335,7 +364,7 @@ describe('Assistant: following a request', function () {
       const first = await waitForEnd(req, chat);
       assert.equal(first.screen.document._id, draft._id);
       assert.equal(first.screen.tabId, 'tab-1');
-      assert(calls[0].system.includes(apos.assistant.getScreenSection()));
+      assert(calls[0].system.includes(apos.aposAssistant.getScreenSection()));
       const sent = calls[0].messages.findLast(message => message.role === 'user');
       const line = sent.content.find(part => part.text.startsWith('Current screen: '));
       const shown = JSON.parse(line.text.slice('Current screen: '.length));
@@ -353,7 +382,7 @@ describe('Assistant: following a request', function () {
       // Kept with the message as sent
       assert.deepEqual(first.messages[0], sent);
 
-      await apos.assistant.send(req, chat._id, {
+      await apos.aposAssistant.send(req, chat._id, {
         message: 'And now?',
         screen: {
           tabId: 'tab-1',
@@ -399,10 +428,10 @@ describe('Assistant: following a request', function () {
         }
       });
 
-      const widget = await apos.assistant.verifyScreen(req, screen(`@${one._id}.content`));
-      const item = await apos.assistant.verifyScreen(req, screen(`@${draft.links[0]._id}.label`));
-      const unknown = await apos.assistant.verifyScreen(req, screen('@no-such-widget.content'));
-      const bare = await apos.assistant.verifyScreen(req, screen(`@${one._id}`));
+      const widget = await apos.aposAssistant.verifyScreen(req, screen(`@${one._id}.content`));
+      const item = await apos.aposAssistant.verifyScreen(req, screen(`@${draft.links[0]._id}.label`));
+      const unknown = await apos.aposAssistant.verifyScreen(req, screen('@no-such-widget.content'));
+      const bare = await apos.aposAssistant.verifyScreen(req, screen(`@${one._id}`));
 
       assert.deepEqual(widget.field, {
         docId: draft._id,
@@ -421,7 +450,7 @@ describe('Assistant: following a request', function () {
 
     it('tells the model what changed on the screen since its last reply', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const draft = await findDraft(note);
       const onNote = {
         tabId: 'tab-1',
@@ -434,13 +463,13 @@ describe('Assistant: following a request', function () {
         .messages.findLast(message => message.role === 'user')
         .content.map(part => part.text);
 
-      await apos.assistant.send(req, chat._id, {
+      await apos.aposAssistant.send(req, chat._id, {
         message: 'First',
         screen: onNote
       });
       await waitForEnd(req, chat);
       const first = userMessage();
-      await apos.assistant.send(req, chat._id, {
+      await apos.aposAssistant.send(req, chat._id, {
         message: 'Second',
         screen: {
           ...onNote,
@@ -453,7 +482,7 @@ describe('Assistant: following a request', function () {
       });
       await waitForEnd(req, chat);
       const second = userMessage();
-      await apos.assistant.send(req, chat._id, {
+      await apos.aposAssistant.send(req, chat._id, {
         message: 'Third',
         screen: {
           ...onNote,
@@ -484,29 +513,29 @@ describe('Assistant: following a request', function () {
         } ] ]
       });
       // Kept with the message, so the transcript tells it again in order
-      const stored = (await apos.assistant.getChatRequests(req, chat._id))[1];
+      const stored = (await apos.aposAssistant.getChatRequests(req, chat._id))[1];
       assert.equal(stored.messages[0].content[1].text, second[1]);
     });
 
     it('stores whether a browser tab is visible on the open requests it owns', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
-      const done = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
+      const done = await apos.aposAssistant.createChat(req);
       await runToEnd(req, done, 'tab-1', 'Hello');
       const gate = holdModel();
       await send(req, chat, 'tab-1', 'Hello');
-      await apos.assistant.setVisible(req, {
+      await apos.aposAssistant.setVisible(req, {
         tabId: 'tab-1',
         visible: false
       });
       assert.equal((await latest(req, chat)).screen.visible, false);
       assert.equal((await latest(req, done)).screen.visible, true);
-      await apos.assistant.setVisible(req, {
+      await apos.aposAssistant.setVisible(req, {
         tabId: 'tab-2',
         visible: true
       });
       assert.equal((await latest(req, chat)).screen.visible, false);
-      await assert.rejects(apos.assistant.setVisible(req, {
+      await assert.rejects(apos.aposAssistant.setVisible(req, {
         tabId: 'tab-1',
         visible: 'no'
       }), { name: 'invalid' });
@@ -525,7 +554,7 @@ describe('Assistant: following a request', function () {
         title: 'Page note',
         links: [ { label: 'First' } ]
       }));
-      chat = await apos.assistant.createChat(userReq(editor));
+      chat = await apos.aposAssistant.createChat(userReq(editor));
     });
 
     it('tells the model once of a change the user undid, and what the line reads', async function () {
@@ -534,7 +563,7 @@ describe('Assistant: following a request', function () {
 
       const { text, request } = await sendOnPage();
 
-      const [ entry ] = await apos.harness.changes
+      const [ entry ] = await apos.aposHarness.changes
         .find({ requestId: written._id })
         .toArray();
       assert.equal(text, `${INTRO} "Page note" (${page._id}); now: undone = put back as ` +
@@ -602,12 +631,12 @@ describe('Assistant: following a request', function () {
 
     it('never tells of a reverted request\'s changes', async function () {
       const written = await write({ title: 'AI title' });
-      const started = await apos.assistant.revert(userReq(editor), chat._id, {
+      const started = await apos.aposAssistant.revert(userReq(editor), chat._id, {
         requestId: written._id,
         tabId: 'tab-1'
       });
       await waitFor(async () => {
-        const stored = await apos.assistant.getRevert(userReq(editor), started._id);
+        const stored = await apos.aposAssistant.getRevert(userReq(editor), started._id);
         const job = stored.jobId &&
           await apos.modules['@apostrophecms/job'].db.findOne({ _id: stored.jobId });
         return (stored.status === 'done') && job?.ended;
@@ -625,7 +654,7 @@ describe('Assistant: following a request', function () {
         type: 'assistant-note',
         title: 'Made by AI'
       }), { text: 'Created.' } ]);
-      await apos.assistant.send(userReq(editor), chat._id, {
+      await apos.aposAssistant.send(userReq(editor), chat._id, {
         message: 'Make a note',
         screen: { tabId: 'tab-1' }
       });
@@ -666,7 +695,7 @@ describe('Assistant: following a request', function () {
         _id: page._id,
         patch
       }), { text: 'Done.' } ]);
-      await apos.assistant.send(userReq(editor), chat._id, {
+      await apos.aposAssistant.send(userReq(editor), chat._id, {
         message: 'Write it',
         screen: onPage()
       });
@@ -684,7 +713,7 @@ describe('Assistant: following a request', function () {
     // A send on `screen` run to its end: the line it told the model of its
     // changes to the page, if any, its rows, and the request
     async function sendOnPage(screen = onPage()) {
-      await apos.assistant.send(userReq(editor), chat._id, {
+      await apos.aposAssistant.send(userReq(editor), chat._id, {
         message: 'Next',
         screen
       });
@@ -738,7 +767,7 @@ describe('Assistant: following a request', function () {
     it('reads each document in its own locale and works in the request\'s', async function () {
       // An editor modal switched to French on an English page: the admin UI
       // sends the active modal's locale
-      const fromFrench = await apos.assistant.verifyScreen(userReq(editor, 'fr'), {
+      const fromFrench = await apos.aposAssistant.verifyScreen(userReq(editor, 'fr'), {
         tabId: 'tab-1',
         locale: 'en',
         document: { _id: note._id },
@@ -763,7 +792,7 @@ describe('Assistant: following a request', function () {
       });
 
       // An id naming its locale is read in it, whatever the request's
-      const fromEnglish = await apos.assistant.verifyScreen(userReq(editor, 'en'), {
+      const fromEnglish = await apos.aposAssistant.verifyScreen(userReq(editor, 'en'), {
         tabId: 'tab-1',
         modals: [ {
           kind: 'editor',
@@ -797,7 +826,7 @@ describe('Assistant: following a request', function () {
           }
         ]
       };
-      const inFrench = await apos.assistant.verifyScreen(userReq(editor, 'fr'), screen);
+      const inFrench = await apos.aposAssistant.verifyScreen(userReq(editor, 'fr'), screen);
       assert.equal(inFrench.document._id, `${note.aposDocId}:fr:draft`);
       assert.deepEqual(inFrench.modals.map(modal => modal.docId), [
         undefined,
@@ -809,20 +838,20 @@ describe('Assistant: following a request', function () {
       assert.equal(inFrench.modals[3].locale, undefined);
       assert.equal(inFrench.modals[3].title, 'A tag');
 
-      const inEnglish = await apos.assistant.verifyScreen(userReq(editor, 'en'), screen);
+      const inEnglish = await apos.aposAssistant.verifyScreen(userReq(editor, 'en'), screen);
       assert.equal(inEnglish.document._id, `${note.aposDocId}:en:draft`);
       assert.equal(inEnglish.modals[1].docId, `${englishOnly.aposDocId}:en:draft`);
     });
 
     it('runs every run of a request in the locale it was sent in', async function () {
-      const chat = await apos.assistant.createChat(userReq(editor));
+      const chat = await apos.aposAssistant.createChat(userReq(editor));
       script = sequence([
         toolTurn('t_where'),
         toolTurn('t_question'),
         toolTurn('t_where'),
         { text: 'Done.' }
       ]);
-      await apos.assistant.send(userReq(editor, 'fr'), chat._id, {
+      await apos.aposAssistant.send(userReq(editor, 'fr'), chat._id, {
         message: 'Where am I?',
         screen: { tabId: 'tab-1' }
       });
@@ -830,7 +859,7 @@ describe('Assistant: following a request', function () {
       assert.equal(waiting.status, 'waiting');
       assert.equal(waiting.screen.locale, 'fr');
       // The answer comes from a browser tab whose active modal is English
-      await apos.assistant.answer(userReq(editor, 'en'), chat._id, {
+      await apos.aposAssistant.answer(userReq(editor, 'en'), chat._id, {
         tabId: 'tab-1',
         callId: 'call-t_question',
         answer: 'yes'
@@ -843,18 +872,18 @@ describe('Assistant: following a request', function () {
   describe('stop, failure and retry', function () {
     it('stops a request: "stopping" until the run winds down, then "stopped"', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
-      await assert.rejects(apos.assistant.stop(req, chat._id), conflict('notRunning'));
+      const chat = await apos.aposAssistant.createChat(req);
+      await assert.rejects(apos.aposAssistant.stop(req, chat._id), conflict('notRunning'));
       const gate = holdUntilStopped();
       const sent = await send(req, chat, 'tab-1', 'Hello');
       await waitFor(() => gate.waiting === 1);
 
       // Any browser tab of the owner may stop
-      const stopping = await apos.assistant.stop(req, chat._id);
+      const stopping = await apos.aposAssistant.stop(req, chat._id);
       assert.equal(stopping.status, 'stopping');
-      assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest.status, 'stopping');
+      assert.equal((await apos.aposAssistant.getChat(req, chat._id)).openRequest.status, 'stopping');
       // Stopping twice is stopping
-      assert.equal((await apos.assistant.stop(req, chat._id)).status, 'stopping');
+      assert.equal((await apos.aposAssistant.stop(req, chat._id)).status, 'stopping');
       const job = await apos.modules['@apostrophecms/job'].db.findOne({ _id: sent.jobId });
       assert.equal(job.cancelRequested, true);
       await assert.rejects(send(req, chat, 'tab-1', 'Again'), conflict('requestOpen'));
@@ -862,23 +891,23 @@ describe('Assistant: following a request', function () {
       const request = await waitForEnd(req, chat);
       assert.equal(request.status, 'stopped');
       assert.equal(request.finishReason, 'cancel');
-      assert((await apos.assistant.getChat(req, chat._id)).openRequest === null);
+      assert((await apos.aposAssistant.getChat(req, chat._id)).openRequest === null);
       assert.deepEqual(statuses(request), [ 'running', 'stopping', 'stopped' ]);
     });
 
     it('marks a request stopped to cancel its plan', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const gate = holdUntilStopped();
       await send(req, chat, 'tab-1', 'Hello');
       await waitFor(() => gate.waiting === 1);
 
-      await apos.assistant.stop(req, chat._id, { planCancel: true });
+      await apos.aposAssistant.stop(req, chat._id, { planCancel: true });
 
       const request = await waitForEnd(req, chat);
       assert.equal(request.status, 'stopped');
       assert.equal(request.planCancelled, true);
-      const rendered = apos.assistant.renderRequest({
+      const rendered = apos.aposAssistant.renderRequest({
         ...request,
         pageChanges: 'Since your last reply',
         pageRows: {}
@@ -890,11 +919,11 @@ describe('Assistant: following a request', function () {
 
     it('keeps the reply of a run that ends before the stop reaches it', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const gate = holdModel(() => ({ text: 'Here it is.' }));
       await send(req, chat, 'tab-1', 'Hello');
       await waitFor(() => gate.waiting === 1);
-      await apos.assistant.stop(req, chat._id);
+      await apos.aposAssistant.stop(req, chat._id);
       gate.release();
       const request = await waitForEnd(req, chat);
       assert.equal(request.status, 'completed');
@@ -903,12 +932,12 @@ describe('Assistant: following a request', function () {
 
     it('stops a request whose job id is not stored yet', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       holdUntilStopped();
       const generateJob = apos.ai.generateJob;
       apos.ai.generateJob = async (...args) => {
         const started = await generateJob(...args);
-        assert.equal((await apos.assistant.stop(req, chat._id)).jobId, undefined);
+        assert.equal((await apos.aposAssistant.stop(req, chat._id)).jobId, undefined);
         return started;
       };
       try {
@@ -924,28 +953,28 @@ describe('Assistant: following a request', function () {
 
     it('ends a request "stopped" when its run suspends as the stop arrives', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const gate = holdModel(() => toolTurn('t_question'));
       await send(req, chat, 'tab-1', 'Ask me');
       await waitFor(() => gate.waiting === 1);
       // A stop the run's cancel watcher hasn't seen yet
       const request = await latest(req, chat);
-      await apos.assistant.requests.updateOne({ _id: request._id }, {
+      await apos.aposAssistant.requests.updateOne({ _id: request._id }, {
         $set: { status: 'stopping' }
       });
-      await apos.assistant.chats.updateOne({ _id: chat._id }, {
+      await apos.aposAssistant.chats.updateOne({ _id: chat._id }, {
         $set: { 'openRequest.status': 'stopping' }
       });
       gate.release();
       const ended = await waitForEnd(req, chat);
       assert.equal(ended.status, 'stopped');
       assert.equal(ended.asks, null);
-      assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest, null);
+      assert.equal((await apos.aposAssistant.getChat(req, chat._id)).openRequest, null);
     });
 
     it('fails a request with its error, and retries it as a new request', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = () => {
         throw apos.error('aiRefusal', 'the provider refused');
       };
@@ -953,13 +982,13 @@ describe('Assistant: following a request', function () {
       assert.equal(failed.status, 'failed');
       assert.equal(failed.error.name, 'aiRefusal');
       assert(failed.endedAt);
-      await assert.rejects(apos.assistant.retry(req, chat._id, {
+      await assert.rejects(apos.aposAssistant.retry(req, chat._id, {
         retryOf: 'no-such-request',
         screen: { tabId: 'tab-1' }
       }), { name: 'notfound' });
 
       script = null;
-      const retried = await apos.assistant.retry(req, chat._id, {
+      const retried = await apos.aposAssistant.retry(req, chat._id, {
         retryOf: failed._id,
         requestId: 'retry-request',
         screen: {
@@ -976,7 +1005,7 @@ describe('Assistant: following a request', function () {
       assert.equal(completed._id, retried._id);
       assert.equal(completed.status, 'completed');
       // Sent again: answered with the retry, though it is no longer failed
-      const again = await apos.assistant.retry(req, chat._id, {
+      const again = await apos.aposAssistant.retry(req, chat._id, {
         retryOf: failed._id,
         requestId: 'retry-request',
         screen: { tabId: 'tab-2' }
@@ -984,16 +1013,16 @@ describe('Assistant: following a request', function () {
       assert.equal(again._id, 'retry-request');
       assert.equal(again.status, 'completed');
       // Only a failed request is retried
-      await assert.rejects(apos.assistant.retry(req, chat._id, {
+      await assert.rejects(apos.aposAssistant.retry(req, chat._id, {
         retryOf: completed._id,
         screen: { tabId: 'tab-1' }
       }), { name: 'invalid' });
-      assert.equal((await apos.assistant.getRequest(req, failed._id)).status, 'failed');
+      assert.equal((await apos.aposAssistant.getRequest(req, failed._id)).status, 'failed');
     });
 
     it('retries only the chat\'s latest request', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = () => {
         throw apos.error('aiRefusal', 'the provider refused');
       };
@@ -1002,16 +1031,16 @@ describe('Assistant: following a request', function () {
       script = null;
       await runToEnd(req, chat, 'tab-1', 'Something else');
 
-      await assert.rejects(apos.assistant.retry(req, chat._id, {
+      await assert.rejects(apos.aposAssistant.retry(req, chat._id, {
         retryOf: failed._id,
         screen: { tabId: 'tab-1' }
       }), { name: 'invalid' });
-      assert.equal((await apos.assistant.getChatRequests(req, chat._id)).length, 2);
+      assert.equal((await apos.aposAssistant.getChatRequests(req, chat._id)).length, 2);
     });
 
     it('tells every browser tab the provider is retrying, as the run goes on', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([
         () => {
           throw apos.error('aiRetry', 'overloaded', { kind: 'overload' });
@@ -1066,7 +1095,7 @@ describe('Assistant: following a request', function () {
 
     it('publishes each change of a request once it is stored', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([
         {
           content: [
@@ -1099,9 +1128,9 @@ describe('Assistant: following a request', function () {
 
     it('publishes a chat created, renamed and deleted', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
-      await apos.assistant.renameChat(req, chat._id, 'Renamed');
-      await apos.assistant.deleteChat(req, chat._id);
+      const chat = await apos.aposAssistant.createChat(req);
+      await apos.aposAssistant.renameChat(req, chat._id, 'Renamed');
+      await apos.aposAssistant.deleteChat(req, chat._id);
       // Each carries the title as stored
       assert.deepEqual(events.map(({
         chatId, stage, deleted, title
@@ -1138,8 +1167,8 @@ describe('Assistant: following a request', function () {
 
     it('frees a chat whose request is missing or ended, once the move is old', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
-      await apos.assistant.chats.updateOne({ _id: chat._id }, {
+      const chat = await apos.aposAssistant.createChat(req);
+      await apos.aposAssistant.chats.updateOne({ _id: chat._id }, {
         $set: {
           openRequest: {
             _id: 'missing',
@@ -1151,12 +1180,12 @@ describe('Assistant: following a request', function () {
       // A send in progress looks the same for a moment
       let read = await reconcile(req, chat);
       assert.equal(read.openRequest._id, 'missing');
-      await backdate(apos.assistant.chats, chat._id);
+      await backdate(apos.aposAssistant.chats, chat._id);
       read = await reconcile(req, chat);
       assert.equal(read.openRequest, null);
 
       const request = await runToEnd(req, chat, 'tab-1', 'Hello');
-      await apos.assistant.chats.updateOne({ _id: chat._id }, {
+      await apos.aposAssistant.chats.updateOne({ _id: chat._id }, {
         $set: {
           openRequest: {
             _id: request._id,
@@ -1165,19 +1194,19 @@ describe('Assistant: following a request', function () {
           }
         }
       });
-      await backdate(apos.assistant.requests, request._id);
+      await backdate(apos.aposAssistant.requests, request._id);
       // A send finds the chat left behind and runs
       const sent = await send(req, chat, 'tab-1', 'Again');
       assert.equal(sent.sequence, 2);
       assert.equal((await waitForEnd(req, chat)).status, 'completed');
-      assert.equal((await apos.assistant.getRequest(req, request._id)).status, 'completed');
+      assert.equal((await apos.aposAssistant.getRequest(req, request._id)).status, 'completed');
     });
 
     it('fails a request whose job is abandoned, gone or never started', async function () {
       const req = userReq(editor);
       const jobs = apos.modules['@apostrophecms/job'];
       for (const shape of [ 'abandoned', 'gone', 'none' ]) {
-        const chat = await apos.assistant.createChat(req);
+        const chat = await apos.aposAssistant.createChat(req);
         const request = await leftRunning(chat, {
           ...(shape !== 'none' && { jobId: `job-${shape}-${chat._id}` }),
           updatedAt: old()
@@ -1192,7 +1221,7 @@ describe('Assistant: following a request', function () {
         }
         const read = await reconcile(req, chat);
         assert.equal(read.openRequest, null, shape);
-        const failed = await apos.assistant.getRequest(req, request._id);
+        const failed = await apos.aposAssistant.getRequest(req, request._id);
         assert.equal(failed.status, 'failed', shape);
         assert.equal(failed.error.name, 'interrupted', shape);
       }
@@ -1200,12 +1229,12 @@ describe('Assistant: following a request', function () {
 
     it('leaves a run whose job still beats', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const gate = holdModel();
       await send(req, chat, 'tab-1', 'Hello');
       await waitFor(() => gate.waiting === 1);
       const request = await latest(req, chat);
-      await backdate(apos.assistant.requests, request._id);
+      await backdate(apos.aposAssistant.requests, request._id);
       const read = await reconcile(req, chat);
       assert.equal(read.openRequest._id, request._id);
       gate.release();
@@ -1214,9 +1243,9 @@ describe('Assistant: following a request', function () {
 
     it('ends a request from its job when the run ended but its end was never stored', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
-      const endRun = apos.assistant.endRun;
-      apos.assistant.endRun = async () => {
+      const chat = await apos.aposAssistant.createChat(req);
+      const endRun = apos.aposAssistant.endRun;
+      apos.aposAssistant.endRun = async () => {
         throw new Error('the database went away');
       };
       try {
@@ -1225,7 +1254,7 @@ describe('Assistant: following a request', function () {
         await waitFor(async () => (await apos.modules['@apostrophecms/job'].db
           .findOne({ _id: jobId }))?.ended);
       } finally {
-        apos.assistant.endRun = endRun;
+        apos.aposAssistant.endRun = endRun;
       }
       assert.equal((await latest(req, chat)).status, 'running');
       const read = await reconcile(req, chat);
@@ -1239,11 +1268,11 @@ describe('Assistant: following a request', function () {
     it('fails a request whose skip or answer was cut short', async function () {
       const req = userReq(editor);
       for (const slot of [ 'skipping', 'running' ]) {
-        const chat = await apos.assistant.createChat(req);
+        const chat = await apos.aposAssistant.createChat(req);
         script = sequence([ toolTurn('t_question') ]);
         const waiting = await runToEnd(req, chat, 'tab-1', 'Ask me');
         assert.equal(waiting.status, 'waiting');
-        await apos.assistant.chats.updateOne({ _id: chat._id }, {
+        await apos.aposAssistant.chats.updateOne({ _id: chat._id }, {
           $set: {
             'openRequest.status': slot,
             updatedAt: new Date()
@@ -1254,16 +1283,16 @@ describe('Assistant: following a request', function () {
         assert.equal(read.openRequest.status, slot);
         // A run that suspends stores its request before its chat: a
         // request that moved just now is never cut short
-        await backdate(apos.assistant.chats, chat._id);
-        await apos.assistant.requests.updateOne({ _id: waiting._id }, {
+        await backdate(apos.aposAssistant.chats, chat._id);
+        await apos.aposAssistant.requests.updateOne({ _id: waiting._id }, {
           $set: { updatedAt: new Date() }
         });
         read = await reconcile(req, chat);
         assert.equal(read.openRequest.status, slot);
-        await backdate(apos.assistant.requests, waiting._id);
+        await backdate(apos.aposAssistant.requests, waiting._id);
         read = await reconcile(req, chat);
         assert.equal(read.openRequest, null, slot);
-        const failed = await apos.assistant.getRequest(req, waiting._id);
+        const failed = await apos.aposAssistant.getRequest(req, waiting._id);
         assert.equal(failed.status, 'failed', slot);
         assert.equal(failed.asks, null, slot);
       }
@@ -1271,48 +1300,48 @@ describe('Assistant: following a request', function () {
 
     it('fails an answer cut short before its run, never ending it from the earlier job', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ toolTurn('t_question') ]);
       const waiting = await runToEnd(req, chat, 'tab-1', 'Ask me');
       // The process dies once the answer is stored, before the new run
       // starts: nothing after that point happens
-      const { startRun, endRun } = apos.assistant;
-      apos.assistant.startRun = async () => {
+      const { startRun, endRun } = apos.aposAssistant;
+      apos.aposAssistant.startRun = async () => {
         throw new Error('the process is gone');
       };
-      apos.assistant.endRun = async () => {};
+      apos.aposAssistant.endRun = async () => {};
       try {
-        await assert.rejects(apos.assistant.answer(req, chat._id, {
+        await assert.rejects(apos.aposAssistant.answer(req, chat._id, {
           tabId: 'tab-1',
           callId: 'call-t_question',
           answer: 'yes'
         }));
       } finally {
-        Object.assign(apos.assistant, {
+        Object.assign(apos.aposAssistant, {
           startRun,
           endRun
         });
       }
-      await backdate(apos.assistant.requests, waiting._id);
+      await backdate(apos.aposAssistant.requests, waiting._id);
       const read = await reconcile(req, chat);
       assert.equal(read.openRequest, null);
-      const failed = await apos.assistant.getRequest(req, waiting._id);
+      const failed = await apos.aposAssistant.getRequest(req, waiting._id);
       assert.equal(failed.status, 'failed');
       assert.equal(failed.error.name, 'interrupted');
     });
 
     it('keeps a request that waits for an answer', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ toolTurn('t_question') ]);
       const waiting = await runToEnd(req, chat, 'tab-1', 'Ask me');
-      await backdate(apos.assistant.chats, chat._id);
-      await backdate(apos.assistant.requests, waiting._id);
+      await backdate(apos.aposAssistant.chats, chat._id);
+      await backdate(apos.aposAssistant.requests, waiting._id);
       const read = await reconcile(req, chat);
       assert.equal(read.openRequest.status, 'waiting');
       // An answer starts a new job: the old one's id goes
       script = null;
-      const answered = await apos.assistant.answer(req, chat._id, {
+      const answered = await apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-t_question',
         answer: 'yes'
@@ -1323,8 +1352,8 @@ describe('Assistant: following a request', function () {
 
     // A chat as a reader finds it, reconciled
     async function reconcile(req, chat) {
-      const found = await apos.assistant.getChat(req, chat._id);
-      return apos.assistant.reconcileChat(req, found);
+      const found = await apos.aposAssistant.getChat(req, chat._id);
+      return apos.aposAssistant.reconcileChat(req, found);
     }
 
     // A record whose last move is older than the reconcile waits for
@@ -1335,7 +1364,7 @@ describe('Assistant: following a request', function () {
     // A chat with a running request, as a process leaves it
     async function leftRunning(chat, fields) {
       const _id = apos.util.generateId();
-      await apos.assistant.chats.updateOne({ _id: chat._id }, {
+      await apos.aposAssistant.chats.updateOne({ _id: chat._id }, {
         $set: {
           openRequest: {
             _id,
@@ -1347,7 +1376,7 @@ describe('Assistant: following a request', function () {
         }
       });
       const request = {
-        ...apos.assistant.newRequest(chat, {
+        ...apos.aposAssistant.newRequest(chat, {
           _id,
           sequence: 1,
           tabId: 'tab-1',
@@ -1356,7 +1385,7 @@ describe('Assistant: following a request', function () {
         }),
         ...fields
       };
-      await apos.assistant.requests.insertOne(request);
+      await apos.aposAssistant.requests.insertOne(request);
       return request;
     }
   });
@@ -1364,7 +1393,7 @@ describe('Assistant: following a request', function () {
   describe('replies', function () {
     it('renders Markdown sanitized for the panel and stores the raw text', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const text = '**Done.** See [the page](/about) and [this](javascript:alert(1)).\n\n' +
         '<script>alert(1)</script><img src="x" onerror="alert(1)">\n\n' +
         '| a | b |\n| --- | --- |\n| 1 | 2 |';
@@ -1382,14 +1411,14 @@ describe('Assistant: following a request', function () {
       }
       // The transcript stays on the server, as the model wrote it
       assert.equal(requests[0].messages, undefined);
-      const stored = await apos.assistant.getRequest(req, requests[0]._id);
+      const stored = await apos.aposAssistant.getRequest(req, requests[0]._id);
       assert.equal(stored.messages.at(-1).content[0].text, text);
       assert(!stored.messages.some(message => message.html));
     });
 
     it('lists the steps with their labels, reads each step on its own, and lists the documents a lock kept', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const other = await t.createAdmin(apos, { username: 'other' });
       const draft = await findDraft(note);
       await apos.doc.lock(userReq(other), draft, 'other-tab');
@@ -1460,7 +1489,7 @@ describe('Assistant: following a request', function () {
   describe('the run stages', function () {
     it('stores a transcript verbatim, dotted and $ keys included, and replays it as it ran', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       const input = {
         values: {
           'body.items.0.content': '<p>dotted path</p>',
@@ -1485,7 +1514,7 @@ describe('Assistant: following a request', function () {
 
     it('ends the job of a failed run as failed', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = () => {
         throw apos.error('aiRefusal', 'no');
       };
@@ -1499,9 +1528,9 @@ describe('Assistant: following a request', function () {
 
   describe('tool-usage', function () {
     it('counts the calls of each tool across stored requests', async function () {
-      await apos.assistant.requests.deleteMany({});
+      await apos.aposAssistant.requests.deleteMany({});
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([
         {
           content: [ toolCall('t_look'), {
@@ -1517,7 +1546,7 @@ describe('Assistant: following a request', function () {
       script = sequence([ toolTurn('t_look'), { text: 'Done.' } ]);
       await runToEnd(req, chat, 'tab-1', 'Look once');
       // A transcript outlives the registry
-      await apos.assistant.requests.updateOne({
+      await apos.aposAssistant.requests.updateOne({
         chatId: chat._id,
         sequence: 2
       }, {
@@ -1529,7 +1558,7 @@ describe('Assistant: following a request', function () {
         }
       });
 
-      const usageOf = await apos.assistant.getToolUsage();
+      const usageOf = await apos.aposAssistant.getToolUsage();
       assert.equal(usageOf.requests, 2);
       assert.deepEqual(usageOf.tools[0], {
         name: 't_look',
@@ -1577,7 +1606,7 @@ describe('Assistant: following a request', function () {
   }
 
   function send(req, chat, tabId, message) {
-    return apos.assistant.send(req, chat._id, {
+    return apos.aposAssistant.send(req, chat._id, {
       message,
       screen: { tabId }
     });
@@ -1589,7 +1618,7 @@ describe('Assistant: following a request', function () {
   }
 
   async function latest(req, chat) {
-    return (await apos.assistant.getChatRequests(req, chat._id)).at(-1);
+    return (await apos.aposAssistant.getChatRequests(req, chat._id)).at(-1);
   }
 
   // The chat's latest request once its run has ended (or waits), and the
@@ -1598,7 +1627,7 @@ describe('Assistant: following a request', function () {
     let request;
     await waitFor(async () => {
       request = await latest(req, chat);
-      const open = (await apos.assistant.getChat(req, chat._id)).openRequest;
+      const open = (await apos.aposAssistant.getChat(req, chat._id)).openRequest;
       return request && ![ 'running', 'stopping' ].includes(request.status) &&
         ((open === null) || (open.status === 'waiting')) &&
         await jobEnded(request.jobId);

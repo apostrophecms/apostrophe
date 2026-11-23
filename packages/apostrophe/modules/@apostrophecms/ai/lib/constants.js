@@ -22,8 +22,15 @@ const MESSAGE_ROLES = Object.freeze([ 'user', 'assistant', 'tool' ]);
 const PART_ROLES = Object.freeze({
   text: Object.freeze([ 'user', 'assistant' ]),
   image: Object.freeze([ 'user', 'assistant' ]),
+  document: Object.freeze([ 'user' ]),
   toolCall: Object.freeze([ 'assistant' ]),
   toolResult: Object.freeze([ 'tool' ])
+});
+
+// Media part type → the capability a provider declares to take it
+const PART_CAPABILITIES = Object.freeze({
+  image: 'imageInput',
+  document: 'documentInput'
 });
 
 // The finish reasons an adapter turn may report
@@ -47,12 +54,14 @@ const PENDING_POLICIES = Object.freeze([ 'refuse', 'execute' ]);
 const GENERATE_OPTIONS = Object.freeze([
   'system', 'messages', 'tools', 'maxSteps', 'pending', 'toolInput',
   'schema', 'effort', 'provider', 'model', 'reasoning', 'maxTokens',
-  'cache', 'signal', 'onMessage', 'onToolCall', 'onRetry', 'betweenSteps'
+  'cache', 'signal', 'onMessage', 'onToolCall', 'onRetry', 'betweenSteps',
+  'usageMetadata'
 ]);
 
 // The options generateImage accepts
 const IMAGE_OPTIONS = Object.freeze([
-  'count', 'aspect', 'quality', 'images', 'provider', 'model', 'signal'
+  'count', 'aspect', 'quality', 'images', 'provider', 'model', 'signal',
+  'usageMetadata'
 ]);
 
 // The provider entry keys the engine itself reads. Any other key must
@@ -89,6 +98,7 @@ module.exports = {
   CACHE_POLICIES,
   MESSAGE_ROLES,
   PART_ROLES,
+  PART_CAPABILITIES,
   FINISH_REASONS,
   USAGE_SHARE_KEYS,
   TOOL_KINDS,

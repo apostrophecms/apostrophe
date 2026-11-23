@@ -21,7 +21,7 @@ const NAME = /^[A-Za-z_][\w.:@/-]{0,99}$/;
 
 // What a change line compares, in the order it names them
 const COMPARED = [ 'url', 'locale', 'mode', 'editing', 'view', 'document', 'modals',
-  'selection', 'field' ];
+  'window', 'selection', 'field' ];
 const CHANGES_INTRO = 'Since your last reply the screen changed, [before, now]:';
 // What the model hears of its changes to the page the user is on
 const PAGE_INTRO = 'Since your last reply the user changed some of your changes on the page';
@@ -50,12 +50,25 @@ const SCREEN_INTRO = 'Each user message carries a "Current screen" line, true as
   'widget and "arrayEditor" for one array of its document, "itemId" its item shown; a ' +
   '"mediaManager" with a "docId" for the image open beside its list) holds ' +
   'that document with the user\'s unsaved changes: the document tools don\'t write it ' +
-  'while it is open. Read and change what the editor on top holds with ' +
+  'while it is open. Its "window", when there is one, sits beside the page and edits ' +
+  'its document as an editor does: it is the editor on top while no modal is open. ' +
+  'Read and change what the editor on top holds with ' +
   'edit_open_document; it is stored when the user saves.';
 const SCREEN_LINE = 'Current screen:';
 
 module.exports = (self) => {
   return {
+    /**
+     * The locale of the page a verified screen shows: its document's, else
+     * the screen's own (the request's locale).
+     *
+     * @param {object|null} screen
+     * @returns {string|null}
+     */
+    getPageLocale(screen) {
+      return screen?.document?.locale || screen?.locale || null;
+    },
+
     /**
      * The screen a browser tab reports, verified. `tabId` is required; every
      * other key is optional and dropped when it doesn't verify. `locale` is
@@ -78,6 +91,7 @@ module.exports = (self) => {
         view: getName(screen.view),
         document: null,
         modals: [],
+        window: null,
         selection: null,
         field: null
       };
@@ -93,6 +107,10 @@ module.exports = (self) => {
       for (const modal of (Array.isArray(screen.modals) ? screen.modals : [])
         .slice(0, MAX_MODALS)) {
         verified.modals.push(await getModal(modal || {}));
+      }
+      // A window beside the page that reports what it is, verified as a modal
+      if (screen.window && (typeof screen.window === 'object')) {
+        verified.window = await getModal(screen.window);
       }
       verified.selection = await getSelection(screen.selection);
       const field = await findDoc(screen.field?.docId);
@@ -165,7 +183,7 @@ module.exports = (self) => {
 
       // A document's own locale, none for a type that isn't localized
       function getLocale(doc) {
-        const locale = self.apos.harness.getLocaleOf(doc);
+        const locale = self.apos.aposHarness.getLocaleOf(doc);
         return locale ? { locale } : {};
       }
 
@@ -222,7 +240,7 @@ module.exports = (self) => {
      */
     async findScreenDoc(req, _id) {
       try {
-        const { doc, draftReq } = await self.apos.harness.findDraft(req, _id);
+        const { doc, draftReq } = await self.apos.aposHarness.findDraft(req, _id);
         if (!self.apos.ai.can(draftReq, 'view', doc)) {
           return null;
         }
@@ -248,7 +266,7 @@ module.exports = (self) => {
     renderScreen(screen) {
       const shown = {};
       for (const key of [ 'url', 'locale', 'mode', 'editing', 'view', 'document',
-        'modals', 'selection', 'field' ]) {
+        'modals', 'window', 'selection', 'field' ]) {
         const value = screen[key];
         if ((value === null) || (value === undefined) ||
           (Array.isArray(value) && !value.length)) {
@@ -346,7 +364,7 @@ module.exports = (self) => {
         .sort({ sequence: 1 })
         .toArray();
       const entries = requests.length
-        ? await self.apos.harness.changes
+        ? await self.apos.aposHarness.changes
           .find({
             docId,
             requestId: { $in: requests.map(request => request._id) }
@@ -361,7 +379,7 @@ module.exports = (self) => {
       if (!requestIds.length) {
         return none;
       }
-      const doorReq = self.apos.harness.withDoor(req, {
+      const doorReq = self.apos.aposHarness.withDoor(req, {
         door: 'assistant',
         lockId: chat._id,
         family: screen.tabId,
@@ -369,11 +387,15 @@ module.exports = (self) => {
         requestId: self.apos.util.generateId(),
         revert: true
       });
-      const [ document ] = await self.apos.harness.revertRequests(doorReq, requestIds, {
-        dryRun: true,
-        ignoreLocks: true,
-        docIds: [ docId ]
-      });
+      const [ document ] = await self.apos.aposHarness.revertRequests(
+        doorReq,
+        requestIds,
+        {
+          dryRun: true,
+          ignoreLocks: true,
+          docIds: [ docId ]
+        }
+      );
       const checked = [ ...(document?.rows || []), ...(document?.createdRows || []) ]
         .filter(row => row.outcome);
       if (!checked.length) {
@@ -391,7 +413,7 @@ module.exports = (self) => {
         const now = PAGE_NOW_NAMES[row.outcome];
         const entry = byId.get(row.entryId);
         const described = (was !== row.outcome) && now &&
-          self.apos.harness.describeChangeRow(req, manager, entry.rows[row.index]);
+          self.apos.aposHarness.describeChangeRow(req, manager, entry.rows[row.index]);
         if (described) {
           moved.push({
             requestId: entry.requestId,
@@ -463,7 +485,7 @@ module.exports = (self) => {
      */
     async takeChangedScreen(req) {
       const filter = {
-        _id: self.apos.harness.getDoor(req).requestId,
+        _id: self.apos.aposHarness.getDoor(req).requestId,
         ownerId: self.getOwnerId(req)
       };
       const { matchedCount } = await self.requests.updateOne({

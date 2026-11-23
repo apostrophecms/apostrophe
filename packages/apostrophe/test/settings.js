@@ -375,6 +375,73 @@ describe('user settings', function () {
     await t.loginAs(apos, 'editor', 'newpassword');
   });
 
+  it('should keep only the current session when changing password via session', async function () {
+    apos = await createCommonInstance();
+    const { jar } = await login(apos);
+    const otherJar = await t.loginAs(apos, 'editor', 'editor');
+    const token = await getBearerToken(apos, 'editor', 'editor');
+
+    // All three logins work beforehand
+    await apos.http.get('/api/v1/@apostrophecms/settings', { jar });
+    await apos.http.get('/api/v1/@apostrophecms/settings', { jar: otherJar });
+    await apos.http.get('/api/v1/@apostrophecms/settings', { headers: bearer(token) });
+
+    await apos.http.patch('/api/v1/@apostrophecms/settings/password', {
+      body: {
+        password: 'newpassword',
+        passwordRepeat: 'newpassword',
+        passwordCurrent: 'editor'
+      },
+      jar
+    });
+
+    // The session that made the change survives
+    const result = await apos.http.get('/api/v1/@apostrophecms/settings', { jar });
+    assert(result._id);
+
+    // Other sessions and bearer tokens do not
+    await assert.rejects(
+      apos.http.get('/api/v1/@apostrophecms/settings', { jar: otherJar }),
+      { status: 404 }
+    );
+    await assert.rejects(
+      apos.http.get('/api/v1/@apostrophecms/settings', { headers: bearer(token) }),
+      { status: 401 }
+    );
+  });
+
+  it('should keep only the current bearer token when changing password via bearer token', async function () {
+    apos = await createCommonInstance();
+    const { jar } = await login(apos);
+    const token = await getBearerToken(apos, 'editor', 'editor');
+    const otherToken = await getBearerToken(apos, 'editor', 'editor');
+
+    await apos.http.patch('/api/v1/@apostrophecms/settings/password', {
+      body: {
+        password: 'newpassword',
+        passwordRepeat: 'newpassword',
+        passwordCurrent: 'editor'
+      },
+      headers: bearer(token)
+    });
+
+    // The bearer token that made the change survives
+    const result = await apos.http.get('/api/v1/@apostrophecms/settings', {
+      headers: bearer(token)
+    });
+    assert(result._id);
+
+    // Other bearer tokens and sessions do not
+    await assert.rejects(
+      apos.http.get('/api/v1/@apostrophecms/settings', { headers: bearer(otherToken) }),
+      { status: 401 }
+    );
+    await assert.rejects(
+      apos.http.get('/api/v1/@apostrophecms/settings', { jar }),
+      { status: 404 }
+    );
+  });
+
   it('should password protect subforms', async function () {
     apos = await createCommonInstance();
     const { jar, user } = await login(apos);
@@ -672,4 +739,21 @@ async function logout(apos, username, password, jar) {
       jar
     }
   );
+}
+
+async function getBearerToken(apos, username, password) {
+  const { token } = await apos.http.post('/api/v1/@apostrophecms/login/login', {
+    body: {
+      username,
+      password
+    }
+  });
+  assert(token);
+  return token;
+}
+
+function bearer(token) {
+  return {
+    Authorization: `Bearer ${token}`
+  };
 }

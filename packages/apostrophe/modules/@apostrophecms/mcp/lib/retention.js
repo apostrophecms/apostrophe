@@ -57,7 +57,7 @@ module.exports = (self) => {
         throw e;
       }
       try {
-        const { deletedCount } = await self.apos.harness.changes.deleteMany({
+        const { deletedCount } = await self.apos.aposHarness.changes.deleteMany({
           door: 'mcp',
           at: { $lt: new Date(Date.now() - expireAfter * 1000) }
         });

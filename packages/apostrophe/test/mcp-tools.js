@@ -35,7 +35,7 @@ describe('MCP: tools', function () {
     describe(`with a ${mode === 'auto' ? '2026-07-28' : '2025-era'} client`, function () {
       it('lists the door\'s tools', async function () {
         const { tools } = await withClient(apos, mode, client => client.listTools());
-        const expected = apos.harness.getDoorTools('mcp').map(tool => tool.name);
+        const expected = apos.aposHarness.getDoorTools('mcp').map(tool => tool.name);
         assert.deepEqual(tools.map(tool => tool.name), expected);
         assert(expected.includes('mcp_echo'));
         assert(expected.includes('get_document'));
@@ -46,7 +46,7 @@ describe('MCP: tools', function () {
       it('describes each tool as the engine holds it', async function () {
         const { tools } = await withClient(apos, mode, client => client.listTools());
         const byName = Object.fromEntries(tools.map(tool => [ tool.name, tool ]));
-        for (const definition of apos.harness.getDoorTools('mcp')) {
+        for (const definition of apos.aposHarness.getDoorTools('mcp')) {
           const tool = byName[definition.name];
           assert.equal(tool.description, definition.description, definition.name);
           // As JSON carries it: a key set to `undefined` drops out
@@ -151,9 +151,9 @@ describe('MCP: tools', function () {
 
   it('ends each call\'s door request', async function () {
     const ended = [];
-    const endRequest = apos.harness.endRequest;
-    apos.harness.endRequest = async (req) => {
-      ended.push(apos.harness.getDoor(req).requestId);
+    const endRequest = apos.aposHarness.endRequest;
+    apos.aposHarness.endRequest = async (req) => {
+      ended.push(apos.aposHarness.getDoor(req).requestId);
       return endRequest(req);
     };
     try {
@@ -162,7 +162,7 @@ describe('MCP: tools', function () {
       assert.equal(ended.length, 2);
       assert.equal(ended[0], ok.structuredContent.door.requestId);
     } finally {
-      apos.harness.endRequest = endRequest;
+      apos.aposHarness.endRequest = endRequest;
     }
   });
 });
@@ -208,7 +208,7 @@ function addTestTools(apos) {
     handler: async (req, { text }) => ({
       text,
       username: req.user?.username,
-      door: apos.harness.getDoor(req),
+      door: apos.aposHarness.getDoor(req),
       toolCallId: req.aposAiToolCall?.id
     })
   });

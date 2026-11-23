@@ -1,5 +1,6 @@
 const { TinyColor } = require('@ctrl/tinycolor');
 const _ = require('lodash');
+const { dropPathOf } = require('../schema/lib/drops.js');
 
 // TinyColor finds functional notations like rgb() anywhere in the string,
 // so the whole value must also have the shape of a color
@@ -25,10 +26,27 @@ module.exports = {
   methods(self) {
     return {
       addFieldType() {
+        // The colors of a field limited to its presets, lowercased: no
+        // spectrum and no fields to type another, else `null`. Options as
+        // the picker reads them, `pickerOptions` the older form
+        const getPresets = (field) => {
+          const options = {
+            ...self.defaultOptions,
+            ...field.options?.pickerOptions,
+            ...field.options
+          };
+          const presets = Array.isArray(options.presetColors)
+            ? options.presetColors
+            : ((options.presetColors === false) ? [] : self.defaultOptions.presetColors);
+          return (options.disableSpectrum && options.disableFields && presets.length)
+            ? presets.map(color => String(color).toLowerCase())
+            : null;
+        };
         self.apos.schema.addFieldType({
           name: 'color',
-          async convert(req, field, data, destination) {
+          async convert(req, field, data, destination, { drops, dropPath } = {}) {
             destination[field.name] = self.apos.launder.string(data[field.name]);
+            const given = destination[field.name];
 
             const isUndefined = _.isUndefined(destination[field.name]) ||
               !destination[field.name].toString().length;
@@ -46,6 +64,23 @@ module.exports = {
               if (!/^--[a-zA-Z0-9_-]+$/.test(destination[field.name])) {
                 destination[field.name] = null;
               }
+            }
+            // A lossless save hears of a value it gave that is no color, or
+            // outside the presets of a field limited to them
+            if (!drops || !given.length) {
+              return;
+            }
+            const presets = getPresets(field);
+            const message = (destination[field.name] === null)
+              ? 'Not a color or a CSS variable ("--name").'
+              : (presets && !presets.includes(given.toLowerCase())) &&
+                `Only these colors: ${presets.join(', ')}.`;
+            if (message) {
+              drops.push({
+                path: dropPathOf(dropPath, field.name),
+                reason: 'invalid',
+                message
+              });
             }
           },
           isEmpty: function (field, value) {

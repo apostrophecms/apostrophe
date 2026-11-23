@@ -6,6 +6,78 @@ describe('sanitizeHtml', function() {
   it('should be successfully initialized', function() {
     sanitizeHtml = require('../index.js');
   });
+  describe('custom escaping', function() {
+    function escapeForXml(text, quote) {
+      let escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+      if (quote) {
+        escaped = escaped.replace(/"/g, '&quot;');
+      }
+      return escaped;
+    }
+
+    it('should use a custom escaper for attribute values and text', function() {
+      const escapeHtml = sinon.spy(escapeForXml);
+      assert.equal(sanitizeHtml('<p title="a &amp; b &gt; c &quot;d&quot;">a &amp; b &gt; c</p>', {
+        allowedAttributes: { p: [ 'title' ] },
+        escapeHtml
+      }), '<p title="a &amp; b > c &quot;d&quot;">a &amp; b > c</p>');
+      sinon.assert.calledWithExactly(escapeHtml, 'a & b > c "d"', true);
+      assert.equal(escapeHtml.getCalls().filter(call => !call.args[1]).map(call => call.args[0]).join(''), 'a & b > c');
+    });
+
+    it('should use the custom escaper for escaped disallowed tags and preserved attributes', function() {
+      const escapeHtml = sinon.spy(escapeForXml);
+      sanitizeHtml('<widget title="a &gt; b">c &gt; d</widget>', {
+        allowedTags: [],
+        disallowedTagsMode: 'escape',
+        preserveEscapedAttributes: true,
+        escapeHtml
+      });
+      sinon.assert.calledWithExactly(escapeHtml, 'a > b', true);
+      sinon.assert.calledWithExactly(escapeHtml, '>', false);
+      assert(escapeHtml.getCalls().some(call => call.args[0].startsWith('<widget')));
+    });
+
+    it('should use the custom escaper before textFilter', function() {
+      const textFilter = sinon.spy(text => text);
+      assert.equal(sanitizeHtml('<p>a &gt; b</p>', {
+        escapeHtml: escapeForXml,
+        textFilter
+      }), '<p>a > b</p>');
+      assert.equal(textFilter.getCalls().map(call => call.args[0]).join(''), 'a > b');
+      assert(textFilter.getCalls().every(call => call.args[1] === 'p'));
+    });
+
+    it('should not change escaping for subsequent calls', function() {
+      sanitizeHtml('<p>a &gt; b</p>', { escapeHtml: escapeForXml });
+      assert.equal(sanitizeHtml('<p>a &gt; b</p>'), '<p>a &gt; b</p>');
+    });
+
+    it('should reject a non-function escaper', function() {
+      for (const escapeHtml of [ null, false, 'escape', {} ]) {
+        assert.throws(() => sanitizeHtml('<p>text</p>', { escapeHtml }), {
+          name: 'TypeError',
+          message: 'escapeHtml must be a function'
+        });
+      }
+    });
+
+    it('should reject a non-string result', function() {
+      assert.throws(() => sanitizeHtml('<p>text</p>', { escapeHtml: () => undefined }), {
+        name: 'TypeError',
+        message: 'escapeHtml must return a string'
+      });
+    });
+
+    it('should propagate errors from the custom escaper', function() {
+      const error = new Error('escaping failed');
+      assert.throws(() => sanitizeHtml('<p>text</p>', {
+        escapeHtml: () => {
+          throw error;
+        }
+      }), err => err === error);
+    });
+  });
   it('should escape self closing tags', () => {
     assert.equal(sanitizeHtml('before <img src="test.png" /> after', {
       disallowedTagsMode: 'escape',

@@ -218,17 +218,27 @@ module.exports = {
           }
         },
         async invalidatePriorLogins(req, doc, options) {
-          const effectiveUserId = req.user && req.user._id;
-          // Invalidate prior login sessions if the password field changes or
-          // the user is newly marked as disabled.
-          if (doc._id && doc._passwordUpdated && (effectiveUserId !== doc._id)) {
-            // Invalidate old sessions
-            doc.loginInvalidBefore = Date.now();
-            // Just delete old bearer tokens
-            return self.apos.login.bearerTokens.removeMany({
-              userId: doc._id
-            });
+          // Invalidate prior login sessions and bearer tokens if the password
+          // field changes. When users change their own password, the session
+          // or bearer token used to make the change survives, but all others
+          // are invalidated.
+          if (!(doc._id && doc._passwordUpdated)) {
+            return;
           }
+          const isSelf = req.user && (req.user._id === doc._id);
+          const now = Date.now();
+          doc.loginInvalidBefore = now;
+          if (isSelf && req.user._viaSession && req.session) {
+            // Equal timestamps are honored by the middleware
+            req.session.loginAt = now;
+          }
+          const criteria = {
+            userId: doc._id
+          };
+          if (isSelf && req.token) {
+            criteria._id = { $ne: req.token };
+          }
+          return self.apos.login.bearerTokens.removeMany(criteria);
         }
       },
       // Reflect email and username changes in the safe after deduplicating in

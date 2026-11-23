@@ -1,5 +1,6 @@
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
+import AposOutsideMixin from 'Modules/@apostrophecms/modal/mixins/AposOutsideMixin';
 import { klona } from 'klona';
 import { createId, get } from 'apostrophe/lib/beneath.js';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
@@ -349,7 +350,7 @@ export default {
       if (!this.currentId || (this.getOutsideItem(key) !== this.currentId)) {
         return null;
       }
-      return AposEditorMixin.methods.getOutsideTop.call(this, key);
+      return AposOutsideMixin.methods.getOutsideTop.call(this, key);
     },
     getOutsideRelative(key) {
       const prefix = `@${this.currentId}.`;

@@ -59,8 +59,9 @@
  * @property {string} [quality] The quality dial sent; image only.
  * @property {string} [aspect] The resolved aspect sent; image only.
  * @property {string} [size] The native pixel size, when reported; image only.
- * @property {object} metadata A copy of the `usageMetadata` option, `{}` by
- *   default; handlers may add to it.
+ * @property {object} metadata A copy of the `usageMetadata` option with the
+ *   call's own `usageMetadata` merged over it, `{}` by default; handlers may
+ *   add to it.
  * @property {true} [mock] Set under APOS_AI_MOCK: the counts are the mock's
  *   estimate and nothing was billed. `provider` is then whatever the call
  *   routed to, not necessarily 'mock'.
@@ -85,11 +86,23 @@
  */
 
 /**
- * An image in a message. Valid in user and assistant messages.
+ * An image in a message. Valid in user and assistant messages, on a provider
+ * declaring `imageInput`.
  *
  * @typedef {object} AiImagePart
  * @property {'image'} type
  * @property {AiImageSource} image
+ */
+
+/**
+ * A document in a message: inline base64 `data` with its media type. `name` is
+ * the file's name, shown to the model where the provider takes one. Valid in
+ * user messages only, on a provider declaring `documentInput`. The engine
+ * checks no media type: the provider refuses what it can't read.
+ *
+ * @typedef {object} AiDocumentPart
+ * @property {'document'} type
+ * @property {{ data: string, mediaType: string, name?: string }} document
  */
 
 /**
@@ -118,7 +131,8 @@
  */
 
 /**
- * @typedef {AiTextPart|AiImagePart|AiToolCallPart|AiToolResultPart} AiContentPart
+ * @typedef {AiTextPart|AiImagePart|AiDocumentPart|AiToolCallPart|
+ *   AiToolResultPart} AiContentPart
  */
 
 /**
@@ -330,6 +344,11 @@
  * Informational: read back by modelCatalog, never enforced by the engine —
  * the adapter keeps its own rejections.
  * @property {string[]} [aspects] The image ratios the model supports, as 'W:H'.
+ * @property {number} [maxDocumentPages] The most document pages the model
+ * takes, as the provider documents it. Informational, never enforced by the
+ * engine.
+ * @property {number} [maxDocumentBytes] The largest document the model takes,
+ * in bytes; some providers count the whole request against it.
  */
 
 /**
@@ -342,6 +361,8 @@
  * @property {number|undefined} contextWindow Undefined for an unknown model,
  * which is not an error — the call would still work.
  * @property {number|undefined} maxOutputTokens
+ * @property {number} [maxDocumentPages] Present when the model declares it.
+ * @property {number} [maxDocumentBytes] Present when the model declares it.
  * @property {Object<string, boolean>} capabilities
  * @property {string[]} [aspects] Present for an image resolution.
  */
@@ -382,8 +403,9 @@
  *   fails startup. A setting that changes the price of a request declares
  *   `usage: true`, and its value is reported on every usage record.
  * @property {Object<string, boolean>} capabilities What the service offers:
- *   'text', 'tools', 'structured', 'image'. A call needing one the routed
- *   provider lacks is a clear error, never a silent re-route.
+ *   'text', 'tools', 'structured', 'image', and 'imageInput' and
+ *   'documentInput' for image and document parts in a message. A call needing
+ *   one the routed provider lacks is a clear error, never a silent re-route.
  * @property {Object<string, AiModelMeta>} models
  * @property {Object<string, { model: string, reasoning?: string }>} effort The
  *   adapter's native routing rows, one per effort level. They do not apply to

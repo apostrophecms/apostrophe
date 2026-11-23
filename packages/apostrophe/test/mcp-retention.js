@@ -22,7 +22,7 @@ describe('MCP: change log retention', function () {
       }
     });
     mcp = apos.modules['@apostrophecms/mcp'];
-    changes = apos.harness.changes;
+    changes = apos.aposHarness.changes;
   });
 
   after(async function () {

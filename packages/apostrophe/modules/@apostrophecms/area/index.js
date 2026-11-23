@@ -103,6 +103,7 @@ module.exports = {
     self.enableBrowserData();
     self.addDeduplicateWidgetIdsMigration();
     self.createWidgetOperations = [];
+    self.widgetOperations = [];
   },
   apiRoutes(self) {
     return {
@@ -1162,6 +1163,38 @@ In Apostrophe 3.x areas must be part of the schema for each page or piece type.`
       // areas that allow at least one of those widget types.
       addCreateWidgetOperation(operation) {
         self.createWidgetOperations.push(operation);
+      },
+      // Adds a widget operation to every widget type, after each type's own
+      // (see the widget operations of `@apostrophecms/widget-type`). Standard
+      // placement only, invoked through `action` or `modal`. A type's own
+      // operation of the same name wins. May be called until the first
+      // request.
+      addWidgetOperation(name, operation) {
+        if ([ 'breadcrumb', 'all' ].includes(operation.placement) || operation.type ||
+          operation.rawEvents || operation.nativeAction) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" for every widget type takes standard placement only, without type, rawEvents or nativeAction.`
+          );
+        }
+        if (!operation.action && !operation.modal) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" needs either modal or action to be set.`
+          );
+        }
+        if (operation.multiple !== undefined && typeof operation.multiple !== 'boolean') {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" multiple property must be a boolean if specified.`
+          );
+        }
+        if (operation.secondaryLevel ? !operation.label : !operation.icon) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" requires the ${operation.secondaryLevel ? 'label' : 'icon'} property at its level.`
+          );
+        }
+        self.widgetOperations.push({
+          name,
+          ...operation
+        });
       }
     };
   },

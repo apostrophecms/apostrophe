@@ -77,6 +77,24 @@ function hasher(req) {
 }
 ```
 
+To build on the default rules rather than replace them, call the default hasher, available as `expressHasher`, from your own:
+
+```javascript
+const expressCacheOnDemand = require('express-cache-on-demand');
+
+const middleware = expressCacheOnDemand(hasher);
+
+function hasher(req) {
+  const key = expressCacheOnDemand.expressHasher(req);
+  if (!key) {
+    return false;
+  }
+  // Requests asking for JSON get a different response, so they must not
+  // share one with requests for the same URL that do not
+  return req.accepts('html') ? key : `[json] ${key}`;
+}
+```
+
 ## Using `cache-on-demand` for other tasks
 
 This module is an Express middleware wrapper for our [cache-on-demand](https://github.com/punkave/cache-on-demand) module. If you would like to do the same trick with code that isn't powered by Express, try using that module directly.

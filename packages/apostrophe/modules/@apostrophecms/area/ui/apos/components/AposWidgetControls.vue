@@ -214,7 +214,7 @@ export default {
     // `widgetIds`, the form it receives for a multiple selection, so it can
     // handle one widget or several the same way.
     async handleClick({
-      modal, action, nativeAction, ignoreResult = false, multiple = false
+      name, modal, action, nativeAction, ignoreResult = false, multiple = false
     }) {
       if (modal) {
         const entry = {
@@ -247,7 +247,10 @@ export default {
       }
 
       if (action) {
-        apos.bus.$emit(action, payload);
+        apos.bus.$emit(action, {
+          name,
+          ...payload
+        });
       }
     }
   }

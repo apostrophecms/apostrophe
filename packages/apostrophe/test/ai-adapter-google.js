@@ -211,6 +211,48 @@ describe('AI adapter: google', function() {
       ]);
     });
 
+    it('translates a document part to inline document content', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'user',
+          content: [
+            text('summarize these'),
+            {
+              type: 'document',
+              document: {
+                data: 'JVBERi0=',
+                mediaType: 'application/pdf',
+                name: 'brief.pdf'
+              }
+            },
+            {
+              type: 'document',
+              document: {
+                data: 'JVBERi0=',
+                mediaType: 'application/pdf'
+              }
+            }
+          ]
+        } ]
+      }));
+      // The dialect has no name for a document
+      const document = {
+        type: 'document',
+        data: 'JVBERi0=',
+        mime_type: 'application/pdf'
+      };
+      assert.deepEqual(body.input[0].content.slice(1), [ document, document ]);
+    });
+
+    it('declares document input and its limits on the chat models', function() {
+      const { capabilities, models } = apos.ai.getAdapter('google');
+      assert.equal(capabilities.documentInput, true);
+      for (const id of [ 'gemini-3.5-flash-lite', 'gemini-3.8-flash' ]) {
+        assert.equal(models[id].maxDocumentPages, 1000);
+        assert.equal(models[id].maxDocumentBytes, 50000000);
+      }
+    });
+
     it('passes reasoning through as the thinking level', function() {
       assert.equal(
         adapter.buildBody(request()).generation_config.thinking_level,

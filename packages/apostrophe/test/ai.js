@@ -935,7 +935,11 @@ describe('AI engine', function() {
                   apiKey: 'k2',
                   capabilities: { image: true },
                   models: {
-                    'other-image': { aspects: [ '1:1', '16:9' ] }
+                    'other-image': { aspects: [ '1:1', '16:9' ] },
+                    'other-medium': {
+                      maxDocumentPages: 100,
+                      maxDocumentBytes: 32000000
+                    }
                   }
                 }
               },
@@ -1012,6 +1016,8 @@ describe('AI engine', function() {
     });
 
     it('resolves an explicit provider and model directly', function() {
+      // The document limits the entry declares on the model are reported;
+      // undeclared, they are absent
       assert.deepEqual(apos.ai.modelInfo({
         provider: 'other',
         model: 'other-medium'
@@ -1020,6 +1026,8 @@ describe('AI engine', function() {
         model: 'other-medium',
         contextWindow: 200000,
         maxOutputTokens: 16000,
+        maxDocumentPages: 100,
+        maxDocumentBytes: 32000000,
         capabilities: imageCapable
       });
     });
