@@ -158,6 +158,20 @@ describe('MCP: OAuth', function () {
       await assertRefused(tokens.refresh_token);
     });
 
+    it('records the connected tool on the change log', async function () {
+      const { access_token: token } = await connectTool();
+      const article = await insertArticle();
+      await read(token, article._id);
+      const { requestId } = await update(token, article._id, 'Logged');
+
+      const [ entry ] = await apos.harness.changes.find({ requestId }).toArray();
+      assert.equal(entry.door, 'mcp');
+      assert.deepEqual(entry.client, {
+        id: client.client_id,
+        name: 'Test tool'
+      });
+    });
+
     it('still takes the development token', async function () {
       const response = await post(apos);
       assert.equal(response.status, 200);

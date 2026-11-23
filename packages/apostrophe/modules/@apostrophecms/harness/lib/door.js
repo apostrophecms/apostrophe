@@ -8,7 +8,7 @@
 
 const DOOR_KEYS = [
   'door', 'lockId', 'family', 'chat', 'requestId', 'model', 'revert', 'seen', 'deferSeen',
-  'askBeforeOverwrite'
+  'askBeforeOverwrite', 'client'
 ];
 
 module.exports = (self) => {
@@ -45,6 +45,10 @@ module.exports = (self) => {
      *   to read it again and build on it. For a door with no confirmation of
      *   its own, such as MCP; without it, the refusal says to read the
      *   document again before writing it.
+     * @param {{ id: string, name?: string|null }} [context.client] The
+     *   outside tool the request comes from, for a door that serves several,
+     *   such as MCP: its id and the name it gave. Recorded on the request's
+     *   change-log entries.
      * @returns {object} The `req` clone.
      */
     withDoor(req, context) {
@@ -55,7 +59,7 @@ module.exports = (self) => {
       }
       const {
         door, lockId, family, chat, requestId, model, revert, seen, deferSeen,
-        askBeforeOverwrite
+        askBeforeOverwrite, client
       } = context;
       for (const [ name, value ] of Object.entries({
         door,
@@ -90,6 +94,9 @@ module.exports = (self) => {
       if ((askBeforeOverwrite !== undefined) && (typeof askBeforeOverwrite !== 'boolean')) {
         throw self.apos.error('invalid', '"askBeforeOverwrite" must be a boolean');
       }
+      if ((client !== undefined) && !isClient(client)) {
+        throw self.apos.error('invalid', '"client" must be { id, name }');
+      }
       if ((seen !== undefined) && !(seen instanceof Map)) {
         throw self.apos.error('invalid', '"seen" must be a Map');
       }
@@ -104,6 +111,12 @@ module.exports = (self) => {
           ...(chat && { chat }),
           ...(revert && { revert }),
           ...(askBeforeOverwrite && { askBeforeOverwrite }),
+          ...(client && {
+            client: Object.freeze({
+              id: client.id,
+              name: client.name || null
+            })
+          }),
           ...(model && {
             model: {
               provider: model.provider,
@@ -156,3 +169,9 @@ module.exports = (self) => {
     }
   };
 };
+
+// `{ id, name }`: a non-empty id, and a name that is a string or missing
+function isClient(client) {
+  return (typeof client?.id === 'string') && Boolean(client.id) &&
+    ((client.name == null) || (typeof client.name === 'string'));
+}

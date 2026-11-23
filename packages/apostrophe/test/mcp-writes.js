@@ -97,6 +97,11 @@ describe('MCP: writes and the change log', function () {
         assert.equal(entry.ai, true);
         assert.equal(entry.userId, editor._id);
         assert.equal(entry.userTitle, 'Ed Itor');
+        // The development token stands for no registered tool
+        assert.deepEqual(entry.client, {
+          id: 'apos-mcp-dev-token',
+          name: null
+        });
         assert.equal(entry.effect, 'update');
         assert.deepEqual(entry.toolCalls, [ {
           id: requestId,

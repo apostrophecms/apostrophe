@@ -189,6 +189,8 @@ describe('Harness: the change log', function () {
       });
       assert.equal(entry.door, 'assistant');
       assert.equal(entry.chat, 'chat-1');
+      // The assistant has no outside tool
+      assert.equal(entry.client, null);
       assert.equal(entry.userId, 'user-ann');
       assert.equal(entry.effect, 'update');
       assert.equal(entry.ai, true);

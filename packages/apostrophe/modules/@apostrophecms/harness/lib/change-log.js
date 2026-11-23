@@ -105,6 +105,7 @@ module.exports = (self) => {
         door: marker.door,
         chat: marker.chat || null,
         model: marker.model || null,
+        client: marker.client || null,
         ai: !marker.revert,
         ...(marker.revert && { revert: true }),
         userId: req.user?._id || null,

@@ -77,8 +77,8 @@ module.exports = (self) => {
       return res.status(200).send({});
     },
 
-    // The user an access token acts for, as `{ user, clientId, scope,
-    // connectionId }`, or null when the token is unknown, expired or revoked,
+    // The user an access token acts for, as `{ user, clientId, clientName,
+    // scope, connectionId }`, or null when the token is unknown, expired or revoked,
     // isn't for `resource`, or its user can no longer log in. For resources,
     // which check tokens but never issue them. `connectionId` stays the same
     // across refreshes until the user approves the tool again, so a resource
@@ -111,6 +111,7 @@ module.exports = (self) => {
       return {
         user,
         clientId: doc.clientId,
+        clientName: connection.clientName || null,
         scope: doc.scope,
         connectionId: doc.grantId
       };

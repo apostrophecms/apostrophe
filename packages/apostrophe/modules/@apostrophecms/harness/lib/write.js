@@ -476,6 +476,7 @@ function getSaveRequest(self, draftReq, doc = null) {
         requestId: door.requestId,
         ...(door.chat && { chat: door.chat }),
         ...(door.model && { model: door.model }),
+        ...(door.client && { client: door.client }),
         ...(door.revert && { revert: true })
       }
     })
