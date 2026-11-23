@@ -90,7 +90,7 @@ module.exports = (self) => {
 
       async function findMention(_id) {
         try {
-          const { doc, draftReq } = await self.apos.harness.findDraft(req, _id);
+          const { doc, draftReq } = await self.apos.aposHarness.findDraft(req, _id);
           return self.apos.ai.can(draftReq, 'view', doc) ? doc : null;
         } catch (e) {
           if (e.name === 'notfound') {
@@ -110,7 +110,7 @@ module.exports = (self) => {
   // The types the AI works with, but for one-of-a-kind ones such as the
   // global document: pages, pieces and images
   function getMentionTypes() {
-    return self.apos.harness.getDocTypeNames().filter(name => {
+    return self.apos.aposHarness.getDocTypeNames().filter(name => {
       const { options } = self.apos.doc.getManager(name);
       return !(options.singleton || options.singletonAuto);
     });
@@ -132,7 +132,7 @@ module.exports = (self) => {
 
   // A document's own locale, none for a type that isn't localized
   function getLocale(doc) {
-    const locale = self.apos.harness.getLocaleOf(doc);
+    const locale = self.apos.aposHarness.getLocaleOf(doc);
     return locale ? { locale } : {};
   }
 

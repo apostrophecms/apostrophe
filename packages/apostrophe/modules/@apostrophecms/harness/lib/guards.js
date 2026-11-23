@@ -2,6 +2,8 @@
 // goes through, the ids the harness assigns, whole new content, and the
 // values a tool definition lists so the model never guesses them.
 
+const { klona } = require('klona');
+
 module.exports = (self) => {
   return {
     // The schema AI reads and writes a document type or widget type through
@@ -79,6 +81,68 @@ module.exports = (self) => {
      */
     newValue(req, field, value, { held } = {}) {
       return newContent(self, req).value(field, value, held);
+    },
+
+    /**
+     * A copy of a widget as its document stores it, whole, for the document
+     * `req` writes: what the AI-facing schema doesn't show included, every
+     * relationship named by id in the locale of `req`, so a save finds the
+     * related documents there. Each `_id` (its own, and those of the areas,
+     * widgets, array items and objects it holds) is kept when `taken` lacks
+     * it and new otherwise. A widget in it whose type has no module is left
+     * out, as a save leaves it.
+     *
+     * @param {object} req In the locale of the document written.
+     * @param {object} widget
+     * @param {Set<string>} [taken] The `_id`s the document written holds;
+     *   the copy's are added.
+     * @returns {object}
+     * @throws `invalid` for a type with no widget module.
+     */
+    newWidgetCopy(req, widget, taken = new Set()) {
+      const manager = self.apos.area.getWidgetManager(widget?.type);
+      if (!manager) {
+        throw self.apos.error('invalid', `"${widget?.type}" is not a widget type`);
+      }
+      return copy(manager.schema, widget);
+
+      // The stored properties of `given`, those of `schema` copied in turn
+      function copy(schema, given) {
+        const made = Object.fromEntries(Object.entries(klona(given))
+          .filter(([ name ]) => !name.startsWith('_')));
+        if (typeof given._id === 'string') {
+          made._id = taken.has(given._id) ? self.apos.util.generateId() : given._id;
+          taken.add(made._id);
+        }
+        for (const field of schema) {
+          const held = given[field.name];
+          if ((field.type === 'area') && held && (typeof held === 'object')) {
+            made[field.name] = {
+              ...copy([], held),
+              items: (held.items || [])
+                .map(item => ({
+                  item,
+                  manager: self.apos.area.getWidgetManager(item?.type)
+                }))
+                .filter(({ manager }) => manager)
+                .map(({ item, manager }) => copy(manager.schema, item))
+            };
+          } else if ((field.type === 'array') && Array.isArray(held)) {
+            made[field.name] = held.map(item => copy(field.schema, item));
+          } else if ((field.type === 'object') && held && (typeof held === 'object')) {
+            made[field.name] = copy(field.schema, held);
+          } else if (field.type === 'relationship') {
+            const localized = self.apos.doc.getManager(field.withType)?.isLocalized();
+            made[field.name] = (given[field.idsStorage] || []).map(aposDocId => ({
+              _id: localized ? `${aposDocId}:${req.locale}:draft` : aposDocId,
+              _fields: given[field.fieldsStorage]?.[aposDocId] || {}
+            }));
+            delete made[field.idsStorage];
+            delete made[field.fieldsStorage];
+          }
+        }
+        return made;
+      }
     },
 
     /**

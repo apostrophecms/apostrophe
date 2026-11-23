@@ -273,7 +273,7 @@ describe('Harness: content in an open editor', function () {
       article.title = 'Unsaved';
       article.details = { summary: 'Typed' };
 
-      const outline = apos.harness.readContent(userReq(), documentRoot(article));
+      const outline = apos.aposHarness.readContent(userReq(), documentRoot(article));
       assert.equal(outline._id, article._id);
       assert.equal(outline.type, 'open-article');
       assert.equal(outline.title, 'Unsaved');
@@ -282,10 +282,14 @@ describe('Harness: content in an open editor', function () {
       assert.deepEqual(outline.areas.find(item => item.path === 'main').widgets
         .map(item => item._id), [ widget._id ]);
 
-      const { properties } = apos.harness.readContent(userReq(), documentRoot(article), {
-        view: 'properties',
-        paths: [ 'details.summary', `@${widget._id}.heading`, `@${widget._id}.secret` ]
-      });
+      const { properties } = apos.aposHarness.readContent(
+        userReq(),
+        documentRoot(article),
+        {
+          view: 'properties',
+          paths: [ 'details.summary', `@${widget._id}.heading`, `@${widget._id}.secret` ]
+        }
+      );
       assert.deepEqual(properties.slice(0, 2), [
         {
           path: 'details.summary',
@@ -305,7 +309,7 @@ describe('Harness: content in an open editor', function () {
 
       const {
         values, touched, removed, result
-      } = await apos.harness.editContent(userReq(), documentRoot(article), {
+      } = await apos.aposHarness.editContent(userReq(), documentRoot(article), {
         action: 'update_document',
         values: {
           title: 'New title',
@@ -350,7 +354,7 @@ describe('Harness: content in an open editor', function () {
         await apos.modules['open-topic'].findOneForEditing(userReq(), { _id: topic._id })
       ];
 
-      const mixed = await apos.harness.editContent(userReq(), documentRoot(article), {
+      const mixed = await apos.aposHarness.editContent(userReq(), documentRoot(article), {
         action: 'update_document',
         values: {
           title: 'An article',
@@ -374,7 +378,7 @@ describe('Harness: content in an open editor', function () {
       assert.deepEqual(changed._topics, article.main.items[1]._topics);
       assert.deepEqual(changed.body, article.main.items[1].body);
 
-      const same = await apos.harness.editContent(userReq(), documentRoot(article), {
+      const same = await apos.aposHarness.editContent(userReq(), documentRoot(article), {
         action: 'update_document',
         values: { title: 'An article' }
       });
@@ -383,7 +387,7 @@ describe('Harness: content in an open editor', function () {
       assert.deepEqual(same.result.written[0].unchanged, [ 'title' ]);
       assert.match(same.result.notice, /^Nothing changed/);
 
-      const still = await apos.harness.editContent(userReq(), documentRoot(article), {
+      const still = await apos.aposHarness.editContent(userReq(), documentRoot(article), {
         action: 'move_widgets',
         widgets: [ first._id ],
         area: 'main',
@@ -399,7 +403,7 @@ describe('Harness: content in an open editor', function () {
       const second = richText('Second');
       const article = await openArticle({ main: area([ first, second ]) });
 
-      const { values, touched } = await apos.harness.editContent(
+      const { values, touched } = await apos.aposHarness.editContent(
         userReq(),
         documentRoot(article),
         {
@@ -417,7 +421,7 @@ describe('Harness: content in an open editor', function () {
       const widget = card();
       const article = await openArticle({ main: area([ first, widget ]) });
 
-      const added = await apos.harness.editContent(userReq(), documentRoot(article), {
+      const added = await apos.aposHarness.editContent(userReq(), documentRoot(article), {
         action: 'add_widgets',
         area: 'main',
         widgets: [ {
@@ -436,7 +440,7 @@ describe('Harness: content in an open editor', function () {
       assert.deepEqual(added.touched, [ `@${landed._id}` ]);
 
       article.main = added.values.main;
-      const moved = await apos.harness.editContent(userReq(), documentRoot(article), {
+      const moved = await apos.aposHarness.editContent(userReq(), documentRoot(article), {
         action: 'move_widgets',
         widgets: [ first._id ],
         area: `@${widget._id}.body`
@@ -454,7 +458,7 @@ describe('Harness: content in an open editor', function () {
       assert.equal(moved.result.written[0].widgets[0].index, 1);
 
       article.main = moved.values.main;
-      const gone = await apos.harness.editContent(userReq(), documentRoot(article), {
+      const gone = await apos.aposHarness.editContent(userReq(), documentRoot(article), {
         action: 'remove_widgets',
         widgets: [ landed._id ]
       });
@@ -466,7 +470,10 @@ describe('Harness: content in an open editor', function () {
 
     it('should change a never-saved piece and page', async function () {
       const piece = apos.modules['open-article'].newInstance();
-      const { values: pieceValues, result: pieceResult } = await apos.harness.editContent(
+      const {
+        values: pieceValues,
+        result: pieceResult
+      } = await apos.aposHarness.editContent(
         userReq(),
         documentRoot({
           ...piece,
@@ -485,7 +492,7 @@ describe('Harness: content in an open editor', function () {
       assert.equal(pieceValues.main.items[0].content, '<p>Hello</p>');
 
       const page = apos.modules['open-page'].newInstance();
-      const { values, result } = await apos.harness.editContent(
+      const { values, result } = await apos.aposHarness.editContent(
         userReq(),
         documentRoot(page),
         {
@@ -503,7 +510,7 @@ describe('Harness: content in an open editor', function () {
 
       const {
         values, touched, result
-      } = await apos.harness.editContent(
+      } = await apos.aposHarness.editContent(
         userReq(),
         documentRoot(article),
         {
@@ -523,10 +530,14 @@ describe('Harness: content in an open editor', function () {
       assert.equal(result.refused[0]._id, article._id);
       assert.deepEqual(fieldsOf(result.refused[0]).map(field => field.reason), [ 'notAllowed' ]);
 
-      const missing = await apos.harness.editContent(userReq(), documentRoot(article), {
-        action: 'update_document',
-        values: { _related: [ 'nope' ] }
-      });
+      const missing = await apos.aposHarness.editContent(
+        userReq(),
+        documentRoot(article),
+        {
+          action: 'update_document',
+          values: { _related: [ 'nope' ] }
+        }
+      );
       assert.equal(missing.result.refused[0].reason, 'invalid');
       assert.deepEqual(fieldsOf(missing.result.refused[0]).map(field => field.path), [
         '_related.0'
@@ -545,7 +556,7 @@ describe('Harness: content in an open editor', function () {
       const fr = await apos.modules['open-article'].localize(userReq(), article, 'fr');
 
       // An id read in English names the French topic
-      const { values } = await apos.harness.editContent(userReq(), documentRoot(fr, {
+      const { values } = await apos.aposHarness.editContent(userReq(), documentRoot(fr, {
         locale: 'fr'
       }), {
         action: 'update_document',
@@ -561,7 +572,7 @@ describe('Harness: content in an open editor', function () {
     it('should read the widget only, its own fields bare or through its id', async function () {
       const widget = card();
 
-      const outline = apos.harness.readContent(userReq(), widgetRoot(widget));
+      const outline = apos.aposHarness.readContent(userReq(), widgetRoot(widget));
       assert.equal(outline._id, widget._id);
       assert.equal(outline.type, 'open-card');
       assert.deepEqual(outline.fields.map(field => field.name), [
@@ -572,7 +583,7 @@ describe('Harness: content in an open editor', function () {
       ]);
       assert.deepEqual(outline.areas.map(item => item.path), [ 'body' ]);
 
-      const { properties } = apos.harness.readContent(userReq(), widgetRoot(widget), {
+      const { properties } = apos.aposHarness.readContent(userReq(), widgetRoot(widget), {
         view: 'properties',
         paths: [ 'heading', `@${widget._id}.kicker`, 'secret' ]
       });
@@ -592,7 +603,7 @@ describe('Harness: content in an open editor', function () {
     it('should change the widget\'s fields and areas, by bare keys or through its id', async function () {
       const widget = card();
 
-      const updated = await apos.harness.editContent(userReq(), widgetRoot(widget), {
+      const updated = await apos.aposHarness.editContent(userReq(), widgetRoot(widget), {
         action: 'update_document',
         values: {
           heading: 'Bare',
@@ -612,7 +623,7 @@ describe('Harness: content in an open editor', function () {
       ]);
       assert.equal(updated.result.written[0]._id, widget._id);
 
-      const added = await apos.harness.editContent(userReq(), widgetRoot(widget), {
+      const added = await apos.aposHarness.editContent(userReq(), widgetRoot(widget), {
         action: 'add_widgets',
         area: `@${widget._id}.body`,
         widgets: [ {
@@ -625,7 +636,7 @@ describe('Harness: content in an open editor', function () {
       assert.equal(added.result.written[0].widgets[0].index, 1);
 
       // An area the widget never stored
-      const bare = await apos.harness.editContent(userReq(), widgetRoot({
+      const bare = await apos.aposHarness.editContent(userReq(), widgetRoot({
         ...widget,
         body: undefined
       }), {
@@ -642,7 +653,7 @@ describe('Harness: content in an open editor', function () {
     it('should replace the widget whole by its id, keeping what AI doesn\'t see', async function () {
       const widget = card();
 
-      const { values, touched } = await apos.harness.editContent(
+      const { values, touched } = await apos.aposHarness.editContent(
         userReq(),
         widgetRoot(widget),
         {
@@ -663,14 +674,18 @@ describe('Harness: content in an open editor', function () {
       const widget = card();
       const other = card();
 
-      const { result } = await apos.harness.editContent(userReq(), widgetRoot(widget), {
-        action: 'update_document',
-        values: {
-          title: 'The document\'s',
-          [`@${other._id}.heading`]: 'Another widget\'s',
-          secret: 'Hidden'
+      const { result } = await apos.aposHarness.editContent(
+        userReq(),
+        widgetRoot(widget),
+        {
+          action: 'update_document',
+          values: {
+            title: 'The document\'s',
+            [`@${other._id}.heading`]: 'Another widget\'s',
+            secret: 'Hidden'
+          }
         }
-      });
+      );
       assert.deepEqual(fieldsOf(result.refused[0]), [
         {
           path: 'title',
@@ -687,7 +702,7 @@ describe('Harness: content in an open editor', function () {
       ]);
       assert(result.refused[0].fields.every(field => /until its editor closes/.test(field.message)));
 
-      const removed = await apos.harness.editContent(userReq(), widgetRoot(widget), {
+      const removed = await apos.aposHarness.editContent(userReq(), widgetRoot(widget), {
         action: 'remove_widgets',
         widgets: [ widget._id ]
       });
@@ -700,20 +715,24 @@ describe('Harness: content in an open editor', function () {
     it('should convert the widget with its area\'s options, refusing a type it doesn\'t take', async function () {
       const widget = card();
 
-      const { result } = await apos.harness.editContent(userReq(), widgetRoot(widget), {
-        action: 'add_widgets',
-        area: 'body',
-        widgets: [ {
-          type: 'open-card',
-          heading: 'Nested'
-        } ]
-      });
+      const { result } = await apos.aposHarness.editContent(
+        userReq(),
+        widgetRoot(widget),
+        {
+          action: 'add_widgets',
+          area: 'body',
+          widgets: [ {
+            type: 'open-card',
+            heading: 'Nested'
+          } ]
+        }
+      );
       // Named as the widget names it
       assert.deepEqual(fieldsOf(result.refused[0]), [ {
         path: 'body.items.1',
         reason: 'notAllowed'
       } ]);
-      const missing = await apos.harness.editContent(userReq(), widgetRoot(widget), {
+      const missing = await apos.aposHarness.editContent(userReq(), widgetRoot(widget), {
         action: 'update_document',
         values: { _topics: [ 'nope' ] }
       });
@@ -722,7 +741,7 @@ describe('Harness: content in an open editor', function () {
         reason: 'notFound'
       } ]);
 
-      assert.throws(() => apos.harness.getContentRoot(userReq(), widgetRoot(widget, {
+      assert.throws(() => apos.aposHarness.getContentRoot(userReq(), widgetRoot(widget, {
         areaFieldId: fieldOf('open-article', 'aside')._id
       })), { name: 'invalid' });
     });
@@ -731,10 +750,14 @@ describe('Harness: content in an open editor', function () {
       const topic = await apos.modules['open-topic'].insert(userReq(), { title: 'Widget topic' });
       const widget = card();
 
-      const { values } = await apos.harness.editContent(userReq(), widgetRoot(widget), {
-        action: 'update_document',
-        values: { _topics: [ topic._id ] }
-      });
+      const { values } = await apos.aposHarness.editContent(
+        userReq(),
+        widgetRoot(widget),
+        {
+          action: 'update_document',
+          values: { _topics: [ topic._id ] }
+        }
+      );
       assert.deepEqual(Object.keys(values), [ '_topics' ]);
       assert.equal(values._topics[0].title, 'Widget topic');
     });
@@ -762,11 +785,11 @@ describe('Harness: content in an open editor', function () {
     it('should read the whole array through the AI-facing schema', function () {
       const slides = [ slide('First'), slide('Second') ];
 
-      const outline = apos.harness.readContent(userReq(), arrayRoot(slides));
+      const outline = apos.aposHarness.readContent(userReq(), arrayRoot(slides));
       assert.equal(outline.field, 'slides');
       assert.deepEqual(outline.fields.map(field => field.name), [ 'slides' ]);
 
-      const read = apos.harness.readContent(userReq(), arrayRoot(slides), {
+      const read = apos.aposHarness.readContent(userReq(), arrayRoot(slides), {
         view: 'properties',
         paths: [ `@${slides[1]._id}` ]
       });
@@ -777,7 +800,7 @@ describe('Harness: content in an open editor', function () {
     it('should change any item, the others kept as the editor holds them', async function () {
       const slides = [ slide('First'), slide('Second') ];
 
-      const { values, touched } = await apos.harness.editContent(
+      const { values, touched } = await apos.aposHarness.editContent(
         userReq(),
         arrayRoot(slides),
         {
@@ -796,7 +819,7 @@ describe('Harness: content in an open editor', function () {
     it('should take the array whole, the items it holds kept by their ids', async function () {
       const slides = [ slide('First'), slide('Second') ];
 
-      const { values, touched } = await apos.harness.editContent(
+      const { values, touched } = await apos.aposHarness.editContent(
         userReq(),
         arrayRoot(slides),
         {
@@ -837,7 +860,7 @@ describe('Harness: content in an open editor', function () {
       } ];
       held.secret = 'Kept';
 
-      const { values } = await apos.harness.editContent(
+      const { values } = await apos.aposHarness.editContent(
         userReq(),
         arrayRoot(slides),
         {
@@ -906,7 +929,7 @@ describe('Harness: content in an open editor', function () {
         _id: slides[1]._id
       };
 
-      const { values } = await apos.harness.editContent(
+      const { values } = await apos.aposHarness.editContent(
         userReq(),
         arrayRoot([ ...slides, twice ]),
         {
@@ -938,14 +961,18 @@ describe('Harness: content in an open editor', function () {
     it('should refuse what is outside the array', async function () {
       const slides = [ slide('First') ];
 
-      const { result } = await apos.harness.editContent(userReq(), arrayRoot(slides), {
-        action: 'update_document',
-        values: {
-          caption: 'Bare',
-          title: 'The document\'s',
-          [`@${slides[0]._id}.internal`]: 'Hidden'
+      const { result } = await apos.aposHarness.editContent(
+        userReq(),
+        arrayRoot(slides),
+        {
+          action: 'update_document',
+          values: {
+            caption: 'Bare',
+            title: 'The document\'s',
+            [`@${slides[0]._id}.internal`]: 'Hidden'
+          }
         }
-      });
+      );
       assert.deepEqual(fieldsOf(result.refused[0]), [
         {
           path: 'caption',
@@ -965,7 +992,7 @@ describe('Harness: content in an open editor', function () {
     });
 
     it('should not place an array AI doesn\'t read', function () {
-      assert.throws(() => apos.harness.getContentRoot(userReq(), {
+      assert.throws(() => apos.aposHarness.getContentRoot(userReq(), {
         kind: 'array',
         data: { nope: [] },
         fieldId: 'doc.open-article.nope'

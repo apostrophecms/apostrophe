@@ -77,6 +77,7 @@ export async function runWidgetOperation(operation, { hasAncestor } = {}) {
   const action = operation.action || operation.name;
   if (action) {
     apos.bus.$emit(action, {
+      name: operation.name,
       widgetIds: entries.map(({ widget }) => widget._id)
     });
   }

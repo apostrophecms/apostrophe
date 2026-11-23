@@ -23,6 +23,13 @@ const FINAL_ANSWER_DESCRIPTION = 'Provide your final answer by calling this tool
 // model accepts every level, so the provider has the final word
 const EFFORT_LEVELS = Object.freeze([ 'low', 'medium', 'high', 'xhigh', 'max' ]);
 
+// The document limits Anthropic documents, counted over the whole request. A
+// model with a context window under 1M tokens takes 100 pages
+const DOCUMENTS = Object.freeze({
+  maxDocumentPages: 600,
+  maxDocumentBytes: 128000000
+});
+
 module.exports = {
   options: {
     // The anthropic-version request header
@@ -76,6 +83,7 @@ module.exports = {
             structured: true,
             stream: true,
             imageInput: true,
+            documentInput: true,
             image: false,
             caching: true
           },
@@ -109,19 +117,22 @@ module.exports = {
               label: 'Haiku 5.5',
               contextWindow: 1000000,
               maxOutputTokens: 64000,
-              reasoning: reasoningValues('claude-haiku-5-5')
+              reasoning: reasoningValues('claude-haiku-5-5'),
+              ...DOCUMENTS
             },
             'claude-sonnet-5-5': {
               label: 'Sonnet 5.5',
               contextWindow: 1000000,
               maxOutputTokens: 64000,
-              reasoning: reasoningValues('claude-sonnet-5-5')
+              reasoning: reasoningValues('claude-sonnet-5-5'),
+              ...DOCUMENTS
             },
             'claude-opus-5-5': {
               label: 'Opus 5.5',
               contextWindow: 1000000,
               maxOutputTokens: 64000,
-              reasoning: reasoningValues('claude-opus-5-5')
+              reasoning: reasoningValues('claude-opus-5-5'),
+              ...DOCUMENTS
             }
           },
           validate() {
@@ -296,6 +307,28 @@ module.exports = {
                   media_type: part.image.mediaType,
                   data: part.image.data
                 }
+            };
+          }
+          if (part.type === 'document') {
+            const {
+              data, mediaType, name
+            } = part.document;
+            return {
+              type: 'document',
+              // Any text travels as the dialect's plain-text source,
+              // the one text type it documents
+              source: mediaType.startsWith('text/')
+                ? {
+                  type: 'text',
+                  media_type: 'text/plain',
+                  data: Buffer.from(data, 'base64').toString('utf8')
+                }
+                : {
+                  type: 'base64',
+                  media_type: mediaType,
+                  data
+                },
+              ...(name !== undefined && { title: name })
             };
           }
           // Another dialect's part; not ours to translate

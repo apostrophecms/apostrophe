@@ -5,6 +5,12 @@
 // handler runs on a clone of it, so each write finds who is asking without
 // anything in the tool arguments. A write without a door context, from a
 // plain `generate` call, is not recorded in the change log.
+//
+// No tool of the harness allows or refuses a call by the door's name: what a
+// door adds for its own model (the assistant's gates and browser tools) is
+// that door's code. So a server job that runs a model unattended needs no
+// door: it gets the write path every AI write shares and nothing a door
+// adds, and never takes a door's name to get past a rule.
 
 const DOOR_KEYS = [
   'door', 'lockId', 'family', 'chat', 'requestId', 'model', 'revert', 'seen', 'deferSeen',

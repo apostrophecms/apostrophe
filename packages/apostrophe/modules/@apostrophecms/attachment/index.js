@@ -412,6 +412,50 @@ module.exports = {
         }
         return null;
       },
+      /**
+       * The extension check `insert` makes before storing a file: its
+       * lowercased extension must be one the project's file groups accept,
+       * or one of `extensions` when given. Throws `invalid` naming the
+       * accepted extensions.
+       *
+       * @param {object} req
+       * @param {object} file `{ name, path }`, or multer's `originalname`.
+       * @param {object} [options]
+       * @param {string[]} [options.extensions] Accepted in place of the
+       *   file groups' extensions.
+       * @returns {{ extension: string }}
+       */
+      checkFileType(req, file, { extensions = null } = {}) {
+        // Handle both multer (originalname) and connect-multiparty (name) formats
+        const fileName = file.originalname || file.name;
+        const extension = path.extname(fileName || '').slice(1).toLowerCase();
+        const accepted = extensions || _.union(_.map(self.fileGroups, 'extensions')).flat();
+        const known = extensions
+          ? extensions.includes(extension)
+          : self.getFileGroup(extension);
+        if (!known) {
+          throw self.apos.error('invalid', req.t('apostrophe:fileTypeNotAccepted', {
+            extensions: accepted.join(req.t('apostrophe:listJoiner')),
+            extension
+          }));
+        }
+        return { extension };
+      },
+      // The content check `insert` makes before storing a file: an SVG
+      // file is sanitized in place. Throws `invalid` when it can't be
+      async checkFileContent(req, file, extension) {
+        if (extension !== 'svg') {
+          return;
+        }
+        try {
+          await self.sanitizeSvg(file.path);
+        } catch (e) {
+          // Currently DOMPurify passes invalid SVG content without comment
+          // as long as it's not an SVG XSS attack vector, but make provision
+          // to report a relevant error if that changes
+          throw self.apos.error('invalid', req.t('apostrophe:fileInvalid'));
+        }
+      },
       // Insert a file as an Apostrophe attachment. The `file` object
       // should be an object with `name` and `path` properties.
       // `name` must be the name the user claims for the file, while `path`
@@ -430,23 +474,9 @@ module.exports = {
       // object, suitable for passing to the `url` API and for use as the value
       // of a `type: 'attachment'` schema field.
       async insert(req, file, options = {}) {
-        // Handle both multer (originalname) and connect-multiparty (name) formats
         const fileName = file.originalname || file.name;
-        let extension = path.extname(fileName);
-        if (extension && extension.length) {
-          extension = extension.substr(1);
-        }
-        extension = extension.toLowerCase();
-        // Do we *ever* accept this file extension?
+        const { extension } = self.checkFileType(req, file);
         const group = self.getFileGroup(extension);
-
-        if (!group) {
-          const accepted = _.union(_.map(self.fileGroups, 'extensions')).flat();
-          throw self.apos.error('invalid', req.t('apostrophe:fileTypeNotAccepted', {
-            extensions: accepted.join(req.t('apostrophe:listJoiner')),
-            extension
-          }));
-        }
 
         if (
           options.attachmentId &&
@@ -475,16 +505,7 @@ module.exports = {
         }
         info.length = await self.apos.util.fileLength(file.path);
         info.md5 = await self.apos.util.md5File(file.path);
-        if (info.extension === 'svg') {
-          try {
-            await self.sanitizeSvg(file.path);
-          } catch (e) {
-            // Currently DOMPurify passes invalid SVG content without comment
-            // as long as it's not an SVG XSS attack vector, but make provision
-            // to report a relevant error if that changes
-            throw self.apos.error('invalid', req.t('apostrophe:fileInvalid'));
-          }
-        }
+        await self.checkFileContent(req, file, extension);
         if (self.isSized(extension)) {
           // For images we correct automatically for common file extension
           // mistakes

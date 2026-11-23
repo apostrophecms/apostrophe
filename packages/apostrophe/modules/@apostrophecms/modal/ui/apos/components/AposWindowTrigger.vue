@@ -404,12 +404,12 @@ function clamp(value, max) {
     pointer-events: none;
   }
 
-  // Hovered: the spark twinkles in place, an even glow rings the disc
+  // Hovered: the spark twinkles in place, a faint dark ring hugs the disc
   .apos-window-trigger__button:hover,
   .apos-window-trigger__button:focus-visible {
     .apos-window-trigger__disc {
       box-shadow:
-        0 0 0 4px color-mix(in srgb, var(--a-primary) 14%, transparent),
+        0 0 0 3px color-mix(in srgb, var(--a-black) 7%, transparent),
         0 1px 2px color-mix(in srgb, var(--a-black) 3%, transparent),
         0 2px 2px color-mix(in srgb, var(--a-black) 3%, transparent),
         inset 0 -1px 2px color-mix(in srgb, var(--a-black) 5%, transparent);

@@ -34,7 +34,7 @@ module.exports = (self) => {
     // takes them
     getTools() {
       return new Map(
-        self.apos.harness.getDoorTools('mcp').map(tool => [ tool.name, tool ])
+        self.apos.aposHarness.getDoorTools('mcp').map(tool => [ tool.name, tool ])
       );
     },
 
@@ -111,7 +111,7 @@ module.exports = (self) => {
      */
     async runTool(req, name, input) {
       const requestId = self.apos.util.generateId();
-      const doorReq = self.apos.harness.withDoor(req, {
+      const doorReq = self.apos.aposHarness.withDoor(req, {
         door: 'mcp',
         lockId: requestId,
         requestId,
@@ -137,7 +137,7 @@ module.exports = (self) => {
           requestId
         };
       } finally {
-        await self.apos.harness.endRequest(doorReq);
+        await self.apos.aposHarness.endRequest(doorReq);
       }
     }
   };

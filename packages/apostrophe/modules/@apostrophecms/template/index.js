@@ -39,7 +39,7 @@ const safeJsonForScript = require('../../../lib/safe-json-script');
 
 // Guidance for AI, on type modules and schema fields, is for the model
 // only: body data never carries it to the browser
-const AI_GUIDANCE_KEYS = [ 'aiWhen', 'aiHow' ];
+const AI_GUIDANCE_KEYS = [ 'aiWhen', 'aiHow', 'aiHowAssistant', 'aiHowMcp' ];
 
 function withoutAiGuidance(key, value) {
   return AI_GUIDANCE_KEYS.includes(key) ? undefined : value;
@@ -1311,10 +1311,18 @@ module.exports = {
 
       async annotateDataForExternalFront(req, template, data, moduleName) {
         const docs = self.getDocsForExternalFront(req, template, data, moduleName);
+        // The docs overlap: `page` contains its own `_ancestors` and
+        // `_children`, which are also in the list, and below the home page
+        // `home` is the very same object as `_ancestors[0]`. Share one record
+        // of what was annotated so each object is annotated only once. (On
+        // the home page itself, `home` is a separate fetch with different
+        // builders, so it is a different object and is annotated on its own.)
+        const seen = self.newExternalFrontAnnotationState();
         for (const doc of docs) {
           await self.annotateDocForExternalFront(doc, {
             scene: req.scene,
-            req
+            req,
+            seen
           });
         }
         // A copy, since schemas in it are the live ones
@@ -1370,8 +1378,23 @@ module.exports = {
         ].filter(doc => !!doc);
       },
 
-      async annotateDocForExternalFront(doc, { scene, req } = {}) {
-        const handled = new WeakSet();
+      // Records which objects have been annotated already, so that
+      // `annotateDocForExternalFront` can be called on several overlapping
+      // docs without annotating any object twice
+      newExternalFrontAnnotationState() {
+        return {
+          editable: new WeakSet(),
+          areas: new WeakSet(),
+          wysiwyg: new WeakSet()
+        };
+      },
+
+      // Pass the same `seen` (see `newExternalFrontAnnotationState`) when
+      // annotating docs that may share objects, to annotate each just once
+      async annotateDocForExternalFront(doc, {
+        scene, req, seen = self.newExternalFrontAnnotationState()
+      } = {}) {
+        const handled = seen.editable;
         const missingAreas = [];
         self.apos.doc.walk(doc, (o, k, v) => {
           if (o._edit === true && !handled.has(o)) {
@@ -1381,6 +1404,10 @@ module.exports = {
             }
           }
           if (v && v.metaType === 'area') {
+            if (seen.areas.has(v)) {
+              return;
+            }
+            seen.areas.add(v);
             // A missing manager here is expected (e.g. an area reached on a
             // container without a manager) and handled below, so suppress the
             // low-level per-call log and rely on the once-per-process warning.
@@ -1410,10 +1437,13 @@ module.exports = {
           const area = await self.apos.area.addMissingArea(o, field.name);
           area._edit = true;
           area._docId = o._docId ?? (o.metaType === 'doc' ? o._id : null);
+          seen.areas.add(area);
           self.annotateAreaForExternalFront(field, area, { scene });
         }
         if (req) {
-          await self.annotateWysiwygFieldsForExternalFront(req, doc);
+          await self.annotateWysiwygFieldsForExternalFront(req, doc, {
+            handled: seen.wysiwyg
+          });
         }
       },
 
@@ -1422,8 +1452,11 @@ module.exports = {
       // Used for whole docs, and by the `render-widget` route for a widget
       // that was just added or edited, which would otherwise come back with
       // nothing to edit in place until the page is refreshed.
-      async annotateWysiwygFieldsForExternalFront(req, root) {
-        const handled = new WeakSet();
+      //
+      // `handled` records the objects already done, for sharing across calls.
+      async annotateWysiwygFieldsForExternalFront(req, root, {
+        handled = new WeakSet()
+      } = {}) {
         const wysiwygFields = [];
         self.apos.doc.walk(root, (o) => {
           if (!handled.has(o)) {

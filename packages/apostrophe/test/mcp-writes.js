@@ -88,7 +88,7 @@ describe('MCP: writes and the change log', function () {
         const { requestId } = (await update(mode, article._id, { body: 'Logged' }))
           .structuredContent;
 
-        const entries = await apos.harness.changes.find({ requestId }).toArray();
+        const entries = await apos.aposHarness.changes.find({ requestId }).toArray();
         assert.equal(entries.length, 1);
         const [ entry ] = entries;
         assert.equal(entry.docId, article._id);
@@ -143,7 +143,7 @@ describe('MCP: writes and the change log', function () {
           aposMode: 'published'
         });
         assert(live);
-        const [ entry ] = await apos.harness.changes.find({ requestId }).toArray();
+        const [ entry ] = await apos.aposHarness.changes.find({ requestId }).toArray();
         assert.equal(entry.effect, 'create');
         assert.equal(entry.door, 'mcp');
       });
@@ -158,7 +158,7 @@ describe('MCP: writes and the change log', function () {
         assert.deepEqual(written, []);
         assert.equal(refused[0].reason, 'forbidden');
         assert.equal((await findDraft(restricted._id)).body, 'Original');
-        assert.equal(await apos.harness.changes.countDocuments({ requestId }), 0);
+        assert.equal(await apos.aposHarness.changes.countDocuments({ requestId }), 0);
       });
 
       it('refuses a document someone has open, and says who', async function () {

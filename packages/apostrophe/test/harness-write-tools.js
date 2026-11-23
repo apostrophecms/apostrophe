@@ -31,8 +31,19 @@ describe('Harness: write tools and get_changes', function () {
               {
                 name: 'tools-page',
                 label: 'Page'
+              },
+              {
+                name: 'admin-page',
+                label: 'Admin page'
               }
             ]
+          }
+        },
+        // Only an admin may make or edit one
+        'admin-page': {
+          extend: '@apostrophecms/page-type',
+          options: {
+            editRole: 'admin'
           }
         },
         'tools-page': {
@@ -180,6 +191,13 @@ describe('Harness: write tools and get_changes', function () {
             autopublish: true
           }
         },
+        // Published by hand, with no draft versions
+        'tools-memo': {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            versions: false
+          }
+        },
         // Its doc type is named apart from its module
         'tools-events': {
           extend: '@apostrophecms/piece-type',
@@ -210,7 +228,7 @@ describe('Harness: write tools and get_changes', function () {
   }
 
   function door(req, context = {}) {
-    return apos.harness.withDoor(req, {
+    return apos.aposHarness.withDoor(req, {
       door: 'assistant',
       lockId: 'chat-1',
       chat: 'chat-1',
@@ -449,6 +467,33 @@ describe('Harness: write tools and get_changes', function () {
       } ]);
       assert(unknown.refused[0].fields[0].message);
       assert.equal(await apos.doc.db.countDocuments({ type: 'tools-page' }), before);
+    });
+
+    it('should refuse a user who may not create the page, creating nothing', async function () {
+      const req = apos.task.getReq({
+        user: {
+          _id: 'user-eve',
+          username: 'eve',
+          title: 'Eve',
+          role: 'editor'
+        },
+        mode: 'draft'
+      });
+      const result = await run('create_page', {
+        type: 'admin-page',
+        title: 'Not allowed',
+        target: '/'
+      }, req);
+      assert.deepEqual(result.written, []);
+      assert.deepEqual(result.refused, [ {
+        title: 'Not allowed',
+        reason: 'forbidden',
+        message: 'The user may not create a document of this type.'
+      } ]);
+      const found = await apos.page.find(apos.task.getReq({ mode: 'draft' }), {
+        title: 'Not allowed'
+      }).toArray();
+      assert.equal(found.length, 0);
     });
 
     it('should refuse a parent it can\'t find and a type the parent doesn\'t take', async function () {
@@ -784,25 +829,6 @@ describe('Harness: write tools and get_changes', function () {
       assert.equal(stored.archived, false);
       assert.equal((await findDraft(archived._id)).archived, true);
     });
-
-    it('should leave Global Styles to their own tools', async function () {
-      const styles = await apos.doc.db.findOne({
-        type: '@apostrophecms/styles',
-        aposLocale: 'en:draft'
-      });
-
-      const { refused } = await run('update_document', {
-        targets: [ {
-          _id: styles._id,
-          values: { title: 'Styles' }
-        } ]
-      });
-
-      assert.deepEqual(fieldsOf(refused[0]), [ {
-        path: '_id',
-        reason: 'styles'
-      } ]);
-    });
   });
 
   describe('add_widgets', function () {
@@ -1086,6 +1112,121 @@ describe('Harness: write tools and get_changes', function () {
     });
   });
 
+  describe('publish_document', function () {
+    function publish(ids, req = door(userReq())) {
+      return run('publish_document', {
+        targets: ids.map(_id => ({ _id }))
+      }, req);
+    }
+
+    function findPublished(_id) {
+      return apos.doc.db.findOne({ _id: _id.replace(':draft', ':published') });
+    }
+
+    it('should publish drafts as they are, a document it never read included', async function () {
+      const article = await insertArticle({ body: 'To go live' });
+      const other = await insertArticle({ title: 'Another article' });
+
+      const result = await publish([ article._id, other._id ]);
+
+      assert.deepEqual(result, {
+        published: [ article, other ].map(doc => ({
+          _id: doc._id,
+          title: doc.title,
+          type: 'tools-article',
+          locale: 'en',
+          status: 'published'
+        })),
+        notice: 'The published documents are live on the site now.'
+      });
+      assert.equal((await findPublished(article._id)).body, 'To go live');
+      assert.equal((await findDraft(article._id)).modified, false);
+    });
+
+    it('should publish a draft the AI wrote without marking the publication as AI\'s', async function () {
+      const article = await insertArticle({ body: 'Original' });
+      const req = door(userReq());
+      await run('update_document', {
+        targets: [ {
+          _id: article._id,
+          values: { body: 'Written by AI' }
+        } ]
+      }, req);
+
+      await publish([ article._id ], req);
+
+      const [ newest ] = await apos.docVersions.find(userReq(), {
+        docId: article.aposDocId,
+        locale: 'en'
+      }, {
+        raw: true,
+        project: {
+          mode: 1,
+          ai: 1
+        }
+      });
+      assert.deepEqual([ newest.mode, newest.ai ], [ 'published', false ]);
+    });
+
+    it('should leave a draft the live version matches, and a type that is always live', async function () {
+      const article = await insertArticle();
+      await publish([ article._id ]);
+      const notice = await apos.modules['tools-notice'].insert(userReq(), {
+        title: 'A notice'
+      });
+
+      const result = await publish([ article._id, notice._id ]);
+
+      assert.deepEqual(result.published.map(item => item.status), [ 'unchanged', 'alwaysLive' ]);
+      assert.equal(result.notice, undefined);
+    });
+
+    it('should publish a page only once its parents are, in the order given', async function () {
+      const req = userReq();
+      const parent = await apos.page.insert(req, '_home', 'lastChild', {
+        title: 'Parent',
+        type: 'tools-page'
+      });
+      const child = await apos.page.insert(req, parent._id, 'lastChild', {
+        title: 'Child',
+        type: 'tools-page'
+      });
+
+      const alone = await publish([ child._id ]);
+      assert.deepEqual(alone.published, []);
+      assert.equal(alone.refused[0].reason, 'invalid');
+      assert.deepEqual(alone.refused[0].parents, [ {
+        _id: parent._id,
+        title: 'Parent'
+      } ]);
+      assert.equal(await findPublished(child._id), null);
+
+      const both = await publish([ parent._id, child._id ]);
+      assert.deepEqual(both.published.map(item => item.status), [ 'published', 'published' ]);
+      assert(await findPublished(child._id));
+    });
+
+    it('should refuse a user who may edit the draft but not publish it', async function () {
+      const article = await insertArticle({ body: 'Contributed' });
+      const contributor = apos.task.getReq({
+        user: {
+          _id: 'user-cora',
+          username: 'cora',
+          title: 'Cora',
+          role: 'contributor'
+        },
+        mode: 'draft'
+      });
+
+      const { published, refused } = await publish([ article._id ], door(contributor));
+
+      assert.deepEqual(published, []);
+      assert.equal(refused[0].reason, 'forbidden');
+      assert.equal(refused[0].message, 'The user may not publish this document.');
+      assert.equal(await findPublished(article._id), null);
+    });
+  });
+
   describe('documents saved since the read', function () {
     // A colleague's save of the draft, through the type's own update
     async function editAs(username, _id, change) {
@@ -1184,6 +1325,82 @@ describe('Harness: write tools and get_changes', function () {
       assert.equal((await findDraft(article._id)).title, 'Retitled by Ann');
     });
 
+    it('should refuse to publish a draft saved since the read, and publish it once read again', async function () {
+      const article = await insertArticle({ body: 'Original' });
+      const req = door(userReq());
+      await read(article._id, req);
+      await editAs('bob', article._id, draft => {
+        draft.title = 'Retitled by Bob';
+      });
+      const publish = () => run('publish_document', {
+        targets: [ { _id: article._id } ]
+      }, req);
+      const publishedId = article._id.replace(':draft', ':published');
+
+      const first = await publish();
+      assert.deepEqual(first.published, []);
+      assert.equal(first.refused[0].reason, 'changed');
+      assert.match(first.refused[0].message, /Tell the user what changed .* publish only if they ask/);
+      assert.equal(await findDraft(publishedId), null);
+
+      await read(article._id, req);
+      const again = await publish();
+      assert.equal(again.published[0].status, 'published');
+      assert.equal((await findDraft(publishedId)).title, 'Retitled by Bob');
+    });
+
+    it('should publish after the user\'s own saves since the read, and refuse when anyone else saved', async function () {
+      const req = door(userReq());
+      const publish = _id => run('publish_document', { targets: [ { _id } ] }, req);
+      const [ own, between, chat ] = await Promise.all([
+        insertArticle({ title: 'Own' }),
+        insertArticle({ title: 'Between' }),
+        insertArticle({ title: 'Another chat' })
+      ]);
+      for (const article of [ own, between, chat ]) {
+        await read(article._id, req);
+      }
+      // Ann is the user of the chat
+      await editAs('ann', own._id, draft => {
+        draft.body = 'Ann\'s tweak';
+      });
+      // Ann, then Jane, then Ann again over Jane's save
+      await editAs('ann', between._id, draft => {
+        draft.body = 'Ann first';
+      });
+      await editAs('jane', between._id, draft => {
+        draft.title = 'Between, by Jane';
+      });
+      await editAs('ann', between._id, draft => {
+        draft.body = 'Ann again';
+      });
+      // The user's own, but written by AI in another chat
+      await update(chat._id, { body: 'From another chat' }, door(userReq(), {
+        lockId: 'chat-2',
+        chat: 'chat-2',
+        requestId: 'request-2'
+      }));
+
+      assert.equal((await publish(own._id)).published[0].status, 'published');
+      assert.equal((await publish(between._id)).refused[0].reason, 'changed');
+      assert.equal((await publish(chat._id)).refused[0].reason, 'changed');
+    });
+
+    it('should refuse any save since the read of a type without draft versions', async function () {
+      const memo = await apos.modules['tools-memo'].insert(userReq(), { title: 'A memo' });
+      const req = door(userReq());
+      await read(memo._id, req);
+      await editAs('ann', memo._id, draft => {
+        draft.title = 'A memo, by Ann';
+      });
+
+      const { refused } = await run('publish_document', {
+        targets: [ { _id: memo._id } ]
+      }, req);
+
+      assert.equal(refused[0].reason, 'changed');
+    });
+
     it('should take its own writes as seen, and refuse after someone else\'s save', async function () {
       const widget = card();
       const article = await insertArticle({
@@ -1249,8 +1466,8 @@ describe('Harness: write tools and get_changes', function () {
       const article = await insertArticle({ body: 'Original' });
       const req = door(userReq());
       // A projection without the date is not remembered
-      await apos.harness.rememberSeen(req, { _id: article._id });
-      assert.equal(apos.harness.getDoor(req).seen.has(article._id), false);
+      await apos.aposHarness.rememberSeen(req, { _id: article._id });
+      assert.equal(apos.aposHarness.getDoor(req).seen.has(article._id), false);
 
       await read(article._id, req);
       // Stored without it since the read: written, nothing to compare
@@ -1290,11 +1507,11 @@ describe('Harness: write tools and get_changes', function () {
       ]);
       const told = [];
       const listen = (req, _id) => told.push(_id);
-      apos.harness.on('documentSeen', 'testListenSeen', listen);
+      apos.aposHarness.on('documentSeen', 'testListenSeen', listen);
       const first = door(userReq());
       await read(readOne._id, first);
       await update(writtenOne._id, { body: 'Written' }, first);
-      const { seen } = apos.harness.getDoor(first);
+      const { seen } = apos.aposHarness.getDoor(first);
       assert.deepEqual(told, [ readOne._id, writtenOne._id ]);
       assert.deepEqual([ ...seen.keys() ], [ readOne._id, writtenOne._id ]);
 
@@ -1477,7 +1694,7 @@ describe('Harness: write tools and get_changes', function () {
           values: { body: 'First' }
         } ]
       }, first);
-      await apos.harness.endRequest(first);
+      await apos.aposHarness.endRequest(first);
       const second = door(userReq(), { requestId: 'request-2' });
       await run('update_document', {
         targets: [ {

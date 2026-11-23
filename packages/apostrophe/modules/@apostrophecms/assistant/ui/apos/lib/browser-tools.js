@@ -17,7 +17,7 @@
 import { watch } from 'vue';
 import { pinia } from 'Modules/@apostrophecms/ui/lib/vue';
 import { getTabId } from 'Modules/@apostrophecms/ui/utils';
-import { isWindow } from 'Modules/@apostrophecms/ui/composables/useScreen.js';
+import { isWindow, getScreenWindow } from 'Modules/@apostrophecms/ui/composables/useScreen.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { liftToCommonParent } from 'Modules/@apostrophecms/area/lib/widget-selection.js';
@@ -109,6 +109,13 @@ async function openEditor({
       until
     }, release);
   }
+  const standalone = useModalStore(pinia).getStandaloneEditor(type);
+  if (standalone) {
+    return openStandaloneEditor({
+      _id,
+      until
+    }, standalone, release);
+  }
   const opened = await open(
     item => item.props?.docId === _id,
     () => apos.doc.edit({
@@ -182,11 +189,14 @@ async function showWidgets({ _id, widgetIds }) {
 // builds the change on it, and the change lands through the editor's
 // `outside` handle, the keys it names busy meanwhile, then marked. The keys
 // of the turn's later calls (`ahead` on the ask) go busy with them and stay
-// busy for those calls
+// busy for those calls. With no modal open, the editor on top is the
+// screen's window
 async function editOpenDocument(args, {
   request, ask, stopped
 }) {
-  const entry = useModalStore(pinia).stack.filter(entry => !isWindow(entry)).at(-1);
+  const store = useModalStore(pinia);
+  const entry = store.stack.filter(entry => !isWindow(entry)).at(-1) ||
+    getScreenWindow(store);
   const outside = entry?.outside;
   if (!outside) {
     releaseAhead();
@@ -411,6 +421,39 @@ async function openWidgetEditor({
     () => apos.bus.$emit('widget-edit', { widgetId })
   );
   return finish(opened, until, release);
+}
+
+// A document type edited in a window of its own, outside the modal stack:
+// opened through what the type registered, answered once the window is on
+// the screen, or with `until: 'closed'` once it closes, saying whether it
+// was saved
+async function openStandaloneEditor({ _id, until }, open, release) {
+  const store = useModalStore(pinia);
+  const { id, reason } = (await open({ _id })) || {};
+  const shown = () => store.standaloneWindows.some(entry => entry.id === id);
+  if (!id || !(await waitFor(shown))) {
+    return {
+      executed: false,
+      reason: reason || 'the editor did not open'
+    };
+  }
+  if (until !== 'closed') {
+    return { executed: true };
+  }
+  release('apostrophe:assistantWaitingEditor');
+  const result = await new Promise((resolve) => {
+    const onClosed = (closed) => {
+      if (closed.id === id) {
+        apos.bus.$off('standalone-window-closed', onClosed);
+        resolve(closed.result);
+      }
+    };
+    apos.bus.$on('standalone-window-closed', onClosed);
+  });
+  return {
+    executed: true,
+    saved: Boolean(result)
+  };
 }
 
 // Opens a modal with `launch` and resolves the stack item `match` picks

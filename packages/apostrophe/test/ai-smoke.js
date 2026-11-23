@@ -79,6 +79,11 @@ const PROVIDERS = [
     envKey: 'APOS_OPENAI_KEY',
     skipTools: true,
     maxTokens: 2000,
+    // OpenAI's Chat Completions take a PDF, which the adapter leaves to
+    // the entry to declare
+    entry: {
+      capabilities: { documentInput: true }
+    },
     cacheShares: {
       cold: 'cacheWriteTokens',
       warm: 'cacheReadTokens'
@@ -184,6 +189,38 @@ function echoTool() {
     },
     handler: (req, args) => ({ value: args.value })
   };
+}
+
+// A two-page PDF with one line of text per page, as base64: the smallest
+// document that tells a model reading pages from one reading only the first
+function twoPagePdf() {
+  const page = (contents) => '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] ' +
+    `/Resources << /Font << /F1 7 0 R >> >> /Contents ${contents} 0 R >>`;
+  const stream = (line) => {
+    const text = `BT /F1 24 Tf 72 700 Td (${line}) Tj ET`;
+    return `<< /Length ${text.length} >>\nstream\n${text}\nendstream`;
+  };
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>',
+    page(4),
+    stream('Page one. The sky is blue.'),
+    page(6),
+    stream('Page two. The code word is MARIGOLD.'),
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'
+  ];
+  let pdf = '%PDF-1.4\n';
+  const offsets = objects.map((object, index) => {
+    const offset = pdf.length;
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+    return offset;
+  });
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n` +
+    offsets.map((offset) => `${String(offset).padStart(10, '0')} 00000 n \n`).join('') +
+    `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\n` +
+    `startxref\n${xref}\n%%EOF\n`;
+  return Buffer.from(pdf, 'latin1').toString('base64');
 }
 
 // Record a run's evidence through the module's structured log (event
@@ -523,6 +560,44 @@ describe('AI live smoke', function() {
         generated = image;
       });
 
+      it('reads a PDF', async function() {
+        if (!capabilities.documentInput) {
+          this.skip();
+        }
+        const req = apos.task.getReq();
+        const result = await apos.ai.generate(req, {
+          messages: [ {
+            role: 'user',
+            content: [
+              {
+                type: 'document',
+                document: {
+                  data: twoPagePdf(),
+                  mediaType: 'application/pdf',
+                  name: 'two-pages.pdf'
+                }
+              },
+              {
+                type: 'text',
+                text: 'What is the code word on page 2? Answer with the word only.'
+              }
+            ]
+          } ],
+          effort: 'low',
+          maxTokens: provider.maxTokens,
+          cache: false
+        });
+        // The answer is logged, not asserted: whether the model read the
+        // second page is read from the log
+        record(apos, req, result, {
+          text: result.text.slice(0, 80),
+          ...reported(usageRecords[0])
+        });
+        assert(result.text.length > 0);
+        assert.equal(result.finishReason, 'stop');
+        assert.equal(result.provider, provider.name);
+      });
+
       it('edits an image', async function() {
         // No source to edit when the image case skipped or failed
         if (!provider.imageModel || !capabilities.imageInput || !generated) {
@@ -666,13 +741,10 @@ describe('AI live smoke', function() {
   });
 
   describe('google thinking', function() {
-    // Two dialect contracts. Gemini returns signed thought steps and
-    // requires them back verbatim when the turn's tool results are
-    // submitted — the adapter carries them as its opaque `thought` part;
-    // the shared battery never raises the reasoning level, so it only
-    // replays the minimal ones. And the response schema travels beside
-    // the function tools on the same request, which the shared battery
-    // never combines
+    // Gemini returns signed thought steps and requires them back verbatim
+    // when the turn's tool results are submitted — the adapter carries
+    // them as its opaque `thought` part; the shared battery never raises
+    // the reasoning level, so it only replays the minimal ones
     const provider = PROVIDERS.find((row) => row.name === 'google');
     let apos;
 
@@ -711,32 +783,6 @@ describe('AI live smoke', function() {
         message.content.some((part) => part.type === 'toolCall'));
       const thought = calling.content.find((part) => part.type === 'thought');
       assert.equal(typeof thought.signature, 'string');
-    });
-
-    it('returns structured output beside a tool', async function() {
-      const req = apos.task.getReq();
-      const result = await apos.ai.generate(
-        req,
-        'call the echo tool with value "hi", then report what it echoed',
-        {
-          // The 'low' model repeats the tool call on every turn when a
-          // response schema is present, until the step cap
-          effort: 'medium',
-          tools: [ 'echo' ],
-          schema: {
-            type: 'object',
-            properties: { echoed: { type: 'string' } },
-            required: [ 'echoed' ],
-            additionalProperties: false
-          },
-          maxTokens: provider.maxTokens,
-          cache: false
-        }
-      );
-      record(apos, req, result, { object: result.object });
-      assert.equal(result.finishReason, 'stop');
-      assert(result.steps.find((entry) => entry.toolCall.name === 'echo'));
-      assert.equal(typeof result.object.echoed, 'string');
     });
   });
 

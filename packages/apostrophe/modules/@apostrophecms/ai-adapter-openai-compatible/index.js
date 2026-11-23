@@ -21,6 +21,7 @@
 // by extending this module and overriding its methods.
 
 const image = require('../ai-adapter-openai/lib/image');
+const { fileFields } = require('../ai-adapter-openai/lib/file');
 
 // The `reasoning_effort` values a native text model accepts; GPT-6.1
 // Sol and GPT-6 Astra refuse `none`. The native tools-request degrade
@@ -64,6 +65,9 @@ module.exports = {
             structured: true,
             stream: true,
             imageInput: true,
+            // Few compatible services take documents: an entry whose
+            // service does declares it, with the limits on its models
+            documentInput: false,
             image: true,
             caching: true
           },
@@ -269,6 +273,12 @@ module.exports = {
             return {
               type: 'text',
               text: part.text
+            };
+          }
+          if (part.type === 'document') {
+            return {
+              type: 'file',
+              file: fileFields(part.document)
             };
           }
           // part.type === 'image', in one of the two normalized forms

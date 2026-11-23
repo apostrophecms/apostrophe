@@ -148,6 +148,14 @@
       <AposAssistantThinking />
       <span>{{ $t('apostrophe:assistantLoadingChats') }}</span>
     </p>
+    <p
+      v-if="usage !== null"
+      class="apos-assistant-menu__usage"
+      data-apos-test="assistant-chat-usage"
+    >
+      <span>{{ $t('apostrophe:assistantChatUsage') }}</span>
+      <span class="apos-assistant-menu__usage-total">{{ usage }}</span>
+    </p>
     <button
       type="button"
       class="apos-assistant-menu__new"
@@ -161,9 +169,10 @@
 
 <script setup>
 import {
-  computed, nextTick, onBeforeUnmount, onMounted, ref
+  computed, inject, nextTick, onBeforeUnmount, onMounted, ref
 } from 'vue';
 import { useAssistantStore } from '../stores/assistant.js';
+import { getChatTitle } from '../lib/chat-title.js';
 
 // All chats: open one, start a new one, rename or delete one in its row
 const props = defineProps({
@@ -175,7 +184,9 @@ const props = defineProps({
 });
 const emit = defineEmits([ 'close' ]);
 
+const $t = inject('i18n');
 const store = useAssistantStore();
+const { usageDisplay } = apos.modules['@apostrophecms/assistant'];
 const root = ref(null);
 const renameInput = ref(null);
 const noButton = ref(null);
@@ -188,10 +199,33 @@ const controls = new Map();
 
 const rows = computed(() => store.getChats().map(chat => ({
   _id: chat._id,
-  title: chat.title || '',
+  title: getChatTitle(chat, $t) || '',
   active: chat._id === store.activeId,
   running: [ 'running', 'stopping' ].includes(chat.openRequest?.status)
 })));
+
+// The active chat's tokens, its reverted requests left out; not shown
+// without token counts, where it would only repeat the thread
+const usage = computed(() => {
+  if (usageDisplay !== 'tokens') {
+    return null;
+  }
+  const tokens = store.getRequests(store.activeId)
+    .filter(request => !request.revertId && request.usage)
+    .reduce((sum, { usage }) => sum + (usage.inputTokens || 0) +
+      (usage.outputTokens || 0), 0);
+  if (!tokens) {
+    return $t('apostrophe:assistantUsageNone');
+  }
+  const format = new Intl.NumberFormat(apos.i18n.adminLocale, {
+    notation: 'compact',
+    maximumFractionDigits: 1
+  });
+  return $t('apostrophe:assistantTokens', {
+    count: tokens,
+    tokens: format.format(tokens)
+  });
+});
 
 onMounted(() => {
   document.addEventListener('pointerdown', onPointerDown, true);
@@ -226,11 +260,13 @@ async function focusControl(id, name) {
 function open(row) {
   store.openChat(row._id);
   emit('close', { focus: false });
+  store.focusComposer();
 }
 
 function newChat() {
   store.newChat();
   emit('close', { focus: false });
+  store.focusComposer();
 }
 
 async function startRename(row) {
@@ -546,6 +582,30 @@ function refuse(id, reason) {
     width: 100%;
     margin: 0;
     padding: 0 10px 7px;
+  }
+
+  .apos-assistant-menu__usage {
+    @include type-base;
+
+    & {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 4px 0 0;
+      padding: 7px 10px;
+      border-top: 1px solid var(--a-base-8);
+      color: var(--a-text-primary);
+      line-height: var(--a-line-tall);
+    }
+  }
+
+  .apos-assistant-menu__usage-total {
+    @include type-small;
+
+    & {
+      color: var(--a-base-2);
+    }
   }
 
   .apos-assistant-menu__new {

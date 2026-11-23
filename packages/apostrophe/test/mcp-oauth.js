@@ -164,12 +164,23 @@ describe('MCP: OAuth', function () {
       await read(token, article._id);
       const { requestId } = await update(token, article._id, 'Logged');
 
-      const [ entry ] = await apos.harness.changes.find({ requestId }).toArray();
+      const [ entry ] = await apos.aposHarness.changes.find({ requestId }).toArray();
       assert.equal(entry.door, 'mcp');
       assert.deepEqual(entry.client, {
         id: client.client_id,
         name: 'Test tool'
       });
+
+      // A publish is an entry of its own, and names the tool too
+      const publish = await call(token, 'publish_document', {
+        targets: [ { _id: article._id } ]
+      });
+      assert.equal(publish.published[0].status, 'published');
+      const [ published ] = await apos.aposHarness.changes
+        .find({ requestId: publish.requestId })
+        .toArray();
+      assert.equal(published.effect, 'publish');
+      assert.deepEqual(published.client, entry.client);
     });
 
     it('still takes the development token', async function () {

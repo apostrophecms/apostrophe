@@ -279,13 +279,16 @@
       padding: $spacing-half;
     }
 
-    .apos-field__label {
-      margin-bottom: $spacing-three-quarters;
-      font-weight: 500;
+    .apos-field__info {
+      --apos-field-label-gap: #{$spacing-three-quarters};
 
-      &:has(+ .apos-field__help) {
-        margin-bottom: $spacing-one-quarter;
+      &:has(> .apos-field__label + .apos-field__help) {
+        --apos-field-label-gap: #{$spacing-one-quarter};
       }
+    }
+
+    .apos-field__label {
+      font-weight: 500;
     }
 
     .apos-field__error {

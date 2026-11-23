@@ -5,9 +5,11 @@
 // names "source" or "target", and every write lands on the target. The model
 // cannot reach any other document, whatever it is asked.
 //
-// Every handler acts as the editor who started the localization: reads and
-// writes go through the editor's own request, and `apos.ai.can` stands in
-// front of every write.
+// Every handler acts as the editor who started the localization, and reads
+// and writes as every AI tool does: through the schema AI reads a type by
+// (see `apos.aposHarness.getAiSchemaOf`), so a field kept away from AI is neither
+// shown to the model nor written by it, and on the harness's write path (see
+// `writeTarget`).
 
 const {
   splitParts, isPartAddress, parsePartAddress, spliceParts
@@ -28,6 +30,18 @@ const UNWRITABLE = [
   '_id', 'aposDocId', 'aposLocale', 'aposMode', 'type', 'archived', 'slug',
   'path', 'level', 'rank', 'parkedId', 'metaType'
 ];
+
+// Why a write was refused, as the model of a pass reads it
+const REFUSALS = {
+  unknown: 'no such field',
+  index: 'array items and widgets are addressed as "@<_id>"',
+  area: 'an area changes through localize_add_widget and localize_remove_widget',
+  notfound: 'no widget or item with that _id',
+  ambiguous: 'that _id is held more than once',
+  notFound: 'no such document in the target locale',
+  readOnly: 'the field is read-only',
+  limit: 'more items than the field takes'
+};
 
 const COPY = {
   type: 'string',
@@ -276,7 +290,7 @@ module.exports = (self) => {
     extraParts(req, doc) {
       const manager = self.apos.doc.getManager(doc.type);
       const fields = [];
-      collectText(self.apos, req, manager?.schema, doc, '', [], fields);
+      collectText(self, req, manager && aiSchema(self, req, manager), doc, '', [], fields);
       return fields.reduce(
         (sum, entry) => sum + self.splitParts(entry).length - 1,
         0
@@ -351,7 +365,6 @@ module.exports = (self) => {
       return {
         doc,
         manager,
-        docModule,
         draftReq
       };
     },
@@ -369,7 +382,7 @@ module.exports = (self) => {
         doc, manager, draftReq
       } = await self.fetchCopy(req, copy);
       const fields = [];
-      collectText(self.apos, draftReq, manager.schema, doc, '', [], fields);
+      collectText(self, draftReq, aiSchema(self, draftReq, manager), doc, '', [], fields);
       const entries = fields.flatMap((entry) => {
         const parts = self.splitParts(entry);
         if (parts.length === 1) {
@@ -406,29 +419,33 @@ module.exports = (self) => {
     // that a page break splits is repeated on the next page with
     // "continued": true, its widgets keeping their positions
     async readOutline(req, { copy, offset = 0 }) {
-      const { doc, draftReq } = await self.fetchCopy(req, copy);
+      const {
+        doc, manager, draftReq
+      } = await self.fetchCopy(req, copy);
       const items = [];
-      self.apos.area.walk(doc, (area, dotPath) => {
+      for (const {
+        path, area, widgets
+      } of collectAreas(self, draftReq, manager, doc)) {
         const header = {
-          path: dotPath,
+          path,
           _id: area._id
         };
         items.push({ area: header });
-        (area.items || []).forEach((item, position) => {
+        widgets.forEach((item, position) => {
           items.push({
             area: header,
             widget: {
               _id: item._id,
               type: item.type,
               label: draftReq.t(
-                self.apos.area.getWidgetManager(item.type)?.label || item.type
+                self.apos.area.getWidgetManager(item.type).label || item.type
               ),
               position,
-              preview: widgetPreview(self.apos, item)
+              preview: widgetPreview(self, draftReq, item)
             }
           });
         });
-      });
+      }
       const areas = [];
       let size = 0;
       let index = offset;
@@ -461,14 +478,16 @@ module.exports = (self) => {
     },
 
     async readPaths(req, { copy, paths }) {
-      const { doc } = await self.fetchCopy(req, copy);
-      const pruned = self.apos.util.clonePermanent(doc);
+      const { doc, draftReq } = await self.fetchCopy(req, copy);
+      // As AI reads the document, which is also how the write tools take
+      // a value
+      const shown = self.apos.aposHarness.projectDocument(draftReq, doc);
       return {
         copy,
         values: paths.map((path) => {
           const value = valueAtPath(
-            pruned,
-            self.apos.util.resolveAtReference(pruned, path)
+            shown,
+            self.apos.util.resolveAtReference(shown, path)
           );
           return {
             path,
@@ -486,10 +505,7 @@ module.exports = (self) => {
       }
       return {
         type,
-        // Rich text keeps its content outside its schema
-        schema: (type === '@apostrophecms/rich-text'
-          ? 'content: string (HTML)\n'
-          : '') + schemaToCompact(manager.schema)
+        schema: schemaToCompact(aiSchema(self, req, manager))
       };
     },
 
@@ -526,10 +542,10 @@ module.exports = (self) => {
         });
       }
       const notes = [];
-      await self.writeTarget(req, async ({
-        doc, docModule, draftReq
-      }) => {
+      await self.writeTarget(req, async ({ doc, draftReq }) => {
         const patch = { ...whole };
+        // A part goes into the text as stored
+        const stored = parts.size && await self.storedDraft(doc._id);
         for (const [ address, writes ] of parts) {
           if (Object.hasOwn(whole, address)) {
             throw self.apos.error(
@@ -537,7 +553,7 @@ module.exports = (self) => {
               `"${address}" is written both whole and in parts`
             );
           }
-          const { value, format } = self.textAt(doc, address);
+          const { value, format } = self.textAt(stored, address);
           try {
             const spliced = spliceParts(value, format, writes);
             patch[address] = spliced.value;
@@ -546,7 +562,10 @@ module.exports = (self) => {
             throw self.apos.error('aiToolError', `${address}: ${e.message}`);
           }
         }
-        await applyPatch(self, docModule, draftReq, doc, patch);
+        return self.apos.aposHarness.getToolPatches(draftReq, doc, {
+          action: 'update_document',
+          values: patch
+        }).patches;
       });
       return {
         written: Object.keys(values).length,
@@ -582,130 +601,122 @@ module.exports = (self) => {
       if (Boolean(copyOf) === Boolean(widget)) {
         throw self.apos.error('aiToolError', 'give exactly one of "copyOf" or "widget"');
       }
-      if (copyOf) {
-        widget = await self.copySourceWidget(req, copyOf);
+      const { aposHarness: harness } = self.apos;
+      const source = copyOf && await self.fetchCopy(req, 'source');
+      const copied = source &&
+        findWidget(self, source.draftReq, source.manager, source.doc, copyOf);
+      if (source && !copied) {
+        throw self.apos.error('aiToolError', `no widget "${copyOf}" in the source copy`);
       }
-      const widgetManager = self.apos.area.getWidgetManager(widget.type);
-      if (!widgetManager) {
-        throw self.apos.error('aiToolError', `unknown widget type "${widget.type}"`);
+      const type = copied ? copied.widget.type : widget.type;
+      if (!self.apos.area.getWidgetManager(type)) {
+        throw self.apos.error('aiToolError', `unknown widget type "${type}"`);
       }
-      const widgetId = self.apos.util.generateId();
-      let landed;
-      await self.writeTarget(req, async ({
-        doc, manager, docModule, draftReq
+      let widgetId;
+      const saved = await self.writeTarget(req, ({
+        doc, manager, draftReq
       }) => {
-        const area = findArea(self.apos, doc, ref);
-        let key;
-        let items;
-        if (area) {
-          key = `@${area._id}`;
-          items = [ ...(area.items || []) ];
-        } else {
-          // A never-edited area exists only in the schema; patching by its
-          // field name creates it
-          const field = manager.schema
-            .find((field) => field.name === ref && field.type === 'area');
-          if (!field) {
-            throw self.apos.error(
-              'aiToolError',
-              `"${ref}" does not name an area of the target copy`
-            );
-          }
-          key = ref;
-          items = [];
-        }
-        landed = position === undefined
-          ? items.length
-          : Math.min(position, items.length);
-        items.splice(landed, 0, {
-          ...self.apos.schema.newInstance(widgetManager.schema),
-          ...widget,
-          _id: widgetId,
-          metaType: 'widget'
-        });
-        await applyPatch(self, docModule, draftReq, doc, {
-          [key]: {
-            ...(area || { metaType: 'area' }),
-            items
-          }
-        });
-        // A widget the area refuses may be dropped by the conversion rather
-        // than rejected; only its presence proves it was accepted
-        if (!findWidget(self.apos, doc, widgetId)) {
+        const found = collectAreas(self, draftReq, manager, doc)
+          .find(({ path, area }) => (path === ref) || (area._id === ref.replace(/^@/, '')));
+        // A never-edited area exists only in the schema, under its name
+        const field = found?.field || aiSchema(self, draftReq, manager)
+          .find((field) => (field.name === ref) && (field.type === 'area'));
+        if (!field) {
           throw self.apos.error(
             'aiToolError',
-            `the area "${ref}" did not accept a ${widget.type} widget`
+            `"${ref}" does not name an area of the target copy`
           );
         }
+        if (!Object.hasOwn(self.apos.area.getWidgets(field.options || {}), type)) {
+          throw self.apos.error(
+            'aiToolError',
+            `the area "${ref}" did not accept a ${type} widget`
+          );
+        }
+        const made = harness.getToolPatches(draftReq, doc, {
+          area: found ? `@${found.area._id}` : ref,
+          position,
+          ...(source
+            ? {
+              action: 'copy_widgets',
+              from: source.doc,
+              widgets: [ copyOf ]
+            }
+            : {
+              action: 'add_widgets',
+              widgets: [ widget ]
+            })
+        });
+        widgetId = made.widgets[0]._id;
+        // A copy is the source's own content: what a save heals in it is
+        // healed, such as a relationship to a document the target locale
+        // doesn't have, as when an editor copies the widget
+        return source
+          ? made.patches.map((patch) => ({
+            ...patch,
+            _lossless: false
+          }))
+          : made.patches;
       });
+      const manager = self.apos.doc.getManager(saved.type);
       return {
         widgetId,
-        position: landed
+        position: findWidget(self, req, manager, saved, widgetId)?.position
       };
-    },
-
-    // A widget of the source, ready to insert into the target: loaded with
-    // its relationships, each pointed at the related document's copy in the
-    // target locale — the save looks them up by exact _id there, and drops
-    // what it does not find — and with fresh ids for itself and everything
-    // nested in it: areas, widgets, array items
-    async copySourceWidget(req, widgetId) {
-      const { targetLocale } = self.pass(req);
-      const { doc } = await self.fetchCopy(req, 'source');
-      const found = findWidget(self.apos, doc, widgetId);
-      if (!found) {
-        throw self.apos.error('aiToolError', `no widget "${widgetId}" in the source copy`);
-      }
-      // Plain data: dates in related documents turn into strings, which is
-      // harmless, since a relationship saves only their ids
-      const copy = JSON.parse(JSON.stringify(found.area.items[found.index]));
-      const renew = (value) => {
-        if (Array.isArray(value)) {
-          value.forEach(renew);
-        } else if (value && typeof value === 'object' && !(value instanceof Date)) {
-          if ([ 'area', 'widget', 'arrayItem' ].includes(value.metaType)) {
-            value._id = self.apos.util.generateId();
-          }
-          for (const [ key, child ] of Object.entries(value)) {
-            if (!key.startsWith('_')) {
-              renew(child);
-            } else if (Array.isArray(child)) {
-              for (const related of child) {
-                const parts = typeof related?._id === 'string' && related._id.split(':');
-                if (parts?.length === 3) {
-                  related._id = `${parts[0]}:${targetLocale}:${parts[2]}`;
-                }
-              }
-            }
-          }
-        }
-      };
-      renew(copy);
-      return copy;
     },
 
     async removeWidget(req, { widgetId }) {
-      await self.writeTarget(req, ({ doc }) => {
-        const found = findWidget(self.apos, doc, widgetId);
-        if (!found) {
-          throw self.apos.error(
-            'aiToolError',
-            `no widget "${widgetId}" in the target copy`
-          );
-        }
-        found.area.items.splice(found.index, 1);
+      await self.writeTarget(req, ({ doc, draftReq }) => {
+        return self.apos.aposHarness.getToolPatches(draftReq, doc, {
+          action: 'remove_widgets',
+          widgets: [ widgetId ]
+        }).patches;
       });
       return { removed: widgetId };
     },
 
-    // The one write path: fetch the target for editing, change it, save it
-    // through its own module. The pass's request carries `aposAi`, so
-    // version history marks the save as the assistant's
-    async writeTarget(req, mutate) {
-      const target = await self.fetchCopy(req, 'target');
-      await mutate(target);
-      await target.docModule.update(target.draftReq, target.doc);
-      self.pass(req).writes++;
+    // The one write path, the harness's (see `apos.aposHarness.writeDraft`):
+    // the editor's right to edit the target, its lock held while it is
+    // written, a save that drops nothing the patches supply and is marked
+    // as AI's in version history. `getPatches` returns the patches for the
+    // target as it is (see `apos.aposHarness.getToolPatches`). Returns the saved
+    // draft. What the model can act on is a tool error; a target another
+    // editor has open throws `locked`, which ends the pass
+    async writeTarget(req, getPatches) {
+      const pass = self.pass(req);
+      const { aposHarness: harness } = self.apos;
+      try {
+        const found = await harness.findDraft(req, pass.targetId);
+        const saved = await harness.writeDraft(found, async ({
+          doc, manager, draftReq, save
+        }) => {
+          return save(await getPatches({
+            doc,
+            manager,
+            draftReq
+          }));
+        });
+        pass.writes++;
+        return saved;
+      } catch (e) {
+        // Conversion throws its field errors as an array
+        const error = Array.isArray(e) ? self.apos.error('invalid', { errors: e }) : e;
+        if ([ 'notfound', 'forbidden' ].includes(error.name)) {
+          throw self.apos.error(
+            'aiToolError',
+            'the target copy is not available to the current user'
+          );
+        }
+        if (error.name !== 'invalid') {
+          throw e;
+        }
+        const { message, fields = [] } = harness.describeRefusal(error);
+        throw self.apos.error('aiToolError', 'the write was refused: ' + (fields.length
+          ? fields
+            .map(({ path, reason }) => `${path}: ${REFUSALS[reason] || reason}`)
+            .join('; ')
+          : message));
+      }
     },
 
     async finish(req, { summary }) {
@@ -717,31 +728,26 @@ module.exports = (self) => {
   };
 };
 
-async function applyPatch(self, docModule, req, doc, values) {
-  try {
-    await docModule.applyPatch(req, doc, values);
-  } catch (e) {
-    throw self.apos.error(
-      'aiToolError',
-      `the values were rejected: ${convertDetail(e)}`
-    );
-  }
+// The schema AI reads and writes a doc or widget type through
+function aiSchema(self, req, manager) {
+  return self.apos.aposHarness.getAiSchemaOf(req, manager);
 }
 
-function convertDetail(error) {
-  if (Array.isArray(error)) {
-    return error
-      .map((item) => `${item.path}: ${item.message || item.name}`)
-      .join('; ');
-  }
-  return error.message || String(error);
+// The widgets of an area AI reads: those of a type the area allows that
+// still has a module
+function widgetsOf(self, field, area) {
+  const allowed = Object.keys(self.apos.area.getWidgets(field.options || {}));
+  return (area?.items || []).filter((widget) => {
+    return allowed.includes(widget?.type) && self.apos.area.getWidgetManager(widget.type);
+  });
 }
 
-// The translatable text of a document or a node of it, in schema order,
-// depth first: string fields, and the markup of rich text widgets. Each
-// entry carries the address the write tool takes — a top-level path, or
-// "@<_id>" of the innermost widget or array item with the path inside it
-function collectText(apos, req, schema, value, base, where, out) {
+// The translatable text of a document or a node of it, as AI reads it: in
+// schema order, depth first, string fields and the markup rich text widgets
+// keep beside their fields. Each entry carries the address the write tool
+// takes: a top-level path, or "@<_id>" of the innermost widget or array item
+// with the path inside it
+function collectText(self, req, schema, value, base, where, out) {
   for (const field of schema || []) {
     const fieldValue = value?.[field.name];
     const address = base ? `${base}.${field.name}` : field.name;
@@ -757,33 +763,39 @@ function collectText(apos, req, schema, value, base, where, out) {
           });
         }
         break;
+      case 'richText':
+        // Named by its widget alone
+        if (typeof fieldValue === 'string' &&
+          self.apos.util.htmlToPlaintext(fieldValue).trim()) {
+          out.push({
+            address,
+            where: where.join(' › '),
+            format: 'html',
+            value: fieldValue
+          });
+        }
+        break;
       case 'area':
-        for (const widget of fieldValue?.items || []) {
-          const manager = apos.area.getWidgetManager(widget.type);
-          const widgetWhere = [ ...here, req.t(manager?.label || widget.type) ];
-          const widgetAddress = `@${widget._id}`;
-          if (typeof widget.content === 'string' && manager?.getRichText) {
-            if (apos.util.htmlToPlaintext(widget.content).trim()) {
-              out.push({
-                address: `${widgetAddress}.content`,
-                where: widgetWhere.join(' › '),
-                format: 'html',
-                value: widget.content
-              });
-            }
-          }
+        for (const widget of widgetsOf(self, field, fieldValue)) {
+          const manager = self.apos.area.getWidgetManager(widget.type);
           collectText(
-            apos, req, manager?.schema, widget, widgetAddress, widgetWhere, out
+            self,
+            req,
+            aiSchema(self, req, manager),
+            widget,
+            `@${widget._id}`,
+            [ ...here, req.t(manager.label || widget.type) ],
+            out
           );
         }
         break;
       case 'array':
         for (const item of fieldValue || []) {
-          collectText(apos, req, field.schema, item, `@${item._id}`, here, out);
+          collectText(self, req, field.schema, item, `@${item._id}`, here, out);
         }
         break;
       case 'object':
-        collectText(apos, req, field.schema, fieldValue, address, here, out);
+        collectText(self, req, field.schema, fieldValue, address, here, out);
         break;
       default:
         break;
@@ -791,11 +803,66 @@ function collectText(apos, req, schema, value, base, where, out) {
   }
 }
 
-function widgetPreview(apos, widget) {
-  const text = typeof widget.content === 'string'
-    ? apos.util.htmlToPlaintext(widget.content)
-    : Object.values(widget).find((value) => typeof value === 'string' &&
-      value.length > 3 && !/^[a-z0-9]{20,}$/.test(value)) || '';
+// Every area a document stores that AI reads, in schema order, depth first:
+// `{ path, area, field, widgets }`, `path` its dot path in the document and
+// `widgets` those AI reads in it (see `widgetsOf`)
+function collectAreas(self, req, manager, doc) {
+  const out = [];
+  walk(aiSchema(self, req, manager), doc, '');
+  return out;
+
+  function walk(schema, value, base) {
+    for (const field of schema || []) {
+      const fieldValue = value?.[field.name];
+      const path = base ? `${base}.${field.name}` : field.name;
+      if ((field.type === 'area') && (fieldValue?.metaType === 'area')) {
+        const widgets = widgetsOf(self, field, fieldValue);
+        out.push({
+          path,
+          area: fieldValue,
+          field,
+          widgets
+        });
+        for (const widget of widgets) {
+          walk(
+            aiSchema(self, req, self.apos.area.getWidgetManager(widget.type)),
+            widget,
+            `${path}.items.${fieldValue.items.indexOf(widget)}`
+          );
+        }
+      } else if ((field.type === 'array') && Array.isArray(fieldValue)) {
+        fieldValue.forEach((item, index) => walk(field.schema, item, `${path}.${index}`));
+      } else if ((field.type === 'object') && fieldValue) {
+        walk(field.schema, fieldValue, path);
+      }
+    }
+  }
+}
+
+// A widget AI reads in a document, by its _id: `{ widget, position }`, its
+// place among the widgets AI reads in its area
+function findWidget(self, req, manager, doc, widgetId) {
+  for (const { widgets } of collectAreas(self, req, manager, doc)) {
+    const position = widgets.findIndex((widget) => widget._id === widgetId);
+    if (position !== -1) {
+      return {
+        widget: widgets[position],
+        position
+      };
+    }
+  }
+  return null;
+}
+
+// The first text AI reads in a widget, cut short
+function widgetPreview(self, req, widget) {
+  const manager = self.apos.area.getWidgetManager(widget.type);
+  const text = aiSchema(self, req, manager)
+    .filter((field) => [ 'string', 'richText' ].includes(field.type))
+    .map((field) => ((field.type === 'richText')
+      ? self.apos.util.htmlToPlaintext(widget[field.name] || '')
+      : widget[field.name] || ''))
+    .find((value) => (typeof value === 'string') && value.trim().length > 3) || '';
   return text.replace(/\s+/g, ' ').trim().slice(0, 80);
 }
 
@@ -808,31 +875,6 @@ function valueAtPath(object, path) {
     value = value[key];
   }
   return value;
-}
-
-function findArea(apos, doc, ref) {
-  const id = ref.startsWith('@') ? ref.slice(1) : ref;
-  let match = null;
-  apos.area.walk(doc, (area, dotPath) => {
-    if (dotPath === ref || area._id === id) {
-      match = area;
-    }
-  });
-  return match;
-}
-
-function findWidget(apos, doc, widgetId) {
-  let found = null;
-  apos.area.walk(doc, (area) => {
-    const index = (area.items || []).findIndex((item) => item._id === widgetId);
-    if (index !== -1) {
-      found = {
-        area,
-        index
-      };
-    }
-  });
-  return found;
 }
 
 // A schema as compact lines: "name: type* (details)", * marking required
@@ -853,7 +895,9 @@ function schemaToCompact(schema, indent = 0) {
     if (field.schema?.length) {
       details.push(`{\n${schemaToCompact(field.schema, indent + 1)}\n${pad}}`);
     }
-    return `${pad}${field.name}: ${field.type}${field.required ? '*' : ''}` +
+    // Rich text keeps its markup beside its fields
+    const type = (field.type === 'richText') ? 'string (HTML)' : field.type;
+    return `${pad}${field.name}: ${type}${field.required ? '*' : ''}` +
       (details.length ? ` (${details.join(', ')})` : '');
   }).join('\n');
 }

@@ -47,7 +47,7 @@ module.exports = (self) => {
     // Keeps what the door of `req` now has for `docId`. Called for each
     // document the harness remembers (`documentSeen`)
     async storeSeen(req, docId) {
-      const door = self.apos.harness.getDoor(req);
+      const door = self.apos.aposHarness.getDoor(req);
       const connection = req.aposMcpConnection;
       const updatedAt = door?.seen.get(docId);
       if ((door?.door !== 'mcp') || !connection || !updatedAt) {

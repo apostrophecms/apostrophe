@@ -11,7 +11,9 @@
 //   'content-change-settled': `{ docId, type, requestId, written }`; once
 //     written, with `entryId`, the change log entry the save landed in, and
 //     `parts`, what it changed as `[{ key, before, after }]` (see
-//     `getChangeParts` in the versions module)
+//     `getChangeParts` in the versions module). A publish settles alone,
+//     `published: true`, with no entry and no parts: the draft's content is
+//     as it was
 //
 // A door without a browser tab sends nothing. A missed event costs the page
 // its busy marks and the undo step; the save stands either way.
@@ -121,6 +123,23 @@ module.exports = (self) => {
         written: true,
         entryId: settled.entryId,
         ...(parts && { parts })
+      });
+    },
+
+    /**
+     * Tells the browser tab of a door's request that `draft` was published,
+     * so the page and managers showing it read it again.
+     *
+     * @param {object} req The publish's `req`, with the door context.
+     * @param {object} draft The draft published.
+     */
+    async publishChangePublished(req, draft) {
+      await publish(req, SETTLED, {
+        docId: draft._id,
+        type: draft.type,
+        written: true,
+        published: true,
+        parts: []
       });
     },
 

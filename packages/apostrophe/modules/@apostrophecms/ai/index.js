@@ -10,7 +10,9 @@ const Ajv = require('ajv/dist/2020').default;
 const {
   isObject, isAbort, stepUsage, startupFail
 } = require('./lib/util');
-const { DENIED_TYPES, USAGE_SHARE_KEYS } = require('./lib/constants');
+const {
+  DENIED_TYPES, USAGE_SHARE_KEYS, PART_CAPABILITIES
+} = require('./lib/constants');
 
 // The protocol shapes this surface hands out or takes in, named once so the
 // blocks below can use them bare. lib/types.js declares them and nothing else.
@@ -41,7 +43,8 @@ module.exports = {
     // mockImage: (req, request) => adapter image result, consulted only
     //   under APOS_AI_MOCK
     // usageMetadata: an object copied onto every `usage` record as its
-    //   `metadata`, e.g. the site a multisite instance serves
+    //   `metadata`, e.g. the site a multisite instance serves; a call's own
+    //   `usageMetadata` is merged over it
     // Conservative agent-loop cap; any call may override it
     maxSteps: 5,
     // Transient-failure retry cap, counting calls
@@ -337,6 +340,10 @@ module.exports = {
           ...(reasoning !== undefined && { reasoning }),
           contextWindow: metadata.contextWindow,
           maxOutputTokens: metadata.maxOutputTokens,
+          ...(metadata.maxDocumentPages !== undefined &&
+            { maxDocumentPages: metadata.maxDocumentPages }),
+          ...(metadata.maxDocumentBytes !== undefined &&
+            { maxDocumentBytes: metadata.maxDocumentBytes }),
           capabilities: { ...record.capabilities }
         };
         if (options.capability === 'image') {
@@ -533,11 +540,18 @@ module.exports = {
        *   throw stops the call.
        * @property {(meta: object) => Promise<object|void>} [betweenSteps]
        *   Called after each step whose tool calls all ran, before the next
-       *   model call, with `{ step, usage }`, `usage` being that step's own
-       *   (AiUsage). Returning `{ stop: true }` ends the run with
+       *   model call, with `{ step, usage, messages, signal }`, `usage` being
+       *   that step's own (AiUsage), `messages` the transcript so far, ending
+       *   in the step's tool message (read only), and `signal` the call's
+       *   own, when it has one, for work the hook starts. Returning
+       *   `{ stop: true }` ends the run with
        *   finishReason 'paused': the transcript ends in the complete tool
        *   message, and a later call given it as `messages` continues the
        *   work. A throw stops the call.
+       * @property {object} [usageMetadata] Merged over the module's
+       *   `usageMetadata` on every `usage` record of this call, retries
+       *   included, so a caller can tell its calls apart, e.g.
+       *   `{ purpose: 'summary' }`.
        */
 
       /**
@@ -641,6 +655,13 @@ module.exports = {
           if (canonical.schema) {
             self.checkCapability(provider, 'structured');
           }
+          // Every media part the transcript carries, replayed ones too
+          for (const [ type, capability ] of Object.entries(PART_CAPABILITIES)) {
+            if (canonical.messages.some(({ content }) =>
+              content.some((part) => part.type === type))) {
+              self.checkCapability(provider, capability);
+            }
+          }
         }
         const record = self.mockMode
           ? self.mockRecord('chat', provider)
@@ -714,7 +735,8 @@ module.exports = {
                   provider,
                   step: turns,
                   attempt,
-                  request: context.request
+                  request: context.request,
+                  usageMetadata: canonical.usageMetadata
                 }, answer, () => {
                   self.validateTurn(answer);
                   // Only a 'stop' turn is the answer: tool turns run the
@@ -805,7 +827,9 @@ module.exports = {
             if (canonical.betweenSteps) {
               const verdict = await canonical.betweenSteps({
                 step: turns,
-                usage: stepUsage(turn.usage)
+                usage: stepUsage(turn.usage),
+                messages: context.request.messages,
+                ...(canonical.signal && { signal: canonical.signal })
               });
               if (verdict?.stop === true) {
                 paused = true;
@@ -967,6 +991,8 @@ module.exports = {
        *   not apply then.
        * @property {string} [model]
        * @property {AbortSignal} [signal] Aborts the in-flight provider call.
+       * @property {object} [usageMetadata] Merged over the module's
+       *   `usageMetadata` on the call's `usage` records.
        */
 
       /**
@@ -1062,7 +1088,8 @@ module.exports = {
               provider,
               step: 1,
               attempt,
-              request: context.request
+              request: context.request,
+              usageMetadata: canonical.usageMetadata
             }, batch, () => self.validateImageResult(batch));
           });
         // The envelope: the adapter's minimal result plus what the
@@ -1096,6 +1123,11 @@ module.exports = {
        *   'cancel'). Its own throw is logged, never recorded on the job.
        * @property {number} [expireAfter] Seconds the job record is kept,
        *   defaulting to the `jobExpireAfter` option; 0 keeps it forever.
+       * @property {(result: AiResult) => object} [jobResults] What the job
+       *   record keeps as `results`, from the run's result; the result itself
+       *   by default. For a run whose transcript should not be stored whole:
+       *   one carrying images or documents holds their bytes. `onEnd` still
+       *   gets the result as it is.
        * @property {boolean} [notify] Publish the run's progress to the caller's
        *   browser (see publishJobEvent); true by default. 'started' once the
        *   record exists, 'message' per intermediate assistant turn with the
@@ -1117,7 +1149,8 @@ module.exports = {
        * `@apostrophecms/job`. The `await` covers job creation only — the method
        * returns as soon as the job record exists, the run continues in the
        * background, and the exact object generate would have returned is stored
-       * on the record as `results` (a failure stores its error instead),
+       * on the record as `results`, or what `jobResults` makes of it (a
+       * failure stores its error instead),
        * readable via the job module's status route. The job has a heartbeat,
        * so a run whose process died reads as `abandoned` there.
        *
@@ -1153,10 +1186,13 @@ module.exports = {
           self.normalizeGenerateOptions(stringOrOptions, options);
         }
         const {
-          onEnd, expireAfter, notify = true, ...generateOptions
+          onEnd, expireAfter, notify = true, jobResults, ...generateOptions
         } = source;
         if (onEnd !== undefined && typeof onEnd !== 'function') {
           throw self.apos.error('invalid', '"onEnd" must be a function');
+        }
+        if (jobResults !== undefined && typeof jobResults !== 'function') {
+          throw self.apos.error('invalid', '"jobResults" must be a function');
         }
         if (typeof notify !== 'boolean') {
           throw self.apos.error('invalid', '"notify" must be a boolean');
@@ -1254,7 +1290,7 @@ module.exports = {
             const result = isPrompt
               ? await self.generate(workReq, stringOrOptions, backgroundOptions)
               : await self.generate(workReq, backgroundOptions);
-            reporting.setResults(result);
+            reporting.setResults(jobResults ? jobResults(result) : result);
             await report(null, result);
           } catch (error) {
             await report(error, undefined);
