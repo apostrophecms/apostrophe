@@ -80,6 +80,41 @@
         </li>
       </ul>
     </AposAssistantActivity>
+    <AposAssistantActivity
+      v-if="!running && live.length && !revert.dismissed"
+      tone="warning"
+      :title="$t('apostrophe:assistantRevertStillLive', { count: live.length })"
+      :dismiss-label="$t('apostrophe:assistantRevertDismiss')"
+      data-apos-test="assistant-revert-live"
+      @dismiss="dismiss"
+    >
+      <ul class="apos-assistant-reverted__list">
+        <li
+          v-for="doc in live"
+          :key="doc.docId"
+          class="apos-assistant-reverted__doc"
+          data-apos-test="assistant-revert-live-doc"
+        >
+          <span class="apos-assistant-reverted__main">
+            <span class="apos-assistant-reverted__title">{{ getTitle(doc, $t) }}</span>
+            <span class="apos-assistant-reverted__reason">{{ getLiveReason(doc, $t) }}</span>
+          </span>
+          <span
+            v-if="doc.publishedView"
+            class="apos-assistant-reverted__links"
+          >
+            <button
+              type="button"
+              class="apos-assistant-reverted__link"
+              data-apos-test="assistant-revert-live-versions"
+              @click="showDocument({ ...doc, view: doc.publishedView })"
+            >
+              {{ $t('apostrophe:assistantRevertVersions') }}
+            </button>
+          </span>
+        </li>
+      </ul>
+    </AposAssistantActivity>
   </div>
 </template>
 
@@ -90,12 +125,13 @@ import {
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useAssistantStore } from '../stores/assistant.js';
 import {
-  getNotReverted, getReason, getRevertFailure, getRevertStatus, getTitle, showDocument
+  getLiveReason, getNotReverted, getReason, getRevertFailure, getRevertStatus,
+  getStillLive, getTitle, showDocument
 } from '../lib/revert.js';
 
 // A done revert where its requests were: what it says it did, then the
-// documents it did not put back, until dismissed. Retry runs it again for
-// the locked ones, with its progress here
+// documents it did not put back and those still live as published, until
+// dismissed. Retry runs it again for the locked ones, with its progress here
 const props = defineProps({
   revert: {
     type: Object,
@@ -132,6 +168,7 @@ const listed = computed(() => getNotReverted(props.revert));
 const listTitle = computed(() => $t(listed.value.some(doc => doc.partly)
   ? 'apostrophe:assistantRevertNotFully'
   : 'apostrophe:assistantRevertNotReverted', { count: listed.value.length }));
+const live = computed(() => getStillLive(props.revert));
 
 function retry() {
   store.retryRevert(props.revert.chatId, props.revert._id);

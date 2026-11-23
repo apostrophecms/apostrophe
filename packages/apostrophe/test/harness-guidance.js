@@ -2,7 +2,8 @@ const assert = require('assert').strict;
 const t = require('../test-lib/test.js');
 
 // Guidance: the instructions both doors send, in their fixed order, and the
-// `aiWhen` and `aiHow` of types, field types and fields.
+// `aiWhen` and `aiHow` of types, field types and fields, with a type's own
+// procedure for each door (`aiHowAssistant`, `aiHowMcp`).
 
 describe('Harness: guidance and language', function () {
   this.timeout(t.timeout);
@@ -64,7 +65,14 @@ describe('Harness: guidance and language', function () {
         'guide-event': {
           extend: '@apostrophecms/piece-type',
           options: {
-            aiHow: 'Give every event a start date.'
+            aiHow: 'Give every event a start date.',
+            aiHowAssistant: 'Show the event on the page once it is written.'
+          }
+        },
+        'guide-menu': {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            aiHowMcp: 'Read the dishes before the prices.'
           }
         },
         'guide-secret': {
@@ -109,7 +117,7 @@ describe('Harness: guidance and language', function () {
   }
 
   function doorReq(door) {
-    return apos.harness.withDoor(userReq(), {
+    return apos.aposHarness.withDoor(userReq(), {
       door,
       lockId: `lock-${door}`,
       requestId: `request-${door}`
@@ -140,7 +148,7 @@ describe('Harness: guidance and language', function () {
 
   describe('the instructions', function () {
     it('should assemble the slots in their fixed order', function () {
-      const instructions = apos.harness.getInstructions(doorReq('assistant'), [
+      const instructions = apos.aposHarness.getInstructions(doorReq('assistant'), [
         'The editor is on /about.',
         '  ',
         'The plan: one step left.'
@@ -151,11 +159,16 @@ describe('Harness: guidance and language', function () {
       assert.match(baseLines[0], /^You work on the content of this ApostropheCMS site/);
       assert(base.includes('never by id'));
       assert(base.includes('"notice"'));
+      // One locale: nothing about copies in other locales
+      assert(!base.includes('localize_document'));
+      assert(!apos.ai.getTool('create_page').description.includes('localize_document'));
       assert.match(baseLines.at(-1), /^Reply in the language the user writes in.+ English, without remarking on it\.$/);
       assert.equal(site, 'Write in a warm, plain tone.');
       assert.deepEqual(types.split('\n'), [
         'When to use each type. A type marked "(aiHow)" has rules for working with it: ' +
           'read them with get_guidance first.',
+        // Core's own guidance
+        '@apostrophecms/layout (aiHow)',
         'guide-article: Guides and how-tos. (aiHow)',
         'guide-banner: A banner at the top of a landing page.',
         'guide-event (aiHow)',
@@ -166,16 +179,16 @@ describe('Harness: guidance and language', function () {
     });
 
     it('should give the site\'s part on its own, as the instructions carry it', function () {
-      const site = apos.harness.getSiteInstructions(userReq());
+      const site = apos.aposHarness.getSiteInstructions(userReq());
 
       assert.match(site, /^Write in a warm, plain tone\.\n\nWhen to use each type\./);
       assert.doesNotMatch(site, /You work on the content/);
-      assert(apos.harness.getInstructions(userReq()).includes(`\n\n${site}`));
+      assert(apos.aposHarness.getInstructions(userReq()).includes(`\n\n${site}`));
     });
 
     it('should send every type\'s aiWhen through either door', function () {
       for (const req of [ doorReq('assistant'), doorReq('mcp'), userReq() ]) {
-        const instructions = apos.harness.getInstructions(req);
+        const instructions = apos.aposHarness.getInstructions(req);
 
         assert(instructions.includes('\nguide-banner: A banner at the top of a landing page.\n'));
         assert(instructions.endsWith('\nguide-page: A landing page for a campaign.'));
@@ -183,13 +196,16 @@ describe('Harness: guidance and language', function () {
     });
 
     it('should only mark a type\'s aiHow, which get_guidance gives', async function () {
-      const instructions = apos.harness.getInstructions(userReq());
+      const instructions = apos.aposHarness.getInstructions(userReq());
       const { input } = apos.ai.getTool('get_guidance');
 
       assert.equal(instructions.includes('Give every event a start date.'), false);
       assert.equal(instructions.includes('Open with what the reader'), false);
       assert.equal(instructions.includes('guide-secret'), false);
-      assert.deepEqual(input.properties.types.items.enum, [ 'guide-article', 'guide-event' ]);
+      // One definition for both doors: every type with guidance for either
+      assert.deepEqual(input.properties.types.items.enum, [
+        '@apostrophecms/layout', 'guide-article', 'guide-event', 'guide-menu'
+      ]);
       assert.deepEqual(await run('get_guidance', { types: [ 'guide-event' ] }), {
         guidance: [ {
           type: 'guide-event',
@@ -198,25 +214,74 @@ describe('Harness: guidance and language', function () {
       });
     });
 
-    it('should print with their size for developers', async function () {
+    it('should give a type\'s guidance for both doors, then the door\'s own', async function () {
+      const read = async (door, type) => {
+        const { guidance } = await run('get_guidance', { types: [ type ] }, doorReq(door));
+        return guidance[0].aiHow;
+      };
+
+      assert.equal(
+        await read('assistant', 'guide-event'),
+        'Give every event a start date.\n\nShow the event on the page once it is written.'
+      );
+      assert.equal(await read('mcp', 'guide-event'), 'Give every event a start date.');
+      assert.equal(await read('mcp', 'guide-menu'), 'Read the dishes before the prices.');
+      assert.equal(await read('assistant', 'guide-menu'), null);
+      assert.equal(
+        (await run('get_guidance', { types: [ 'guide-event' ] })).guidance[0].aiHow,
+        'Give every event a start date.'
+      );
+    });
+
+    it('should mark a type only for the doors it has guidance for', function () {
+      const assistant = apos.aposHarness.getInstructions(doorReq('assistant'));
+      const mcp = apos.aposHarness.getInstructions(doorReq('mcp'));
+      const plain = apos.aposHarness.getInstructions(userReq());
+
+      for (const instructions of [ assistant, mcp, plain ]) {
+        assert(instructions.includes('\nguide-event (aiHow)\n'));
+        assert.equal(instructions.includes('Show the event on the page'), false);
+      }
+      assert(mcp.includes('\nguide-menu (aiHow)\n'));
+      assert.equal(assistant.includes('guide-menu'), false);
+      assert.equal(plain.includes('guide-menu'), false);
+    });
+
+    it('should print each door\'s with their size for developers', async function () {
       const printed = await captureLog(() => apos.task.invoke(
         '@apostrophecms/harness:print-instructions'
       ));
-      const instructions = apos.harness.getInstructions(apos.task.getReq());
+      const printedMcp = await captureLog(() => apos.task.invoke(
+        '@apostrophecms/harness:print-instructions',
+        { door: 'mcp' }
+      ));
+      const [ assistant, mcp ] = [ 'assistant', 'mcp' ].map(door => {
+        const instructions = apos.aposHarness.getInstructions(apos.aposHarness.withDoor(
+          apos.task.getReq(),
+          {
+            door,
+            lockId: 'print-instructions',
+            requestId: 'print-instructions'
+          }
+        ));
+        return `# ${door}: ${instructions.length} characters, before the door's own ` +
+          `sections\n\n${instructions}`;
+      });
 
-      assert.equal(
-        printed,
-        `# Instructions: ${instructions.length} characters, before each door's own sections\n\n` +
-          instructions
-      );
-      assert(printed.includes('\nguide-page: A landing page for a campaign.'));
+      assert.equal(printed, `${assistant}\n\n${mcp}`);
+      assert.equal(printedMcp, mcp);
+      assert(mcp.includes('\nguide-menu (aiHow)\n'));
+      await assert.rejects(apos.task.invoke(
+        '@apostrophecms/harness:print-instructions',
+        { door: 'other' }
+      ), { name: 'invalid' });
     });
 
     it('should name the admin UI language for a message with none of its own', function () {
       const req = userReq({ locale: 'en' });
       req.user.adminLocale = 'fr';
 
-      const instructions = apos.harness.getInstructions(req);
+      const instructions = apos.aposHarness.getInstructions(req);
 
       assert.match(
         instructions,
@@ -343,6 +408,14 @@ describe('Harness: guidance and language', function () {
           }
         }
       }, /"bad-guide" module's aiHow option must be a string/);
+      await failsToBoot({
+        'bad-guide': {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            aiHowMcp: { steps: [ 'Read first.' ] }
+          }
+        }
+      }, /"bad-guide" module's aiHowMcp option must be a string/);
     });
 
     it('should refuse a field\'s or field type\'s aiHow that is not a string', async function () {

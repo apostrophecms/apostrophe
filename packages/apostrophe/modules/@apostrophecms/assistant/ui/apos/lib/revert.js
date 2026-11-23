@@ -22,6 +22,10 @@ export function getConfirmLines(documents, $t) {
   const lines = [];
   const of = test => documents.filter(test);
   add('apostrophe:assistantRevertPutBack', of(doc => doc.outcome === 'putBack'));
+  // Live as published: what the assistant published, then what someone
+  // published with changes the revert puts back
+  add('apostrophe:assistantRevertPublished', of(doc => doc.published), {}, true);
+  add('apostrophe:assistantRevertLive', of(doc => doc.live && !doc.published), {}, true);
   for (const outcome of [ 'deleted', 'archived' ]) {
     const removed = of(doc => doc.outcome === outcome);
     add(
@@ -46,7 +50,8 @@ export function getConfirmLines(documents, $t) {
   } else {
     add('apostrophe:assistantRevertLockedElsewhere', locked, {}, true);
   }
-  add('apostrophe:assistantRevertAlready', of(doc => doc.outcome === 'reverted'));
+  // A document the assistant only published has its own line above
+  add('apostrophe:assistantRevertAlready', of(doc => (doc.outcome === 'reverted') && !doc.published));
   return lines;
 
   function add(key, list, params = {}, named = false) {
@@ -113,6 +118,31 @@ export function getRevertFailure(revert, $t) {
  */
 export function getNotReverted(revert) {
   return (revert.documents || []).filter(doc => NOT_REVERTED.includes(doc.outcome));
+}
+
+/**
+ * The documents a done revert left live as published: what the assistant
+ * published, which a revert never takes back, and what someone published
+ * with changes the revert put back in the draft.
+ *
+ * @param {object} revert
+ * @returns {object[]}
+ */
+export function getStillLive(revert) {
+  return (revert.documents || []).filter(doc => doc.published || doc.live);
+}
+
+/**
+ * Why a document is still live as published, in the editor's words.
+ *
+ * @param {object} doc
+ * @param {Function} $t
+ * @returns {string}
+ */
+export function getLiveReason(doc, $t) {
+  return $t(doc.published
+    ? 'apostrophe:assistantRevertReasonPublishedByAssistant'
+    : 'apostrophe:assistantRevertReasonLiveChanges');
 }
 
 /**

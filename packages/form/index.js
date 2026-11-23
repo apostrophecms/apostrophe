@@ -427,13 +427,24 @@ module.exports = {
             (typeof data[form.emailConfirmationField] !== 'string' ||
               !re.test(data[form.emailConfirmationField]))
           ) {
-            await self.apos.notify(req, 'aposForm:errorEmailConfirm', {
-              type: 'warning',
-              icon: 'alert-circle-icon',
-              interpolate: {
-                field: form.emailConfirmationField
-              }
-            });
+            if (req.user) {
+              await self.apos.notify(req, 'aposForm:errorEmailConfirm', {
+                type: 'warning',
+                icon: 'alert-circle-icon',
+                interpolate: {
+                  field: form.emailConfirmationField
+                }
+              });
+            } else {
+              self.logWarn(
+                req,
+                'confirmation-email-invalid',
+                req.t('aposForm:errorEmailConfirm', {
+                  field: form.emailConfirmationField
+                }),
+                { formId: form._id }
+              );
+            }
             return null;
           }
 

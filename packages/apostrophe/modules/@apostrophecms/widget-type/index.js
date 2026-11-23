@@ -146,7 +146,9 @@
 // you to crop or resize the image.
 //
 // See the `widgetOperations` configuration of the image widget module
-// for an example use of widget operations with "standard" placement.
+// for an example use of widget operations with "standard" placement. A
+// module can add an operation to every widget type with
+// `apos.area.addWidgetOperation`.
 //
 // Widget operations can be restricted to users with a given permission,
 // and can be made to appear only when certain conditions are met,
@@ -200,9 +202,10 @@
 // must be an array of widgets, each replacing the selected widget with the
 // same `_id`, as one undo step.
 // - With `action`, for one widget, the action is emitted on `apos.bus` with
-// `{ widgetId, index }`, plus `widgetIds: [ widgetId ]` when `multiple` is
-// true. For a multiple selection it is emitted once with `{ widgetIds }`,
-// in document order.
+// `{ name, widgetId, index }`, plus `widgetIds: [ widgetId ]` when
+// `multiple` is true. For a multiple selection it is emitted once with
+// `{ name, widgetIds }`, in document order. `name` is the operation's, so
+// operations may share one action.
 
 const _ = require('lodash');
 
@@ -882,8 +885,12 @@ module.exports = {
         }
       },
 
+      // The type's own operations, then those added to every widget type
+      // (`apos.area.addWidgetOperation`) that the type doesn't override
       getAllowedWidgetOperations(req) {
-        return self.widgetOperations.filter(({ permission }) => {
+        const shared = self.apos.area.widgetOperations
+          .filter(({ name }) => !self.widgetOperations.some(own => own.name === name));
+        return [ ...self.widgetOperations, ...shared ].filter(({ permission }) => {
           if (permission?.action && permission?.type) {
             return self.apos.permission.can(req, permission.action, permission.type);
           }

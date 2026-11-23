@@ -30,13 +30,22 @@
       />
     </template>
     <template #main>
-      <div class="apos-assistant__body">
+      <div
+        class="apos-assistant__body"
+        @dragenter="onDragOver"
+        @dragover="onDragOver"
+        @dragleave="onDragLeave"
+        @drop="onDrop"
+      >
         <AposAssistantTabs />
         <AposAssistantThread
           :key="store.activeId"
           :chat-id="store.activeId"
         />
-        <AposAssistantComposer :chat-id="store.activeId" />
+        <AposAssistantComposer
+          :chat-id="store.activeId"
+          :dropping="dropping"
+        />
       </div>
     </template>
   </AposModal>
@@ -49,10 +58,16 @@ import { useAssistantStore } from '../stores/assistant.js';
 // The assistant's window: above the page and every modal, never taking
 // focus from them. Everything it shows is the stored records with the
 // editor's actions not answered yet shown over them (the store)
-defineProps({
+const props = defineProps({
   modalData: {
     type: Object,
     required: true
+  },
+  // Opened again by the page after the assistant moved to another one, not
+  // by the editor: focus stays on the page
+  resumed: {
+    type: Boolean,
+    default: false
   }
 });
 defineEmits([ 'modal-result', 'safe-close' ]);
@@ -65,6 +80,8 @@ const MARGIN = 16;
 const MIN_HEIGHT = 360;
 
 const store = useAssistantStore();
+// Files are dragged over the window and the active chat tab takes them
+const dropping = ref(false);
 
 const modal = ref({
   active: false,
@@ -87,10 +104,47 @@ store.start();
 
 onMounted(() => {
   modal.value.active = true;
+  if (!props.resumed) {
+    store.focusComposer();
+  }
 });
 
 function close() {
   modal.value.showModal = false;
+}
+
+// Files dropped anywhere on the window attach to the active chat tab;
+// text and links are left to the composer's input. Files are never left to
+// the browser, which would open them in place of the page
+function onDragOver(event) {
+  if (!hasFiles(event)) {
+    return;
+  }
+  event.preventDefault();
+  const allowed = store.canAttach(store.activeId);
+  event.dataTransfer.dropEffect = allowed ? 'copy' : 'none';
+  dropping.value = allowed;
+}
+
+function onDragLeave(event) {
+  if (!event.currentTarget.contains(event.relatedTarget)) {
+    dropping.value = false;
+  }
+}
+
+function onDrop(event) {
+  if (!hasFiles(event)) {
+    return;
+  }
+  event.preventDefault();
+  dropping.value = false;
+  if (store.canAttach(store.activeId)) {
+    store.attachFiles(store.activeId, [ ...event.dataTransfer.files ]);
+  }
+}
+
+function hasFiles(event) {
+  return Boolean(event.dataTransfer?.types?.includes('Files'));
 }
 
 function getSize() {

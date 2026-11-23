@@ -589,6 +589,43 @@ describe('Job module', function() {
       }
     });
 
+    it('run: results the database refuses end the job as failed, without them', async function() {
+      const req = apos.task.getReq();
+      const { updateOne } = jobModule.db;
+      // As a document past the database's size limit is refused
+      jobModule.db.updateOne = function(criteria, update, ...rest) {
+        if (update.$set?.results !== undefined) {
+          return Promise.reject(new Error('document too large'));
+        }
+        return updateOne.call(this, criteria, update, ...rest);
+      };
+
+      try {
+        const { jobId } = await jobModule.run(req, async function(req, reporting) {
+          reporting.setResults({ huge: true });
+        });
+        const job = await waitForEnded(jobId);
+
+        const actual = {
+          status: job.status,
+          results: job.results ?? null,
+          error: job.error
+        };
+        const expected = {
+          status: 'failed',
+          results: null,
+          error: {
+            name: 'error',
+            message: 'The job\'s results could not be stored: document too large'
+          }
+        };
+
+        assert.deepEqual(actual, expected);
+      } finally {
+        jobModule.db.updateOne = updateOne;
+      }
+    });
+
     it('run: notifications: false skips the legacy messages wiring', async function() {
       const req = apos.task.getReq({
         body: {

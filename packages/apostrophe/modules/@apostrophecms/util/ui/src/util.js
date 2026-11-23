@@ -157,25 +157,46 @@ export default () => {
   // onReadyAndRefresh will be deprecated in the next major version.
 
   apos.util.onReadyAndRefresh = function(fn) {
-    onReady(fn);
-    // Allow Apostrophe to create the bus first
-    setTimeout(function() {
-      apos.bus && apos.bus.$on('refreshed', fn);
-    }, 0);
-    function onReady(fn) {
-      if (document.readyState !== 'loading') {
-        setTimeout(fn, 0);
-      } else if (document.addEventListener) {
-        document.addEventListener('DOMContentLoaded', fn);
-      } else {
-        document.attachEvent('onreadystatechange', function() {
-          if (document.readyState !== 'loading') {
-            fn();
-          }
-        });
-      }
-    }
+    onDomReady(fn);
+    onBusReady(function() {
+      apos.bus.$on('refreshed', fn);
+    });
   };
+
+  function onDomReady(fn) {
+    if (document.readyState !== 'loading') {
+      setTimeout(fn, 0);
+    } else if (document.addEventListener) {
+      document.addEventListener('DOMContentLoaded', fn);
+    } else {
+      document.attachEvent('onreadystatechange', function() {
+        if (document.readyState !== 'loading') {
+          fn();
+        }
+      });
+    }
+  }
+
+  // Call fn once apos.bus exists. The admin UI bundle creates the bus, and in
+  // release builds it can run after this code, even after a zero timer. All
+  // module scripts have run by DOMContentLoaded, so try again then and at
+  // window load. If there is still no bus, there is no admin UI and nothing
+  // can emit "refreshed".
+  function onBusReady(fn) {
+    let done = false;
+    function attempt() {
+      if (done || !apos.bus) {
+        return;
+      }
+      done = true;
+      fn();
+    }
+    setTimeout(attempt, 0);
+    if ((document.readyState !== 'complete') && window.addEventListener) {
+      document.addEventListener('DOMContentLoaded', attempt);
+      window.addEventListener('load', attempt);
+    }
+  }
 
   // Alias for onReadyAndRefresh, the recommended way to use and document this
   // functionality
@@ -228,7 +249,7 @@ export default () => {
   // when the page is partially refreshed by the editor.
 
   if (!apos.bus) {
-    apos.util.onReady(function () {
+    onDomReady(function () {
       widgetPlayersConfig.initialized = true;
       apos.util.runPlayers();
     });

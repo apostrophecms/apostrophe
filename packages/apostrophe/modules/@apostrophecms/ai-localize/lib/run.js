@@ -8,6 +8,7 @@
 //   and a pair with none is up to date without spending a model call;
 //   otherwise the AI brings over what changed, keeping work done in the
 //   target locale alone
+// - the copy is open in another editor: the pair fails, naming who has it
 // The AI pass is a plain `apos.ai.generate` agent loop over the
 // `ai-localize` tools, bound to that pair (see lib/tools.js). A pass counts
 // as a localization only when the model declares it finished; the record is
@@ -122,16 +123,24 @@ module.exports = (self) => {
               signal: controller.signal
             });
           } catch (e) {
-            self.logError(req, 'pair-failed', e.message, {
-              docId: pair.docId,
-              locale: pair.locale,
-              stack: e.stack
-            });
+            // A copy open in another editor is no fault
+            if (e.name !== 'locked') {
+              self.logError(req, 'pair-failed', e.message, {
+                docId: pair.docId,
+                locale: pair.locale,
+                stack: e.stack
+              });
+            }
+            const holder = !e.data?.me && (e.data?.title || e.data?.username);
             outcome = {
               status: 'failed',
               message: e.data?.parentNotLocalized
                 ? req.t('apostrophe:parentNotLocalized')
-                : e.message
+                : (e.name !== 'locked')
+                  ? e.message
+                  : holder
+                    ? req.t('apostrophe:aiLocalizeLockedBy', { name: holder })
+                    : req.t('apostrophe:aiLocalizeLocked')
             };
           }
           outcomes.push({
@@ -198,22 +207,10 @@ module.exports = (self) => {
       const existed = Boolean(target) && !untranslated;
       if (!target || overwrite || untranslated) {
         // The copy is the starting point of a translation, not a
-        // localization in itself: core's record is suppressed, and a "copy"
-        // marker says the target is untranslated until the pass finishes
-        await manager.localize(
-          draftReq.clone({ aposAiLocalizeCopy: true }),
-          source,
-          pair.locale,
-          { update: Boolean(target) }
-        );
-        target = await self.storedDraft(targetId);
-        await self.insertRecord(req, {
-          aposDocId: source.aposDocId,
-          from: draftReq.locale,
-          to: pair.locale,
-          via: 'copy',
-          source: await self.storedDraft(source._id),
-          target
+        // localization in itself: a "copy" record says the target is
+        // untranslated until the pass finishes
+        target = await self.localizeUntranslated(req, source, pair.locale, {
+          update: Boolean(target)
         });
         mode = existed ? 'replace' : 'new';
       }
@@ -244,6 +241,13 @@ module.exports = (self) => {
             ...await self.targetLink(req, targetId, pair.locale)
           };
         }
+        // No model is asked to change a copy that can't be written now, one
+        // another editor has open: the write path refuses it here, as it
+        // would each write of the pass
+        await self.apos.aposHarness.writeDraft(
+          await self.apos.aposHarness.findDraft(req, targetId),
+          () => {}
+        );
       }
       // What the dialog says while the pass works and once it is done
       const known = {

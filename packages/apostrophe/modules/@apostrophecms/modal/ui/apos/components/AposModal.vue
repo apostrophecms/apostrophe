@@ -11,7 +11,8 @@
       :class="classes"
       role="dialog"
       :aria-modal="modal.overlay === 'none' ? null : 'true'"
-      :aria-labelledby="props.modalData.id"
+      :aria-labelledby="titleLabel ? null : props.modalData.id"
+      :aria-label="titleLabel"
       data-apos-modal
       :data-apos-graph-key="props.graphKey || undefined"
       :data-apos-stacking="modal.stacking || undefined"
@@ -177,7 +178,7 @@
 // transition.
 
 import {
-  ref, onMounted, onUnmounted, computed, watch, nextTick, useSlots, useTemplateRef
+  ref, onMounted, onUnmounted, computed, watch, nextTick, useSlots, useTemplateRef, inject
 } from 'vue';
 import { useAposFocus, focusableSelector } from 'Modules/@apostrophecms/modal/composables/AposFocus';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
@@ -385,10 +386,11 @@ const transitionType = computed(() => {
   return 'slide-left';
 });
 
-// A window above every modal never takes focus from the modal under it
+// A window above every modal never takes focus from the modal under it,
+// unless it asks to, as a viewer over everything does
 const shouldTrapFocus = computed(() => {
   if (props.modal.stacking === 'top') {
-    return false;
+    return props.modal.trapFocus === true;
   }
   return props.modal.trapFocus || props.modal.trapFocus === undefined;
 });
@@ -400,6 +402,14 @@ watch(shouldTrapFocus, trapsFocus => {
 const triggerFocusRefresh = computed(() => {
   return props.modal.triggerFocusRefresh;
 });
+
+const $t = inject('i18n');
+
+// A modal without a header has no heading to be named by: its title, when
+// it has one, names it
+const titleLabel = computed(() => ((props.modal.disableHeader && props.modalTitle)
+  ? $t(props.modalTitle)
+  : null));
 
 const hasBeenLocalized = computed(() => {
   return Object.keys(apos.i18n.locales).length > 1;
@@ -775,7 +785,8 @@ defineExpose({
     }
   }
 
-  .apos-modal--stacking-top .apos-modal__inner {
+  .apos-modal--stacking-top .apos-modal__inner,
+  .apos-modal--stacking-top .apos-modal__overlay {
     z-index: $z-index-window-top;
   }
 

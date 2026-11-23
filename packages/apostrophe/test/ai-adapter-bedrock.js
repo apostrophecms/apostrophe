@@ -238,10 +238,13 @@ describe('AI adapter: bedrock', function() {
       assert.deepEqual(Object.keys(definition.models), [
         'claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5'
       ]);
-      assert.deepEqual(
-        definition.models['claude-opus-5-5'],
-        vendor.models['claude-opus-5-5']
-      );
+      // Bedrock's own document limits replace the vendor's
+      assert.deepEqual(definition.models['claude-opus-5-5'], {
+        ...vendor.models['claude-opus-5-5'],
+        maxDocumentPages: 100,
+        maxDocumentBytes: 20000000
+      });
+      assert.equal(definition.capabilities.documentInput, true);
     });
 
     it('lists only the served models in the catalog, plus an entry\'s own', function() {
@@ -377,6 +380,30 @@ describe('AI adapter: bedrock', function() {
         assert.deepEqual(call.options.body.output_config, { effort: 'medium' });
       });
 
+      it('sends a document part as the vendor dialect\'s document block', async function() {
+        httpScript = [ () => fixture() ];
+        await apos.ai.generate(apos.task.getReq(), {
+          messages: [ {
+            role: 'user',
+            content: [ {
+              type: 'document',
+              document: {
+                data: 'JVBERi0=',
+                mediaType: 'application/pdf'
+              }
+            }, text('summarize') ]
+          } ]
+        });
+        assert.deepEqual(httpCalls[0].options.body.messages[0].content[0], {
+          type: 'document',
+          source: {
+            type: 'base64',
+            media_type: 'application/pdf',
+            data: 'JVBERi0='
+          }
+        });
+      });
+
       it('reports the catalog id, whatever the response echoes', async function() {
         httpScript = [ () => fixture({ model: 'us.anthropic.claude-sonnet-5-5' }) ];
         const result = await apos.ai.generate(apos.task.getReq(), 'p');
@@ -475,10 +502,11 @@ describe('AI adapter: bedrock', function() {
       assert.deepEqual(Object.keys(definition.models), [
         'gpt-6-luna', 'gpt-6.1-sol', 'gpt-6-astra', 'gpt-5.6-terra'
       ]);
-      assert.deepEqual(
-        definition.models['gpt-6.1-sol'],
-        vendor.models['gpt-6.1-sol']
-      );
+      // Bedrock documents no document limits for these models
+      const { maxDocumentBytes, ...meta } = vendor.models['gpt-6.1-sol'];
+      assert.equal(maxDocumentBytes, 50000000);
+      assert.deepEqual(definition.models['gpt-6.1-sol'], meta);
+      assert.equal(definition.capabilities.documentInput, true);
     });
 
     it('lists only the served chat models in the catalog', function() {

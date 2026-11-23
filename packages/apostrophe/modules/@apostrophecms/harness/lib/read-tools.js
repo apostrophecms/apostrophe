@@ -121,7 +121,7 @@ module.exports = (self) => {
       name: 'list_types',
       label: 'apostrophe:aiToolListTypes',
       description: 'The page, piece and widget types with their labels; for doc types, ' +
-        'how they go live ("drafts": an editor publishes, "autopublish": live on save, ' +
+        'how they go live ("drafts": live once published, "autopublish": live on save, ' +
         '"noDrafts": always live), and for piece types the slugs of the pages listing them.',
       input: {
         type: 'object',
@@ -174,9 +174,11 @@ module.exports = (self) => {
       label: 'apostrophe:aiToolGetGuidance',
       description: 'How to use types the instructions mark "(aiHow)": their guidance, ' +
         'to read before working with them.',
+      // One definition for every door: the types with guidance for any
       input: () => {
         const types = self.getTypeNames()
-          .filter(type => self.getTypeOptions(type).aiHow?.trim());
+          .filter(type => self.getDoorNames()
+            .some(door => self.getTypeGuidance(type, door)));
         return {
           type: 'object',
           properties: {

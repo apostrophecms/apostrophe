@@ -153,6 +153,7 @@
 
 <script>
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
+import AposOutsideMixin from 'Modules/@apostrophecms/modal/mixins/AposOutsideMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
@@ -476,7 +477,7 @@ export default {
     getOutsideField(name) {
       return (name === 'attachment')
         ? null
-        : AposEditorMixin.methods.getOutsideField.call(this, name);
+        : AposOutsideMixin.methods.getOutsideField.call(this, name);
     },
     getOutsideRoot() {
       return this.isOutsideReady()

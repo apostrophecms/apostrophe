@@ -48,7 +48,8 @@
       :aria-label="actionLabel"
       data-apos-test="assistant-chip-action"
       @click="emit('action', $event)"
-    >{{ title }}</button>
+      v-text="title"
+    />
     <span
       v-else
       class="apos-assistant-chip__title"
