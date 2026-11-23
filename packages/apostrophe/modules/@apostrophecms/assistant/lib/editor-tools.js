@@ -268,7 +268,7 @@ module.exports = (self) => {
           additionalProperties: false
         },
         async handler(req, { steps }) {
-          const { requestId, chat } = self.apos.harness.getDoor(req);
+          const { requestId, chat } = self.apos.aposHarness.getDoor(req);
           const request = {
             _id: requestId,
             chatId: chat,
@@ -348,20 +348,28 @@ module.exports = (self) => {
 
     /**
      * Turns the editor's answer to a `confirm` ask, `{ approved }`, into the
-     * input of the tool or of the gate that asked.
+     * input of the tool or of the gate that asked. A gate's alternative is
+     * answered `{ approved: false, alternative }`: declined, with that
+     * alternative's message for the model.
      *
      * @param {object} req
      * @param {object} ask The stored ask.
-     * @param {object} answer `{ approved }`.
+     * @param {object} answer `{ approved, alternative? }`.
      * @returns {object}
      */
     acceptConfirmAnswer(req, ask, answer) {
       if (typeof answer?.approved !== 'boolean') {
         throw self.apos.error('invalid', 'a confirmation is answered approved or not');
       }
+      const alternative = (answer.alternative !== undefined) &&
+        ask.payload.gate?.alternatives?.find(({ name }) => name === answer.alternative);
+      if ((answer.alternative !== undefined) && (answer.approved || !alternative)) {
+        throw self.apos.error('invalid', 'no such alternative');
+      }
       return {
         ...(ask.payload.gate && { gate: true }),
-        approved: answer.approved
+        approved: answer.approved,
+        ...(alternative && { message: alternative.message })
       };
     }
   };

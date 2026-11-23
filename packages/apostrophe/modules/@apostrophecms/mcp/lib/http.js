@@ -59,14 +59,23 @@ module.exports = (self) => {
     },
 
     // One server per request, as the SDK's handler asks. Named for the site,
-    // so that a client connected to several sites can tell them apart
+    // so that a client connected to several sites can tell them apart. The
+    // instructions are read through the `mcp` door, so a type's guidance
+    // for MCP alone (`aiHowMcp`) counts; nothing is written on that request,
+    // so one id serves as its lock and request ids
     createServer(req) {
+      const id = self.apos.util.generateId();
+      const doorReq = self.apos.aposHarness.withDoor(req, {
+        door: 'mcp',
+        lockId: id,
+        requestId: id
+      });
       const server = new McpServer({
         name: self.apos.shortName,
         title: self.options.title || self.apos.shortName,
         version
       }, {
-        instructions: self.apos.harness.getInstructions(req),
+        instructions: self.apos.aposHarness.getInstructions(doorReq),
         // The list depends on the user's locale (titles), so no shared
         // caches
         cacheHints: { 'tools/list': { cacheScope: 'private' } }

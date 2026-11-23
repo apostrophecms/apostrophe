@@ -6,7 +6,8 @@
   "scripts": {
     "lint": "npm run eslint",
     "eslint": "eslint .",
-    "test": "npm run lint"
+    "mocha": "mocha",
+    "test": "npm run lint && npm run mocha"
   },
   "repository": {
     "type": "git",
@@ -23,7 +24,9 @@
     "dayjs": "^1.11.23"
   },
   "devDependencies": {
+    "apostrophe": "workspace:^",
     "eslint": "^9.39.5",
-    "eslint-config-apostrophe": "workspace:^"
+    "eslint-config-apostrophe": "workspace:^",
+    "mocha": "^12.0.3"
   }
 }

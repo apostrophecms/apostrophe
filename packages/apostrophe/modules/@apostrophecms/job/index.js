@@ -167,7 +167,7 @@ module.exports = {
           // and job document always report it, even if processing finishes fast.
           await self.setTotal(job, ids.length);
           // Runs after response is already sent
-          run();
+          run().catch(e => self.logError('end-error', e.message, { jobId: job._id }));
 
           // Trigger the "in progress" notification.
           notification = notifications && await self.triggerNotification(req, 'progress', {
@@ -293,7 +293,7 @@ module.exports = {
           run({
             notificationId: notification && notification.noteId,
             jobId: job._id
-          });
+          }).catch(e => self.logError('end-error', e.message, { jobId: job._id }));
 
           return {
             jobId: job._id
@@ -619,6 +619,9 @@ module.exports = {
       // If `error` is present it is recorded on the job document:
       // an `Error` instance is reduced to `{ name, message, data? }`
       // (already-serializable payloads are stored as given).
+      //
+      // Results the database refuses to store end the job as `failed`,
+      // without them and with the reason as its error.
       async end(job, success, results, error) {
         // context object gets an update to avoid a
         // race condition with checkStopped
@@ -639,15 +642,29 @@ module.exports = {
         const status = success
           ? (current && current.cancelRequested ? 'canceled' : 'completed')
           : 'failed';
-        return self.db.updateOne({ _id: job._id }, {
-          $set: {
-            ended: true,
-            endedAt: new Date(),
-            status,
-            results,
-            ...(error !== undefined && { error: serializeError(error) })
-          }
-        });
+        try {
+          return await write(status, results, error);
+        } catch (e) {
+          // Results the database can't store (too large a document) never
+          // leave the job running: it ends as failed, without them
+          self.logError('end-error', e.message, { jobId: job._id });
+          return write('failed', undefined, {
+            name: 'error',
+            message: `The job's results could not be stored: ${e.message}`
+          });
+        }
+
+        function write(status, results, error) {
+          return self.db.updateOne({ _id: job._id }, {
+            $set: {
+              ended: true,
+              endedAt: new Date(),
+              status,
+              results,
+              ...(error !== undefined && { error: serializeError(error) })
+            }
+          });
+        }
 
         function serializeError(error) {
           if (error instanceof Error) {

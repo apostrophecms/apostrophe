@@ -9,6 +9,14 @@
       :class="modifiers"
     >
       <div
+        class="apos-sr-only"
+        aria-live="polite"
+        aria-atomic="true"
+        data-apos-test="styles-announcement"
+      >
+        {{ outsideAnnouncement }}
+      </div>
+      <div
         class="apos-styles__top"
         @mousedown="startDragging"
       >
@@ -52,11 +60,13 @@
           <AposStylesBody
             v-if="current"
             :key="current.label"
+            ref="body"
             :class="{'apos-styles__body--slide-back': slideBack}"
             :current="current"
             :current-path="currentPath"
             :field-value="fieldValue"
             :inline-value="inlineValue"
+            :outside-states="outsideStates"
             @update-data="updateDocFields($event)"
             @navigate-right="navigateRight"
           />
@@ -87,6 +97,8 @@
 // Replace the backend imports to import
 // from `../path-to/@apostrophecms/ui/apos/schema/universal/check-if-conditions.mjs`.
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
+import AposOutsideMixin from 'Modules/@apostrophecms/modal/mixins/AposOutsideMixin';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { renderGlobalStyles as renderCss } from 'Modules/@apostrophecms/styles/render-factory.js';
 import { klona } from 'klona';
 import breakpointPreviewTransformer from 'postcss-viewport-to-container-toggle/standalone.js';
@@ -95,7 +107,10 @@ import { ref } from 'vue';
 
 export default {
   name: 'TheAposStyles',
-  mixins: [ AposThemeMixin ],
+  // Values from outside, such as the assistant's, come through the `outside`
+  // handle (see `AposOutsideMixin`): written into the fields held in memory
+  // and rendered as the editor's own changes are
+  mixins: [ AposThemeMixin, AposOutsideMixin ],
   setup() {
     const size = ref({
       height: 0,
@@ -209,6 +224,9 @@ export default {
   async mounted() {
     await this.load();
     this.prepareBodyClasses();
+    if (this.docFields.data.type) {
+      useModalStore().setStandaloneEditor(this.docFields.data.type, this.openFor);
+    }
 
     apos.bus.$on('admin-menu-height-changed', this.setPosition);
     apos.bus.$on('admin-menu-click', async (itemName) => {
@@ -223,12 +241,8 @@ export default {
       }
     });
 
-    apos.bus.$on('content-changed', async e => {
-      if (e.doc && e.doc.type === this.docFields.data.type) {
-        await this.get();
-        await this.render();
-      }
-    });
+    apos.bus.$on('content-changed', this.onContentChanged);
+    apos.bus.$on('content-change-settled', this.onContentChangeSettled);
 
     apos.bus.$on('refreshed', async () => {
       await this.load();
@@ -298,7 +312,8 @@ export default {
       this.ready = true;
       await this.render();
     },
-    toggleOpen() {
+    // `saved` when closing: whether the values were saved
+    toggleOpen({ saved = false } = {}) {
       document.body.classList.toggle('apos-styles-is-open');
       this.isOpen = !this.isOpen;
       // To remove when we support confirmation modal
@@ -316,6 +331,69 @@ export default {
         }
         removeEventListener('resize', this.positionOnResize);
       }
+      this.reportWindow(saved);
+    },
+    // Opened as the editor of a Global Styles document, such as by the
+    // assistant: the window edits the page's locale only
+    openFor({ _id }) {
+      // The window has no read-only mode
+      if (!this.docFields.data._edit) {
+        return { reason: 'the user can\'t edit Global Styles' };
+      }
+      if (!this.isOwnId(_id, this.docFields.data.aposDocId)) {
+        return { reason: 'the Global Styles window edits the locale of the page shown only' };
+      }
+      if (!this.isOpen) {
+        this.toggleOpen();
+      }
+      return { id: this.outside.id };
+    },
+    // While open, the window is on the screen as the editor of its document
+    reportWindow(saved) {
+      const store = useModalStore();
+      if (!this.isOpen || !this.docFields.data._id) {
+        store.removeStandaloneWindow(this.outside.id, saved);
+        return;
+      }
+      store.addStandaloneWindow({
+        id: this.outside.id,
+        screen: {
+          kind: 'editor',
+          docId: this.docFields.data._id,
+          docType: this.docFields.data.type
+        },
+        outside: this.outside
+      });
+    },
+    // Another save of Global Styles, announced with the document, its type
+    // or its id: reloaded and rendered for this page's locale
+    async onContentChanged(e = {}) {
+      const { type, aposDocId } = this.docFields.data;
+      const named = (e.doc && (e.doc.type === type) && this.isPageLocale(e.doc._id)) ||
+        e.docTypes?.includes(type) ||
+        e.docIds?.some(_id => this.isOwnId(_id, aposDocId));
+      if (named) {
+        await this.reload();
+      }
+    },
+    // A write from outside the window settled, such as a revert
+    async onContentChangeSettled({ docId, written } = {}) {
+      if (written && this.isOwnId(docId, this.docFields.data.aposDocId)) {
+        await this.reload();
+      }
+    },
+    isOwnId(_id, aposDocId) {
+      return Boolean(aposDocId) && (typeof _id === 'string') &&
+        (_id.split(':')[0] === aposDocId) && this.isPageLocale(_id);
+    },
+    // An id naming no locale is the page's
+    isPageLocale(_id) {
+      const locale = (typeof _id === 'string') && _id.split(':')[1];
+      return !locale || (locale === apos.i18n.locale);
+    },
+    async reload() {
+      await this.get();
+      await this.render();
     },
     positionOnResize() {
       this.resetSize();
@@ -358,6 +436,30 @@ export default {
         ? this.schema.filter(field => group.fields.includes(field.name))
         : [];
     },
+    getFieldValue(name) {
+      return this.docFields.data[name];
+    },
+    isOutsideReady() {
+      return this.ready;
+    },
+    getOutsideRoot() {
+      return this.ready
+        ? {
+          kind: 'document',
+          data: { ...this.docFields.data },
+          locale: this.getOutsideLocale()
+        }
+        : null;
+    },
+    // One group shows at a time: a value goes into the fields held in
+    // memory, and into the input when its group shows
+    canWriteOutside() {
+      return true;
+    },
+    writeOutsideValue(field, value) {
+      this.updateDocFields({ data: { [field.name]: value } });
+      this.$refs.body?.getSchema(field.name)?.applyOutsideValue(field.name, value);
+    },
     getSchemaData(schema) {
       const data = schema.reduce((acc, field) => {
         acc[field.name] = this.docFields.data[field.name];
@@ -378,6 +480,7 @@ export default {
         ...this.docFields.data,
         ...value.data
       };
+      this.dropTouchedOutside();
       await this.render();
     },
     // Render the current data by updating the stylesheet
@@ -403,7 +506,10 @@ export default {
         this.ssrTimeout = null;
         this.ssrBusy = true;
         try {
+          // In the mode the values were read in: the server reads their
+          // relationships by the draft ids they carry
           const { css, classes } = await apos.http.post(`${this.moduleOptions.action}/render`, {
+            draft: true,
             body: {
               data: this.docFields.data
             }
@@ -474,11 +580,16 @@ export default {
     async save() {
       try {
         const route = `${this.moduleOptions.action}/${this.docFields.data._id}`;
+        const outside = this.getOutsideSave();
         const updatedDoc = await apos.http.put(route, {
-          body: this.docFields.data
+          body: {
+            ...this.docFields.data,
+            ...(outside && { _outside: outside })
+          }
         });
         this.docFields.data = updatedDoc;
-        this.toggleOpen();
+        this.clearOutside();
+        this.toggleOpen({ saved: true });
         setTimeout(() => {
           this.currentPath = [];
         }, 300);
@@ -490,6 +601,7 @@ export default {
     async cancel() {
       await this.get();
       await this.render();
+      this.clearOutside();
       this.toggleOpen();
       setTimeout(() => {
         this.currentPath = [];

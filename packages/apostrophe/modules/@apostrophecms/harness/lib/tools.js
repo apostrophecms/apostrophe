@@ -2,15 +2,19 @@
 
 // The tags each door selects, and those it refuses whatever else a tool
 // carries: `content` is the one tag both doors share, a browser tool never
-// reaches the MCP server and an MCP tool never reaches the assistant
+// reaches the MCP server and an MCP tool never reaches the assistant. A
+// type's `aiHow` is for both doors; `howOption` names the type option
+// holding the door's own procedure for it
 const DOORS = {
   assistant: {
     tags: [ 'content', 'assistant' ],
-    refuse: [ 'mcp' ]
+    refuse: [ 'mcp' ],
+    howOption: 'aiHowAssistant'
   },
   mcp: {
     tags: [ 'content', 'mcp' ],
-    refuse: [ 'assistant', 'browser' ]
+    refuse: [ 'assistant', 'browser' ],
+    howOption: 'aiHowMcp'
   }
 };
 
@@ -66,3 +70,5 @@ module.exports = (self) => {
     }
   };
 };
+
+module.exports.DOORS = DOORS;

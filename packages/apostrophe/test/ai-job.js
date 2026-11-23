@@ -227,6 +227,34 @@ describe('AI generateJob', function() {
     assert.equal(job.expireAt instanceof Date, true);
   });
 
+  it('jobResults decides what the record keeps; onEnd gets the result as it is', async function() {
+    const req = apos.task.getReq();
+    let ended = null;
+    chatScript = [
+      toolTurn(toolCall('c1', 'echo')),
+      textTurn('all done')
+    ];
+
+    const { jobId } = await apos.ai.generateJob(req, 'find it', {
+      tools: [ 'echo' ],
+      jobResults: (result) => ({
+        text: result.text,
+        turns: result.messages.length
+      }),
+      onEnd(error, result) {
+        ended = error || result;
+      }
+    });
+    const job = await waitForJob(jobId);
+
+    assert.equal(job.status, 'completed');
+    assert.deepEqual(job.results, {
+      text: 'all done',
+      turns: ended.messages.length
+    });
+    assert.equal(ended.messages.at(-1).role, 'assistant');
+  });
+
   it('a suspended run ends the job complete with the input finish reason', async function() {
     const req = apos.task.getReq({ user: { _id: 'owner1' } });
     chatScript = [
@@ -878,6 +906,10 @@ describe('AI generateJob', function() {
     await invalid(
       apos.ai.generateJob(req, 'x', { onEnd: 'call me' }),
       /"onEnd" must be a function/
+    );
+    await invalid(
+      apos.ai.generateJob(req, 'x', { jobResults: 'none' }),
+      /"jobResults" must be a function/
     );
     await invalid(
       apos.ai.generateJob(req, 'x', { expireAfter: -1 }),

@@ -46,8 +46,6 @@ module.exports = self => {
           self.apos.attachment.all([ piece ], { annotate: true });
         }
 
-        req.res.setHeader('Content-Type', 'text/css');
-
         return self.getStylesheet(piece);
       }
     }

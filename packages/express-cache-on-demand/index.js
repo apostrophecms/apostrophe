@@ -2,6 +2,8 @@ const _ = require('lodash');
 const cacheOnDemand = require('cache-on-demand');
 
 module.exports = expressCacheOnDemand;
+// The default hasher, for custom hashers that build on it
+expressCacheOnDemand.expressHasher = expressHasher;
 
 // `logger` is any console-shaped object; this package has no framework context
 // of its own, so the host application decides where its diagnostics go.

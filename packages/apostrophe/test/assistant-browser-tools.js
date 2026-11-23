@@ -70,7 +70,7 @@ describe('Assistant: browser tools', function () {
         },
         'assistant-test-tools': {
           init(self) {
-            self.apos.assistant.addBrowserTool({
+            self.apos.aposAssistant.addBrowserTool({
               name: 't_show',
               description: 'Shows things.',
               screenEffect: 'changes',
@@ -166,15 +166,15 @@ describe('Assistant: browser tools', function () {
       assert.deepEqual(tool.tags, [ 'assistant', 'browser' ]);
       assert.equal(tool.kind, 'action');
     }
-    const assistant = apos.harness.getDoorTools('assistant').map(tool => tool.name);
-    const mcp = apos.harness.getDoorTools('mcp').map(tool => tool.name);
+    const assistant = apos.aposHarness.getDoorTools('assistant').map(tool => tool.name);
+    const mcp = apos.aposHarness.getDoorTools('mcp').map(tool => tool.name);
     assert(names.every(name => assistant.includes(name)));
     assert(names.every(name => !mcp.includes(name)));
   });
 
   it('suspends the run with a browser ask, the call prepared on the server', async function () {
     const req = userReq(editor);
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     script = sequence([ toolTurn('t_show', { what: 'the hero' }) ]);
     const waiting = await runToEnd(req, chat, 'Show me the hero');
     assert.equal(waiting.status, 'waiting');
@@ -196,12 +196,12 @@ describe('Assistant: browser tools', function () {
         }
       }
     } ]);
-    await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+    await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
   });
 
   it('refuses a call its preparation refuses, with the reason the model reads', async function () {
     const req = userReq(editor);
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     script = sequence([ toolTurn('t_show', { what: 'nothing' }), { text: 'Nothing.' } ]);
     const done = await runToEnd(req, chat, 'Show me nothing');
     assert.equal(done.status, 'completed');
@@ -211,7 +211,7 @@ describe('Assistant: browser tools', function () {
 
   it('continues with the browser\'s answer and the screen after it, which becomes the request\'s', async function () {
     const req = userReq(editor);
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     script = sequence([
       toolTurn('t_show', { what: 'the hero' }),
       toolTurn('t_where'),
@@ -225,7 +225,7 @@ describe('Assistant: browser tools', function () {
       ...frenchReq.user,
       adminLocale: 'en'
     };
-    await apos.assistant.answer(frenchReq, chat._id, {
+    await apos.aposAssistant.answer(frenchReq, chat._id, {
       tabId: 'tab-1',
       callId: 'call-t_show',
       answer: {
@@ -262,7 +262,7 @@ describe('Assistant: browser tools', function () {
 
   it('refuses a malformed answer and keeps the ask waiting', async function () {
     const req = userReq(editor);
-    const chat = await apos.assistant.createChat(req);
+    const chat = await apos.aposAssistant.createChat(req);
     script = sequence([ toolTurn('t_show', { what: 'the hero' }), { text: 'Shown.' } ]);
     await runToEnd(req, chat, 'Show me the hero');
     const screen = { tabId: 'tab-1' };
@@ -285,15 +285,15 @@ describe('Assistant: browser tools', function () {
       [ { executed: true }, { tabId: 'tab-2' } ]
     ];
     for (const [ value, posted ] of refused) {
-      await assert.rejects(apos.assistant.answer(req, chat._id, {
+      await assert.rejects(apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-t_show',
         answer: value,
         screen: posted
       }), { name: 'invalid' });
     }
-    assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest.status, 'waiting');
-    await apos.assistant.answer(req, chat._id, {
+    assert.equal((await apos.aposAssistant.getChat(req, chat._id)).openRequest.status, 'waiting');
+    await apos.aposAssistant.answer(req, chat._id, {
       tabId: 'tab-1',
       callId: 'call-t_show',
       answer: {
@@ -335,10 +335,10 @@ describe('Assistant: browser tools', function () {
       ];
       for (const [ name, input, expected ] of calls) {
         const req = userReq(editor);
-        const chat = await apos.assistant.createChat(req);
+        const chat = await apos.aposAssistant.createChat(req);
         gate = newGate();
         script = sequence([ toolTurn('t_wait'), toolTurn(name, input), { text: 'Later.' } ]);
-        await apos.assistant.send(req, chat._id, {
+        await apos.aposAssistant.send(req, chat._id, {
           message: `Call ${name}`,
           screen: {
             tabId: 'tab-1',
@@ -347,7 +347,7 @@ describe('Assistant: browser tools', function () {
         });
         await waitFor(() => gate.started);
         // The editor moves to another browser tab while the run reads
-        await apos.assistant.setVisible(req, {
+        await apos.aposAssistant.setVisible(req, {
           tabId: 'tab-1',
           visible: false
         });
@@ -369,19 +369,19 @@ describe('Assistant: browser tools', function () {
 
     it('takes a late answer after hiding, and the hidden answer the ask carries', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([
         toolTurn('t_show', { what: 'the hero' }),
         toolTurn('read_screen'),
         { text: 'Done.' }
       ]);
       await runToEnd(req, chat, 'Show me the hero');
-      await apos.assistant.setVisible(req, {
+      await apos.aposAssistant.setVisible(req, {
         tabId: 'tab-1',
         visible: false
       });
       // An executor already running finishes and answers late
-      await apos.assistant.answer(req, chat._id, {
+      await apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-t_show',
         answer: {
@@ -411,11 +411,11 @@ describe('Assistant: browser tools', function () {
 
       // An ask that reaches the browser tab after it went hidden: it answers
       // what the server would
-      const other = await apos.assistant.createChat(req);
+      const other = await apos.aposAssistant.createChat(req);
       script = sequence([ toolTurn('t_show', { what: 'the hero' }), { text: 'Later.' } ]);
       const waiting = await runToEnd(req, other, 'Show me the hero again');
       assert.equal(waiting.status, 'waiting');
-      await apos.assistant.answer(req, other._id, {
+      await apos.aposAssistant.answer(req, other._id, {
         tabId: 'tab-1',
         callId: 'call-t_show',
         answer: waiting.asks[0].payload.whenHidden,
@@ -437,16 +437,16 @@ describe('Assistant: browser tools', function () {
 
     it('gives the browser tab\'s other open requests the new screen with their next tool result', async function () {
       const req = userReq(editor);
-      const shows = await apos.assistant.createChat(req);
-      const reads = await apos.assistant.createChat(req);
-      const elsewhere = await apos.assistant.createChat(req);
+      const shows = await apos.aposAssistant.createChat(req);
+      const reads = await apos.aposAssistant.createChat(req);
+      const elsewhere = await apos.aposAssistant.createChat(req);
       const turns = {
         [shows._id]: [ toolTurn('t_show', { what: 'the hero' }), { text: 'Shown.' } ],
         [reads._id]: [ toolTurn('t_wait'), toolTurn('t_where'), { text: 'Read.' } ],
         [elsewhere._id]: [ toolTurn('t_show', { what: 'the footer' }) ]
       };
-      script = req => turns[apos.harness.getDoor(req).chat].shift() || { text: 'Done.' };
-      await apos.assistant.send(req, reads._id, {
+      script = req => turns[apos.aposHarness.getDoor(req).chat].shift() || { text: 'Done.' };
+      await apos.aposAssistant.send(req, reads._id, {
         message: 'Read things',
         screen: {
           tabId: 'tab-1',
@@ -457,7 +457,7 @@ describe('Assistant: browser tools', function () {
       await runToEnd(req, shows, 'Show me the hero');
       await runToEnd(req, elsewhere, 'Show me the footer', 'tab-2');
 
-      await apos.assistant.answer(req, shows._id, {
+      await apos.aposAssistant.answer(req, shows._id, {
         tabId: 'tab-1',
         callId: 'call-t_show',
         answer: {
@@ -470,11 +470,11 @@ describe('Assistant: browser tools', function () {
         }
       });
       await waitForEnd(req, shows);
-      const [ reading ] = await apos.assistant.getChatRequests(req, reads._id);
+      const [ reading ] = await apos.aposAssistant.getChatRequests(req, reads._id);
       assert.equal(reading.screen.url, '/hero');
       assert.equal(reading.screenChanged, true);
       // A request of another browser tab keeps its own
-      const [ other ] = await apos.assistant.getChatRequests(req, elsewhere._id);
+      const [ other ] = await apos.aposAssistant.getChatRequests(req, elsewhere._id);
       assert.equal(other.screen.url, null);
       assert.equal(other.screenChanged, undefined);
 
@@ -492,12 +492,12 @@ describe('Assistant: browser tools', function () {
       // Once
       assert.deepEqual(resultOf(done, 'call-t_where').output, { locale: 'en' });
       assert.equal(done.screenChanged, undefined);
-      await apos.assistant.skip(req, elsewhere._id, { tabId: 'tab-2' });
+      await apos.aposAssistant.skip(req, elsewhere._id, { tabId: 'tab-2' });
     });
 
     it('stops a request waiting on a browser ask, from any browser tab', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       // A browser ask and an action after it, which never starts
       script = sequence([ {
         content: [
@@ -522,7 +522,7 @@ describe('Assistant: browser tools', function () {
       } ]);
       const waiting = await runToEnd(req, chat, 'Show me the hero');
       assert.equal(waiting.status, 'waiting');
-      const stopped = await apos.assistant.stop(req, chat._id);
+      const stopped = await apos.aposAssistant.stop(req, chat._id);
       assert.equal(stopped.status, 'stopped');
       assert.equal(stopped.asks, null);
       assert.deepEqual(stopped.messages.at(-1).content.map(part => part.output), [
@@ -532,9 +532,9 @@ describe('Assistant: browser tools', function () {
           reason: 'stopped'
         }
       ]);
-      assert.equal((await apos.assistant.getChat(req, chat._id)).openRequest, null);
+      assert.equal((await apos.aposAssistant.getChat(req, chat._id)).openRequest, null);
       // The browser tab's late answer finds nothing waiting
-      await assert.rejects(apos.assistant.answer(req, chat._id, {
+      await assert.rejects(apos.aposAssistant.answer(req, chat._id, {
         tabId: 'tab-1',
         callId: 'call-t_show',
         answer: { executed: true },
@@ -605,7 +605,7 @@ describe('Assistant: browser tools', function () {
 
     it('asks read_screen of the browser, keeping the screen', async function () {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ toolTurn('read_screen') ]);
       const waiting = await runToEnd(req, chat, 'Where am I?');
       assert.deepEqual(waiting.asks[0].payload, {
@@ -614,24 +614,24 @@ describe('Assistant: browser tools', function () {
         args: {},
         whenHidden: { executed: true }
       });
-      await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+      await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
     });
 
     // The arguments the browser receives for one call of `name`
     async function askOf(name, input) {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ toolTurn(name, input) ]);
       const waiting = await runToEnd(req, chat, `Call ${name}`);
       assert.equal(waiting.status, 'waiting', JSON.stringify(waiting.messages.at(-1)));
-      await apos.assistant.skip(req, chat._id, { tabId: 'tab-1' });
+      await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
       return waiting.asks[0].payload.args;
     }
 
     // The error the model reads for one call of `name`
     async function refusalOf(name, input) {
       const req = userReq(editor);
-      const chat = await apos.assistant.createChat(req);
+      const chat = await apos.aposAssistant.createChat(req);
       script = sequence([ toolTurn(name, input), { text: 'Refused.' } ]);
       const done = await runToEnd(req, chat, `Call ${name}`);
       assert.equal(done.status, 'completed');
@@ -648,7 +648,7 @@ describe('Assistant: browser tools', function () {
   }
 
   async function runToEnd(req, chat, message, tabId = 'tab-1') {
-    await apos.assistant.send(req, chat._id, {
+    await apos.aposAssistant.send(req, chat._id, {
       message,
       screen: { tabId }
     });
@@ -660,9 +660,9 @@ describe('Assistant: browser tools', function () {
   async function waitForEnd(req, chat) {
     let request;
     await waitFor(async () => {
-      const requests = await apos.assistant.getChatRequests(req, chat._id);
+      const requests = await apos.aposAssistant.getChatRequests(req, chat._id);
       request = requests.at(-1);
-      const open = (await apos.assistant.getChat(req, chat._id)).openRequest;
+      const open = (await apos.aposAssistant.getChat(req, chat._id)).openRequest;
       const job = request?.jobId &&
         await apos.modules['@apostrophecms/job'].db.findOne({ _id: request.jobId });
       return request && (request.status !== 'running') &&

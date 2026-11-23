@@ -239,6 +239,83 @@ describe('AI adapter: openai', function() {
       ]);
     });
 
+    it('translates a document part to an input_file, with a filename either way', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'user',
+          content: [
+            text('summarize these'),
+            {
+              type: 'document',
+              document: {
+                data: 'JVBERi0=',
+                mediaType: 'application/pdf',
+                name: 'brief.pdf'
+              }
+            },
+            {
+              type: 'document',
+              document: {
+                data: 'JVBERi0=',
+                mediaType: 'application/pdf'
+              }
+            }
+          ]
+        } ]
+      }));
+      assert.deepEqual(body.input[0].content.slice(1), [
+        {
+          type: 'input_file',
+          filename: 'brief.pdf',
+          file_data: 'data:application/pdf;base64,JVBERi0='
+        },
+        {
+          type: 'input_file',
+          filename: 'document.pdf',
+          file_data: 'data:application/pdf;base64,JVBERi0='
+        }
+      ]);
+    });
+
+    it('sends any other type as it is, a nameless one as "document"', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'user',
+          content: [ 'text/csv', 'application/x-unlisted' ].map((mediaType) => ({
+            type: 'document',
+            document: {
+              data: 'YSxi',
+              mediaType
+            }
+          }))
+        } ]
+      }));
+      assert.deepEqual(body.input[0].content, [
+        {
+          type: 'input_file',
+          filename: 'document',
+          file_data: 'data:text/csv;base64,YSxi'
+        },
+        {
+          type: 'input_file',
+          filename: 'document',
+          file_data: 'data:application/x-unlisted;base64,YSxi'
+        }
+      ]);
+    });
+
+    it('declares document input and its byte limit on the chat models', function() {
+      const { capabilities, models } = apos.ai.getAdapter('openai');
+      assert.equal(capabilities.documentInput, true);
+      for (const id of [ 'gpt-6-luna', 'gpt-6.1-sol', 'gpt-6-astra', 'gpt-5.6-terra' ]) {
+        assert.equal(models[id].maxDocumentBytes, 50000000);
+        assert.equal(models[id].maxDocumentPages, undefined);
+      }
+      const info = apos.ai.modelInfo();
+      assert.equal(info.maxDocumentBytes, 50000000);
+      assert.equal('maxDocumentPages' in info, false);
+    });
+
     it('sends reasoning as the effort object', function() {
       assert.equal(adapter.buildBody(request()).reasoning, undefined);
       assert.deepEqual(

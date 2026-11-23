@@ -35,7 +35,7 @@ describe('MCP: tools', function () {
     describe(`with a ${mode === 'auto' ? '2026-07-28' : '2025-era'} client`, function () {
       it('lists the door\'s tools', async function () {
         const { tools } = await withClient(apos, mode, client => client.listTools());
-        const expected = apos.harness.getDoorTools('mcp')
+        const expected = apos.aposHarness.getDoorTools('mcp')
           .filter(tool => tool.kind !== 'agent')
           .map(tool => tool.name);
         assert.deepEqual(tools.map(tool => tool.name), expected);
@@ -50,8 +50,8 @@ describe('MCP: tools', function () {
       it('never lists a tool that runs Apostrophe\'s AI, whatever its tags', async function () {
         const { tools } = await withClient(apos, mode, client => client.listTools());
         assert(!tools.some(tool => tool.name === 'content_agent'));
-        assert(apos.harness.getDoorTools('mcp').some(tool => tool.name === 'content_agent'));
-        assert(apos.harness.getDoorTools('assistant').some(tool => tool.name === 'content_agent'));
+        assert(apos.aposHarness.getDoorTools('mcp').some(tool => tool.name === 'content_agent'));
+        assert(apos.aposHarness.getDoorTools('assistant').some(tool => tool.name === 'content_agent'));
       });
 
       it('describes each tool as the engine holds it', async function () {
@@ -162,9 +162,9 @@ describe('MCP: tools', function () {
 
   it('ends each call\'s door request', async function () {
     const ended = [];
-    const endRequest = apos.harness.endRequest;
-    apos.harness.endRequest = async (req) => {
-      ended.push(apos.harness.getDoor(req).requestId);
+    const endRequest = apos.aposHarness.endRequest;
+    apos.aposHarness.endRequest = async (req) => {
+      ended.push(apos.aposHarness.getDoor(req).requestId);
       return endRequest(req);
     };
     try {
@@ -173,7 +173,7 @@ describe('MCP: tools', function () {
       assert.equal(ended.length, 2);
       assert.equal(ended[0], ok.structuredContent.door.requestId);
     } finally {
-      apos.harness.endRequest = endRequest;
+      apos.aposHarness.endRequest = endRequest;
     }
   });
 });
@@ -219,7 +219,7 @@ function addTestTools(apos) {
     handler: async (req, { text }) => ({
       text,
       username: req.user?.username,
-      door: apos.harness.getDoor(req),
+      door: apos.aposHarness.getDoor(req),
       toolCallId: req.aposAiToolCall?.id
     })
   });
