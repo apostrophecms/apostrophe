@@ -17,7 +17,11 @@ module.exports = {
     // How many documents each connection remembers for the stale-write
     // guard: the most recently read or written. A write to a document it no
     // longer remembers isn't checked (see lib/seen.js)
-    seenLimit: 100
+    seenLimit: 100,
+    // Whether an outside AI tool may publish, as far as the connected user
+    // may. `false` keeps the publishing tools off this server alone: the
+    // assistant keeps them
+    publish: true
     // allowedOrigins: the hostnames a browser-sent `Origin` header may name.
     //   Requests with no `Origin` (every non-browser client) always pass.
     //   Defaults to the hostname of `baseUrl`, or localhost when unset.
@@ -104,10 +108,13 @@ module.exports = {
 
       validateOptions() {
         const {
-          enabled, allowedOrigins, title, seenLimit
+          enabled, allowedOrigins, title, seenLimit, publish
         } = self.options;
         if (typeof enabled !== 'boolean') {
           throw new Error('The "@apostrophecms/mcp" module\'s enabled option must be a boolean.');
+        }
+        if (typeof publish !== 'boolean') {
+          throw new Error('The "@apostrophecms/mcp" module\'s publish option must be a boolean.');
         }
         if (!(Number.isSafeInteger(seenLimit) && (seenLimit > 0))) {
           throw new Error('The "@apostrophecms/mcp" module\'s seenLimit option must be a positive whole number.');
