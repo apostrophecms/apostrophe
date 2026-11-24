@@ -480,7 +480,6 @@ describe('Notification delivery', function() {
           ...(pageStart && { pageStart: pageStart.toISOString() }),
           ...(cursor.at && {
             modifiedOnOrSince: cursor.at,
-            seenIds: held.filter(([ , at ]) => at === cursor.at).map(([ id ]) => id),
             seen: Object.fromEntries(held.map(([ id, at ]) => [ id, Date.parse(at) ]))
           })
         };
@@ -650,24 +649,21 @@ describe('Notification delivery', function() {
     });
   });
 
-  it('answers a poll that sends only the ids seen at the newest time as before', async function() {
+  it('answers a poll without the list with only what is newer', async function() {
     // The poll of an earlier browser bundle
     const at = new Date(Date.now() - 10000);
-    const poll = async (seenIds) => {
+    const poll = async () => {
       const { notifications } = await apos.http.get(url, {
         jar,
-        qs: {
-          modifiedOnOrSince: at.toISOString(),
-          seenIds
-        }
+        qs: { modifiedOnOrSince: at.toISOString() }
       });
       return notifications.map(({ _id }) => _id);
     };
     await insert('first', at);
-    await insert('second', at);
-    assert.deepEqual(await poll([ 'first' ]), [ 'second' ]);
+    await insert('later', new Date(at.getTime() + 1));
+    assert.deepEqual(await poll(), [ 'later' ]);
     await insert('earlier', new Date(at.getTime() - 1));
-    assert.deepEqual(await poll([ 'first', 'second' ]), []);
+    assert.deepEqual(await poll(), [ 'later' ]);
   });
 
   it('delivers every carrier exactly once while several instances write at once', async function() {

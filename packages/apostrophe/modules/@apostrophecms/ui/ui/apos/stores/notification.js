@@ -102,8 +102,6 @@ export const useNotificationStore = defineStore('notification', () => {
           pageStart: apos.notification.pageStart,
           ...(cursor.at && {
             modifiedOnOrSince: cursor.at,
-            // For a server from before `seen`, while a deployment rolls out
-            seenIds: held.filter(([ , at ]) => at === cursor.at).map(([ id ]) => id),
             seen: Object.fromEntries(held.map(([ id, at ]) => [ id, Date.parse(at) ]))
           })
         };

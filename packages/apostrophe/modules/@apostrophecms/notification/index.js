@@ -86,9 +86,8 @@ module.exports = {
     // notification written by another process can become visible late,
     // with a time earlier than one the client has already seen.
     //
-    // A client that sends `seenIds` instead, the _ids of the notifications
-    // it has seen with exactly the `modifiedOnOrSince` time, is sent only
-    // what is newer, or as new and not among those.
+    // A client that sends no `seen` is sent only what was modified after
+    // `modifiedOnOrSince`.
     //
     // When `seen` is too long for a query string, the same request may be
     // sent as a POST with the query as the `__aposGetWithQuery` property
@@ -116,7 +115,6 @@ module.exports = {
         } catch (e) {
           throw self.apos.error('invalid');
         }
-        const seenIds = req.query.seenIds && self.apos.launder.ids(req.query.seenIds);
         const seen = launderSeen(req.query.seen);
         const tabId = self.apos.launder.string(req.query.tabId) || null;
         const pageStart = req.query.pageStart
@@ -140,7 +138,6 @@ module.exports = {
 
           const { notifications, dismissed } = await self.find(req, {
             modifiedOnOrSince,
-            seenIds,
             seen,
             tabId,
             pageStart
@@ -521,19 +518,17 @@ module.exports = {
       // Resolves with an object with `notifications` and `dismissed`
       // properties.
       //
-      // If `options.modifiedOnOrSince` is set, notifications modified
-      // after it are sent, and those modified exactly at it unless their
-      // IDs are in `options.seenIds`: several notifications may share a
-      // timestamp, and one seen at that time may be modified again (a
-      // dismissal, a progress update) while it is still the newest time.
-      // Without `seenIds`, only notifications modified after it are sent.
+      // If `options.modifiedOnOrSince` is set, only notifications modified
+      // after it are sent.
       //
-      // With `options.seen`, a Map of notification IDs to modification
-      // times in milliseconds, `seenIds` is ignored: everything modified
-      // no earlier than the `lookback` option before `modifiedOnOrSince`
-      // is sent, except what `seen` holds with that exact time. A write
-      // gets its time before it becomes visible, so a notification can
-      // show up below a time that was already read.
+      // With `options.seen` as well, a Map of notification IDs to
+      // modification times in milliseconds, everything modified no earlier
+      // than the `lookback` option before `modifiedOnOrSince` is sent,
+      // except what `seen` holds with that exact time. A write gets its
+      // time before it becomes visible, so a notification can show up
+      // below a time that was already read. Several notifications may
+      // share a time, and one may be modified again (a dismissal) while
+      // its time is still the newest: the exact time tells those apart.
       //
       // A notification triggered for one browser tab is sent only when
       // `options.tabId` names that tab. With `options.pageStart`, bus
@@ -565,17 +560,7 @@ module.exports = {
                 } ]
                 : []),
               ...(since && !options.seen
-                ? [ {
-                  $or: [
-                    { updatedAt: { $gt: since } },
-                    ...(options.seenIds?.length
-                      ? [ {
-                        updatedAt: since,
-                        _id: { $nin: options.seenIds }
-                      } ]
-                      : [])
-                  ]
-                } ]
+                ? [ { updatedAt: { $gt: since } } ]
                 : []),
               {
                 $or: [
