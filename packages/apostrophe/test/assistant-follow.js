@@ -1450,21 +1450,25 @@ describe('Assistant: following a request', function () {
       const base = `/api/v1/@apostrophecms/assistant/chat/${chat._id}`;
       const { requests } = await apos.http.get(base, { jar });
       const [ request ] = requests;
+      // A tool without a summary has none to show
       assert.deepEqual(request.steps, [
         {
           id: 'call-t_look',
           name: 't_look',
-          label: 'Looking around'
+          label: 'Looking around',
+          listed: false
         },
         {
           id: 'call-t_where',
           name: 't_where',
-          label: 'T Where'
+          label: 'T Where',
+          listed: false
         },
         {
           id: 'call-update_document',
           name: 'update_document',
-          label: 'apostrophe:aiToolUpdateDocument'
+          label: 'apostrophe:aiToolUpdateDocument',
+          listed: true
         }
       ]);
       const step = id => apos.http.get(`${base}/request/${request._id}/step/${id}`, { jar });

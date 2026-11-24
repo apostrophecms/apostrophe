@@ -41,6 +41,8 @@ module.exports = (self) => {
           'needs "other" or "youDecide" beside it. They may skip the whole set, which ' +
           'ends the request.',
         kind: 'action',
+        summary: ({ questions }) => questions
+          .map(({ question }) => ({ text: question })),
         tags: [ 'assistant' ],
         input: {
           type: 'object',
@@ -168,6 +170,7 @@ module.exports = (self) => {
           'first, every step pending, then ask here whether to go ahead with it; ' +
           'never put the plan in "details".',
         kind: 'action',
+        summary: ({ action }) => [ { text: action } ],
         tags: [ 'assistant' ],
         input: {
           type: 'object',
@@ -226,6 +229,7 @@ module.exports = (self) => {
           'the plan, so send every step each time, in order: one "active" while you work ' +
           'on it, "done" once finished. Send an empty list to drop the plan.',
         kind: 'action',
+        summary: ({ steps }) => steps.map(({ title }) => ({ text: title })),
         tags: [ 'assistant' ],
         input: {
           type: 'object',

@@ -21,7 +21,13 @@ module.exports = (self) => {
       },
       // Nobody changes the screen of a hidden browser tab: the stored one
       // is the screen as it is now
-      whenHidden: { executed: true }
+      whenHidden: { executed: true },
+      summary: (input, output) => [
+        output?.screen.document && {
+          ...output.screen.document,
+          action: 'lookedAtScreen'
+        }
+      ]
     },
     {
       name: 'navigate',
@@ -46,6 +52,16 @@ module.exports = (self) => {
         },
         additionalProperties: false
       },
+      summary: ({ _id, url }, output) => [
+        _id
+          ? done({ _id }, output, 'wentTo')
+          : (output?.executed
+            ? {
+              text: 'apostrophe:aiStepWentToUrl',
+              title: url
+            }
+            : { text: url })
+      ],
       async prepare(req, { _id, url }) {
         if (Boolean(_id) === Boolean(url)) {
           throw self.apos.error('aiToolError', 'give either "_id" or "url"');
@@ -104,6 +120,7 @@ module.exports = (self) => {
           }
         }
       },
+      summary: ({ _id }, output) => [ done({ _id }, output, 'openedEditor') ],
       async prepare(req, {
         _id, widgetId, until
       }) {
@@ -152,6 +169,12 @@ module.exports = (self) => {
           }
         }
       },
+      summary: ({ _id, widgetIds }, output) => [
+        done({
+          _id,
+          count: widgetIds.length
+        }, output, 'showedWidgets')
+      ],
       async prepare(req, { _id, widgetIds }) {
         const { doc, ids } = await findDoc(req, _id);
         const unknown = widgetIds.filter(widgetId => ids.get(widgetId) !== 'widget');
@@ -168,6 +191,16 @@ module.exports = (self) => {
     },
     self.getOpenEditorTool()
   ];
+
+  // A summary item, with what happened once the browser did it
+  function done(item, output, action) {
+    return output?.executed
+      ? {
+        ...item,
+        action
+      }
+      : item;
+  }
 
   async function findDoc(req, _id) {
     const found = await self.findScreenDoc(req, _id);

@@ -63,6 +63,21 @@ module.exports = (self) => {
           'Without "replaces" a new Media image is made: for "a version of" or "based ' +
           'on" an image. Ask the user when unclear.',
         kind: 'action',
+        // The image saved to Media, else what was asked for
+        summary: ({ prompt }, output) => (output?.written?.length
+          ? output.written.map(item => ({
+            _id: item._id,
+            title: item.title,
+            action: 'savedToMedia'
+          }))
+          : [
+            output?.answered
+              ? {
+                text: 'apostrophe:aiStepGeneratedImages',
+                title: prompt
+              }
+              : { text: prompt }
+          ]),
         tags: [ 'assistant' ],
         input: {
           type: 'object',

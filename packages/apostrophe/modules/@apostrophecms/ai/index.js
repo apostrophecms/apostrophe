@@ -188,6 +188,22 @@ module.exports = {
        * @property {string} [label] A human-facing name — what a chat log or an
        *   activity trail shows for the tool; may be an i18n key. Defaults from
        *   the name ('find_pages' → 'Find Pages'). Never sent to the model.
+       * @property {(input: object, output: object|null) => object[]} [summary]
+       *   What happened in a call, for a UI that shows it (the assistant's
+       *   steps); optional, and without it a UI shows no summary of the
+       *   call. Called with the arguments as the model gave them (unchecked
+       *   when the call was refused for them) and the result, `null` when the
+       *   call failed or hasn't returned. Returns a list of items:
+       *   - a document, `{ _id, title?, locale?, action? }` (a missing title
+       *     is read from the document);
+       *   - a type, `{ type, action? }`;
+       *   - text, `{ text, title?, type?, locale? }`: an i18n key or plain
+       *     text, translated with `title`, `type` and `locale` interpolated.
+       *   `action` names what happened to a document or type from the UI's
+       *   list (for the assistant, `ACTIONS` in `AposAssistantSteps.vue`),
+       *   with `count`, `reason` or `toLocale` where that action takes them;
+       *   an item without one the UI knows shows bare. Never sent to the
+       *   model.
        * @property {string[]} [tags] Strings to query the registry by, see
        *   getTools.
        * @property {'query'|'action'|'agent'} [kind] The tool's consequence

@@ -64,6 +64,7 @@ module.exports = (self) => {
         additionalProperties: false
       }),
       kind: 'action',
+      summary: wrote(() => 'created'),
       handler: handler('createPage')
     },
     {
@@ -88,6 +89,7 @@ module.exports = (self) => {
         additionalProperties: false
       }),
       kind: 'action',
+      summary: wrote(() => 'created'),
       handler: handler('createPiece')
     },
     {
@@ -122,6 +124,7 @@ module.exports = (self) => {
         additionalProperties: false
       },
       kind: 'action',
+      summary: wrote(() => 'edited'),
       handler: handler('updateDocument')
     },
     {
@@ -153,6 +156,8 @@ module.exports = (self) => {
         additionalProperties: false
       },
       kind: 'action',
+      summary: wrote(({ status }) => ((status === 'published') ? 'published' : 'alreadyLive'),
+        'published'),
       handler: handler('publishDocument')
     },
     {
@@ -187,6 +192,7 @@ module.exports = (self) => {
         additionalProperties: false
       }),
       kind: 'action',
+      summary: wrote(() => 'addedWidgets'),
       handler: handler('addWidgets')
     },
     {
@@ -206,6 +212,7 @@ module.exports = (self) => {
         additionalProperties: false
       },
       kind: 'action',
+      summary: wrote(() => 'movedWidgets'),
       handler: handler('moveWidgets')
     },
     {
@@ -229,6 +236,17 @@ module.exports = (self) => {
         additionalProperties: false
       },
       kind: 'action',
+      // The document copied from, then the one written
+      summary: (input, output) => [
+        {
+          _id: input.from,
+          ...(output && {
+            action: 'copiedWidgetsFrom',
+            count: input.widgets.length
+          })
+        },
+        ...wrote(() => 'copiedWidgetsInto')(input, output)
+      ],
       handler: handler('copyWidgets')
     },
     {
@@ -245,6 +263,7 @@ module.exports = (self) => {
         additionalProperties: false
       },
       kind: 'action',
+      summary: wrote(() => 'removedWidgets'),
       handler: handler('removeWidgets')
     }
   ];
@@ -269,3 +288,33 @@ module.exports = (self) => {
     });
   }
 };
+
+// A write's summary: each document written, under the action `getAction(item)`
+// names (the call's widget count with it), and each one refused with its
+// reason; the documents the call named when it failed. `key` is the
+// result's list of the documents written
+function wrote(getAction, key = 'written') {
+  return (input, output) => {
+    if (!output) {
+      return (Array.isArray(input.targets) ? input.targets : [ input ])
+        .map(target => ({ _id: target?._id }));
+    }
+    const count = Array.isArray(input.widgets) ? input.widgets.length : null;
+    return [
+      ...(output[key] || []).map(item => ({
+        _id: item._id,
+        title: item.title,
+        locale: item.locale,
+        action: getAction(item),
+        ...(count && { count })
+      })),
+      ...(output.refused || []).map(item => ({
+        _id: item._id,
+        title: item.title,
+        locale: item.locale,
+        action: 'refused',
+        reason: item.reason
+      }))
+    ];
+  };
+}

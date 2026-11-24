@@ -419,6 +419,7 @@ describe('AI tools', function() {
     it('panics on a bad result budget', async function() {
       await failsToBoot(minimal({ maxResultChars: 0 }), /"maxResultChars" must be a positive integer/);
       await failsToBoot(minimal({ maxResultChars: 'big' }), /"maxResultChars" must be a positive integer/);
+      await failsToBoot(minimal({ summary: [] }), /"summary" must be a function/);
     });
 
     it('panics on an unresolvable handler', async function() {

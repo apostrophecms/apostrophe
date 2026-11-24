@@ -73,6 +73,18 @@ module.exports = (self) => {
       }),
       maxResultChars: BUDGETS.search,
       kind: 'query',
+      summary: ({ query, type }) => [
+        query
+          ? {
+            text: type ? 'apostrophe:aiStepSearchedIn' : 'apostrophe:aiStepSearched',
+            title: query,
+            ...(type && { type })
+          }
+          : (type && {
+            type,
+            action: 'lookedThrough'
+          })
+      ],
       handler: handler('searchContent')
     },
     {
@@ -115,6 +127,7 @@ module.exports = (self) => {
       },
       maxResultChars: BUDGETS.document,
       kind: 'query',
+      summary: readOf(({ view }) => ((view === 'versions') ? 'readHistory' : 'read')),
       handler: handler('getDocument')
     },
     {
@@ -167,6 +180,10 @@ module.exports = (self) => {
       }),
       maxResultChars: BUDGETS.configuration,
       kind: 'query',
+      summary: ({ types }) => types.map(type => ({
+        type,
+        action: 'readFields'
+      })),
       handler: handler('getSchema')
     },
     {
@@ -198,6 +215,10 @@ module.exports = (self) => {
       },
       maxResultChars: BUDGETS.configuration,
       kind: 'query',
+      summary: ({ types }) => types.map(type => ({
+        type,
+        action: 'readGuidance'
+      })),
       handler: handler('getGuidance')
     },
     {
@@ -228,6 +249,15 @@ module.exports = (self) => {
       }),
       maxResultChars: BUDGETS.tree,
       kind: 'query',
+      // The page the tree starts at, read first
+      summary: ({ root }, output) => [
+        output?.pages[0]
+          ? {
+            ...output.pages[0],
+            action: 'readTree'
+          }
+          : (root?.startsWith('/') ? { text: root } : (root && { _id: root }))
+      ],
       handler: handler('getPageTree')
     },
     {
@@ -257,6 +287,7 @@ module.exports = (self) => {
       },
       maxResultChars: BUDGETS.references,
       kind: 'query',
+      summary: readOf(() => 'readUses'),
       handler: handler('findReferences')
     },
     {
@@ -289,9 +320,25 @@ module.exports = (self) => {
       },
       maxResultChars: BUDGETS.document,
       kind: 'query',
+      summary: readOf(() => 'readChanges'),
       handler: handler('getChanges')
     }
   ];
 };
+
+// A read's summary: the document it starts with, under the action
+// `getAction(input)` names; the document asked for when the read failed
+function readOf(getAction) {
+  return (input, output) => [
+    output
+      ? {
+        _id: output._id,
+        title: output.title,
+        locale: output.locale,
+        action: getAction(input)
+      }
+      : { _id: input._id }
+  ];
+}
 
 module.exports.BUDGETS = BUDGETS;

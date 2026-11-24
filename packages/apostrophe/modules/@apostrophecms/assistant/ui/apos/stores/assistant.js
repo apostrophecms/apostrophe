@@ -333,7 +333,7 @@ export const useAssistantStore = defineStore('assistant', () => {
     };
   }
 
-  // A stop on its way: the open request reads "Stopping…" until it ends,
+  // A stop on its way: the open request reads "Stopping..." until it ends,
   // and a cancelled plan reads cancelling
   function foldStop(view, { data }) {
     return changeOpen(view, [ 'running', 'waiting' ], request => ({
