@@ -13,7 +13,8 @@
 // adds, and never takes a door's name to get past a rule.
 
 const DOOR_KEYS = [
-  'door', 'lockId', 'family', 'chat', 'requestId', 'model', 'revert', 'seen', 'deferSeen'
+  'door', 'lockId', 'family', 'chat', 'requestId', 'model', 'revert', 'seen', 'deferSeen',
+  'askBeforeOverwrite'
 ];
 
 module.exports = (self) => {
@@ -43,6 +44,13 @@ module.exports = (self) => {
      * @param {boolean} [context.deferSeen] Reads are added only by
      *   `commitSeen`, for a door whose model calls tools in steps: a write
      *   of a read's own step was written from what the model read before.
+     * @param {boolean} [context.askBeforeOverwrite] A write refused because
+     *   the document was saved since the read always says who saved it.
+     *   With this, after another user's save the model is told to say what
+     *   they changed and write only if the user asks; after the same user's,
+     *   to read it again and build on it. For a door with no confirmation of
+     *   its own, such as MCP; without it, the refusal says to read the
+     *   document again before writing it.
      * @returns {object} The `req` clone.
      */
     withDoor(req, context) {
@@ -52,7 +60,8 @@ module.exports = (self) => {
         throw self.apos.error('invalid', `unknown door context keys: ${unknown.join(', ')}`);
       }
       const {
-        door, lockId, family, chat, requestId, model, revert, seen, deferSeen
+        door, lockId, family, chat, requestId, model, revert, seen, deferSeen,
+        askBeforeOverwrite
       } = context;
       for (const [ name, value ] of Object.entries({
         door,
@@ -84,6 +93,9 @@ module.exports = (self) => {
       if ((deferSeen !== undefined) && (typeof deferSeen !== 'boolean')) {
         throw self.apos.error('invalid', '"deferSeen" must be a boolean');
       }
+      if ((askBeforeOverwrite !== undefined) && (typeof askBeforeOverwrite !== 'boolean')) {
+        throw self.apos.error('invalid', '"askBeforeOverwrite" must be a boolean');
+      }
       if ((seen !== undefined) && !(seen instanceof Map)) {
         throw self.apos.error('invalid', '"seen" must be a Map');
       }
@@ -97,6 +109,7 @@ module.exports = (self) => {
           ...(family && { family }),
           ...(chat && { chat }),
           ...(revert && { revert }),
+          ...(askBeforeOverwrite && { askBeforeOverwrite }),
           ...(model && {
             model: {
               provider: model.provider,

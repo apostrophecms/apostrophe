@@ -30,7 +30,7 @@ describe('MCP: module and transport', function () {
     it('has no route', async function () {
       const response = await fetch(getUrl(apos));
       assert.equal(response.status, 404);
-      assert.equal(apos.mcp.httpHandler, undefined);
+      assert.equal(apos.modules['@apostrophecms/mcp'].httpHandler, undefined);
     });
   });
 
@@ -131,6 +131,7 @@ describe('MCP: module and transport', function () {
     it('refuses options of the wrong shape at startup', async function () {
       const cases = [
         [ { enabled: 'yes' }, /enabled option must be a boolean/ ],
+        [ { publish: 'yes' }, /publish option must be a boolean/ ],
         [ { allowedOrigins: 'example.com' }, /allowedOrigins option must be an array/ ],
         [ { allowedOrigins: [ '' ] }, /allowedOrigins option must be an array/ ]
       ];

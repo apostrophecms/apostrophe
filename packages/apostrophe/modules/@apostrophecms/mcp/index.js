@@ -1,31 +1,60 @@
-// This module provides `apos.mcp`, the site's MCP server: an outside AI
+// This module is the site's MCP server: an outside AI
 // tool (Claude, ChatGPT, an IDE) connects to it and works on the site's
 // content with the harness's tools, through the `mcp` door. The outside tool
 // brings its own model; this module never calls Apostrophe's AI.
 //
-// Off by default. Unless `enabled` is set it adds no routes. It serves one
-// HTTP route, `self.action`, for both the current MCP spec (2026-07-28) and
-// 2025-era clients, on the official TypeScript SDK.
+// Off by default. Unless `enabled` is set it adds no routes and no tools. It
+// serves one HTTP route, `self.action`, for both the current MCP spec
+// (2026-07-28) and 2025-era clients, on the official TypeScript SDK.
+//
+// The route is an OAuth protected resource: the user approves the outside
+// tool through `@apostrophecms/oauth`, which the route's registration turns
+// on, and the tool sends that server's access tokens (see lib/auth.js).
+//
+// Besides the harness's tools, it has its own for the media library's
+// images (lib/image-tools.js), which only the `mcp` door selects.
 
 module.exports = {
   options: {
-    alias: 'mcp',
     enabled: false,
+    // How many documents each connection remembers for the stale-write
+    // guard: the most recently read or written. A write to a document it no
+    // longer remembers isn't checked (see lib/seen.js)
+    seenLimit: 100,
+    // Whether an outside AI tool may publish, as far as the connected user
+    // may. `false` keeps the publishing tools off this server alone: the
+    // assistant keeps them
+    publish: true,
     // Seconds an MCP write's change log entries are kept; 0 keeps them for
     // good. 60 days by default (see lib/retention.js)
     changeLogExpireAfter: 60 * 24 * 60 * 60
+    // maxImageSize: the largest image `save_image_to_media` takes, in
+    //   bytes. Unset, it's the attachment module's `maxSize` when that is a
+    //   number of bytes, otherwise 10 MB (10,000,000 bytes). The image comes
+    //   as base64 in a JSON body, a third larger than the file, so a limit
+    //   over about 12 MB also needs the express module's
+    //   `bodyParser.json.limit` (16mb by default) raised.
     // allowedOrigins: the hostnames a browser-sent `Origin` header may name.
     //   Requests with no `Origin` (every non-browser client) always pass.
     //   Defaults to the hostname of `baseUrl`, or localhost when unset.
     // title: the server's display name in MCP clients. Defaults to the
     //   site's `shortName`, which is always the server's `name`.
   },
-  init(self) {
+  async init(self) {
     self.validateOptions();
     if (!self.options.enabled) {
       return;
     }
     self.devToken = self.getDevToken();
+    // Turns the OAuth server on, unless the site turned it off. Then only
+    // the development token works
+    self.oauthResource = self.getOauth().addResource(self.action, {
+      name: 'Apostrophe MCP server',
+      description: req => req.t('apostrophe:mcpOauthDescription')
+    });
+    await self.ensureSeenCollection();
+    self.maxImageSize = self.getMaxImageSize();
+    self.addImageTools();
     self.enableHttp();
   },
   middleware(self) {
@@ -58,10 +87,18 @@ module.exports = {
     };
   },
   handlers(self) {
+    const seen = {
+      '@apostrophecms/harness:documentSeen': {
+        async storeSeen(req, docId) {
+          await self.storeSeen(req, docId);
+        }
+      }
+    };
     if (!self.options.enabled) {
-      return {};
+      return seen;
     }
     return {
+      ...seen,
       'apostrophe:ready': {
         startSweeps() {
           self.startSweeps();
@@ -109,14 +146,37 @@ module.exports = {
       ...require('./lib/http')(self),
       ...require('./lib/auth')(self),
       ...require('./lib/tools')(self),
+      ...require('./lib/seen')(self),
+      ...require('./lib/image-tools')(self),
+      ...require('./lib/images')(self),
       ...require('./lib/retention')(self),
+
+      // New core modules can't have an alias, so @apostrophecms/oauth has none
+      getOauth() {
+        return self.apos.modules['@apostrophecms/oauth'];
+      },
 
       validateOptions() {
         const {
-          enabled, allowedOrigins, title, changeLogExpireAfter
+          enabled,
+          allowedOrigins,
+          title,
+          seenLimit,
+          publish,
+          maxImageSize,
+          changeLogExpireAfter
         } = self.options;
         if (typeof enabled !== 'boolean') {
           throw new Error('The "@apostrophecms/mcp" module\'s enabled option must be a boolean.');
+        }
+        if (typeof publish !== 'boolean') {
+          throw new Error('The "@apostrophecms/mcp" module\'s publish option must be a boolean.');
+        }
+        if (!(Number.isSafeInteger(seenLimit) && (seenLimit > 0))) {
+          throw new Error('The "@apostrophecms/mcp" module\'s seenLimit option must be a positive whole number.');
+        }
+        if ((maxImageSize !== undefined) && !self.isBytes(maxImageSize)) {
+          throw new Error('The "@apostrophecms/mcp" module\'s maxImageSize option must be a positive whole number of bytes.');
         }
         if (!(Number.isFinite(changeLogExpireAfter) && (changeLogExpireAfter >= 0))) {
           throw new Error('The "@apostrophecms/mcp" module\'s changeLogExpireAfter option must be a number of seconds, 0 or more.');
