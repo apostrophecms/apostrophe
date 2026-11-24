@@ -610,5 +610,35 @@ describe('Rich Text Widget', function () {
       const content = `<p><a href="${permalink(contact, 0)}">Link</a></p>`;
       assert.equal(richText.linkPermalinks(widget(about), content), content);
     });
+
+    it('should replace formatted link text entirely when updating the title', function () {
+      assert.equal(
+        richText.linkPermalinks(
+          widget(contact),
+          `<p><a href="${permalink(contact, 1)}"><strong>Stale</strong></a> after</p>`
+        ),
+        '<p><a href="/contact">Contact Us</a> after</p>'
+      );
+    });
+
+    it('should replace partly formatted link text entirely when updating the title', function () {
+      assert.equal(
+        richText.linkPermalinks(
+          widget(contact),
+          `<p><a href="${permalink(contact, 1)}">Old <em>stale</em> text</a> after</p>`
+        ),
+        '<p><a href="/contact">Contact Us</a> after</p>'
+      );
+    });
+
+    it('should keep formatted link text when not updating the title', function () {
+      assert.equal(
+        richText.linkPermalinks(
+          widget(contact),
+          `<p><a href="${permalink(contact, 0)}"><strong>Keep</strong> me</a></p>`
+        ),
+        '<p><a href="/contact"><strong>Keep</strong> me</a></p>'
+      );
+    });
   });
 });

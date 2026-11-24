@@ -131,6 +131,11 @@ export default {
     schema() {
       return this.originalSchema;
     },
+    // Honor a project-level `def` for the `updateTitle` field
+    updateTitleDefault() {
+      const field = this.schema.find(item => item.name === 'updateTitle');
+      return field?.def ?? true;
+    },
     schemaHtmlAttributes() {
       return this.schema.filter(item => !!item.htmlAttribute);
     }
@@ -255,7 +260,7 @@ export default {
         });
         const matches = this.docFields.data.href.match(/^#apostrophe-permalink-(.*)\?updateTitle=(\d)$/);
         if (!matches) {
-          this.docFields.data.updateTitle = true;
+          this.docFields.data.updateTitle = this.updateTitleDefault;
           this.docFields.data.linkTo = '_url';
           return;
         }
@@ -285,8 +290,8 @@ export default {
         } catch (e) {
           if (e.status === 404) {
             // No longer available
-            this.docFields.data.updateTitle = true;
-            this.docFields.linkTo = 'url';
+            this.docFields.data.updateTitle = this.updateTitleDefault;
+            this.docFields.data.linkTo = '_url';
           } else {
             throw e;
           }
