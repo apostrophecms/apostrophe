@@ -47,8 +47,8 @@ module.exports = {
     // the development token works
     self.oauthResource = self.getOauth().addResource(self.action, {
       name: 'Apostrophe MCP server',
-      // What the approval page promises, so it follows the publish option
-      description: req => req.t(self.options.publish
+      // What the approval page promises the user who sees it
+      description: req => req.t(self.canPublish(req)
         ? 'apostrophe:mcpOauthDescriptionPublish'
         : 'apostrophe:mcpOauthDescription')
     });
@@ -120,6 +120,22 @@ module.exports = {
       // New core modules can't have an alias, so @apostrophecms/oauth has none
       getOauth() {
         return self.apos.modules['@apostrophecms/oauth'];
+      },
+
+      // Whether a tool connected as `req.user` could publish anything: the
+      // `publish` option is on, and the user may publish at least one type
+      // that keeps drafts. Types that are live on save don't count, since
+      // their writes publish whatever the tool does. The same checks
+      // publish_document makes, so the approval page can't promise more
+      canPublish(req) {
+        if (!self.options.publish) {
+          return false;
+        }
+        const harness = self.apos.aposHarness;
+        return Object.keys(self.apos.doc.managers).some(type =>
+          (harness.getPublishing(type) === 'drafts') &&
+          self.apos.ai.can(req, 'publish', type)
+        );
       },
 
       validateOptions() {
