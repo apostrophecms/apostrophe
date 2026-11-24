@@ -7,8 +7,9 @@ const t = require('../test-lib/test.js');
 // Chat retention on the scripted mock: a chat's delete order, with Document
 // Versions keeping the AI saves; the sweep deleting chats past
 // `chatExpireAfter`, finishing an interrupted delete with no file left
-// unnamed, removing files never sent, one sweep at a time; and the tasks
-// exporting or deleting exactly one user's chats.
+// unnamed, removing files never sent, one sweep at a time; a chat whose run
+// died deleted, one whose run is alive left; and the tasks exporting or
+// deleting exactly one user's chats.
 
 const FIXTURES = path.join(__dirname, 'data/upload_tests');
 const UPLOADS = path.join(__dirname, 'public/uploads');
@@ -256,6 +257,75 @@ describe('Assistant: retention', function () {
     assert.equal(await apos.lock.db.countDocuments({ _id: LOCK }), 0);
   });
 
+  it('deletes a chat whose run died with its process, by a delete and by a sweep', async function () {
+    const req = userReq(editor);
+    const jobs = apos.modules['@apostrophecms/job'];
+    const deleted = await apos.aposAssistant.createChat(req);
+    const never = await leftRunning(deleted, { updatedAt: abandoned() });
+    await apos.aposAssistant.deleteChat(req, deleted._id);
+    assert.equal(await apos.aposAssistant.chats.countDocuments({ _id: deleted._id }), 0);
+    assert.equal(await apos.aposAssistant.requests.countDocuments({ _id: never._id }), 0);
+
+    const swept = await apos.aposAssistant.createChat(req);
+    const request = await leftRunning(swept, {
+      jobId: `job-${swept._id}`,
+      updatedAt: abandoned()
+    });
+    await jobs.db.insertOne({
+      _id: request.jobId,
+      status: 'running',
+      ended: false,
+      heartbeatAt: abandoned()
+    });
+    await apos.aposAssistant.chats.updateOne({ _id: swept._id }, {
+      $set: { lastRequestAt: new Date(Date.now() - 2 * DAY) }
+    });
+    apos.aposAssistant.options.chatExpireAfter = DAY / 1000;
+    assert.equal((await apos.aposAssistant.expireChats()).chats, 1);
+    assert.equal(await apos.aposAssistant.chats.countDocuments({ _id: swept._id }), 0);
+    await jobs.db.deleteOne({ _id: request.jobId });
+  });
+
+  it('leaves a chat whose run is alive, quietly on a sweep and counted busy by the task', async function () {
+    const req = userReq(editor);
+    const idle = await apos.aposAssistant.createChat(req);
+    await runToEnd(req, idle, 'Hello');
+    const busy = await apos.aposAssistant.createChat(req);
+    const gate = holdModel();
+    await apos.aposAssistant.send(req, busy._id, {
+      message: 'Hello',
+      screen: { tabId: 'tab-1' }
+    });
+    await waitFor(() => gate.waiting === 1);
+    await apos.aposAssistant.chats.updateOne({ _id: busy._id }, {
+      $set: { lastRequestAt: new Date(Date.now() - 2 * DAY) }
+    });
+
+    const logged = [];
+    const logError = apos.aposAssistant.logError;
+    apos.aposAssistant.logError = (...args) => {
+      logged.push(args);
+    };
+    try {
+      apos.aposAssistant.options.chatExpireAfter = DAY / 1000;
+      assert.equal((await apos.aposAssistant.expireChats()).chats, 0);
+    } finally {
+      apos.aposAssistant.logError = logError;
+    }
+    assert.deepEqual(logged, []);
+    assert(await apos.aposAssistant.chats.findOne({ _id: busy._id }));
+
+    const deleted = await apos.aposAssistant.deleteUserChats(editor._id);
+    assert.equal(deleted.chats, 1);
+    assert.equal(deleted.busy, 1);
+    assert.equal(await apos.aposAssistant.chats.countDocuments({ _id: idle._id }), 0);
+
+    gate.release();
+    await waitFor(async () => !(await apos.aposAssistant.chats.findOne({ _id: busy._id }))
+      .openRequest);
+    await apos.aposAssistant.deleteChat(req, busy._id);
+  });
+
   it('exports, then deletes, exactly one user\'s chats', async function () {
     const mine = await apos.aposAssistant.createChat(userReq(editor));
     const image = await attach(userReq(editor), mine, 'photo.png');
@@ -300,6 +370,58 @@ describe('Assistant: retention', function () {
       user,
       mode: 'draft'
     });
+  }
+
+  // Older than the time after which a run with no heartbeat is taken as dead
+  function abandoned() {
+    return new Date(Date.now() - (2 * apos.modules['@apostrophecms/job'].options.abandonAfter));
+  }
+
+  // A chat whose request was left running by a process that died
+  async function leftRunning(chat, fields) {
+    const _id = apos.util.generateId();
+    await apos.aposAssistant.chats.updateOne({ _id: chat._id }, {
+      $set: {
+        openRequest: {
+          _id,
+          tabId: 'tab-1',
+          status: 'running'
+        },
+        requestCount: 1,
+        updatedAt: abandoned()
+      }
+    });
+    const request = {
+      ...apos.aposAssistant.newRequest(chat, {
+        _id,
+        sequence: 1,
+        tabId: 'tab-1',
+        message: 'Hello',
+        screen: { tabId: 'tab-1' }
+      }),
+      ...fields
+    };
+    await apos.aposAssistant.requests.insertOne(request);
+    return request;
+  }
+
+  // Holds the model's call until released
+  function holdModel() {
+    let release;
+    const released = new Promise((resolve) => {
+      release = resolve;
+    });
+    const gate = {
+      waiting: 0,
+      release
+    };
+    script = async () => {
+      gate.waiting++;
+      await released;
+      script = null;
+      return { text: 'Done.' };
+    };
+    return gate;
   }
 
   function countFiles(criteria) {
