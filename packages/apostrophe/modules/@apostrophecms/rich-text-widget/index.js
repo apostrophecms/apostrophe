@@ -1078,12 +1078,16 @@ module.exports = {
             if (!updateTitle) {
               continue;
             }
+            // Replace the entire link text, including any nested markup
+            // such as `<strong>`, so the title is not rendered next to
+            // the original text. Links cannot nest, so the next `</a>`
+            // closes this one
             const right = content.indexOf('>', left);
-            const nextLeft = content.indexOf('<', right);
-            if ((right !== -1) && (nextLeft !== -1)) {
+            const end = content.indexOf('</a>', right);
+            if ((right !== -1) && (end !== -1)) {
               content = content.substring(0, right + 1) +
                 self.apos.util.escapeHtml(doc.title) +
-                content.substring(nextLeft);
+                content.substring(end);
             }
           }
         }
