@@ -810,6 +810,12 @@ function sanitizeHtml(html, options, _fallback) {
 
       skipText = options.enforceHtmlBoundary ? name === 'html' : false;
       depth--;
+      // Read the renamed tag before a discarded tag returns early below, so a
+      // stale entry can't rename the next element that closes at this depth.
+      if (transformMap[depth]) {
+        name = transformMap[depth];
+        delete transformMap[depth];
+      }
       const skip = skipMap[depth];
       if (skip) {
         delete skipMap[depth];
@@ -819,11 +825,6 @@ function sanitizeHtml(html, options, _fallback) {
         }
         tempResult = result;
         result = '';
-      }
-
-      if (transformMap[depth]) {
-        name = transformMap[depth];
-        delete transformMap[depth];
       }
 
       if (options.exclusiveFilter) {

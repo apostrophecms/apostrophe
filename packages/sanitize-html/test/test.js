@@ -2192,6 +2192,34 @@ describe('sanitizeHtml', function() {
       ), '!<xmp>&lt;/xmp&gt;&lt;svg/onload=prompt`xs`&gt;</xmp>!'
     );
   });
+  it('should not reuse a discarded tag\'s transformed name for a later closing tag', function() {
+    // A transform renames some links to a tag that is not allowed. The discarded
+    // tag must not leave its new name behind for the next tag closed at that depth.
+    const options = {
+      allowedTags: [ 'a', 'p' ],
+      allowedAttributes: { a: [ 'href' ] },
+      transformTags: {
+        a: (tagName, attribs) => (attribs.href
+          ? {
+            tagName,
+            attribs
+          }
+          : {
+            tagName: 'span',
+            attribs: {}
+          })
+      }
+    };
+    assert.equal(
+      sanitizeHtml('<p><a>no link</a> then <a href="https://example.com">link</a></p>', options),
+      '<p>no link then <a href="https://example.com">link</a></p>'
+    );
+    assert.equal(
+      sanitizeHtml('<p><a>one</a> <a>two</a> <a href="https://example.com">three</a></p>', options),
+      '<p>one two <a href="https://example.com">three</a></p>'
+    );
+  });
+
   it('should sanitize away disallowed iframe without escaping fallback html', function() {
     // Regression for #5550: htmlparser2 treats iframe as raw-text, so an
     // unclosed iframe's following markup arrives as text and must be
