@@ -7,13 +7,19 @@ export const useNotificationStore = defineStore('notification', () => {
   const backendNotifs = ref([]);
   const clientNotifs = ref([]);
   const processes = ref({});
-  // The poll's position: the newest `updatedAt` received and the ids
-  // received at exactly that time, which the server skips on the next
-  // poll. Every record moves it, bus carriers included
+  // The poll's position: the newest `updatedAt` received, and what was
+  // received within the lookback below it, each id with its `updatedAt`.
+  // The server reads that far back, since a write can become visible
+  // late, and leaves these out. Every record moves it, bus carriers
+  // included
   const cursor = {
     at: null,
-    ids: []
+    seen: new Map()
   };
+  // With more held records than this the poll travels as a POST. A
+  // safety measure for bursts: a query string that long may be refused,
+  // and the same poll would then be retried without end
+  const maxSeenInQuery = 30;
 
   const notifications = computed(() => {
     return [ ...clientNotifs.value, ...backendNotifs.value ]
@@ -90,16 +96,22 @@ export const useNotificationStore = defineStore('notification', () => {
         // Wait for tab to become visible
         setTimeout(poll, 5000);
       } else {
-        const res = await apos.http.get(apos.notification.action, {
-          qs: {
-            tabId: getTabId(),
-            pageStart: apos.notification.pageStart,
-            ...(cursor.at && {
-              modifiedOnOrSince: cursor.at,
-              seenIds: cursor.ids
-            })
-          }
-        });
+        const held = [ ...cursor.seen ];
+        const qs = {
+          tabId: getTabId(),
+          pageStart: apos.notification.pageStart,
+          ...(cursor.at && {
+            modifiedOnOrSince: cursor.at,
+            // For a server from before `seen`, while a deployment rolls out
+            seenIds: held.filter(([ , at ]) => at === cursor.at).map(([ id ]) => id),
+            seen: Object.fromEntries(held.map(([ id, at ]) => [ id, Date.parse(at) ]))
+          })
+        };
+        const res = held.length > maxSeenInQuery
+          ? await apos.http.post(apos.notification.action, {
+            body: { __aposGetWithQuery: qs }
+          })
+          : await apos.http.get(apos.notification.action, { qs });
 
         const incoming = res.notifications || [];
         advance([ ...incoming, ...(res.dismissed || []) ]);
@@ -129,15 +141,25 @@ export const useNotificationStore = defineStore('notification', () => {
       setTimeout(poll, 5000);
     }
 
-    // Move the cursor past the records received. `updatedAt` arrives
-    // as an ISO string, which sorts as the time it stands for
+    // Move the cursor to the newest record received and keep only what
+    // is still within the lookback below it. `updatedAt` arrives as an
+    // ISO string, which sorts as the time it stands for
     function advance(records) {
       for (const { _id, updatedAt } of records) {
+        cursor.seen.set(_id, updatedAt);
         if (!cursor.at || updatedAt > cursor.at) {
           cursor.at = updatedAt;
-          cursor.ids = [ _id ];
-        } else if (updatedAt === cursor.at && !cursor.ids.includes(_id)) {
-          cursor.ids.push(_id);
+        }
+      }
+      if (!cursor.at) {
+        return;
+      }
+      const floor = new Date(
+        Date.parse(cursor.at) - apos.notification.lookback
+      ).toISOString();
+      for (const [ id, at ] of cursor.seen) {
+        if (at < floor) {
+          cursor.seen.delete(id);
         }
       }
     }

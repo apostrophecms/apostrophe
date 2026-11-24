@@ -37,6 +37,14 @@
 // ### `carrierExpireAfter`: seconds a bus carrier with a `tab` (see
 // `trigger`) is kept. Nobody claims or dismisses those, so this expiry is
 // what removes them. Defaults to 60.
+//
+// ### `lookback`: milliseconds a poll reads below the newest modification
+// time its browser tab has received. A notification written at about the
+// same moment as that one, by another process or server, may become visible
+// only after it while carrying an earlier time. The browser tab says what
+// it holds in that range, so nothing is sent twice. Defaults to 2000
+// (2 seconds). Raise it if servers whose clocks may differ by more than
+// that write notifications to the same database.
 
 const delay = require('bluebird').delay;
 
@@ -49,7 +57,8 @@ module.exports = {
     // Used only when longPolling is false
     pollingInterval: 5000,
     expireAfter: 86400,
-    carrierExpireAfter: 60
+    carrierExpireAfter: 60,
+    lookback: 2000
   },
   extend: '@apostrophecms/module',
   async init(self) {
@@ -67,12 +76,23 @@ module.exports = {
     // its rendered, localized markup, as well as `_id`, `createdAt`
     // and `id` (if one was provided when it was triggered).
     //
-    // The client should provide `modifiedOnOrSince` and `seenIds` in the
+    // The client should provide `modifiedOnOrSince` and `seen` in the
     // query. `modifiedOnOrSince` is the timestamp of the most recent
-    // notification modification time (updatedAt) the client has already seen,
-    // and `seenIds` must contain the _ids of the notifications with that
-    // exact notification time that the client has already seen, for
-    // disambiguation.
+    // notification modification time (updatedAt) the client has already seen.
+    // `seen` holds what the client received within the `lookback` option
+    // below that time: an object of notification _ids, each with the
+    // modification time it was received with, in milliseconds. Those are
+    // left out of the response, and anything else in that range is sent: a
+    // notification written by another process can become visible late,
+    // with a time earlier than one the client has already seen.
+    //
+    // A client that sends `seenIds` instead, the _ids of the notifications
+    // it has seen with exactly the `modifiedOnOrSince` time, is sent only
+    // what is newer, or as new and not among those.
+    //
+    // When `seen` is too long for a query string, the same request may be
+    // sent as a POST with the query as the `__aposGetWithQuery` property
+    // of its body.
     //
     // `tabId` is the polling browser tab's id: it receives what was
     // triggered for that tab besides everything else, never what was
@@ -97,6 +117,7 @@ module.exports = {
           throw self.apos.error('invalid');
         }
         const seenIds = req.query.seenIds && self.apos.launder.ids(req.query.seenIds);
+        const seen = launderSeen(req.query.seen);
         const tabId = self.apos.launder.string(req.query.tabId) || null;
         const pageStart = req.query.pageStart
           ? new Date(self.apos.launder.string(req.query.pageStart))
@@ -120,6 +141,7 @@ module.exports = {
           const { notifications, dismissed } = await self.find(req, {
             modifiedOnOrSince,
             seenIds,
+            seen,
             tabId,
             pageStart
           });
@@ -131,6 +153,22 @@ module.exports = {
             notifications,
             dismissed
           };
+        }
+
+        // A map of _ids to modification times, or null if there are none
+        function launderSeen(input) {
+          if (!input || (typeof input !== 'object') || Array.isArray(input)) {
+            return null;
+          }
+          const seen = new Map();
+          for (const [ key, value ] of Object.entries(input)) {
+            const _id = self.apos.launder.id(key);
+            const time = self.apos.launder.integer(value, null);
+            if (_id && (time !== null)) {
+              seen.set(_id, time);
+            }
+          }
+          return seen.size ? seen : null;
         }
       }
     },
@@ -256,6 +294,7 @@ module.exports = {
           action: self.action,
           longPolling: self.options.longPolling,
           pollingInterval: self.options.pollingInterval,
+          lookback: self.options.lookback,
           // A page never replays the bus carriers created before it
           pageStart: new Date()
         };
@@ -489,6 +528,13 @@ module.exports = {
       // dismissal, a progress update) while it is still the newest time.
       // Without `seenIds`, only notifications modified after it are sent.
       //
+      // With `options.seen`, a Map of notification IDs to modification
+      // times in milliseconds, `seenIds` is ignored: everything modified
+      // no earlier than the `lookback` option before `modifiedOnOrSince`
+      // is sent, except what `seen` holds with that exact time. A write
+      // gets its time before it becomes visible, so a notification can
+      // show up below a time that was already read.
+      //
       // A notification triggered for one browser tab is sent only when
       // `options.tabId` names that tab. With `options.pageStart`, bus
       // carriers created before it are left out; other notifications are
@@ -511,7 +557,14 @@ module.exports = {
                   { expireAt: { $gt: new Date() } }
                 ]
               },
-              ...(since
+              ...(since && options.seen
+                ? [ {
+                  updatedAt: {
+                    $gte: new Date(since.getTime() - self.options.lookback)
+                  }
+                } ]
+                : []),
+              ...(since && !options.seen
                 ? [ {
                   $or: [
                     { updatedAt: { $gt: since } },
@@ -542,8 +595,13 @@ module.exports = {
             ]
           }).sort({ createdAt: 1 }).toArray();
 
-          const notifications = results.filter(result => !result.dismissed);
-          const dismissed = results.filter(result => result.dismissed);
+          const unseen = since && options.seen
+            ? results.filter(({ _id, updatedAt }) => {
+              return options.seen.get(_id) !== updatedAt.getTime();
+            })
+            : results;
+          const notifications = unseen.filter(result => !result.dismissed);
+          const dismissed = unseen.filter(result => result.dismissed);
           dismissed.forEach(element => {
             // 5-minute delay before deleting. A cleanup, never a reason
             // to keep the process alive
