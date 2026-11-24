@@ -163,33 +163,7 @@ module.exports = {
           if (!req.user) {
             throw self.apos.error('forbidden', req.t('apostrophe:logOutNotLoggedIn'));
           }
-          if (req.token) {
-            await self.bearerTokens.removeOne({
-              userId: req.user._id,
-              _id: req.token
-            });
-          }
-          if (req.session) {
-            const destroySession = () => {
-              return require('util').promisify(function (callback) {
-                // Be thorough, nothing in the session potentially
-                // related to the login should survive logout
-                return req.session.destroy(callback);
-              })();
-            };
-            const cookie = req.session.cookie;
-            await destroySession();
-            // Session cookie expiration isn't automatic with
-            // `req.session.destroy`. Fix that to reduce challenges for those
-            // attempting to implement custom caching strategies at the edge https://github.com/expressjs/session/issues/241
-            const expireCookie = new expressSession.Cookie(cookie);
-            expireCookie.expires = new Date(0);
-            const name = self.apos.modules['@apostrophecms/express'].sessionOptions.name;
-            req.res.header('set-cookie', expireCookie.serialize(name, 'deleted'));
-
-            // TODO: get cookie name from config
-            req.res.cookie(`${self.apos.shortName}.${loggedInCookieName}`, 'false');
-          }
+          return self.logOut(req);
         },
         async whoami(req) {
           return self.getWhoami(req);
@@ -544,6 +518,40 @@ module.exports = {
       // Callers must treat the answer as best effort.
       getLoginUrl() {
         return self.options.localLogin ? self.login() : null;
+      },
+
+      // Ends the logged-in user's login: the bearer token the request came
+      // with, or the session, whose cookie is expired. The logout route,
+      // and anything else that must log the user out, such as the OAuth
+      // approval page's "Not you?"
+      async logOut(req) {
+        if (req.token) {
+          await self.bearerTokens.removeOne({
+            userId: req.user._id,
+            _id: req.token
+          });
+        }
+        if (req.session) {
+          const destroySession = () => {
+            return require('util').promisify(function (callback) {
+              // Be thorough, nothing in the session potentially
+              // related to the login should survive logout
+              return req.session.destroy(callback);
+            })();
+          };
+          const cookie = req.session.cookie;
+          await destroySession();
+          // Session cookie expiration isn't automatic with
+          // `req.session.destroy`. Fix that to reduce challenges for those
+          // attempting to implement custom caching strategies at the edge https://github.com/expressjs/session/issues/241
+          const expireCookie = new expressSession.Cookie(cookie);
+          expireCookie.expires = new Date(0);
+          const name = self.apos.modules['@apostrophecms/express'].sessionOptions.name;
+          req.res.header('set-cookie', expireCookie.serialize(name, 'deleted'));
+
+          // TODO: get cookie name from config
+          req.res.cookie(`${self.apos.shortName}.${loggedInCookieName}`, 'false');
+        }
       },
 
       // Set the `serializeUser` method of `passport` to serialize the

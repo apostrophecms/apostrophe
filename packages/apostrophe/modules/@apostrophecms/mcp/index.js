@@ -47,7 +47,10 @@ module.exports = {
     // the development token works
     self.oauthResource = self.getOauth().addResource(self.action, {
       name: 'Apostrophe MCP server',
-      description: req => req.t('apostrophe:mcpOauthDescription')
+      // What the approval page promises, so it follows the publish option
+      description: req => req.t(self.options.publish
+        ? 'apostrophe:mcpOauthDescriptionPublish'
+        : 'apostrophe:mcpOauthDescription')
     });
     await self.ensureSeenCollection();
     self.maxImageSize = self.getMaxImageSize();
