@@ -31,10 +31,15 @@ const PASS_THROUGH = {
 module.exports = (self) => {
   return {
     // The definitions the door selects, as a Map by name, as the engine
-    // takes them
+    // takes them. Never an agent tool, one that runs Apostrophe's own AI,
+    // whatever its tags: an MCP client brings its own model, and must not
+    // spend the site's. The list and the calls both come from here, so such
+    // a tool is neither listed nor callable
     getTools() {
       return new Map(
-        self.apos.aposHarness.getDoorTools('mcp').map(tool => [ tool.name, tool ])
+        self.apos.aposHarness.getDoorTools('mcp')
+          .filter(tool => tool.kind !== 'agent')
+          .map(tool => [ tool.name, tool ])
       );
     },
 
