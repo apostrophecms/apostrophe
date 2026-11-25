@@ -4,11 +4,12 @@
 // it would never be removed.
 //
 // `expireChanges` is the sweep. It deletes the MCP entries older than the
-// window and nothing else: the query names `door: 'mcp'`, and the harness's
-// `{ door, at }` index serves it. It is a sweep rather than a TTL index
-// because the SQL adapters' TTL emulation ignores `partialFilterExpression`,
-// so a TTL index on `at` limited to MCP entries would delete the
-// assistant's entries too. A changed window applies from the next sweep.
+// window and nothing else, through the harness's `deleteDoorChanges`, which
+// keeps the query beside the `{ door, at }` index that serves it. It is a
+// sweep rather than a TTL index because the SQL adapters' TTL emulation
+// ignores `partialFilterExpression`, so a TTL index on `at` limited to MCP
+// entries would delete the assistant's entries too. A changed window applies
+// from the next sweep.
 //
 // It runs as a task, and in-process on an interval under a named lock, so
 // one process sweeps at a time: a process that finds the lock held skips
@@ -57,11 +58,10 @@ module.exports = (self) => {
         throw e;
       }
       try {
-        const { deletedCount } = await self.apos.aposHarness.changes.deleteMany({
-          door: 'mcp',
-          at: { $lt: new Date(Date.now() - expireAfter * 1000) }
-        });
-        return deletedCount;
+        return await self.apos.aposHarness.deleteDoorChanges(
+          'mcp',
+          new Date(Date.now() - expireAfter * 1000)
+        );
       } finally {
         await self.apos.lock.unlock(LOCK);
       }
