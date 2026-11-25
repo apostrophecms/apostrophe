@@ -251,7 +251,8 @@ module.exports = (self) => {
      * transcript. The stored record, with:
      *
      * - `message`: as typed; the panel shows its checked `mentions` as
-     *   chips.
+     *   chips, and `chips`, the widgets and field it was sent about (see
+     *   `getScreenChips`), before it.
      * - `reply`: the run's last words to the editor, rendered, the
      *   documents it names as chips. `null` before there are any.
      * - `steps`: the tool calls in order, `{ id, name, label, listed }`.
