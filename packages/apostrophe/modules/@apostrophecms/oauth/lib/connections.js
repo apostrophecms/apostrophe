@@ -69,7 +69,7 @@ module.exports = (self) => {
         clientName: connection.clientName,
         // Who the tool is, as far as can be told: the host its metadata
         // document is served from, and where it sends the user back to
-        clientHost: getClientHost(connection.clientId),
+        clientHost: self.getClientHost(connection.clientId),
         redirectTo: self.describeRedirect(connection.redirectUri),
         approvedAt: connection.approvedAt,
         lastUsedAt: connection.lastUsedAt,
@@ -94,6 +94,13 @@ module.exports = (self) => {
         clientName: connection.clientName
       });
       return true;
+    },
+
+    // The host a tool's metadata document is served from, which only that
+    // host can serve, or null for a tool that registered itself (DCR),
+    // whose id is not a URL
+    getClientHost(clientId) {
+      return getClientHost(clientId);
     },
 
     // Every connection of a user, with its tokens. For a deleted user

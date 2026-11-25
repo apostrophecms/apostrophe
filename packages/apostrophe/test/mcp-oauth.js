@@ -166,9 +166,16 @@ describe('MCP: OAuth', function () {
 
       const [ entry ] = await apos.aposHarness.changes.find({ requestId }).toArray();
       assert.equal(entry.door, 'mcp');
+      // The name is the tool's own; a tool that registered itself has no
+      // metadata host, but where it sends users back to can't be made up
       assert.deepEqual(entry.client, {
         id: client.client_id,
-        name: 'Test tool'
+        name: 'Test tool',
+        clientHost: null,
+        redirectTo: {
+          host: 'tool.example.com',
+          local: false
+        }
       });
 
       // A publish is an entry of its own, and names the tool too

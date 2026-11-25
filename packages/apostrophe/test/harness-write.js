@@ -342,6 +342,18 @@ describe('Harness: doors, the write path and guards', function () {
           name: 1
         }
       }), { name: 'invalid' });
+      assert.throws(() => door(req, {
+        client: {
+          id: 'c',
+          clientHost: 1
+        }
+      }), { name: 'invalid' });
+      assert.throws(() => door(req, {
+        client: {
+          id: 'c',
+          redirectTo: 'tool.example.com'
+        }
+      }), { name: 'invalid' });
     });
 
     it('should carry the outside tool a request comes from, as plain data', function () {
@@ -349,17 +361,30 @@ describe('Harness: doors, the write path and guards', function () {
         client: {
           id: 'client-1',
           name: 'Claude',
+          clientHost: 'claude.ai',
+          redirectTo: {
+            host: 'claude.ai',
+            local: false,
+            extra: 'dropped'
+          },
           extra: 'dropped'
         }
       });
       assert.deepEqual(apos.aposHarness.getDoor(doorReq).client, {
         id: 'client-1',
-        name: 'Claude'
+        name: 'Claude',
+        clientHost: 'claude.ai',
+        redirectTo: {
+          host: 'claude.ai',
+          local: false
+        }
       });
       const nameless = door(userReq('ann'), { client: { id: 'client-1' } });
       assert.deepEqual(apos.aposHarness.getDoor(nameless).client, {
         id: 'client-1',
-        name: null
+        name: null,
+        clientHost: null,
+        redirectTo: null
       });
     });
 

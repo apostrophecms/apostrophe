@@ -100,7 +100,9 @@ describe('MCP: writes and the change log', function () {
         // The development token stands for no registered tool
         assert.deepEqual(entry.client, {
           id: 'apos-mcp-dev-token',
-          name: null
+          name: null,
+          clientHost: null,
+          redirectTo: null
         });
         assert.equal(entry.effect, 'update');
         assert.deepEqual(entry.toolCalls, [ {
