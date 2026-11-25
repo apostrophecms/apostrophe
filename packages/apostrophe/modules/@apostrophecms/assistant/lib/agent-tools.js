@@ -71,6 +71,22 @@ module.exports = (self) => {
           'something specific instead of a description. Each image costs a model call: ' +
           'look only at the images you need.',
         kind: 'agent',
+        // Media images by their titles, attached files by their names
+        summary: (input, output) => (output
+          ? [
+            ...(output.images || []).map(image => ({
+              _id: image._id,
+              title: image.title,
+              ...(!image.error && { action: 'lookedAt' })
+            })),
+            ...(output.attachments || []).map(attachment => (attachment.error
+              ? { text: attachment.title }
+              : {
+                text: 'apostrophe:aiStepLookedAt',
+                title: attachment.title
+              }))
+          ]
+          : (input.images || []).map(_id => ({ _id }))),
         tags: [ 'assistant' ],
         input: {
           type: 'object',
@@ -110,6 +126,7 @@ module.exports = (self) => {
           'from and exactly what the answer must contain, in the language the user ' +
           'writes in. It can only read: never delegate decisions or changes.',
         kind: 'agent',
+        summary: ({ instructions }) => [ { text: instructions } ],
         tags: [ 'assistant' ],
         // The effort levels are known once the engine is active
         input: () => ({

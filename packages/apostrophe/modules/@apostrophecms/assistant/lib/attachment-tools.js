@@ -41,6 +41,12 @@ module.exports = (self) => {
           'the next with "part". For an image, its size and main colors; PDFs and images ' +
           'are already in the message that attached them.',
         kind: 'query',
+        summary: (input, output) => [
+          output && {
+            text: 'apostrophe:aiStepReadFile',
+            title: output.name
+          }
+        ],
         tags: [ 'assistant' ],
         input: {
           type: 'object',
@@ -66,6 +72,11 @@ module.exports = (self) => {
           '"replaces", the new file of that Media image, which keeps its title and alt ' +
           'and changes on every page that uses it.',
         kind: 'action',
+        summary: (input, output) => (output?.written || []).map(item => ({
+          _id: item._id,
+          title: item.title,
+          action: 'savedToMedia'
+        })),
         tags: [ 'assistant' ],
         input: {
           type: 'object',

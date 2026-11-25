@@ -76,10 +76,12 @@ module.exports = (self) => {
      *   given. `ask` is the stored ask.
      * @param {number} [tool.maxResultChars] The result's budget, as the AI
      *   engine's tools have it.
+     * @param {Function} [tool.summary] What happened in a call, as the AI
+     *   engine's tools have it.
      */
     addBrowserTool({
       name, description, label, screenEffect, input, schema = {}, prepare,
-      whenHidden = HIDDEN, accept, maxResultChars
+      whenHidden = HIDDEN, accept, maxResultChars, summary
     }) {
       if (!self.options.enabled) {
         return;
@@ -104,6 +106,7 @@ module.exports = (self) => {
         description,
         ...(label && { label }),
         ...(maxResultChars && { maxResultChars }),
+        ...(summary && { summary }),
         kind: 'action',
         tags: [ 'assistant', 'browser' ],
         input,

@@ -61,6 +61,7 @@ describe('Assistant: module and options', function () {
         widgetOperations: {},
         usageDisplay: 'tokens',
         modelDisplay: false,
+        stepDisplay: 'summary',
         screenWait: 15000,
         // With no provider routed, every kind of file
         attachments: {
@@ -169,7 +170,8 @@ describe('Assistant: module and options', function () {
         }
       ]
     };
-    await withApos({ enabled: true }, (apos) => {
+    await withApos({ enabled: true }, async (apos) => {
+      const req = apos.task.getReq();
       const rendered = apos.aposAssistant.renderRequest(request);
       for (const name of [ 'messages', 'screen', 'screenChanged', 'prior', 'jobId',
         'replyMentions', 'ownerId', 'schemaVersion' ]) {
@@ -178,18 +180,205 @@ describe('Assistant: module and options', function () {
       assert.equal(rendered.message, 'Hello');
       assert(rendered.reply.includes('<strong>pages</strong>'));
       assert(!rendered.reply.includes('Let me look'));
+      // Listing the types names nothing: the step has nothing to list
       assert.deepEqual(rendered.steps, [ {
         id: 'call-1',
         name: 'list_types',
-        label: 'apostrophe:aiToolListTypes'
+        label: 'apostrophe:aiToolListTypes',
+        listed: false
       } ]);
-      assert.deepEqual(apos.aposAssistant.renderStep(request, 'call-1'), {
+      assert.deepEqual(await apos.aposAssistant.renderStep(req, request, 'call-1'), {
+        summary: [],
+        more: 0,
+        failed: false,
         input: JSON.stringify({ all: true }, null, 2),
         output: JSON.stringify({ types: [ 'page' ] }, null, 2),
         error: null
       });
-      assert.equal(apos.aposAssistant.renderStep(request, 'call-2'), null);
+      assert.equal(await apos.aposAssistant.renderStep(req, request, 'call-2'), null);
       assert.equal(apos.aposAssistant.renderRequest({ messages: [] }).reply, null);
+    });
+  });
+
+  it('sums up each step as its tool tells what happened: titles, types, words and actions', async function () {
+    process.env.APOS_AI_MOCK = '1';
+    await withApos({ enabled: true }, async (apos) => {
+      const req = apos.task.getReq({ mode: 'draft' });
+      const pricing = await apos.modules.article.insert(req, { title: 'Pricing' });
+      const many = Array.from({ length: 23 }, (value, i) => ({
+        _id: `doc${i}:en:draft`,
+        title: `Document ${i}`,
+        locale: 'en'
+      }));
+      const steps = [
+        // A read that failed: the title is read from the document
+        [ 'get_document', { _id: pricing.aposDocId }, { error: 'too large' } ],
+        // A write: its documents, each once, with their locales
+        [
+          'update_document',
+          { targets: [ { _id: pricing._id } ] },
+          {
+            output: {
+              written: [
+                {
+                  _id: pricing._id,
+                  title: 'Pricing',
+                  locale: 'en'
+                },
+                {
+                  _id: 'about:fr:draft',
+                  title: 'À propos',
+                  locale: 'fr'
+                },
+                {
+                  _id: pricing._id,
+                  title: 'Pricing',
+                  locale: 'en'
+                }
+              ]
+            }
+          }
+        ],
+        [ 'get_schema', { types: [ 'article' ] }, { output: { schema: '' } } ],
+        [
+          'search_content',
+          {
+            query: 'prices',
+            type: 'article'
+          },
+          { output: { results: [] } }
+        ],
+        // A document nobody can find is left out
+        [ 'find_references', { _id: 'missing' }, { error: 'No document' } ],
+        [ 'update_document', { targets: [] }, { output: { written: many } } ],
+        // Arguments the tool refused make no list
+        [ 'ask_editor', { questions: 'Which?' }, { error: 'invalid arguments' } ],
+        // A tool without a summary shows none
+        [ 'list_types', {}, { output: { pages: [] } } ],
+        [
+          'create_piece',
+          {
+            type: 'article',
+            title: 'Offers'
+          },
+          {
+            output: {
+              written: [ {
+                _id: 'offers:en:draft',
+                title: 'Offers',
+                locale: 'en'
+              } ]
+            }
+          }
+        ]
+      ];
+      const request = {
+        messages: [
+          {
+            role: 'assistant',
+            content: steps.map(([ name, input ], i) => ({
+              type: 'toolCall',
+              id: `call-${i}`,
+              name,
+              input
+            }))
+          },
+          {
+            role: 'tool',
+            content: steps.map(([ , , result ], i) => ({
+              type: 'toolResult',
+              toolCallId: `call-${i}`,
+              ...result
+            }))
+          }
+        ]
+      };
+      // The fields the panel words a sentence from
+      const read = async (i) => {
+        const {
+          summary, more, failed
+        } = await apos.aposAssistant.renderStep(req, request, `call-${i}`);
+        return {
+          summary: summary.map(item => Object.fromEntries(Object.entries(item)
+            .filter(([ key, value ]) => (value !== null) && (key !== 'localeLabel') &&
+              ((key !== 'reason') && (key !== 'count'))))),
+          more,
+          failed
+        };
+      };
+      // Failed: the document asked for, its title read, no action
+      assert.deepEqual(await read(0), {
+        summary: [ {
+          kind: 'document',
+          title: 'Pricing',
+          locale: 'en'
+        } ],
+        more: 0,
+        failed: true
+      });
+      // Each document written once, in its locale
+      assert.deepEqual((await read(1)).summary, [
+        {
+          kind: 'document',
+          title: 'Pricing',
+          action: 'edited',
+          locale: 'en'
+        },
+        {
+          kind: 'document',
+          title: 'À propos',
+          action: 'edited',
+          locale: 'fr'
+        }
+      ]);
+      assert.deepEqual((await read(2)).summary, [ {
+        kind: 'type',
+        type: 'Article',
+        action: 'readFields'
+      } ]);
+      // Text: an i18n key the tool chose, its title and type's label with it
+      assert.deepEqual((await read(3)).summary, [ {
+        kind: 'text',
+        text: 'apostrophe:aiStepSearchedIn',
+        title: 'prices',
+        type: 'Article'
+      } ]);
+      // A document nobody can find is left out
+      assert.deepEqual(await read(4), {
+        summary: [],
+        more: 0,
+        failed: true
+      });
+      // Arguments the tool refused make no summary
+      assert.deepEqual(await read(6), {
+        summary: [],
+        more: 0,
+        failed: true
+      });
+      assert.deepEqual((await read(7)).summary, []);
+      assert.deepEqual((await read(8)).summary, [ {
+        kind: 'document',
+        title: 'Offers',
+        action: 'created',
+        locale: 'en'
+      } ]);
+      // A step has a summary to show when it tells one, or failed
+      assert.deepEqual(apos.aposAssistant.renderRequest(request).steps
+        .map(step => step.listed),
+      [ true, true, true, true, true, true, true, false, true ]);
+      const long = await read(5);
+      assert.equal(long.summary.length, 20);
+      assert.equal(long.summary[19].title, 'Document 19');
+      assert.equal(long.more, 3);
+    }, {
+      modules: {
+        article: {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            label: 'Article'
+          }
+        }
+      }
     });
   });
 
@@ -229,6 +418,7 @@ describe('Assistant: module and options', function () {
       [ { attachmentMaxTextBytes: -1 }, /attachmentMaxTextBytes option must be a positive integer/ ],
       [ { attachmentMaxCount: 'four' }, /attachmentMaxCount option must be a positive integer/ ],
       [ { usageDisplay: 'cost' }, /usageDisplay option must be one of: tokens, none/ ],
+      [ { stepDisplay: 'json' }, /stepDisplay option must be one of: summary, data, all/ ],
       [ { titleEffort: '' }, /titleEffort option must be the name of an effort level/ ],
       [ { contextLimit: 0 }, /contextLimit option must be a positive integer/ ],
       [

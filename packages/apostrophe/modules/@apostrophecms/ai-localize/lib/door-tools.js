@@ -94,6 +94,18 @@ module.exports = (self) => {
         maxResultChars: self.apos.aposHarness.getReadBudget('document'),
         tags: [ 'content' ],
         kind: 'query',
+        // The source, compared with its copy in the target locale
+        summary: (input, output) => [
+          output
+            ? {
+              _id: output._id,
+              title: output.title,
+              locale: output.locale,
+              toLocale: input.locale,
+              action: 'comparedLocale'
+            }
+            : { _id: input._id }
+        ],
         handler: '@apostrophecms/ai-localize:getLocalization'
       });
       const targetLocales = description => ({
@@ -134,6 +146,7 @@ module.exports = (self) => {
         },
         tags: [ 'content' ],
         kind: 'action',
+        summary: localized('localized', 'notLocalized'),
         handler: '@apostrophecms/ai-localize:localizeDocument'
       });
       self.apos.ai.addTool({
@@ -159,6 +172,7 @@ module.exports = (self) => {
         },
         tags: [ 'content' ],
         kind: 'action',
+        summary: localized('recordedLocalization', 'refused'),
         handler: '@apostrophecms/ai-localize:recordLocalization'
       });
     },
@@ -729,3 +743,25 @@ module.exports.MODEL_TEXTS = [
   UNREAD,
   MAY_NOT_RECORD
 ];
+
+// A localization write's summary: each copy written, in its locale, and each
+// one refused with its reason; the source when the call failed
+function localized(action, refusedAction) {
+  return (input, output) => (output
+    ? [
+      ...output.written.map(item => ({
+        _id: item._id,
+        title: item.title,
+        locale: item.locale,
+        action
+      })),
+      ...(output.refused || []).map(item => ({
+        _id: item._id,
+        title: item.title,
+        locale: item.locale,
+        action: refusedAction,
+        reason: item.reason
+      }))
+    ]
+    : [ { _id: input._id } ]);
+}

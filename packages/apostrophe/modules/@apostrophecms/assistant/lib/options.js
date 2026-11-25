@@ -2,6 +2,7 @@
 
 const EFFORT_OPTIONS = [ 'effort', 'titleEffort', 'delegationEffort', 'summaryEffort' ];
 const USAGE_DISPLAYS = [ 'tokens', 'none' ];
+const STEP_DISPLAYS = [ 'summary', 'data', 'all' ];
 // In tokens, the least a chat holds before it is shortened, whatever the
 // options: the instructions and tools alone take about half of it
 const MIN_THRESHOLD = 20000;
@@ -55,6 +56,9 @@ module.exports = (self) => {
       }
       if (!USAGE_DISPLAYS.includes(usageDisplay)) {
         fail('usageDisplay', `must be one of: ${USAGE_DISPLAYS.join(', ')}`);
+      }
+      if (!STEP_DISPLAYS.includes(self.options.stepDisplay)) {
+        fail('stepDisplay', `must be one of: ${STEP_DISPLAYS.join(', ')}`);
       }
       for (const name of EFFORT_OPTIONS) {
         const value = self.options[name];

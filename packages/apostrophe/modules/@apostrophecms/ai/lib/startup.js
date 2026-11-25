@@ -237,9 +237,13 @@ module.exports = (self) => {
           (!Number.isInteger(tool.maxResultChars) || tool.maxResultChars < 1)) {
           fail(`${name}: "maxResultChars" must be a positive integer`);
         }
+        if (tool.summary !== undefined && typeof tool.summary !== 'function') {
+          fail(`${name}: "summary" must be a function`);
+        }
         return {
           name: tool.name,
           label: tool.label || startCase(tool.name),
+          ...(tool.summary && { summary: tool.summary }),
           description: tool.description,
           tags: tool.tags || [],
           input,
