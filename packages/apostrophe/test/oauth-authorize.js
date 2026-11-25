@@ -356,6 +356,25 @@ describe('OAuth: authorize', function () {
       assert.doesNotMatch(PAGE_POLICY, /form-action/);
     });
 
+    it('offers "Not you?" and says where to disconnect later', async function () {
+      const html = await (await authorize()).text();
+      assert.match(html, /<button type="submit" form="oauth-decision" name="decision" value="switch"[^>]*>Not you\?<\/button>/);
+      assert.match(html, /<form [^>]*id="oauth-decision"/);
+      assert.match(html, /data-oauth-disconnect>You can disconnect it at any time from Connected tools/);
+    });
+
+    it('offers no "Not you?" without a login page to send the user to', async function () {
+      const getLoginUrl = apos.login.getLoginUrl;
+      apos.login.getLoginUrl = () => null;
+      try {
+        const html = await (await authorize()).text();
+        assert.doesNotMatch(html, /data-oauth-switch-user/);
+        await getApprovalId(await authorize());
+      } finally {
+        apos.login.getLoginUrl = getLoginUrl;
+      }
+    });
+
     it('describes a loopback redirect as this computer', async function () {
       const response = await authorize({ redirect_uri: 'http://127.0.0.1:51234/callback' });
       assert.match(await response.text(), /127\.0\.0\.1:51234, on this computer/);
@@ -411,6 +430,34 @@ describe('OAuth: authorize', function () {
         decision: 'approve'
       }));
       assert.equal(url, 'http://127.0.0.1:51234/callback');
+    });
+
+    it('"Not you?": logs out, sends the user to log in, and back to the same request', async function () {
+      // A session of its own: this one ends
+      const cookie = await getCookie('editor');
+      const approval = await getApprovalId(await authorize({}, cookie));
+      const response = await decide({
+        approval,
+        decision: 'switch'
+      }, cookie);
+      assert.equal(response.status, 303);
+      const login = new URL(response.headers.get('location'), getUrl(apos, '/'));
+      assert.equal(login.pathname, '/login');
+      const returnTo = login.searchParams.get('returnTo');
+      assert.equal(returnTo, `${AUTHORIZE}?${params()}`);
+
+      // Logged out, and the approval used up, with nothing for the client
+      assert.equal(await apos.modules['@apostrophecms/oauth'].pendingApprovals.countDocuments({ _id: approval }), 0);
+      const again = await authorize({}, cookie);
+      assert.equal(again.status, 302);
+      assert.match(again.headers.get('location'), /^\/login\?/);
+
+      // Whoever logs in next sees the same request, as themselves
+      const html = await (await fetch(getUrl(apos, returnTo), {
+        headers: { cookie: otherCookie }
+      })).text();
+      assert.match(html, /\(other\)/);
+      assert.match(html, /name="approval"/);
     });
 
     it('takes each approval once', async function () {
@@ -597,6 +644,21 @@ describe('OAuth: authorize', function () {
         });
       });
       const entry = findEntry(entries, 'declined');
+      assert.equal(entry.severity, 'info');
+      assert.equal(entry.data.username, 'editor');
+      assert.equal(entry.data.clientId, client.client_id);
+    });
+
+    it('records a "Not you?"', async function () {
+      const cookie = await getCookie('editor');
+      const approval = await getApprovalId(await authorize({}, cookie));
+      const entries = await captureLog(async () => {
+        await decide({
+          approval,
+          decision: 'switch'
+        }, cookie);
+      });
+      const entry = findEntry(entries, 'switched-user');
       assert.equal(entry.severity, 'info');
       assert.equal(entry.data.username, 'editor');
       assert.equal(entry.data.clientId, client.client_id);

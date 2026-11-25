@@ -12,7 +12,9 @@
 // GET checked, kept server-side under a random id for the user who saw it:
 // the form carries only that id, so the request can't be changed on the
 // way. The id also stands in for a CSRF token, which a plain form post
-// can't carry in the header Apostrophe's own check wants.
+// can't carry in the header Apostrophe's own check wants. Besides Approve
+// and Decline, the form has "Not you?", which logs the user out and sends
+// them to log in again, then back here to see the same request.
 
 const crypto = require('node:crypto');
 
@@ -120,8 +122,8 @@ module.exports = (self) => {
       }
       Object.assign(request, checked);
 
+      const loginUrl = self.apos.login.getLoginUrl();
       if (!req.user) {
-        const loginUrl = self.apos.login.getLoginUrl();
         if (!loginUrl) {
           return self.sendErrorPage(req, res, 400, {
             reason: req.t('apostrophe:oauthNoLogin'),
@@ -136,6 +138,8 @@ module.exports = (self) => {
         _id: approvalId,
         userId: req.user._id,
         ...request,
+        // Where "Not you?" comes back to, after logging in again
+        returnTo: req.url,
         expiresAt: new Date(Date.now() + LIFETIME_MS)
       });
       return self.sendAuthorizePage(req, res, 200, {
@@ -152,7 +156,9 @@ module.exports = (self) => {
         user: {
           title: req.user.title,
           username: req.user.username
-        }
+        },
+        // "Not you?" needs a login page to send the user to
+        canSwitchUser: Boolean(loginUrl)
       });
     },
 
@@ -199,6 +205,9 @@ module.exports = (self) => {
         resource: request.resource,
         scopes: request.scope
       };
+      if (req.body.decision === 'switch') {
+        return self.switchUser(req, res, request);
+      }
       if (req.body.decision !== 'approve') {
         self.logInfo(req, 'declined', decision);
         return self.redirectToClient(res, request, {
@@ -209,6 +218,26 @@ module.exports = (self) => {
       const code = await self.createCode(req.user, request);
       self.logInfo(req, 'approved', decision);
       return self.redirectToClient(res, request, { code });
+    },
+
+    // "Not you?": the approval is used up, the user is logged out and sent
+    // to log in, and back to the authorize request, which then shows a new
+    // approval page for whoever logged in. Nothing goes back to the client
+    async switchUser(req, res, request) {
+      const loginUrl = self.apos.login.getLoginUrl();
+      if (!loginUrl) {
+        return self.sendErrorPage(req, res, 400, {
+          reason: req.t('apostrophe:oauthNoLogin'),
+          advice: 'site'
+        });
+      }
+      self.logInfo(req, 'switched-user', {
+        username: req.user.username,
+        clientId: request.clientId,
+        clientName: request.clientName
+      });
+      await self.apos.login.logOut(req);
+      return res.redirect(303, `${loginUrl}?returnTo=${encodeURIComponent(request.returnTo)}`);
     },
 
     // The parameters the endpoint reads, each as a string or undefined. A

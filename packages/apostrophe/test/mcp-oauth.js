@@ -86,8 +86,9 @@ describe('MCP: OAuth', function () {
         apos.task.getReq(),
         RESOURCE_URL
       );
-      assert.match(description, /saved as drafts/);
-      assert.match(description, /autopublish/);
+      // An admin, with the publish option on by default. Drafts or
+      // publishing, by option and user: see test/mcp-publish.js
+      assert.match(description, /find, read, create, edit and publish content/);
       assert.match(description, /users or groups/);
     });
 
