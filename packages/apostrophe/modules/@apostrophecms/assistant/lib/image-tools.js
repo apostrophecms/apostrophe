@@ -13,10 +13,12 @@
 // The request keeps what the thread shows of each ask in `imageAsks`:
 // `{ callId, title, replaces, rounds, outcome }`, each answered round
 // `{ action, notes, kept }` (`kept`, the candidate picked on Refine, which
-// stays with the chat), and `outcome` `{ action, option, imageId,
-// attachmentId }` once it resolves: `imageId`, the Media image the picked
-// one became, or `attachmentId`, a picked image Media didn't take, which
-// its notice's Retry saves again (see notices.js).
+// stays with the chat), and `outcome` `{ action, option, candidate,
+// imageId, attachmentId }` once it resolves: `imageId`, the Media image the
+// picked one became, or `attachmentId`, a picked image Media didn't take,
+// which its notice's Retry saves again (see notices.js). Rounds and the
+// outcome are noted as the answer is stored, so the thread shows them while
+// the tool works; the tool adds only what its work produced.
 
 const fs = require('node:fs/promises');
 const { promisify } = require('node:util');
@@ -45,6 +47,34 @@ module.exports = (self) => {
       }
       self.addAskKind('images', {
         accept: self.acceptImagesAnswer,
+        answered(req, request, ask, {
+          action, candidate = null, notes = null
+        }) {
+          if ((action === 'again') || (action === 'refine')) {
+            return self.changeImageAsk(req, request._id, ask.callId, each => ({
+              ...each,
+              rounds: [ ...each.rounds, (action === 'again')
+                ? { action }
+                : {
+                  action,
+                  notes,
+                  kept: candidate
+                } ]
+            }));
+          }
+          const option = ask.payload.candidates
+            .findIndex(each => each._id === candidate) + 1;
+          return self.changeImageAsk(req, request._id, ask.callId, each => ({
+            ...each,
+            outcome: {
+              action,
+              ...(candidate && {
+                option,
+                candidate
+              })
+            }
+          }));
+        },
         discard(req, request, ask, status) {
           return self.endImageAsk(req, request._id, ask.callId, { action: status });
         }
@@ -141,7 +171,7 @@ module.exports = (self) => {
         const option = state.candidates.findIndex(each => each._id === candidate) + 1;
         try {
           if (action === 'cancel') {
-            await self.endImageAsk(req, requestId, callId, { action });
+            await self.endImageAsk(req, requestId, callId);
             return {
               answered: true,
               used: false,
@@ -157,7 +187,6 @@ module.exports = (self) => {
             .filter(_id => _id !== candidate);
           await removeCandidates(rest);
           if (action === 'again') {
-            await noteRound(req, callId, { action });
             return await nextRound(state);
           }
           // Refine: from the picked image, or from the original with every
@@ -170,11 +199,6 @@ module.exports = (self) => {
               }
             });
           }
-          await noteRound(req, callId, {
-            action,
-            notes,
-            kept: candidate || null
-          });
           const allNotes = [ ...state.notes, notes ];
           return await nextRound({
             ...state,
@@ -324,10 +348,7 @@ module.exports = (self) => {
             },
             $unset: { callId: 1 }
           });
-          await self.endImageAsk(req, requestId, callId, {
-            action: 'use',
-            option
-          });
+          await self.endImageAsk(req, requestId, callId);
           const record = await self.attachments.findOne({ _id: candidate });
           const { result, failure } = await self.saveKeptImage(req, record, {
             title: args.title,
@@ -431,18 +452,6 @@ module.exports = (self) => {
             await self.removeAttachmentRecord(record);
           }
         }
-      }
-
-      function noteRound(req, callId, round) {
-        return self.changeImageAsk(
-          req,
-          self.apos.aposHarness.getDoor(req).requestId,
-          callId,
-          ask => ({
-            ...ask,
-            rounds: [ ...ask.rounds, round ]
-          })
-        );
       }
 
     },
@@ -654,15 +663,16 @@ module.exports = (self) => {
 
     /**
      * Ends an image ask: every file it holds and didn't keep is removed,
-     * and its outcome is noted on the request.
+     * and its outcome, if given, is noted on the request. An answered ask's
+     * outcome is noted as the answer is stored.
      *
      * @param {object} req The door's `req`, or a request of the owner.
      * @param {string} requestId
      * @param {string} callId
-     * @param {object} outcome `{ action, option? }`; `action` one of `use`,
-     *   `cancel`, `failed`, `skipped`, `stopped`.
+     * @param {object} [outcome] `{ action }`, `action` one of `failed`,
+     *   `skipped`, `stopped`.
      */
-    async endImageAsk(req, requestId, callId, outcome) {
+    async endImageAsk(req, requestId, callId, outcome = null) {
       const ownerId = self.getOwnerId(req);
       for (const record of await self.attachments.find({
         ownerId,
@@ -673,14 +683,16 @@ module.exports = (self) => {
       }).toArray()) {
         await self.removeAttachmentRecord(record);
       }
-      await self.changeImageAsk(req, requestId, callId, ask => ({
-        ...ask,
-        outcome
-      }));
+      if (outcome) {
+        await self.changeImageAsk(req, requestId, callId, ask => ({
+          ...ask,
+          outcome
+        }));
+      }
     },
 
-    // Changes an image ask the request notes, whole: only its own call
-    // changes it, one step at a time
+    // Changes an image ask the request notes, whole: only its answers and
+    // its own call change it, one step at a time
     async changeImageAsk(req, requestId, callId, change) {
       const ownerId = self.getOwnerId(req);
       const request = await self.requests.findOne({
