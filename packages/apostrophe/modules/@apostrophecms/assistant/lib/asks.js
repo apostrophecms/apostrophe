@@ -8,7 +8,8 @@
 //
 // Each kind of ask is registered with `addAskKind`; its `accept` turns a
 // posted answer into the input the tool reads on `args._context.input`, and
-// its `discard`, if any, lets go of what an ask held when it ends
+// its `answered`, if any, notes what the thread keeps of an answered ask,
+// and its `discard`, if any, lets go of what an ask held when it ends
 // unanswered.
 // An answer may carry the screen as it is now, which becomes the request's
 // screen, its locale included, for the rest of its runs.
@@ -25,14 +26,22 @@ module.exports = (self) => {
      *   the input the asking tool reads, or throws `invalid` to leave the
      *   ask waiting. `screen` is the verified screen posted with the
      *   answer, if any.
+     * @param {(req: object, request: object, ask: object, input: *)
+     *   => Promise<void>} [definition.answered] Notes what the thread keeps
+     *   of the answered ask, `input` as `accept` returned it, before the
+     *   request goes out running. Never fails the answer: an error is
+     *   logged.
      * @param {(req: object, request: object, ask: object, status: string)
      *   => Promise<void>} [definition.discard] Lets go of what the ask held
      *   once its request ends without an answer, `skipped` or `stopped`.
      *   Never fails the end: an error is logged.
      */
-    addAskKind(name, { accept, discard = null }) {
+    addAskKind(name, {
+      accept, answered = null, discard = null
+    }) {
       self.askKinds[name] = {
         accept,
+        answered,
         discard
       };
     },
@@ -94,6 +103,14 @@ module.exports = (self) => {
           screenChanged: 1
         }
       });
+      try {
+        await kind.answered?.(req, request, ask, input);
+      } catch (e) {
+        self.logError(req, 'ask-answered', e.message, {
+          kind: ask.kind,
+          stack: e.stack
+        });
+      }
       const running = await self.getRequest(req, request._id);
       if (verified) {
         await self.shareScreen(running, verified);

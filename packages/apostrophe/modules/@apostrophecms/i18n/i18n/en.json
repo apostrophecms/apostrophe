@@ -261,6 +261,7 @@
   "assistantPlanStepFailed": "(failed)",
   "assistantPreviousQuestion": "Previous question",
   "assistantQuestion": "Question",
+  "assistantQuestionLeft": "Left to the assistant",
   "assistantQuestionSkipped": "Question skipped",
   "assistantQuestionSkippedText": "The composer is yours again.",
   "assistantQuestionsPosition": "{{ current }} of {{ total }} questions",

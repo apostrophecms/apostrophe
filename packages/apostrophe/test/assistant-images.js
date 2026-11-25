@@ -139,6 +139,7 @@ describe('Assistant: images', function () {
       outcome: {
         action: 'use',
         option: 2,
+        candidate: ask.payload.candidates[1]._id,
         imageId: image._id,
         attachmentId: null
       }
@@ -254,6 +255,49 @@ describe('Assistant: images', function () {
     await assertGone(kept.storage);
   });
 
+  it('notes each answer in the thread as it is stored, before the tool goes on', async function () {
+    const req = userReq(editor);
+    const chat = await apos.aposAssistant.createChat(req);
+    script = sequence([ toolTurn('generate_image', INPUT, 'gen'), { text: 'Done.' } ]);
+    const first = (await runToEnd(req, chat, 'Make a launch image')).asks[0].payload;
+    const picked = first.candidates[0]._id;
+
+    const refined = await answerHeld(req, chat, {
+      action: 'refine',
+      candidate: picked,
+      notes: 'Add a full moon'
+    });
+    assert.equal(refined.answered.status, 'running');
+    assert.deepEqual(refined.answered.imageAsks[0].rounds, [ {
+      action: 'refine',
+      notes: 'Add a full moon',
+      kept: picked
+    } ]);
+    assert.equal(refined.answered.imageAsks[0].outcome, null);
+    const next = refined.ended.asks[0].payload;
+    assert.equal(refined.ended.imageAsks[0].rounds.length, 1);
+
+    const used = await answerHeld(req, chat, {
+      action: 'use',
+      candidate: next.candidates[1]._id
+    });
+    assert.deepEqual(used.answered.imageAsks[0].outcome, {
+      action: 'use',
+      option: 2,
+      candidate: next.candidates[1]._id
+    });
+    assert.equal(used.ended.status, 'completed');
+    const { imageId, ...outcome } = used.ended.imageAsks[0].outcome;
+    assert(imageId);
+    assert.deepEqual(outcome, {
+      action: 'use',
+      option: 2,
+      candidate: next.candidates[1]._id,
+      attachmentId: null
+    });
+    assert.equal(used.ended.imageAsks[0].rounds.length, 1);
+  });
+
   it('refuses answers that name no image of the round or no notes', async function () {
     const req = userReq(editor);
     const chat = await apos.aposAssistant.createChat(req);
@@ -349,6 +393,7 @@ describe('Assistant: images', function () {
     assert.deepEqual(done.imageAsks[0].outcome, {
       action: 'use',
       option: 1,
+      candidate: kept._id,
       imageId: null,
       attachmentId: kept._id
     });
@@ -594,6 +639,35 @@ describe('Assistant: images', function () {
 
   function answerAndWait(req, chat, value) {
     return answer(req, chat, 'call-gen', value);
+  }
+
+  // The request as the answer returns it, the run held before the tool
+  // goes on, then as it ends
+  async function answerHeld(req, chat, value) {
+    const { generate } = apos.ai;
+    let release;
+    const released = new Promise((resolve) => {
+      release = resolve;
+    });
+    apos.ai.generate = async (...args) => {
+      await released;
+      return generate(...args);
+    };
+    let answered;
+    try {
+      answered = await apos.aposAssistant.answer(req, chat._id, {
+        tabId: 'tab-1',
+        callId: 'call-gen',
+        answer: value
+      });
+    } finally {
+      apos.ai.generate = generate;
+      release();
+    }
+    return {
+      answered,
+      ended: await waitForEnd(req, chat)
+    };
   }
 
   async function retry(req, chat, request, notice) {

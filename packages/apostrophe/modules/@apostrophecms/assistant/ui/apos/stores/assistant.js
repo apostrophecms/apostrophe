@@ -343,7 +343,8 @@ export const useAssistantStore = defineStore('assistant', () => {
     }));
   }
 
-  // An answer on its way: the ask leaves, and the request goes on
+  // An answer on its way: the ask leaves, its questions stay in the thread
+  // with the answers given, and the request goes on
   function foldAnswer(view, { key, data }) {
     return changeOpen(view, [ 'waiting' ], (request) => {
       const answered = (request.asks || []).find(ask => ask.callId === key);
@@ -354,9 +355,37 @@ export const useAssistantStore = defineStore('assistant', () => {
         ...((answered?.kind === 'images') && {
           imageAsks: foldImageAnswer(request.imageAsks || [], answered, data?.value)
         }),
+        ...((answered?.kind === 'question') && {
+          questionAsks: [
+            ...request.questionAsks || [],
+            foldQuestionAnswer(answered, data?.value)
+          ]
+        }),
         status: asks.length ? request.status : 'running'
       };
     });
+  }
+
+  // The questions of an ask as the server keeps them once answered
+  function foldQuestionAnswer(ask, value) {
+    return {
+      callId: ask.callId,
+      questions: ask.payload.questions.map(({ question, options }, index) => {
+        const given = value?.answers?.[index] || {};
+        if (given.youDecide) {
+          return {
+            question,
+            youDecide: true
+          };
+        }
+        return {
+          question,
+          answer: Object.hasOwn(given, 'choice')
+            ? options?.[given.choice]?.label
+            : (given.text || '').trim()
+        };
+      })
+    };
   }
 
   // An image round answered: Refine's notes beside the image kept for
