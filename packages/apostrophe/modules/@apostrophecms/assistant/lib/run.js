@@ -530,6 +530,7 @@ module.exports = (self) => {
       const tools = self.apos.aposHarness.getDoorTools(DOOR);
       const system = self.getRunInstructions(doorReq, chat);
       const toolNames = self.getRunTools();
+      const hooks = self.getProgressHooks(doorReq, request, tools);
       const taken = (request.messages || [])
         .filter(message => message.role === 'assistant').length;
       const run = {
@@ -568,13 +569,18 @@ module.exports = (self) => {
             messages: self.dropAttachmentBytes(result.messages)
           }),
           usageMetadata: { purpose: 'request' },
-          ...self.getProgressHooks(doorReq, request, tools),
+          ...hooks,
+          // The reads of the earlier steps count before a step's calls run,
+          // those of a step that waited included (see `endRun`)
+          onMessage: async (message, meta) => {
+            await self.apos.aposHarness.commitSeen(doorReq);
+            await hooks.onMessage(message, meta);
+          },
           // Due a shortening, the run pauses for it and the request
           // continues on a new run (`endRun`)
           betweenSteps: async ({
             usage, messages: sofar, signal
           }) => {
-            await self.apos.aposHarness.commitSeen(doorReq);
             if (await self.shortenInRequest(doorReq, chat, request, {
               usage,
               messages: sofar,
@@ -684,12 +690,19 @@ module.exports = (self) => {
         requestId: request._id,
         // A write to a document saved since the chat last read or wrote it
         // is refused, across requests
-        seen: new Map((chat.seen || []).map(({ _id, updatedAt }) => [ _id, updatedAt ])),
+        seen: toMap(chat.seen),
         // A read counts from the end of its step: a write of the same step
         // came from what the model read before
         deferSeen: true,
+        // The reads of a step that waited, kept with the request until its
+        // calls have run
+        pendingSeen: toMap(request.pendingSeen),
         ...(model && { model })
       });
+
+      function toMap(stamps) {
+        return new Map((stamps || []).map(({ _id, updatedAt }) => [ _id, updatedAt ]));
+      }
     },
 
     // A run's instructions, how to localize on a site with several locales,
@@ -794,6 +807,7 @@ module.exports = (self) => {
         });
       const now = new Date();
       const status = getStatus();
+      const door = self.apos.aposHarness.getDoor(req);
       if (overflow && (status === 'failed')) {
         // It can't fit: later requests replay it without its reads
         await self.shortenRequest(req, request, partial.messages.slice(prior), {
@@ -810,6 +824,16 @@ module.exports = (self) => {
         ...((status !== 'running') && current.workStartedAt && {
           workedMs: (current.workedMs || 0) +
             Math.max(now - new Date(current.workStartedAt), 0)
+        }),
+        // A step that waited keeps its reads with the request until its
+        // calls have run on the next run
+        ...(door && {
+          pendingSeen: ((status === 'waiting') && door.pendingSeen.size)
+            ? [ ...door.pendingSeen ].map(([ _id, updatedAt ]) => ({
+              _id,
+              updatedAt
+            }))
+            : null
         })
       };
       if (status === 'running') {
@@ -892,6 +916,10 @@ module.exports = (self) => {
       if (!matchedCount) {
         // Stopped or ended meanwhile: read it again
         return self.endRun(req, chat, request, end);
+      }
+      // No call of the last step is left to run: its reads count
+      if (status !== 'waiting') {
+        await self.apos.aposHarness.commitSeen(req);
       }
       if (status === 'running') {
         await self.publishRequest(req, request);

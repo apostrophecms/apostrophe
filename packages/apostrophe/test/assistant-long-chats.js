@@ -511,6 +511,41 @@ describe('Assistant: long chats', function () {
       assertStandsOnItsOwn(calls[0].messages);
     });
 
+    it('keeps the reads of the step it paused after, for the run that continues', async function () {
+      const req = userReq();
+      const chat = await apos.aposAssistant.createChat(req);
+      const taskReq = apos.task.getReq({ mode: 'draft' });
+      const home = await apos.page.find(taskReq, { slug: '/' }).toObject();
+      script = sequence([
+        docTurn('q-1', 'get_document', { _id: home._id }),
+        readTurn('q-2', 'two'),
+        // Someone else saves the page before the model reads it again, past
+        // the threshold: the run pauses after that read
+        async () => {
+          const draft = await apos.page.find(taskReq, { _id: home._id }).toObject();
+          await apos.page.update(taskReq, {
+            ...draft,
+            title: 'Saved by someone else'
+          });
+          return docTurn('q-3', 'get_document', { _id: home._id }, 4500);
+        },
+        docTurn('q-4', 'update_document', {
+          targets: [ {
+            _id: home._id,
+            values: { title: 'From the model' }
+          } ]
+        }, 2000),
+        textTurn('Renamed.', 2000)
+      ]);
+      const request = await runToEnd(req, chat, 'Rename the home page');
+      assert.equal(request.status, 'completed');
+      const { checkpoints } = await apos.aposAssistant.getChat(req, chat._id);
+      assert.equal(checkpoints.length, 1);
+      const written = toolResults(request.messages)
+        .find(result => result.toolCallId === 'q-4');
+      assert.equal(written.output.written.length, 1);
+    });
+
     it('keeps running past the threshold while there is nothing to clear', async function () {
       const req = userReq();
       const chat = await apos.aposAssistant.createChat(req);
@@ -1772,6 +1807,22 @@ function actTurn(id, name) {
     finishReason: 'toolCalls',
     usage: {
       inputTokens: 100,
+      outputTokens: 10
+    }
+  };
+}
+
+function docTurn(id, name, input, inputTokens = 100) {
+  return {
+    content: [ {
+      type: 'toolCall',
+      id,
+      name,
+      input
+    } ],
+    finishReason: 'toolCalls',
+    usage: {
+      inputTokens,
       outputTokens: 10
     }
   };
