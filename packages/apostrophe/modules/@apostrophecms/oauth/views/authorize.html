@@ -2,8 +2,8 @@
   The OAuth approval page, or an error in its place. Self-contained on
   purpose: no project layout, scripts or outside resources, so nothing on
   the page can be changed by the project or the client, and nothing leaks
-  the URL. The wording is placeholder text until the permissions-language
-  ticket settles it.
+  the URL. What the tool can do comes from the resource's description
+  (the MCP module's, which follows its `publish` option).
 #}
 <!DOCTYPE html>
 <html lang="{{ data.locale or 'en' }}">
@@ -115,6 +115,14 @@
       border-color: var(--oauth-primary);
       color: var(--oauth-primary-text);
     }
+    /* "Not you?": a button, to post the form, that reads as a link */
+    button.link {
+      flex: none;
+      padding: 0;
+      border: 0;
+      color: var(--oauth-primary);
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -181,7 +189,12 @@
         <dt>{{ __t('apostrophe:oauthSite') }}</dt>
         <dd>{{ data.site }}</dd>
         <dt>{{ __t('apostrophe:oauthUser') }}</dt>
-        <dd>{{ data.user.title }} ({{ data.user.username }})</dd>
+        <dd>
+          {{ data.user.title }} ({{ data.user.username }})
+          {% if data.canSwitchUser %}
+            · <button type="submit" form="oauth-decision" name="decision" value="switch" class="link" data-oauth-switch-user>{{ __t('apostrophe:oauthNotYou') }}</button>
+          {% endif %}
+        </dd>
         {% if data.clientHost %}
           <dt>{{ __t('apostrophe:oauthClientFrom') }}</dt>
           <dd>{{ data.clientHost }}</dd>
@@ -195,8 +208,9 @@
           {% endif %}
         </dd>
       </dl>
+      <p class="muted" data-oauth-disconnect>{{ __t('apostrophe:oauthDisconnectLater') }}</p>
       <p class="muted">{{ __t('apostrophe:oauthOnlyIfYouStarted') }}</p>
-      <form method="post" action="{{ data.action }}">
+      <form method="post" action="{{ data.action }}" id="oauth-decision">
         <input type="hidden" name="approval" value="{{ data.approvalId }}">
         <div class="actions">
           <button type="submit" name="decision" value="deny">{{ __t('apostrophe:oauthDecline') }}</button>
