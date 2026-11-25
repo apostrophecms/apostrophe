@@ -53,7 +53,10 @@ const SCREEN_INTRO = 'Each user message carries a "Current screen" line, true as
   'while it is open. Its "window", when there is one, sits beside the page and edits ' +
   'its document as an editor does: it is the editor on top while no modal is open. ' +
   'Read and change what the editor on top holds with ' +
-  'edit_open_document; it is stored when the user saves.';
+  'edit_open_document; it is stored when the user saves. If the editor you are ' +
+  'working in closes before you finish, the user closed it, perhaps cancelling: don\'t ' +
+  'carry on with the document tools; ask the user what to do, and change nothing until ' +
+  'they answer.';
 const SCREEN_LINE = 'Current screen:';
 
 module.exports = (self) => {
