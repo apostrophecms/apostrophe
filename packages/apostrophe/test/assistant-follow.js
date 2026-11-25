@@ -448,6 +448,69 @@ describe('Assistant: following a request', function () {
       });
     });
 
+    it('names the widgets and the field a message was sent about, labels from the database', async function () {
+      const req = userReq(editor);
+      const chat = await apos.aposAssistant.createChat(req);
+      const draft = await findDraft(note);
+      const [ one, two ] = draft.body.items;
+      const sendAbout = async (screen) => {
+        await apos.aposAssistant.send(req, chat._id, {
+          message: 'Shorten this',
+          screen: {
+            tabId: 'tab-1',
+            ...screen
+          }
+        });
+        return apos.aposAssistant.renderRequest(await waitForEnd(req, chat));
+      };
+
+      const widgets = await sendAbout({
+        selection: {
+          docId: note._id,
+          widgetIds: [ one._id, two._id ]
+        },
+        field: {
+          docId: note._id,
+          name: 'title'
+        }
+      });
+      assert.deepEqual(widgets.chips, [
+        {
+          kind: 'widget',
+          label: 'apostrophe:richText'
+        },
+        {
+          kind: 'widget',
+          label: 'apostrophe:richText'
+        },
+        {
+          kind: 'field',
+          label: 'apostrophe:title'
+        }
+      ]);
+
+      const item = await sendAbout({
+        field: {
+          docId: note._id,
+          name: `@${draft.links[0]._id}.label`
+        }
+      });
+      assert.deepEqual(item.chips, [ {
+        kind: 'field',
+        label: 'Label'
+      } ]);
+
+      // A field the document has no such name for verifies, but is no chip
+      const unknown = await sendAbout({
+        field: {
+          docId: note._id,
+          name: 'noSuchField'
+        }
+      });
+      assert.equal(unknown.screen, undefined);
+      assert.equal(unknown.chips, undefined);
+    });
+
     it('tells the model what changed on the screen since its last reply', async function () {
       const req = userReq(editor);
       const chat = await apos.aposAssistant.createChat(req);

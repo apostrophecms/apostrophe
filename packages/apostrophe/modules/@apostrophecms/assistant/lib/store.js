@@ -370,7 +370,7 @@ module.exports = (self) => {
     },
 
     newRequest(chat, {
-      _id, sequence, tabId, message, mentions, screen, retryOf
+      _id, sequence, tabId, message, mentions, screen, chips, retryOf
     }) {
       const now = new Date();
       return {
@@ -383,6 +383,7 @@ module.exports = (self) => {
         message,
         ...(mentions?.length && { mentions }),
         screen,
+        ...(chips?.length && { chips }),
         ...(retryOf && { retryOf }),
         status: 'running',
         // The time the assistant worked on it, waits for the editor left

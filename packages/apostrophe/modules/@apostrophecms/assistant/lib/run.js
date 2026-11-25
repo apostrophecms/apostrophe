@@ -101,6 +101,7 @@ module.exports = (self) => {
         message: text,
         mentions,
         screen: verified,
+        chips: await self.getScreenChips(req, verified),
         retryOf
       });
       let stored = false;

@@ -58,9 +58,10 @@
 </template>
 
 <script setup>
-// A chip: a document mentioned or a widget selected. The composer's editing
-// area builds the same markup as plain DOM (`lib/chip.js`) and the server
-// renders it in replies, which is why the styles below are not scoped
+// A chip: a document mentioned, a widget selected or a field edited. The
+// composer's editing area builds the same markup as plain DOM (`lib/chip.js`)
+// and the server renders it in replies, which is why the styles below are not
+// scoped
 import { computed } from 'vue';
 import { getChipIcon } from '../lib/chip.js';
 
@@ -69,7 +70,7 @@ const props = defineProps({
     type: String,
     required: true
   },
-  // `page`, `piece`, `image` or `widget`
+  // `page`, `piece`, `image`, `widget` or `field`
   kind: {
     type: String,
     required: true
