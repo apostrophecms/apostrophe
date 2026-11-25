@@ -20,7 +20,11 @@ module.exports = {
     // How many documents each connection remembers for the stale-write
     // guard: the most recently read or written. A write to a document it no
     // longer remembers isn't checked (see lib/seen.js)
-    seenLimit: 100
+    seenLimit: 100,
+    // Whether an outside AI tool may publish, as far as the connected user
+    // may. `false` keeps the publishing tools off this server alone: the
+    // assistant keeps them
+    publish: true
     // maxImageSize: the largest image `save_image_to_media` takes, in
     //   bytes. Unset, it's the attachment module's `maxSize` when that is a
     //   number of bytes, otherwise 10 MB (10,000,000 bytes). The image comes
@@ -117,10 +121,13 @@ module.exports = {
 
       validateOptions() {
         const {
-          enabled, allowedOrigins, title, seenLimit, maxImageSize
+          enabled, allowedOrigins, title, seenLimit, publish, maxImageSize
         } = self.options;
         if (typeof enabled !== 'boolean') {
           throw new Error('The "@apostrophecms/mcp" module\'s enabled option must be a boolean.');
+        }
+        if (typeof publish !== 'boolean') {
+          throw new Error('The "@apostrophecms/mcp" module\'s publish option must be a boolean.');
         }
         if (!(Number.isSafeInteger(seenLimit) && (seenLimit > 0))) {
           throw new Error('The "@apostrophecms/mcp" module\'s seenLimit option must be a positive whole number.');

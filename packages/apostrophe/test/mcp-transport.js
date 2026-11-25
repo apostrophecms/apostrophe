@@ -131,6 +131,7 @@ describe('MCP: module and transport', function () {
     it('refuses options of the wrong shape at startup', async function () {
       const cases = [
         [ { enabled: 'yes' }, /enabled option must be a boolean/ ],
+        [ { publish: 'yes' }, /publish option must be a boolean/ ],
         [ { allowedOrigins: 'example.com' }, /allowedOrigins option must be an array/ ],
         [ { allowedOrigins: [ '' ] }, /allowedOrigins option must be an array/ ]
       ];

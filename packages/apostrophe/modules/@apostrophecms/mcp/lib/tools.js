@@ -5,9 +5,15 @@
 
 const { fromJsonSchema } = require('@modelcontextprotocol/server');
 
-// Tools whose writes remove content. Every other action only adds or
-// changes, as a draft (MCP assumes destructive unless told otherwise)
-const DESTRUCTIVE = new Set([ 'remove_widgets' ]);
+// Tools that put drafts live. The `publish` option turns them off for MCP
+// alone; a tool that publishes must be named here, or `publish: false`
+// would not hold it back
+const PUBLISHING = new Set([ 'publish_document' ]);
+
+// Tools whose writes remove content or put it live. Every other action
+// only adds or changes, in the draft or live for a type with no drafts
+// (MCP assumes destructive unless told otherwise)
+const DESTRUCTIVE = new Set([ 'remove_widgets', ...PUBLISHING ]);
 
 // The result of a call that stopped to ask the user something
 const SUSPENDED = 'This tool needs an answer from the user before it can go on, ' +
@@ -31,10 +37,17 @@ const PASS_THROUGH = {
 module.exports = (self) => {
   return {
     // The definitions the door selects, as a Map by name, as the engine
-    // takes them
+    // takes them. Never an agent tool, one that runs Apostrophe's own AI,
+    // whatever its tags: an MCP client brings its own model, and must not
+    // spend the site's. No publishing tool with `publish: false`. The list
+    // and the calls both come from here, so a tool left out is neither
+    // listed nor callable
     getTools() {
       return new Map(
-        self.apos.aposHarness.getDoorTools('mcp').map(tool => [ tool.name, tool ])
+        self.apos.aposHarness.getDoorTools('mcp')
+          .filter(tool => tool.kind !== 'agent')
+          .filter(tool => self.options.publish || !PUBLISHING.has(tool.name))
+          .map(tool => [ tool.name, tool ])
       );
     },
 
@@ -170,3 +183,6 @@ function errorResult(message) {
 function isPlainObject(value) {
   return Boolean(value) && (typeof value === 'object') && !Array.isArray(value);
 }
+
+// For tests that check the list against the registered tools
+module.exports.PUBLISHING = PUBLISHING;
