@@ -94,10 +94,6 @@
  *                                              reset the DB in the sample-data
  *                                              step, not via this flag.)
  * @property {boolean}         nonInteractive   CI mode: no prompts downstream.
- * @property {boolean}         [nodeRedirect]   The guided flow steered the
- *                                              user away from a build this
- *                                              Node.js is too old for.
- *                                              Reported to telemetry only.
  * @property {number}          confirmedAt      Plan-confirmation timestamp
  *                                              (epoch ms), set by the caller.
  *                                              Source of durationMs.
@@ -134,7 +130,6 @@
  * @property {DbChoice}        dbChoice
  * @property {PackageManager}  packageManager
  * @property {number}          durationMs
- * @property {boolean}         [nodeRedirect]
  * @property {FailStage}       [failStage]
  * @property {string}          [errorCode]
  */

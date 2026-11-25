@@ -124,9 +124,6 @@ Both events carry:
 - **`dbChoice`** - `sqlite`, `mongodb`, or `postgres`.
 - **`packageManager`** - `npm`, `pnpm`, `yarn`, or `unknown` (detected).
 - **`durationMs`** - how long the attempt took.
-- **`nodeRedirect`** - `true` if the guided installer steered you away from a
-  build because your Node.js is too old for it (for example, Apostrophe + Astro
-  on Node.js 22), whatever you then picked. Otherwise `false`.
 - **`anonymousId`** - UUID v4, present only once you've opted in.
 
 `install_fail` additionally carries:
@@ -161,8 +158,7 @@ Grouped by the stage that emits them.
 - **`unsupported_node`** - the running Node.js is too old for the chosen kit
   (Astro kits need Node.js 24 or newer). Only unattended runs report it: the
   guided installer catches it at the build question, before telemetry
-  consent, and offers Standalone instead. If you then finish the install and
-  opt in, that event carries `nodeRedirect: true`.
+  consent, and offers Standalone instead.
 
 **clone**
 

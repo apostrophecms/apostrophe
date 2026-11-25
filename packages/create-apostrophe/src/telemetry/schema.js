@@ -121,9 +121,6 @@ function isErrorCode(code) {
  * @property {DbChoice}        dbChoice
  * @property {PackageManager}  packageManager
  * @property {number}          durationMs
- * @property {boolean}         [nodeRedirect]  True when the guided installer
- *   steered the user away from a build this Node.js is too old for, whatever
- *   they then picked. Defaults to `false`.
  */
 
 /**
@@ -153,8 +150,7 @@ function isErrorCode(code) {
 /**
  * The caller-supplied base plus the ambient {@link Runtime} the builder
  * attaches itself.
- * @typedef {Omit<BasePayloadInput, 'nodeRedirect'> & Runtime &
- *   { nodeRedirect: boolean }} BasePayload
+ * @typedef {BasePayloadInput & Runtime} BasePayload
  */
 
 /**
@@ -213,17 +209,6 @@ function requireFiniteNumber(name, value) {
 }
 
 /**
- * @param {string} name
- * @param {unknown} value
- * @returns {asserts value is boolean}
- */
-function requireBoolean(name, value) {
-  if (typeof value !== 'boolean') {
-    throw new SchemaError(`Invalid ${name}: expected boolean`);
-  }
-}
-
-/**
  * @overload
  * @param {'install_success'} event
  * @param {PayloadInput} input
@@ -273,9 +258,6 @@ export function buildPayload(event, input, runtime = readRuntime()) {
   if (input.anonymousId !== undefined) {
     requireString('anonymousId', input.anonymousId);
   }
-  if (input.nodeRedirect !== undefined) {
-    requireBoolean('nodeRedirect', input.nodeRedirect);
-  }
 
   /** @type {BasePayload} */
   const base = {
@@ -286,7 +268,6 @@ export function buildPayload(event, input, runtime = readRuntime()) {
     dbChoice: input.dbChoice,
     packageManager: input.packageManager,
     durationMs: input.durationMs,
-    nodeRedirect: input.nodeRedirect === true,
     ...(input.anonymousId !== undefined
       ? { anonymousId: input.anonymousId }
       : {})
@@ -327,7 +308,7 @@ export function allowedFields(event) {
 /** @type {ReadonlyArray<keyof SuccessPayload>} */
 const SUCCESS_FIELDS = Object.freeze([
   'event', 'cliVersion', 'nodeVersion', 'platform', 'anonymousId', 'kitId',
-  'dbChoice', 'packageManager', 'durationMs', 'nodeRedirect'
+  'dbChoice', 'packageManager', 'durationMs'
 ]);
 
 /** @type {ReadonlyArray<keyof FailPayload>} */

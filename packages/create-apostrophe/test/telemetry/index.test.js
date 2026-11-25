@@ -75,7 +75,6 @@ describe('telemetry/createTelemetry — consent gate', function () {
       dbChoice: PARTIAL.dbChoice,
       packageManager: PARTIAL.packageManager,
       durationMs: PARTIAL.durationMs,
-      nodeRedirect: false,
       anonymousId: '11111111-1111-1111-1111-111111111111'
     });
   });

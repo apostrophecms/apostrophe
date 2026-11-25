@@ -59,10 +59,7 @@ export function makeCreateProject({
         }
       }
       const { ok: _ok, ...payload } = result;
-      telemetry.event(ok ? 'install_success' : 'install_fail', {
-        ...payload,
-        nodeRedirect: options.nodeRedirect === true
-      });
+      telemetry.event(ok ? 'install_success' : 'install_fail', payload);
       return result;
     };
 

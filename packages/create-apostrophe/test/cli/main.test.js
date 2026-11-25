@@ -489,7 +489,6 @@ describe('cli/main — interactive path (mocked runFlow)', function () {
         password: 'pw'
       },
       telemetryConsent: false,
-      nodeRedirect: false,
       confirmedAt: Date.now(),
       ...extra
     };
@@ -524,25 +523,7 @@ describe('cli/main — interactive path (mocked runFlow)', function () {
     assert.equal(options.dbUri, 'postgres://localhost/x');
     assert.equal(options.admin.username, 'ops');
     assert.equal(options.nonInteractive, false);
-    assert.equal(options.nodeRedirect, false);
     assert.equal(options.confirmedAt, answers.confirmedAt);
-  });
-
-  it('a Node.js redirect in the flow reaches createProject', async function () {
-    const cp = stubCreateProject();
-    await captureIO(() => main(
-      [ ...ARGV0 ],
-      {
-        createProject: cp.fn,
-        createStore: store.createStore,
-        runFlow: async () => flowAnswers({
-          build: 'standalone',
-          kitId: 'apostrophe-essentials',
-          nodeRedirect: true
-        })
-      }
-    ));
-    assert.equal(cp.calls[0].options.nodeRedirect, true);
   });
 
   it('createProject ok:false → exit 1', async function () {

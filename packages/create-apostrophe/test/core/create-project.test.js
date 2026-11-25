@@ -136,8 +136,7 @@ describe('core/create-project', function () {
       kitId: 'apostrophe-essentials',
       dbChoice: 'sqlite',
       packageManager: 'npm',
-      durationMs: res.durationMs,
-      nodeRedirect: false
+      durationMs: res.durationMs
     });
     assert.deepEqual(calls, [ 'clone', 'install', 'admin' ]);
     assert.deepEqual(tasks.map((t) => [ t.label, t.settled ]), [
@@ -287,35 +286,6 @@ describe('core/create-project', function () {
 
     assert.equal(res.ok, true);
     assert.equal(events[0].name, 'install_success');
-  });
-
-  it('nodeRedirect reaches the telemetry payload, not the result', async function () {
-    const {
-      events, logger, telemetry
-    } = spies();
-    const createProject = makeCreateProject({
-      clone: fakeStandaloneClone([]),
-      scaffold: async ({ projectDir }) => ({
-        frontend: null,
-        appRoot: projectDir
-      }),
-      dbConfig: async () => {},
-      install: async () => {},
-      addAdminUser: async () => {},
-      nodeVersion: '22.0.0'
-    });
-
-    const res = await createProject(
-      baseOptions({ nodeRedirect: true }),
-      {
-        telemetry,
-        logger
-      }
-    );
-
-    assert.equal(res.ok, true);
-    assert.equal('nodeRedirect' in res, false);
-    assert.equal(events[0].payload.nodeRedirect, true);
   });
 
   it('StageError details are logged for the user, never returned or emitted', async function () {

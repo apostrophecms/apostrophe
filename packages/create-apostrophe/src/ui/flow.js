@@ -62,9 +62,6 @@ let totalSteps = 6;
  *   target.
  * @property {AdminAccount}   admin
  * @property {boolean}        telemetryConsent
- * @property {boolean}        nodeRedirect  True when this Node.js is too old
- *   for at least one build, so the build question steered the user away
- *   from it, whatever they then picked. Reported to telemetry if they opt in.
  * @property {number}         confirmedAt  Epoch ms when the user confirmed
  *                                         the plan; the install duration
  *                                         is measured from this point.
@@ -116,7 +113,7 @@ export async function runFlow(deps) {
 async function collectAnswers(deps, defaults) {
   totalSteps = willPromptForConsent(deps) ? 6 : 5;
   const shortName = await askProjectName(defaults?.shortName);
-  const { build, nodeRedirect } = await askSupportedBuildType(
+  const build = await askSupportedBuildType(
     defaults?.build, deps.nodeVersion
   );
   const startingPoint = await askStartingPoint(defaults?.startingPoint);
@@ -146,8 +143,7 @@ async function collectAnswers(deps, defaults) {
     dbReset,
     replacesData,
     admin,
-    telemetryConsent,
-    nodeRedirect
+    telemetryConsent
   };
 }
 
@@ -165,9 +161,6 @@ async function askProjectName(defaultShortName = 'my-project') {
   });
 }
 
-/** @type {ReadonlyArray<BuildType>} */
-const BUILD_TYPES = Object.freeze([ 'astro', 'standalone' ]);
-
 /**
  * Ask the build question until the answer can run on this Node.js. The
  * options already say which builds are too new for it; picking one anyway
@@ -176,9 +169,7 @@ const BUILD_TYPES = Object.freeze([ 'astro', 'standalone' ]);
  *
  * @param {BuildType} [initial]
  * @param {string} [nodeVersion] Defaults to `process.versions.node`.
- * @returns {Promise<{ build: BuildType, nodeRedirect: boolean }>}
- *   `nodeRedirect` is true if any build was unavailable on this Node.js,
- *   whether or not the user tried to pick it.
+ * @returns {Promise<BuildType>}
  */
 async function askSupportedBuildType(initial, nodeVersion = process.versions.node) {
   const major = parseNodeMajor(nodeVersion);
@@ -197,10 +188,7 @@ async function askSupportedBuildType(initial, nodeVersion = process.versions.nod
     });
     build = await askBuildType('standalone', nodeVersion, tooOld);
   }
-  return {
-    build,
-    nodeRedirect: BUILD_TYPES.some(tooOld)
-  };
+  return build;
 }
 
 /**
