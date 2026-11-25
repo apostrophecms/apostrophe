@@ -9,6 +9,16 @@ const { PUBLISHING } = require('../modules/@apostrophecms/mcp/lib/tools.js');
 // the project sets the MCP module's `publish` option to false. That keeps
 // the publishing tools off the MCP server alone: the assistant keeps them.
 
+// The approval page's description of the MCP server, in English, as a user
+// with `role` sees it
+function getApprovalDescription(apos, role = 'editor') {
+  const oauth = apos.modules['@apostrophecms/oauth'];
+  return oauth.getResourceDescription(
+    apos.task.getReq({ role }),
+    oauth.getResourceUrl(apos.modules['@apostrophecms/mcp'].action)
+  );
+}
+
 describe('MCP: publishing', function () {
   this.timeout(t.timeout);
 
@@ -38,6 +48,20 @@ describe('MCP: publishing', function () {
       for (const name of names.filter(name => /publish/.test(name))) {
         assert(PUBLISHING.has(name), `${name} publishes but is not in PUBLISHING`);
       }
+    });
+
+    it('says on the approval page that the tool can publish, to a user who can', function () {
+      for (const role of [ 'editor', 'admin' ]) {
+        const description = getApprovalDescription(apos, role);
+        assert.match(description, /create, edit and publish content/, role);
+        assert.doesNotMatch(description, /saved as drafts/, role);
+      }
+    });
+
+    it('says on the approval page that changes are saved as drafts, to a user who can\'t publish', function () {
+      const description = getApprovalDescription(apos, 'contributor');
+      assert.match(description, /saved as drafts, except for content types that autopublish/);
+      assert.doesNotMatch(description, /publish content/);
     });
 
     for (const mode of MODES) {
@@ -83,6 +107,12 @@ describe('MCP: publishing', function () {
 
     after(async function () {
       await t.destroy(apos);
+    });
+
+    it('says on the approval page that changes are saved as drafts, even to a user who could publish', function () {
+      const description = getApprovalDescription(apos, 'admin');
+      assert.match(description, /saved as drafts, except for content types that autopublish/);
+      assert.doesNotMatch(description, /publish content/);
     });
 
     for (const mode of MODES) {
