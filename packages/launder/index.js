@@ -363,13 +363,19 @@ module.exports = function(options) {
 
     function returnDefault() {
       if (def === undefined) {
-        def = dayjs().format('YYYY-MM-DD');
+        def = dayjs(now).format('YYYY-MM-DD');
       }
       return def;
     }
 
+    // Only digits may appear between the separators. Anything else, such as
+    // a word or an ISO 8601 date and time, is left to the Date parser below
+    function numeric(separator) {
+      return date.split(separator).every(component => component.match(/^\d+$/));
+    }
+
     if (typeof (date) === 'string') {
-      if (date.match(/\//)) {
+      if (date.match(/\//) && numeric('/')) {
         components = date.split('/');
         if (components.length === 2) {
           // Convert mm/dd to yyyy-mm-dd
@@ -397,7 +403,7 @@ module.exports = function(options) {
         } else {
           return returnDefault();
         }
-      } else if (date.match(/-/)) {
+      } else if (date.match(/-/) && numeric('-')) {
         components = date.split('-');
         if (components.length === 2) {
           // Convert mm-dd to yyyy-mm-dd
@@ -414,7 +420,7 @@ module.exports = function(options) {
       if (date === null) {
         return returnDefault();
       }
-      date = (now || new Date(date));
+      date = new Date(date);
       if (isNaN(date.getTime())) {
         return returnDefault();
       }

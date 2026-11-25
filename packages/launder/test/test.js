@@ -588,6 +588,23 @@ describe('launder', function() {
       const today = new Date().toISOString().slice(0, 10);
       assert.strictEqual(launder.date(null), today);
     });
+    it('should return the default for a string with separators that is not a date', function() {
+      assert.strictEqual(launder.date('not-a-date', null), null);
+      assert.strictEqual(launder.date('hello-world', '1989-12-13'), '1989-12-13');
+      assert.strictEqual(launder.date('a/b', null), null);
+      assert.strictEqual(launder.date('a/b/c', null), null);
+    });
+    it('should accept an ISO 8601 date and time', function() {
+      assert.strictEqual(launder.date('2015-02-19T10:30:00'), '2015-02-19');
+    });
+    it('should sanitize the given date rather than `now` when `now` is passed', function() {
+      const now = new Date(2020, 5, 15);
+      assert.strictEqual(launder.date(new Date(2015, 1, 19), undefined, now), '2015-02-19');
+      assert.strictEqual(launder.date('waffles', null, now), null);
+    });
+    it('should use `now` as the current date when there is no default', function() {
+      assert.strictEqual(launder.date('waffles', undefined, new Date(2020, 5, 15)), '2020-06-15');
+    });
   });
 
   describe('formatDate', function() {
