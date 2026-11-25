@@ -176,7 +176,8 @@ module.exports = function(options) {
     return s;
 
     function fixUrl(href) {
-      if (href.match(/^(((https?|ftp):\/\/)|((mailto|tel|sms):)|#|([^/.]+)?\/|[^/.]+$)/)) {
+      // Schemes are case insensitive, as they are for naughtyHref
+      if (href.match(/^(((https?|ftp):\/\/)|((mailto|tel|sms):)|#|([^/.]+)?\/|[^/.]+$)/i)) {
         // All good - no change required
         return href;
       } else if (href.match(/^[^/.]+\.[^/.]+/)) {

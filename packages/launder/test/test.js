@@ -274,6 +274,12 @@ describe('launder', function() {
     it('should preserve protocol-relative urls', function() {
       assert(launder.url('//www.apostrophenow.org') === '//www.apostrophenow.org');
     });
+    it('should accept schemes in any letter case', function() {
+      assert.strictEqual(launder.url('MAILTO:test@apostrophenow.org'), 'MAILTO:test@apostrophenow.org');
+      assert.strictEqual(launder.url('Mailto:test@apostrophenow.org', undefined, true), 'Mailto:test@apostrophenow.org');
+      assert.strictEqual(launder.url('Tel:+1.215.555.0100'), 'Tel:+1.215.555.0100');
+      assert.strictEqual(launder.url('HTTPS://www.apostrophenow.org'), 'HTTPS://www.apostrophenow.org');
+    });
   });
 
   describe('naughtyHref', function() {
