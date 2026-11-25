@@ -3,6 +3,11 @@
 // an ask the owning browser tab answers; `write_plan` keeps the request's
 // plan, which the panel shows above the composer. Each is an action on the
 // AI engine tagged `assistant`, so only the assistant's door selects it.
+//
+// The request keeps what the thread shows of each answered `ask_editor`
+// ask in `questionAsks`: `{ callId, questions }`, each question `{ question,
+// answer }` or `{ question, youDecide: true }`. A skip or a stop leaves no
+// record: the request's status says it.
 
 const QUESTION_MAX = 300;
 const OPTION_MAX = 120;
@@ -24,7 +29,20 @@ module.exports = (self) => {
       if (!self.options.enabled) {
         return;
       }
-      self.addAskKind('question', { accept: self.acceptQuestionAnswer });
+      self.addAskKind('question', {
+        accept: self.acceptQuestionAnswer,
+        answered: (req, request, ask, input) => self.requests.updateOne({
+          _id: request._id,
+          ownerId: request.ownerId
+        }, {
+          $push: {
+            questionAsks: {
+              callId: ask.callId,
+              questions: input.answers
+            }
+          }
+        })
+      });
       self.addAskKind('confirm', { accept: self.acceptConfirmAnswer });
       self.apos.ai.addTool({
         name: 'ask_editor',

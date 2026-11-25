@@ -108,6 +108,10 @@
       v-html="reply"
     />
     <!-- eslint-enable vue/no-v-html -->
+    <AposAssistantQuestions
+      v-if="request.questionAsks?.length"
+      :request="request"
+    />
     <AposAssistantImageRounds
       v-if="request.imageAsks?.length"
       :request="request"
@@ -312,6 +316,7 @@ import AposAssistantMessage from './AposAssistantMessage.vue';
 import AposAssistantFiles from './AposAssistantFiles.vue';
 import AposAssistantNotices from './AposAssistantNotices.vue';
 import AposAssistantImageRounds from './AposAssistantImageRounds.vue';
+import AposAssistantQuestions from './AposAssistantQuestions.vue';
 import { getFileUrl, isPicture } from '../lib/attachments.js';
 import {
   formatNames, getConfirmLines, getRevertFailure, getRevertStatus, splitCount

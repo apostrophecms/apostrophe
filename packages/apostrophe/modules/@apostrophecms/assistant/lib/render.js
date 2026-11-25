@@ -248,21 +248,29 @@ module.exports = (self) => {
 
     /**
      * A request as the panel reads it: what the thread shows, never the
-     * transcript. Its message stays as typed, which the panel shows with its
-     * checked `mentions` as chips; `reply` is the run's last words to the
-     * editor, rendered, the documents it names chips (`null` before it has
-     * any); `steps` lists the tool calls in order, `{ id, name, label,
-     * listed }`, `listed` when it has a summary to show (what happened, or
-     * that it failed), each step's details read on their own
-     * (`renderStep`); `locked` lists the documents a write was refused for a
-     * lock and no later write of the request reached, `{ _id, title,
-     * lockedBy }`, `lockedBy` the holder's name, `null` for the editor's own
-     * other browser tab or chat; `notices` the messages its tools posted
-     * (see notices.js), each `action` without its data, `null` once run.
-     * The vendor and model are left out unless
-     * `modelDisplay` is set, and the screen it was sent with and what the
-     * model was told of its changes to the page always. `usage` includes
-     * what the agent tools spent.
+     * transcript. The stored record, with:
+     *
+     * - `message`: as typed; the panel shows its checked `mentions` as
+     *   chips.
+     * - `reply`: the run's last words to the editor, rendered, the
+     *   documents it names as chips. `null` before there are any.
+     * - `steps`: the tool calls in order, `{ id, name, label, listed }`.
+     *   `listed` when the step has a summary to show (what happened, or
+     *   that it failed). A step's details are read on their own
+     *   (`renderStep`).
+     * - `locked`: the documents a write was refused for a lock and no later
+     *   write of the request reached, `{ _id, title, lockedBy }`.
+     *   `lockedBy` is the holder's name, `null` for the editor's own other
+     *   browser tab or chat.
+     * - `notices`: the messages its tools posted (see notices.js). Each
+     *   `action` is sent without its data, and is `null` once run.
+     * - `questionAsks`: the questions it asked, with the answers given (see
+     *   editor-tools.js).
+     * - `usage`: includes what the agent tools spent.
+     *
+     * Left out: the vendor and model unless `modelDisplay` is set, and
+     * always the screen it was sent with and what the model was told of
+     * its changes to the page.
      *
      * @param {object} request
      * @returns {object}

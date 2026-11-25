@@ -214,6 +214,28 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
           }
         ]
       });
+      // The thread keeps the questions with the answers given
+      assert.deepEqual(apos.aposAssistant.renderRequest(done).questionAsks, [ {
+        callId: 'call-ask',
+        questions: [
+          {
+            question: 'Which layout?',
+            answer: 'Two columns'
+          },
+          {
+            question: 'Which tone?',
+            answer: 'Playful'
+          },
+          {
+            question: 'What should the headline say?',
+            answer: 'Spring is here'
+          },
+          {
+            question: 'Which image?',
+            youDecide: true
+          }
+        ]
+      } ]);
     });
 
     it('counts the steps of a request across its answers', async function () {
@@ -291,6 +313,8 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
       assert.equal(skipped.asks, null);
       assert.deepEqual(resultOf(skipped, 'call-ask').output, { answered: false });
       assert.equal((await apos.aposAssistant.getChat(req, chat._id)).openRequest, null);
+      // The skipped status says it: the thread keeps no record
+      assert.equal(skipped.questionAsks, undefined);
     });
   });
 
