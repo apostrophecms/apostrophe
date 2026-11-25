@@ -37,8 +37,9 @@
 // and receive a `token` as a response, which can then be presented as a
 // bearer token. If set to `false`, only session-based logins are possible.
 //
-// May be set to an object with a `lifetime` property, in milliseconds.
-// The default bearer token lifetime is 2 weeks.
+// May be set to an object with a `lifetime` property, in seconds
+// (e.g. `86400 * 7` for one week). The default bearer token lifetime
+// is 2 weeks.
 //
 // ## Notable properties of apos.modules['@apostrophecms/login']
 //

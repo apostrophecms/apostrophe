@@ -189,6 +189,74 @@ describe('Attachment', function() {
       assert(fs.existsSync(t));
     });
 
+    // Files only: uploadfs removes its own temporary folders asynchronously
+    async function tempFiles() {
+      const entries = await fs.readdir(apos.attachment.uploadfs.getTempPath(), {
+        withFileTypes: true
+      });
+      return entries.filter(entry => entry.isFile()).map(entry => entry.name);
+    }
+
+    it('should reject a zero-area crop via the crop route without leaving a temporary file', async function() {
+      const result = await insert('crop_image.png');
+      await t.createUser(apos, 'contributor', {
+        username: 'crop-contributor'
+      });
+      const jar = await t.loginAs(apos, 'crop-contributor');
+      await apos.http.get('/', { jar });
+      const before = await tempFiles();
+      for (const crop of [
+        {
+          top: 0,
+          left: 0,
+          width: 0,
+          height: 0
+        },
+        {
+          top: 0,
+          left: 0,
+          width: 80,
+          height: 0
+        }
+      ]) {
+        try {
+          await apos.http.post('/api/v1/@apostrophecms/attachment/crop', {
+            body: {
+              _id: result._id,
+              crop
+            },
+            jar
+          });
+          assert(false, 'zero-area crop should have been rejected');
+        } catch (e) {
+          assert.strictEqual(e.status, 400);
+        }
+      }
+      assert.deepStrictEqual(await tempFiles(), before);
+      const updated = await apos.db.collection(collectionName).findOne({
+        _id: result._id
+      });
+      assert(!updated.crops || !updated.crops.length);
+    });
+
+    it('should remove the temporary file when cropping fails', async function() {
+      const result = await insert('crop_image.png');
+      const before = await tempFiles();
+      // Larger than the image, so image processing fails
+      const crop = {
+        top: 0,
+        left: 0,
+        width: 5000,
+        height: 5000
+      };
+      await assert.rejects(apos.attachment.crop(
+        apos.task.getReq(),
+        result._id,
+        crop
+      ));
+      assert.deepStrictEqual(await tempFiles(), before);
+    });
+
     it('should handle a file with a jpeg extension properly and set extension to jpg', async function() {
       let result = await insert('crop_image.jpeg');
       const crop = {

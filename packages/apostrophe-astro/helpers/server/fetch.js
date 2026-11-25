@@ -10,6 +10,10 @@ const pageOnlyHeaders = [
   'accept-encoding',
   'content-length',
   'content-type',
+  'sec-fetch-dest',
+  'sec-fetch-mode',
+  'sec-fetch-site',
+  'sec-fetch-user',
   'transfer-encoding'
 ];
 

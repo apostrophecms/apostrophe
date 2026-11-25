@@ -15,6 +15,8 @@ module.exports = {
     label: 'aposEvent:label',
     pluralLabel: 'aposEvent:pluralLabel',
     sort: { start: 1 },
+    // The most repetitions a recurring event may have
+    maxRepeatCount: 366,
     i18n: {
       ns: 'aposEvent',
       browser: true
@@ -27,115 +29,135 @@ module.exports = {
       }
     }
   },
-  fields: {
-    add: {
-      startDate: {
-        label: 'aposEvent:startDate',
-        type: 'date',
-        required: true
-      },
-      allDay: {
-        label: 'aposEvent:allDay',
-        type: 'boolean',
-        def: false
-      },
-      startTime: {
-        label: 'aposEvent:startTime',
-        type: 'time',
-        def: '09:00 AM',
-        required: true,
-        if: {
-          allDay: false
-        }
-      },
-      endTime: {
-        label: 'aposEvent:endTime',
-        type: 'time',
-        def: '05:30 PM',
-        required: true,
-        if: {
-          allDay: false
-        }
-      },
-      dateType: {
-        label: 'aposEvent:dateType',
-        help:
-          'aposEvent:dateTypeHelp',
-        type: 'select',
-        choices: [
-          {
-            label: 'aposEvent:dateTypeSingle',
-            value: 'single'
-          },
-          {
-            label: 'aposEvent:dateTypeConsecutive',
-            value: 'consecutive'
-          },
-          {
-            label: 'aposEvent:dateTypeRecurring',
-            value: 'repeat'
+  fields(self, options) {
+    return {
+      add: {
+        startDate: {
+          label: 'aposEvent:startDate',
+          type: 'date',
+          required: true
+        },
+        allDay: {
+          label: 'aposEvent:allDay',
+          type: 'boolean',
+          def: false
+        },
+        startTime: {
+          label: 'aposEvent:startTime',
+          type: 'time',
+          def: '09:00 AM',
+          required: true,
+          if: {
+            allDay: false
           }
-        ],
-        def: 'single'
-      },
-      endDate: {
-        label: 'aposEvent:endDate',
-        type: 'date',
-        if: {
-          dateType: 'consecutive'
-        }
-      },
-      repeatInterval: {
-        label: 'aposEvent:interval',
-        type: 'select',
-        choices: [
-          {
-            label: 'aposEvent:intervalWeekly',
-            value: 'weeks'
-          },
-          {
-            label: 'aposEvent:intervalMonthly',
-            value: 'months'
+        },
+        endTime: {
+          label: 'aposEvent:endTime',
+          type: 'time',
+          def: '05:30 PM',
+          required: true,
+          if: {
+            allDay: false
           }
-        ],
-        if: {
-          dateType: 'repeat'
+        },
+        dateType: {
+          label: 'aposEvent:dateType',
+          help:
+            'aposEvent:dateTypeHelp',
+          type: 'select',
+          choices: [
+            {
+              label: 'aposEvent:dateTypeSingle',
+              value: 'single'
+            },
+            {
+              label: 'aposEvent:dateTypeConsecutive',
+              value: 'consecutive'
+            },
+            {
+              label: 'aposEvent:dateTypeRecurring',
+              value: 'repeat'
+            }
+          ],
+          def: 'single'
+        },
+        endDate: {
+          label: 'aposEvent:endDate',
+          type: 'date',
+          if: {
+            dateType: 'consecutive'
+          }
+        },
+        repeatInterval: {
+          label: 'aposEvent:interval',
+          type: 'select',
+          choices: [
+            {
+              label: 'aposEvent:intervalWeekly',
+              value: 'weeks'
+            },
+            {
+              label: 'aposEvent:intervalMonthly',
+              value: 'months'
+            }
+          ],
+          if: {
+            dateType: 'repeat'
+          }
+        },
+        repeatCount: {
+          label: 'aposEvent:repeatCount',
+          type: 'integer',
+          def: 1,
+          max: options.maxRepeatCount,
+          if: {
+            dateType: 'repeat'
+          }
+        },
+        description: {
+          type: 'string',
+          label: 'aposEvent:description',
+          textarea: true
+        },
+        // Set by the module and never edited. They are schema fields because
+        // only schema fields are copied when a document is published.
+        eventGroupId: {
+          type: 'string',
+          hidden: true,
+          readOnly: true
+        },
+        isClone: {
+          type: 'boolean',
+          hidden: true,
+          readOnly: true
         }
       },
-      repeatCount: {
-        label: 'aposEvent:repeatCount',
-        type: 'integer',
-        def: 1,
-        if: {
-          dateType: 'repeat'
+      group: {
+        basics: {
+          fields: [
+            'description',
+            'startDate',
+            'allDay',
+            'startTime',
+            'endTime'
+          ]
+        },
+        advanced: {
+          label: 'aposEvent:advanced',
+          fields: [
+            'dateType',
+            'endDate',
+            'repeatInterval',
+            'repeatCount',
+            'eventGroupId',
+            'isClone'
+          ]
         }
-      },
-      description: {
-        type: 'string',
-        label: 'aposEvent:description',
-        textarea: true
       }
-    },
-    group: {
-      basics: {
-        fields: [
-          'description',
-          'startDate',
-          'allDay',
-          'startTime',
-          'endTime'
-        ]
-      },
-      advanced: {
-        label: 'aposEvent:advanced',
-        fields: [
-          'dateType',
-          'endDate',
-          'repeatInterval',
-          'repeatCount'
-        ]
-      }
-    }
+    };
+  },
+  init(self) {
+    self.addMigrations();
   },
   handlers(self, options) {
     return {
@@ -190,6 +212,36 @@ module.exports = {
   },
   methods(self, options) {
     return {
+      addMigrations() {
+        self.apos.migration.add(`${self.__meta.name}:copy-series-link-to-published`, async () => {
+          // Before eventGroupId and isClone were schema fields, publishing
+          // dropped them. The drafts still have them, so copy them across.
+          return self.apos.migration.eachDoc(
+            {
+              type: self.name,
+              aposMode: 'draft',
+              $or: [
+                { eventGroupId: { $exists: 1 } },
+                { isClone: { $exists: 1 } }
+              ]
+            },
+            5,
+            async draft => {
+              const $set = {};
+              for (const name of [ 'eventGroupId', 'isClone' ]) {
+                if (draft[name] !== undefined) {
+                  $set[name] = draft[name];
+                }
+              }
+              // Drafts that were never published match nothing
+              await self.apos.doc.db.updateOne(
+                { _id: draft._id.replace(/:draft$/, ':published') },
+                { $set }
+              );
+            }
+          );
+        });
+      },
       denormalizeDatesAndTimes(piece) {
         // Parse our dates and times
         let startTime = piece.startTime;

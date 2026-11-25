@@ -796,10 +796,24 @@ class SqliteCursor {
   constructor(collection, query, options = {}) {
     this._collection = collection;
     this._query = query;
-    this._projection = options.projection || null;
+    this._projection = null;
     this._sort = null;
     this._limit = null;
     this._skip = null;
+    // As in MongoDB, the options may set what the chainable methods do,
+    // and are validated the same way
+    if (options.projection) {
+      this.project(options.projection);
+    }
+    if (options.sort) {
+      this.sort(options.sort);
+    }
+    if (options.limit != null) {
+      this.limit(options.limit);
+    }
+    if (options.skip != null) {
+      this.skip(options.skip);
+    }
     this._iterator = null;
     this._exhausted = false;
   }
@@ -1201,21 +1215,13 @@ class SqliteCollection {
     };
   }
 
+  // The first match, as `find()` would return it with the same options
   async findOne(query, options = {}) {
-    this._ensureTable();
-
-    const params = [];
-    const tableName = this._quotedTableName();
-    const whereClause = buildWhereClause(query, params, 'data', this._queryOptions());
-    const sql = `SELECT _id, data FROM ${tableName} WHERE ${whereClause} LIMIT 1`;
-
-    const row = this._db._sqlite.prepare(sql).get(...params);
-    if (!row) {
-      return null;
-    }
-
-    const doc = deserializeDocument(row.data, row._id);
-    return options.projection ? applyProjection(doc, options.projection) : doc;
+    const [ doc ] = await this.find(query, {
+      ...options,
+      limit: 1
+    }).toArray();
+    return doc || null;
   }
 
   find(query, options) {

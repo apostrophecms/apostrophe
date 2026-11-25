@@ -297,8 +297,9 @@ module.exports = {
       // expected by submit handlers (object keyed by field name with name/path/etc.).
       normalizeFiles(req, _res, next) {
         const files = Array.isArray(req.files) ? req.files : [];
-        const mapped = {};
-        const counters = {};
+        // No prototype, since field names come from the request
+        const mapped = Object.create(null);
+        const counters = Object.create(null);
 
         for (const f of files) {
           const base = f.fieldname.replace(/-\d+$/, '');
@@ -426,13 +427,24 @@ module.exports = {
             (typeof data[form.emailConfirmationField] !== 'string' ||
               !re.test(data[form.emailConfirmationField]))
           ) {
-            await self.apos.notify(req, 'aposForm:errorEmailConfirm', {
-              type: 'warning',
-              icon: 'alert-circle-icon',
-              interpolate: {
-                field: form.emailConfirmationField
-              }
-            });
+            if (req.user) {
+              await self.apos.notify(req, 'aposForm:errorEmailConfirm', {
+                type: 'warning',
+                icon: 'alert-circle-icon',
+                interpolate: {
+                  field: form.emailConfirmationField
+                }
+              });
+            } else {
+              self.logWarn(
+                req,
+                'confirmation-email-invalid',
+                req.t('aposForm:errorEmailConfirm', {
+                  field: form.emailConfirmationField
+                }),
+                { formId: form._id }
+              );
+            }
             return null;
           }
 

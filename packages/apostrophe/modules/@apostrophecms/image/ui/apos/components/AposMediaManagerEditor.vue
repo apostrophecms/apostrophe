@@ -36,6 +36,7 @@
         type="file"
         class="apos-sr-only"
         :accept="attachmentField?.accept"
+        :aria-label="$t('apostrophe:replace')"
         tabindex="-1"
         @change="chooseFile"
       >

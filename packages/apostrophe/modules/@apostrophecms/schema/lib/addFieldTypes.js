@@ -1119,12 +1119,11 @@ module.exports = (self) => {
         const { name: uniqueFieldName, label: uniqueFieldLabel } = field.schema
           .find(subfield => subfield.unique) || [];
         if (uniqueFieldName) {
-          const duplicates = data
+          const values = data
             .map(item => (Array.isArray(item[uniqueFieldName])
               ? item[uniqueFieldName][0]._id
-              : item[uniqueFieldName]))
-            .filter((item, index, array) => array.indexOf(item) !== index);
-          if (duplicates.length) {
+              : item[uniqueFieldName]));
+          if (new Set(values).size !== values.length) {
             throw self.apos.error('duplicate', `${req.t(uniqueFieldLabel)} in ${req.t(field.label)} must be unique`);
           }
         }

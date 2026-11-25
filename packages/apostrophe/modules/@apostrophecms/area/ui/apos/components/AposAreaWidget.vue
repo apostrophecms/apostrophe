@@ -170,11 +170,7 @@
       </div>
       <div
         class="apos-area-widget-rendered-widget"
-        :style="{
-          'z-index': raised
-            ? 0
-            : null
-        }"
+        :class="{ 'apos-is-raised': raised }"
       >
         <!-- Still used for contextual editing components -->
         <component
@@ -268,7 +264,37 @@ export default {
     aposReadOnly: {
       from: 'aposReadOnly',
       default: false
+    },
+    // From the area editor this widget belongs to
+    aposAreaAddBeside: {
+      from: 'aposAreaAddBeside',
+      default: null
     }
+  },
+  // Lets the editor inside this widget, such as rich text's insert menu,
+  // offer the other widgets this area accepts and add one beside this
+  // widget, splitting it if the editor asks to (see `addBeside` in the area
+  // editor). Read through functions, so that the editor always sees the
+  // current state
+  provide() {
+    return {
+      aposAreaInsert: {
+        choices: () => {
+          if (
+            !this.aposAreaAddBeside ||
+            this.maxReached ||
+            this.disabled ||
+            this.foreign ||
+            this.aposReadOnly
+          ) {
+            return [];
+          }
+          return this.contextMenuOptions.menu
+            .filter(choice => choice.name !== this.widget.type);
+        },
+        add: (name, split) => this.aposAreaAddBeside(this.widget._id, name, split)
+      }
+    };
   },
   props: {
     raised: {
@@ -1336,6 +1362,18 @@ export default {
 
 .apos-area-widget-rendered-widget {
   position: relative;
+
+  // Under this widget's own controls
+  &.apos-is-raised {
+    z-index: $z-index-base;
+  }
+
+  // A menu the content opens, such as the rich text insert menu, belongs to
+  // this stacking context, so no z-index of its own can lift it over this
+  // widget's controls. While one is open, the content goes above them
+  &.apos-is-raised:has([data-tippy-root]) {
+    z-index: $z-index-widget-menu-open;
+  }
 }
 
 .apos-area-widget-controls {

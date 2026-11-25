@@ -109,4 +109,24 @@ describe('expressCacheOnDemand', function () {
     }
     assert.strictEqual(workCount, 8);
   });
+  it('exports the default hasher', function () {
+    const { expressHasher } = require('../index.js');
+    assert.strictEqual(expressHasher({
+      method: 'GET',
+      hostname: 'example.com',
+      originalUrl: '/welcome',
+      session: { cookie: {} }
+    }), 'example.com:/welcome');
+    assert.strictEqual(expressHasher({
+      method: 'POST',
+      hostname: 'example.com',
+      originalUrl: '/welcome'
+    }), false);
+    assert.strictEqual(expressHasher({
+      method: 'GET',
+      hostname: 'example.com',
+      originalUrl: '/welcome',
+      session: { cart: [ 'item' ] }
+    }), false);
+  });
 });

@@ -513,11 +513,13 @@ module.exports = {
       },
 
       // Index the object's fields for participation in Apostrophe search unless
-      // `searchable: false` is set for the field in question
+      // `searchable: false` is set for the field in question. Fields with a
+      // `viewPermission` are never indexed, since the search texts are
+      // visible to, and searchable by, users who may not view those fields
 
       indexFields(schema, object, texts) {
         _.each(schema, function (field) {
-          if (field.searchable === false) {
+          if ((field.searchable === false) || field.viewPermission) {
             return;
           }
           const fieldType = self.fieldTypes[field.type];
@@ -2567,6 +2569,7 @@ still output the value of this field with a regular template expression.`);
             type: 'doc type',
             subtype: type
           });
+          self.warnRelationshipSlugQueryBuilderConflicts(manager.schema, type);
         });
         _.each(self.apos.area.widgetManagers, function (manager, type) {
           self.validate(manager.schema, {
@@ -2574,6 +2577,34 @@ still output the value of this field with a regular template expression.`);
             subtype: type
           });
         });
+      },
+
+      // A relationship field such as `_author` gets slug query builders
+      // named `author` and `authorAnd`. If another field of the same doc
+      // type has one of those names and a query builder of its own, only
+      // one of the two fields gets the builder, so warn at startup.
+      warnRelationshipSlugQueryBuilderConflicts(schema, type) {
+        const fieldsByName = new Map(schema.map(field => [ field.name, field ]));
+        for (const field of schema) {
+          if (field.type !== 'relationship') {
+            continue;
+          }
+          const name = field.name.replace(/^_/, '');
+          if (name === field.name) {
+            continue;
+          }
+          for (const builderName of [ name, `${name}And` ]) {
+            const other = fieldsByName.get(builderName);
+            if (!other || !self.fieldTypes[other.type]?.addQueryBuilder) {
+              continue;
+            }
+            self.apos.util.warn(stripIndents`
+              The "${type}" doc type has a relationship field "${field.name}" and a field named "${other.name}".
+              Both use the "${builderName}" query builder, so filtering by one of them will not work as expected.
+              Rename one of these fields.
+            `);
+          }
+        }
       },
 
       registerAllSchemas() {

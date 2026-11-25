@@ -140,17 +140,29 @@ export default {
       return false;
     },
     convert(o) {
-      Object.keys(o).forEach(k => {
-        if (o[k]) {
-          o[k] = Number(o[k]);
+      const converted = { ...o };
+      Object.keys(converted).forEach(k => {
+        if (converted[k]) {
+          converted[k] = Number(converted[k]);
         }
       });
-      return o;
+      return converted;
     },
+    // `next` is edited in place, so it must be a copy: the value passed in
+    // can be shared with the widget still on the page (its undo history is
+    // built from it) or be the field's own default
     getNext() {
-      return this.modelValue?.data
-        ? this.modelValue.data
-        : this.field.def;
+      return {
+        ...(this.modelValue?.data || this.field.def)
+      };
+    },
+    watchValue() {
+      this.error = this.modelValue.error;
+      // Our own emit coming back to us: keeping `next` as it is avoids
+      // emitting again forever now that what we emit is a copy
+      if (!this.isEqual(this.modelValue.data, this.next)) {
+        this.next = this.getNext();
+      }
     },
     adjustWidth(side) {
       if (this.modifiers.includes('micro')) {

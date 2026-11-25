@@ -41,7 +41,9 @@ module.exports = {
 
             const prompt = self.apos.launder.string(req.body.prompt);
             const headingLevels = self.apos.launder.strings(req.body.headingLevels)
-              .map(level => parseInt(level));
+              .map(level => parseInt(level))
+              // Only valid heading levels (h1-h6)
+              .filter(level => level >= 1 && level <= 6);
 
             if (!prompt.length) {
               throw self.apos.error('invalid');

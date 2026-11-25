@@ -1155,8 +1155,13 @@ module.exports = {
                     parentNotLocalized: true
                   });
                 } else {
+                  // The peer is a draft, so look in draft mode whatever mode
+                  // the request was made in
                   const originalTarget = await actionModule
-                    .findForEditing(req, self.apos.page.getIdCriteria(lastTargetId))
+                    .findForEditing(
+                      req.clone({ mode: 'draft' }),
+                      self.apos.page.getIdCriteria(lastTargetId)
+                    )
                     .permission('view')
                     .archived(null)
                     .areas(false)
@@ -1584,6 +1589,13 @@ module.exports = {
 
         forbiddenSchemaFields.forEach(field => {
           delete doc[field.name];
+          // A relationship field's stored ids and relationship fields
+          if (field.idsStorage) {
+            delete doc[field.idsStorage];
+          }
+          if (field.fieldsStorage) {
+            delete doc[field.fieldsStorage];
+          }
         });
 
         return doc;
@@ -2848,7 +2860,7 @@ module.exports = {
               const _query = baseQuery.clone();
               // Make sure this is a legitimate builder before attempting to
               // shut it off
-              if (!_.has(query.builders, filter)) {
+              if (!Object.hasOwn(query.builders, filter)) {
                 continue;
               }
               // Make sure it would ever be accepted via a query parameter
@@ -3388,7 +3400,7 @@ module.exports = {
 
         applyBuildersSafely(params, { publicApiProjection } = {}) {
           for (let [ name, value ] of Object.entries(params)) {
-            if (!_.has(query.builders, name)) {
+            if (!Object.hasOwn(query.builders, name)) {
               continue;
             }
             if (!query.builders[name].launder) {
