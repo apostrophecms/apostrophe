@@ -492,10 +492,17 @@ describe('Assistant: working in open editors', function () {
       assert(apos.aposAssistant.getScreenSection().includes('edit_open_document'));
     });
 
+    it('asks the user when the editor it works in closes, in the screen section', function () {
+      assert.match(
+        apos.aposAssistant.getScreenSection(),
+        /If the editor you are working in closes before you finish, the user closed it, perhaps cancelling: don't carry on with the document tools; ask the user what to do, and change nothing until they answer\./
+      );
+    });
+
     it('refuses a call no editor on top can serve, from the stored screen', async function () {
       assert.match(
         await refusalOf([], { action: 'get_document' }),
-        /No editor is open/
+        /^No editor is open on the user's screen\. If you were working in one, the user closed it: ask them what to do, and change nothing until they answer\. Otherwise change documents with the document tools\.$/
       );
       assert.match(
         await refusalOf([ { kind: 'manager' } ], { action: 'get_document' }),

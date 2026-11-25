@@ -148,8 +148,10 @@ module.exports = (self) => {
         index, editor, held
       } = findHeld(screen);
       if (!editor) {
-        throw self.apos.error('aiToolError', 'No editor is open on the user\'s screen; ' +
-          'change documents with the document tools.');
+        throw self.apos.error('aiToolError', 'No editor is open on the user\'s screen. ' +
+          'If you were working in one, the user closed it: ask them what to do, and ' +
+          'change nothing until they answer. Otherwise change documents with the ' +
+          'document tools.');
       }
       if (index < modals.length - 1) {
         throw self.apos.error('aiToolError', `${describeModal(modals.at(-1))} is open over ` +
