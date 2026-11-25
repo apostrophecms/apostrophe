@@ -297,12 +297,14 @@ export function createAttachments({ getChatId, report }) {
     }
   }
 
-  // A failed delete leaves the file to the sweep of unsent files
+  // A failed delete leaves the file to the sweep of unsent files. A body, so
+  // a front whose origin check refuses body-less requests (Astro's) lets it
+  // through
   function detach(chatId, attachmentId) {
     detached.add(attachmentId);
     apos.http.delete(
       `${apos.modules['@apostrophecms/assistant'].action}/chat/${chatId}/attachment/${attachmentId}`,
-      {}
+      { body: {} }
     ).catch(() => {});
   }
 

@@ -236,28 +236,21 @@ module.exports = (self) => {
      * Deletes a chat with everything it owns: its requests and reverts, then
      * its files (bytes before records), then its change log entries, then
      * the chat. A chat whose request or revert is running is refused (Stop
-     * first); one waiting for an answer is not, since nothing runs. A chat
-     * being deleted takes no send or answer, and an interrupted delete is
-     * finished by the next.
+     * first); one waiting for an answer is not, since nothing runs. A
+     * refusal is checked once against a request or revert left behind by a
+     * process that died, since the sweep and the task delete chats nobody
+     * reads. A chat being deleted takes no send or answer, and an interrupted
+     * delete is finished by the next.
      *
      * @param {object} req A request of the chat's owner.
      * @param {object} chat The chat record.
      */
     async deleteChatRecords(req, chat) {
-      const { matchedCount } = await self.chats.updateOne({
-        _id: chat._id,
-        ownerId: chat.ownerId,
-        openRevert: null,
-        $or: [
-          { deleting: true },
-          { openRequest: null },
-          { 'openRequest.status': 'waiting' }
-        ]
-      }, {
-        $set: { deleting: true }
-      });
-      if (!matchedCount) {
-        throw self.getRefusal(await self.getChat(req, chat._id), {});
+      if (!await mark()) {
+        await self.reconcileChat(req, await self.getChat(req, chat._id));
+        if (!await mark()) {
+          throw self.getRefusal(await self.getChat(req, chat._id), {});
+        }
       }
       await self.requests.deleteMany({
         chatId: chat._id,
@@ -274,6 +267,24 @@ module.exports = (self) => {
         ownerId: chat.ownerId
       });
       await self.publish(req, chat._id, 'chat', { deleted: true });
+
+      // Marks the chat as being deleted, unless a request runs in it or a
+      // revert holds it
+      async function mark() {
+        const { matchedCount } = await self.chats.updateOne({
+          _id: chat._id,
+          ownerId: chat.ownerId,
+          openRevert: null,
+          $or: [
+            { deleting: true },
+            { openRequest: null },
+            { 'openRequest.status': 'waiting' }
+          ]
+        }, {
+          $set: { deleting: true }
+        });
+        return matchedCount > 0;
+      }
     },
 
     /**

@@ -1734,14 +1734,17 @@ export const useAssistantStore = defineStore('assistant', () => {
    * where they were if the server doesn't take it.
    *
    * @param {string} id
-   * @returns {Promise<null|'running'|'noAnswer'>} Why it didn't go through:
-   *   the chat runs (the view was stale), or no answer came.
+   * @returns {Promise<null|'running'|'reverting'|'failed'|'noAnswer'>} Why
+   *   it didn't go through: the chat runs or reverts (the view was stale),
+   *   the server refused it otherwise, or no answer came.
    */
   async function remove(id) {
     const index = tabs.value.indexOf(id);
     const active = activeId.value === id;
     const result = act('delete', id, {
-      post: () => apos.http.delete(`${getAction()}/chat/${id}`, {}),
+      // A body, so a front whose origin check refuses body-less requests
+      // (Astro's) lets it through
+      post: () => apos.http.delete(`${getAction()}/chat/${id}`, { body: {} }),
       taken: () => forget(id),
       refused(e) {
         if ((e.status !== 404) && (index !== -1) && !tabs.value.includes(id)) {
@@ -1762,7 +1765,14 @@ export const useAssistantStore = defineStore('assistant', () => {
     if (taken || !error || (error.status === 404)) {
       return null;
     }
-    return error.status ? 'running' : 'noAnswer';
+    if (!error.status) {
+      return 'noAnswer';
+    }
+    const reasons = {
+      requestOpen: 'running',
+      revertRunning: 'reverting'
+    };
+    return reasons[error.body?.data?.reason] || 'failed';
   }
 
   /**
