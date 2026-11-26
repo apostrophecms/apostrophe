@@ -14,7 +14,7 @@
 
 const DOOR_KEYS = [
   'door', 'lockId', 'family', 'chat', 'requestId', 'model', 'revert', 'seen', 'deferSeen',
-  'askBeforeOverwrite'
+  'askBeforeOverwrite', 'client'
 ];
 
 module.exports = (self) => {
@@ -51,6 +51,21 @@ module.exports = (self) => {
      *   to read it again and build on it. For a door with no confirmation of
      *   its own, such as MCP; without it, the refusal says to read the
      *   document again before writing it.
+     * @param {object} [context.client] The outside tool the request comes
+     *   from, for a door that serves several, such as MCP. Recorded on the
+     *   request's change-log entries, which outlive the tool's connection.
+     *   `id` is the tool's client id: for a tool that registered itself,
+     *   a random string that means nothing once the connection is gone.
+     *   `name` is the name the tool gave itself, never checked, so it must
+     *   never be shown as proof of which tool it was. What can be checked
+     *   is `clientHost`, the host the tool's metadata document is served
+     *   from (null for a tool that registered itself), and `redirectTo`,
+     *   where it sends users back to, as `{ host, local }`, as "Connected
+     *   tools" shows them.
+     * @param {string} context.client.id
+     * @param {string|null} [context.client.name]
+     * @param {string|null} [context.client.clientHost]
+     * @param {{ host: string, local: boolean }|null} [context.client.redirectTo]
      * @returns {object} The `req` clone.
      */
     withDoor(req, context) {
@@ -61,7 +76,7 @@ module.exports = (self) => {
       }
       const {
         door, lockId, family, chat, requestId, model, revert, seen, deferSeen,
-        askBeforeOverwrite
+        askBeforeOverwrite, client
       } = context;
       for (const [ name, value ] of Object.entries({
         door,
@@ -96,6 +111,18 @@ module.exports = (self) => {
       if ((askBeforeOverwrite !== undefined) && (typeof askBeforeOverwrite !== 'boolean')) {
         throw self.apos.error('invalid', '"askBeforeOverwrite" must be a boolean');
       }
+      if ((client !== undefined) && !(
+        (typeof client?.id === 'string') && client.id &&
+        [ 'name', 'clientHost' ].every(
+          key => (client[key] == null) || (typeof client[key] === 'string')
+        ) &&
+        ((client.redirectTo == null) || (typeof client.redirectTo.host === 'string'))
+      )) {
+        throw self.apos.error(
+          'invalid',
+          '"client" must be { id, name, clientHost, redirectTo }'
+        );
+      }
       if ((seen !== undefined) && !(seen instanceof Map)) {
         throw self.apos.error('invalid', '"seen" must be a Map');
       }
@@ -110,6 +137,19 @@ module.exports = (self) => {
           ...(chat && { chat }),
           ...(revert && { revert }),
           ...(askBeforeOverwrite && { askBeforeOverwrite }),
+          ...(client && {
+            client: Object.freeze({
+              id: client.id,
+              name: client.name || null,
+              clientHost: client.clientHost || null,
+              redirectTo: client.redirectTo
+                ? Object.freeze({
+                  host: client.redirectTo.host,
+                  local: Boolean(client.redirectTo.local)
+                })
+                : null
+            })
+          }),
           ...(model && {
             model: {
               provider: model.provider,

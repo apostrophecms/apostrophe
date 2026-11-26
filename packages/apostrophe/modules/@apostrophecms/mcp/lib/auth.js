@@ -50,13 +50,15 @@ module.exports = (self) => {
       };
     },
 
-    // Sets `req.user` from the bearer token alone, and
+    // Sets `req.user` from the bearer token alone,
     // `req.aposMcpConnection`, the connection whose `seen` the request's
-    // tool calls use (see lib/seen.js). Returns false when it has answered
-    // the request with a 401
+    // tool calls use (see lib/seen.js), and `req.aposMcpClient`, the tool
+    // the change log records (see `client` in the harness's withDoor).
+    // Returns false when it has answered the request with a 401
     async authenticate(req, res) {
       req.user = null;
       req.aposMcpConnection = null;
+      req.aposMcpClient = null;
       const token = self.getHeaderToken(req);
       if (!token) {
         // No error code when no credentials were sent (RFC 6750)
@@ -70,6 +72,12 @@ module.exports = (self) => {
       }
       req.user = identity.user;
       req.aposMcpConnection = identity.connection;
+      req.aposMcpClient = {
+        id: identity.clientId,
+        name: identity.clientName,
+        clientHost: identity.clientHost,
+        redirectTo: identity.redirectTo
+      };
       // Read by the SDK's adapter, which hands it to the server factory as
       // `authInfo` (see lib/http.js)
       req.auth = {
@@ -81,8 +89,8 @@ module.exports = (self) => {
       return true;
     },
 
-    // `{ user, connection, clientId, scopes }` for a token this route
-    // accepts, or null
+    // `{ user, connection, clientId, clientName, clientHost, redirectTo,
+    // scopes }` for a token this route accepts, or null
     async verifyToken(token) {
       if (self.matchesDevToken(token)) {
         const user = await self.findDevUser();
@@ -90,6 +98,9 @@ module.exports = (self) => {
           user,
           connection: 'dev',
           clientId: 'apos-mcp-dev-token',
+          clientName: null,
+          clientHost: null,
+          redirectTo: null,
           scopes: []
         };
       }
@@ -103,6 +114,9 @@ module.exports = (self) => {
         user: verified.user,
         connection: verified.connectionId,
         clientId: verified.clientId,
+        clientName: verified.clientName,
+        clientHost: verified.clientHost,
+        redirectTo: verified.redirectTo,
         // A space-separated list in OAuth (RFC 6749), an array for the SDK
         scopes: (verified.scope || '').split(' ').filter(Boolean)
       };

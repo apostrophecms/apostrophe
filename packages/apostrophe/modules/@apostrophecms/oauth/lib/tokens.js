@@ -77,8 +77,9 @@ module.exports = (self) => {
       return res.status(200).send({});
     },
 
-    // The user an access token acts for, as `{ user, clientId, scope,
-    // connectionId }`, or null when the token is unknown, expired or revoked,
+    // The user an access token acts for, as `{ user, clientId, clientName,
+    // clientHost, redirectTo, scope, connectionId }`, or null when the token
+    // is unknown, expired or revoked,
     // isn't for `resource`, or its user can no longer log in. For resources,
     // which check tokens but never issue them. `connectionId` stays the same
     // across refreshes until the user approves the tool again, so a resource
@@ -111,6 +112,12 @@ module.exports = (self) => {
       return {
         user,
         clientId: doc.clientId,
+        // The name is the tool's own. `clientHost` and `redirectTo` are
+        // what tell a real tool from one that borrowed its name, as
+        // "Connected tools" shows them (see getConnections)
+        clientName: connection.clientName || null,
+        clientHost: self.getClientHost(doc.clientId),
+        redirectTo: self.describeRedirect(connection.redirectUri),
         scope: doc.scope,
         connectionId: doc.grantId
       };
