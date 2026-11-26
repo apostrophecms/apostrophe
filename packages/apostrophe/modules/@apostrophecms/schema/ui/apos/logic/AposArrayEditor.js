@@ -320,7 +320,7 @@ export default {
           }
         }
 
-      } else if (this.schema.find(field => field.name === 'title') && (item.title !== undefined)) {
+      } else if ((this.field.titleField !== false) && this.schema.find(field => field.name === 'title') && (item.title !== undefined)) {
         candidate = item.title;
       }
       if ((candidate == null) || candidate === '') {
