@@ -189,6 +189,8 @@ describe('Harness: the change log', function () {
       });
       assert.equal(entry.door, 'assistant');
       assert.equal(entry.chat, 'chat-1');
+      // The assistant has no outside tool
+      assert.equal(entry.client, null);
       assert.equal(entry.userId, 'user-ann');
       assert.equal(entry.effect, 'update');
       assert.equal(entry.ai, true);
@@ -353,6 +355,48 @@ describe('Harness: the change log', function () {
       await apos.aposHarness.changes.countDocuments({ docId: article._id }),
       0
     );
+  });
+
+  it('should delete a door\'s entries made before a date, and only those', async function () {
+    const changes = apos.aposHarness.changes;
+    const now = Date.now();
+    const day = 24 * 60 * 60 * 1000;
+    const entries = [
+      [ 'door-old', 'sweep-door', 10 ],
+      [ 'door-new', 'sweep-door', 1 ],
+      [ 'other-old', 'sweep-other', 10 ]
+    ];
+    for (const [ _id, door, days ] of entries) {
+      await changes.insertOne({
+        _id,
+        requestId: `request-${_id}`,
+        docId: `doc-${_id}`,
+        sequence: 0,
+        door,
+        at: new Date(now - days * day)
+      });
+    }
+    try {
+      assert.equal(
+        await apos.aposHarness.deleteDoorChanges('sweep-door', new Date(now - 5 * day)),
+        1
+      );
+      const left = await changes
+        .find({ _id: { $in: entries.map(([ _id ]) => _id) } })
+        .toArray();
+      assert.deepEqual(left.map(({ _id }) => _id).sort(), [ 'door-new', 'other-old' ]);
+
+      await assert.rejects(
+        apos.aposHarness.deleteDoorChanges('', new Date()),
+        { name: 'invalid' }
+      );
+      await assert.rejects(
+        apos.aposHarness.deleteDoorChanges('sweep-door', now),
+        { name: 'invalid' }
+      );
+    } finally {
+      await changes.deleteMany({ _id: { $in: entries.map(([ _id ]) => _id) } });
+    }
   });
 
   describe('change events', function () {
