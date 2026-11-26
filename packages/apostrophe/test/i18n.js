@@ -855,3 +855,46 @@ describe('no redirection to first locale', function() {
     assert.strictEqual(response.headers.location, undefined);
   });
 });
+
+describe('aposLocale query parameter', function() {
+  this.timeout(t.timeout);
+
+  let apos;
+
+  before(async function() {
+    apos = await t.create({
+      root: module,
+      baseUrl: 'http://localhost:3000',
+      modules: {
+        '@apostrophecms/i18n': {
+          options: {
+            locales: {
+              en: {},
+              fr: {
+                prefix: '/fr'
+              }
+            }
+          }
+        }
+      }
+    });
+  });
+
+  after(async function() {
+    return t.destroy(apos);
+  });
+
+  it('should ignore an aposLocale that parses to an object, like a missing value', async function() {
+    const response = await apos.http.get('/?aposLocale[a]=1', {
+      fullResponse: true
+    });
+    assert.strictEqual(response.status, 200);
+  });
+
+  it('should ignore a repeated aposLocale, like a missing value', async function() {
+    const response = await apos.http.get('/?aposLocale=:&aposLocale=x', {
+      fullResponse: true
+    });
+    assert.strictEqual(response.status, 200);
+  });
+});
