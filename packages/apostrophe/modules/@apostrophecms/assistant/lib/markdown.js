@@ -23,9 +23,10 @@ const REPLY_SECTION = [
   'Replies are Markdown. The panel shows paragraphs, headings, bold, italic, strikethrough, ' +
     'inline code and code blocks, quotes, lists, tables, horizontal rules and links (http, ' +
     'https and mailto, opening in a new browser tab); images and HTML tags are dropped.',
-  'To name a page, piece or image the user may want to open, write @[title](kind:_id), kind ' +
-    'being page, piece or image and _id the one the tools gave. The user sees only the title, ' +
-    'as a chip that opens the document: the one way an id goes in a reply.'
+  'Write every page, piece or image a reply lists or reports on as @[title](kind:_id), kind ' +
+    'being page, piece or image and _id the one the tools gave; only the document on the ' +
+    'user\'s screen goes by its title alone. The user sees only the title, as a chip that ' +
+    'opens the document: the one way an id goes in a reply.'
 ].join('\n');
 
 const PLACEHOLDER = /\uE000(\d+)\uE001/g;
