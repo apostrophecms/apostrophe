@@ -66,6 +66,17 @@ export const KITS = Object.freeze({
   }
 });
 
+/**
+ * The Standalone kit closest to each Astro kit: same starting point, same
+ * sample content. Offered when an Astro kit can't run on this Node.js.
+ * @type {Readonly<Record<string, string>>}
+ */
+export const STANDALONE_EQUIVALENT = Object.freeze({
+  'apostrophe-astro-essentials': 'apostrophe-essentials',
+  'apostrophe-astro-demo': 'apostrophe-demo',
+  'apostrophe-astro-demo-data': 'apostrophe-demo-data'
+});
+
 /** All valid KitIds, frozen. */
 export const KIT_IDS = Object.freeze(Object.keys(KITS));
 
