@@ -53,6 +53,12 @@ const root = ref(null);
 let editor = null;
 let last = props.modelValue;
 let queryRange = null;
+// The `@` of the open search, across spaces; the `@` whose search Escape
+// ended, so its letters don't open it again. Both moved along with edits
+let searchAt = null;
+let endedAt = null;
+const MAX_QUERY = 100;
+const LEAF = '\uFFFC';
 
 const Mention = Node.create({
   name: 'mention',
@@ -120,6 +126,8 @@ watch(() => [ props.chatId, props.modelValue ], ([ chatId, draft ], [ oldChatId 
     return;
   }
   last = draft;
+  searchAt = null;
+  endedAt = null;
   editor.view.updateState(EditorState.create({
     doc: editor.schema.nodeFromJSON(toDoc(draft)),
     plugins: editor.state.plugins
@@ -184,7 +192,20 @@ function createEditor() {
       // The window takes dropped files (AposAssistant.vue)
       handleDrop(view, event) {
         return Boolean(event.dataTransfer?.types?.includes('Files'));
+      },
+      handleDOMEvents: {
+        // A click in the editing area ends the search, the caret moved or
+        // not; one right after a single word typed after `@` opens it again
+        mousedown() {
+          searchAt = null;
+          reportQuery();
+          return false;
+        }
       }
+    },
+    onTransaction({ transaction }) {
+      searchAt = mapAt(searchAt, transaction);
+      endedAt = mapAt(endedAt, transaction);
     },
     onUpdate({ editor }) {
       last = toDraft(editor.getJSON());
@@ -193,33 +214,76 @@ function createEditor() {
     },
     onSelectionUpdate: reportQuery,
     onBlur() {
+      searchAt = null;
       emit('query', null);
     }
   });
 }
 
+// Where the `@` at `at` is after the change, or `null` once it is gone
+function mapAt(at, transaction) {
+  if (at === null) {
+    return null;
+  }
+  const { doc } = transaction;
+  const mapped = transaction.mapping.map(at, 1);
+  const end = Math.min(mapped + 1, doc.content.size);
+  return (doc.textBetween(mapped, end) === '@') ? mapped : null;
+}
+
 function reportQuery() {
-  const { selection } = editor.state;
-  queryRange = null;
+  const query = readQuery();
+  queryRange = (query === null)
+    ? null
+    : {
+      from: searchAt,
+      to: searchAt + query.length + 1
+    };
+  emit('query', query);
+}
+
+// A search opens at an `@` typed at the start or after a space, and reads
+// what follows it up to the caret, spaces too. It ends when the caret leaves
+// it, at a line break or a chip, past the longest query, or with a space
+// right after the `@`
+function readQuery() {
+  const { selection, doc } = editor.state;
   if (!selection.empty) {
-    emit('query', null);
-    return;
+    searchAt = null;
+    return null;
   }
   const { $from } = selection;
-  const before = $from.parent.textBetween(
-    Math.max(0, $from.parentOffset - 40),
-    $from.parentOffset,
-    '\n',
-    node => ((node.type.name === 'hardBreak') ? '\n' : '\uFFFC')
-  );
-  const query = findQuery(before);
-  if (query !== null) {
-    queryRange = {
-      from: $from.pos - query.length - 1,
-      to: $from.pos
-    };
+  const start = $from.start();
+  if ((searchAt !== null) && (searchAt >= start) && (searchAt < $from.pos)) {
+    const query = textBetween(searchAt + 1, $from.pos);
+    if (!/^\s|[\n\uFFFC]/.test(query) && (query.length <= MAX_QUERY)) {
+      return query;
+    }
   }
-  emit('query', query);
+  searchAt = null;
+  const query = findQuery(
+    textBetween(Math.max(start, $from.pos - MAX_QUERY - 1), $from.pos)
+  );
+  const at = (query === null) ? null : $from.pos - query.length - 1;
+  if ((at === null) || (at === endedAt)) {
+    return null;
+  }
+  searchAt = at;
+  return query;
+
+  function textBetween(from, to) {
+    return doc.textBetween(from, to, '\n', node => (
+      (node.type.name === 'hardBreak') ? '\n' : LEAF
+    ));
+  }
+}
+
+// Ends the search; its `@` doesn't open it again
+function endQuery() {
+  endedAt = searchAt;
+  searchAt = null;
+  queryRange = null;
+  emit('query', null);
 }
 
 function insertMention(mention) {
@@ -294,6 +358,7 @@ function toDraft(json) {
 
 defineExpose({
   insertMention,
+  endQuery,
   focus
 });
 </script>

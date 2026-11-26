@@ -55,6 +55,7 @@
       <div
         v-if="listOpen"
         class="apos-assistant-mention"
+        data-apos-test="assistant-mention"
       >
         <div
           v-if="results?.length"
@@ -230,17 +231,17 @@ const store = useAssistantStore();
 const input = ref(null);
 const listId = `apos-assistant-mention-${createId()}`;
 const query = ref(null);
-const closed = ref(false);
 const active = ref(0);
 let escaped = false;
 // The latest search's results; `null` while it searches. A search that
 // failed closes the list until the next letters
 const results = ref(null);
 const searchFailed = ref(false);
+// The query a search found nothing for: more words find nothing either
+let emptyFor = null;
 let searches = 0;
 let searchTimer = null;
-const listOpen = computed(() => (query.value !== null) && !closed.value &&
-  !searchFailed.value);
+const listOpen = computed(() => (query.value !== null) && !searchFailed.value);
 const aria = computed(() => ({
   'aria-autocomplete': 'list',
   'aria-controls': (listOpen.value && results.value?.length) ? listId : null,
@@ -453,12 +454,14 @@ function onInput(value) {
   store.setDraft(props.chatId, value);
 }
 
-// A new `@` opens the list again after Escape closed it
+// A space after a search that found nothing ends it
 function onQuery(value) {
-  if ((value === null) || (query.value === null)) {
-    closed.value = false;
-  }
   if (value === query.value) {
+    return;
+  }
+  if ((emptyFor !== null) && (value !== null) && value.startsWith(emptyFor) &&
+    /\s$/.test(value)) {
+    input.value.endQuery();
     return;
   }
   query.value = value;
@@ -472,6 +475,7 @@ function search(value) {
   clearTimeout(searchTimer);
   const id = ++searches;
   searchFailed.value = false;
+  emptyFor = null;
   if (value === null) {
     results.value = null;
     return;
@@ -482,6 +486,7 @@ function search(value) {
       if (id === searches) {
         results.value = found;
         active.value = 0;
+        emptyFor = found.length ? null : value;
       }
     } catch (e) {
       if (id === searches) {
@@ -505,7 +510,7 @@ function onKey(event) {
   } else if ([ 'Enter', 'Tab' ].includes(event.key) && count && !event.isComposing) {
     pick(results.value[active.value]);
   } else if (event.key === 'Escape') {
-    closed.value = true;
+    input.value.endQuery();
     escaped = true;
   } else {
     return;

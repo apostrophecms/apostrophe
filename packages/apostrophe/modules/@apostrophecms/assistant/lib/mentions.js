@@ -36,7 +36,7 @@ module.exports = (self) => {
         })
         .limit(MAX_RESULTS);
       cursor = letters
-        ? cursor.autocomplete(letters)
+        ? cursor.autocomplete(letters).and(matchPhrase())
         : cursor.sort({ updatedAt: -1 });
       const docs = await cursor.toArray();
       return docs.map(doc => ({
@@ -46,6 +46,20 @@ module.exports = (self) => {
         kind: getKind(doc),
         label: getLabel(doc)
       }));
+
+      // The autocomplete finds a document by any one of the words; a mention
+      // matches the whole phrase, each word the start of one of its own
+      function matchPhrase() {
+        const { sortify, searchify } = self.apos.util;
+        return {
+          $and: [
+            ...sortify(letters).split(' ').filter(Boolean).map(word => ({
+              highSearchWords: searchify(word, true)
+            })),
+            { highSearchText: searchify(letters) }
+          ]
+        };
+      }
     },
 
     /**

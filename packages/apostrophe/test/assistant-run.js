@@ -778,6 +778,16 @@ describe('Assistant: chats and the run', function () {
         found.find(doc => doc._id === chart._id).label,
         apos.image.options.label
       );
+      // A phrase matches as a whole, its last word by its start
+      assert.deepEqual(
+        (await apos.aposAssistant.findMentions(req, 'pricing no')).map(doc => doc._id),
+        [ pricing._id ]
+      );
+      assert.deepEqual(
+        (await apos.aposAssistant.findMentions(req, 'pricing notes ')).map(doc => doc._id),
+        [ pricing._id ]
+      );
+      assert.deepEqual(await apos.aposAssistant.findMentions(req, 'pricing zzqx'), []);
       const home = await apos.aposAssistant.findMentions(req, 'hom');
       assert.deepEqual(home.map(doc => [ doc.kind, doc.label ]), [ [ 'page', 'apostrophe:page' ] ]);
       // Nothing typed yet: the latest updated
