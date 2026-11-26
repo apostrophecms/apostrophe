@@ -22,26 +22,40 @@
 </template>
 
 <script setup>
-// One chip per widget selected on the page, however it was selected: the
+// One chip per widget selected, however it was selected, while the editor
+// sees them: a modal opened over them hides the row until it closes. The
 // chips are the widget store's selection, so removing one deselects it, and
 // a click on one shows its widget
 import {
   computed, inject, nextTick, ref
 } from 'vue';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
-import { widgetElement } from 'Modules/@apostrophecms/area/lib/widget-selection-dom.js';
+import { getSelectionArea } from 'Modules/@apostrophecms/ui/composables/useScreen.js';
+import {
+  selectionScope,
+  widgetElement
+} from 'Modules/@apostrophecms/area/lib/widget-selection-dom.js';
 import { dropFromSelection } from 'Modules/@apostrophecms/area/lib/batch-widgets.js';
 import AposAssistantChip from './AposAssistantChip.vue';
 
 const emit = defineEmits([ 'empty' ]);
+const modalStore = useModalStore();
 const widgetStore = useWidgetStore();
 const $t = inject('i18n');
 const row = ref(null);
 
+const scope = computed(() => {
+  const area = getSelectionArea(modalStore, widgetStore);
+  return area ? selectionScope(area) : null;
+});
+
 const chips = computed(() => {
-  const scope = widgetStore.selectionScope || document;
+  if (!scope.value) {
+    return [];
+  }
   return widgetStore.selectedWidgetIds.map(id => {
-    const type = widgetElement(id, scope)?.getAttribute('data-apos-widget-type');
+    const type = widgetElement(id, scope.value)?.getAttribute('data-apos-widget-type');
     const label = type && window.apos.modules[`${type}-widget`]?.label;
     return {
       id,
@@ -53,7 +67,7 @@ const chips = computed(() => {
 // Scrolled to when out of view, as `show_widgets` does, then flashed: focus
 // stays in the composer
 function show(id) {
-  const element = widgetElement(id, widgetStore.selectionScope || document);
+  const element = widgetElement(id, scope.value);
   if (!element) {
     return;
   }

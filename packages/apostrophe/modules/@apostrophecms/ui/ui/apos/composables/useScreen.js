@@ -51,7 +51,7 @@ export function useScreen() {
         : null,
       modals,
       window: getWindow(),
-      selection: getSelection(entries, modals),
+      selection: getSelection(modals),
       field: getField(modals)
     };
   }
@@ -101,25 +101,22 @@ export function useScreen() {
     return (adminBar?.seeChanges === true) ? 'seeChanges' : 'page';
   }
 
-  // The selected widgets, siblings in one area. Their document is the
-  // modal's they were selected in, else the one the page area names. The
-  // area itself is named by the server from the document: the store's
-  // `focusedArea` is the area editor's own id, not the area's
-  function getSelection(entries, modals) {
-    const widgetIds = [ ...widgetStore.selectedWidgetIds ];
-    const editorId = widgetStore.focusedArea;
-    if (!widgetIds.length || !editorId) {
+  // The selected widgets, siblings in one area, while they are in view.
+  // Their document is the topmost modal's when they were selected in it,
+  // else the one the page area names. The area itself is named by the server
+  // from the document
+  function getSelection(modals) {
+    const areaEl = getSelectionArea(modalStore, widgetStore);
+    if (!areaEl) {
       return null;
     }
-    const areaEl = document.querySelector(`[data-apos-area="${CSS.escape(editorId)}"]`);
-    const modalEl = areaEl?.closest('[data-apos-modal]');
-    const docId = modalEl
-      ? modals[entries.findIndex(entry => entry.modalEl === modalEl)]?.docId
-      : areaEl?.closest('[data-doc-id]')?.getAttribute('data-doc-id');
+    const docId = areaEl.closest('[data-apos-modal]')
+      ? modals.at(-1)?.docId
+      : areaEl.closest('[data-doc-id]')?.getAttribute('data-doc-id');
     return docId
       ? {
         docId,
-        widgetIds
+        widgetIds: [ ...widgetStore.selectedWidgetIds ]
       }
       : null;
   }
@@ -139,6 +136,33 @@ export function useScreen() {
       }
       : null;
   }
+}
+
+/**
+ * The element of the area holding the selected widgets, while the editor
+ * sees them: selected on the page with no modal over it, or in the topmost
+ * modal. A selection a modal covers stays in the widget store for when the
+ * modal closes, but is not on the screen. The store's `focusedArea` is the
+ * area editor's own id, not the area's.
+ *
+ * @param {object} modalStore
+ * @param {object} widgetStore
+ * @returns {Element|null}
+ */
+export function getSelectionArea(modalStore, widgetStore) {
+  const editorId = widgetStore.focusedArea;
+  if (!widgetStore.selectedWidgetIds.length || !editorId) {
+    return null;
+  }
+  const areaEl = document.querySelector(`[data-apos-area="${CSS.escape(editorId)}"]`);
+  if (!areaEl) {
+    return null;
+  }
+  const top = modalStore.stack.findLast(entry => !isWindow(entry));
+  const modalEl = areaEl.closest('[data-apos-modal]');
+  return (top ? modalEl && (modalEl === top.modalEl) : !modalEl)
+    ? areaEl
+    : null;
 }
 
 // The modal store's entry of the screen's window: the last opened of the
