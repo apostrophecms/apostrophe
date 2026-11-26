@@ -113,7 +113,9 @@ module.exports = (self) => {
       }
       if ((client !== undefined) && !(
         (typeof client?.id === 'string') && client.id &&
-        [ 'name', 'clientHost' ].every(key => (client[key] == null) || (typeof client[key] === 'string')) &&
+        [ 'name', 'clientHost' ].every(
+          key => (client[key] == null) || (typeof client[key] === 'string')
+        ) &&
         ((client.redirectTo == null) || (typeof client.redirectTo.host === 'string'))
       )) {
         throw self.apos.error(
