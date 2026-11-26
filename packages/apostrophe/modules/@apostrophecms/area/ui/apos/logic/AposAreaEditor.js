@@ -287,8 +287,16 @@ export default {
     isInsideFocusedArea() {
       return this.focusedArea === this.areaId;
     },
-    resetFocusedArea() {
+    // A click that keeps the widget selection, as on the selection's toolbar
+    // and its menus, keeps the area the selection is in
+    resetFocusedArea(event) {
       if (this.focusedArea !== this.areaId) {
+        return;
+      }
+      if (
+        event?.composedPath?.()
+          .some(el => el.matches?.('[data-apos-ignore-unfocus="true"]'))
+      ) {
         return;
       }
 
