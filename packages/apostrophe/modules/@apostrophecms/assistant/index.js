@@ -37,6 +37,9 @@ module.exports = {
     usageDisplay: 'tokens',
     // Whether the reply footer names the vendor and model
     modelDisplay: false,
+    // What an opened step shows: 'summary', what it worked on; 'data', its
+    // arguments and result, for developers; or 'all', both
+    stepDisplay: 'summary',
     // Milliseconds a browser tool that changes the screen waits for a
     // screen hold to clear, then it is refused naming the holder
     screenWait: 15000,
@@ -267,7 +270,7 @@ module.exports = {
           const request = await self.getChatRequest(req, req.params._id,
             req.params.requestId);
           const stepId = self.apos.launder.string(req.params.stepId);
-          const step = self.renderStep(request, stepId);
+          const step = await self.renderStep(req, request, stepId);
           if (!step) {
             throw self.apos.error('notfound');
           }
@@ -511,6 +514,7 @@ module.exports = {
             .map(([ name, { prompt } ]) => [ name, prompt ])),
           usageDisplay: self.options.usageDisplay,
           modelDisplay: self.options.modelDisplay,
+          stepDisplay: self.options.stepDisplay,
           screenWait: self.options.screenWait,
           attachments: {
             // Attaching a file takes the right to upload one

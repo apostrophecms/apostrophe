@@ -12,6 +12,9 @@ $z-index-widget-label: 2;
 $z-index-manager-toolbar: 3;
 $z-index-widget-controls: 3;
 $z-index-widget-focused-controls: 4;
+// Focused widget content while it shows a menu of its own, such as rich text's
+// insert menu, which would otherwise sit under the widget's controls.
+$z-index-widget-menu-open: 5;
 // Fixed multi-select toolbar. Above in-page widget chrome, below the admin bar.
 $z-index-widget-selection: 500;
 $z-index-admin-bar: 1000;

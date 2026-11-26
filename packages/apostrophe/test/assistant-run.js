@@ -778,6 +778,16 @@ describe('Assistant: chats and the run', function () {
         found.find(doc => doc._id === chart._id).label,
         apos.image.options.label
       );
+      // A phrase matches as a whole, its last word by its start
+      assert.deepEqual(
+        (await apos.aposAssistant.findMentions(req, 'pricing no')).map(doc => doc._id),
+        [ pricing._id ]
+      );
+      assert.deepEqual(
+        (await apos.aposAssistant.findMentions(req, 'pricing notes ')).map(doc => doc._id),
+        [ pricing._id ]
+      );
+      assert.deepEqual(await apos.aposAssistant.findMentions(req, 'pricing zzqx'), []);
       const home = await apos.aposAssistant.findMentions(req, 'hom');
       assert.deepEqual(home.map(doc => [ doc.kind, doc.label ]), [ [ 'page', 'apostrophe:page' ] ]);
       // Nothing typed yet: the latest updated
@@ -1041,6 +1051,141 @@ describe('Assistant: chats and the run', function () {
       gate.release();
       await waitForEnd(req, chat);
     });
+  });
+
+  // A write to a document saved since the chat last read it is refused; a
+  // read counts from the next step's calls on, or once the request ends
+  describe('what the chat has seen', function () {
+    let read;
+
+    before(async function () {
+      read = await apos.modules['assistant-note'].insert(apos.task.getReq(), {
+        title: 'A note to read'
+      });
+    });
+
+    function draftId() {
+      return read._id.replace(':published', ':draft');
+    }
+
+    async function stampOf(chat) {
+      const { seen } = await apos.aposAssistant.chats.findOne({ _id: chat._id });
+      return (seen || []).find(each => each._id === draftId())?.updatedAt;
+    }
+
+    async function updatedAt() {
+      return (await apos.doc.db.findOne({ _id: draftId() })).updatedAt.toISOString();
+    }
+
+    // The chat read the note, then someone else saved it
+    async function seenThenSaved(req, chat) {
+      script = sequence([ toolTurn('get_document', { _id: draftId() }), { text: 'Read.' } ]);
+      await runToEnd(req, chat, 'tab-1', 'Read the note');
+      const taskReq = apos.task.getReq({ mode: 'draft' });
+      const draft = await apos.modules['assistant-note'].find(taskReq, { _id: draftId() })
+        .toObject();
+      await apos.modules['assistant-note'].update(taskReq, {
+        ...draft,
+        title: `Saved by someone else ${apos.util.generateId()}`
+      });
+      return updatedAt();
+    }
+
+    function turn(...content) {
+      return {
+        content,
+        finishReason: 'toolCalls',
+        usage: usage()
+      };
+    }
+
+    function readNote() {
+      return toolCall('get_document', { _id: draftId() });
+    }
+
+    function rename(id, title) {
+      return toolCall('update_document', {
+        targets: [ {
+          _id: draftId(),
+          values: { title }
+        } ]
+      }, id);
+    }
+
+    function resultOf(request, callId) {
+      return request.messages
+        .flatMap(message => (message.role === 'tool') ? message.content : [])
+        .find(part => part.toolCallId === callId).output;
+    }
+
+    it('keeps the reads of the last step once the request ends', async function () {
+      const req = userReq(editor);
+      const chat = await apos.aposAssistant.createChat(req);
+      await seenThenSaved(req, chat);
+      assert.notEqual(await stampOf(chat), await updatedAt());
+      script = sequence([ turn(readNote()), { text: 'Read again.' } ]);
+      await runToEnd(req, chat, 'tab-1', 'Read the note again');
+      assert.equal(await stampOf(chat), await updatedAt());
+    });
+
+    it('counts a read for the next step, not for a write of its own step', async function () {
+      const req = userReq(editor);
+      const chat = await apos.aposAssistant.createChat(req);
+      await seenThenSaved(req, chat);
+      script = sequence([
+        // The step's write came from what the model knew before the read
+        turn(readNote(), rename('call-same-step', 'From the same step')),
+        turn(rename('call-next-step', 'From the next step')),
+        { text: 'Renamed.' }
+      ]);
+      const done = await runToEnd(req, chat, 'tab-1', 'Rename the note');
+      assert.equal(done.status, 'completed');
+      assert.equal(resultOf(done, 'call-same-step').refused[0].reason, 'changed');
+      assert.equal(resultOf(done, 'call-next-step').written.length, 1);
+    });
+
+    it('keeps a read beside a browser ask for the steps after the answer, not for its own step', async function () {
+      const req = userReq(editor);
+      const chat = await apos.aposAssistant.createChat(req);
+      const saved = await seenThenSaved(req, chat);
+      script = sequence([
+        turn(readNote(), toolCall('t_browser'), rename('call-same-step', 'From the same step')),
+        turn(rename('call-next-step', 'From the next step')),
+        { text: 'Renamed.' }
+      ]);
+      const waiting = await runToEnd(req, chat, 'tab-1', 'Show and rename the note');
+      assert.equal(waiting.status, 'waiting');
+      assert.deepEqual(waiting.pendingSeen, [ {
+        _id: draftId(),
+        updatedAt: saved
+      } ]);
+      await answer(req, chat, 'tab-1', 'shown');
+      const done = await waitForEnd(req, chat);
+      assert.equal(done.status, 'completed');
+      assert.equal(done.pendingSeen, null);
+      assert.equal(resultOf(done, 'call-same-step').refused[0].reason, 'changed');
+      assert.equal(resultOf(done, 'call-next-step').written.length, 1);
+      assert.equal(
+        (await apos.doc.db.findOne({ _id: draftId() })).title,
+        'From the next step'
+      );
+    });
+
+    for (const end of [ 'stopped', 'skipped' ]) {
+      it(`keeps a read beside a browser ask when the request is ${end} while it waits`, async function () {
+        const req = userReq(editor);
+        const chat = await apos.aposAssistant.createChat(req);
+        const saved = await seenThenSaved(req, chat);
+        script = sequence([ turn(readNote(), toolCall('t_browser')) ]);
+        await runToEnd(req, chat, 'tab-1', 'Show the note');
+        const ended = (end === 'stopped')
+          ? await apos.aposAssistant.stop(req, chat._id)
+          : await apos.aposAssistant.skip(req, chat._id, { tabId: 'tab-1' });
+        assert.equal(ended.status, end);
+        assert.equal(ended.pendingSeen, null);
+        assert.equal(await stampOf(chat), saved);
+      });
+    }
   });
 
   describe('routes', function () {
@@ -1340,10 +1485,10 @@ describe('Assistant: chats and the run', function () {
   }
 });
 
-function toolCall(name, input = {}) {
+function toolCall(name, input = {}, id = `call-${name}`) {
   return {
     type: 'toolCall',
-    id: `call-${name}`,
+    id,
     name,
     input
   };

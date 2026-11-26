@@ -53,7 +53,10 @@ const SCREEN_INTRO = 'Each user message carries a "Current screen" line, true as
   'while it is open. Its "window", when there is one, sits beside the page and edits ' +
   'its document as an editor does: it is the editor on top while no modal is open. ' +
   'Read and change what the editor on top holds with ' +
-  'edit_open_document; it is stored when the user saves.';
+  'edit_open_document; it is stored when the user saves. If the editor you are ' +
+  'working in closes before you finish, the user closed it, perhaps cancelling: don\'t ' +
+  'carry on with the document tools; ask the user what to do, and change nothing until ' +
+  'they answer.';
 const SCREEN_LINE = 'Current screen:';
 
 module.exports = (self) => {
@@ -254,6 +257,50 @@ module.exports = (self) => {
         }
         throw e;
       }
+    },
+
+    /**
+     * What a message was sent about, as its chips in the thread: one per
+     * selected widget, its type's label, and the focused inline field, its
+     * label, each `{ kind, label }`, `kind` being `widget` or `field`. The
+     * labels come from the documents, read again, and may be i18n keys.
+     *
+     * @param {object} req
+     * @param {object} screen A verified screen.
+     * @returns {Promise<object[]>}
+     */
+    async getScreenChips(req, { selection, field }) {
+      const chips = [];
+      if (selection) {
+        const found = await self.findScreenDoc(req, selection.docId);
+        for (const _id of (found ? selection.widgetIds : [])) {
+          const { type } = self.apos.util.findNestedObjectById(found.doc, _id) || {};
+          const label = type && self.apos.area.getWidgetManager(type)?.options.label;
+          if (label) {
+            chips.push({
+              kind: 'widget',
+              label
+            });
+          }
+        }
+      }
+      // An inline field is a field of the document, or `@<_id>.name` of a
+      // widget or array item in it: core's own lookup finds its schema
+      const found = field && await self.findScreenDoc(req, field.docId);
+      const [ _id, name ] = field?.name.startsWith('@')
+        ? field.name.slice(1).split('.')
+        : [ null, field?.name ];
+      const object = found &&
+        (_id ? self.apos.util.findNestedObjectById(found.doc, _id) : found.doc);
+      const schemaField = object && self.apos.util.getManagerOf(object)?.schema
+        .find(each => each.name === name);
+      if (schemaField) {
+        chips.push({
+          kind: 'field',
+          label: schemaField.label || schemaField.name
+        });
+      }
+      return chips;
     },
 
     /**

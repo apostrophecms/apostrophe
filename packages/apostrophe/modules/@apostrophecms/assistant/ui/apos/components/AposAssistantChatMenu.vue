@@ -337,6 +337,8 @@ async function confirmDelete(row) {
 function refuse(id, reason) {
   const texts = {
     running: 'apostrophe:assistantDeleteRunning',
+    reverting: 'apostrophe:assistantDeleteReverting',
+    failed: 'apostrophe:assistantDeleteFailed',
     noAnswer: 'apostrophe:assistantNotDoneNoAnswer'
   };
   refusal.value = texts[reason]

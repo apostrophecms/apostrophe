@@ -24,6 +24,22 @@
           class="apos-assistant-request__files"
           :files="sentFiles"
         />
+        <ul
+          v-if="request.chips?.length"
+          class="apos-assistant-request__chips"
+          :aria-label="$t('apostrophe:assistantSentAbout')"
+          data-apos-test="assistant-request-chips"
+        >
+          <li
+            v-for="(chip, index) in request.chips"
+            :key="index"
+          >
+            <AposAssistantChip
+              :title="$t(chip.label)"
+              :kind="chip.kind"
+            />
+          </li>
+        </ul>
         <AposAssistantMessage
           class="apos-assistant-request__text"
           :text="request.message"
@@ -108,6 +124,10 @@
       v-html="reply"
     />
     <!-- eslint-enable vue/no-v-html -->
+    <AposAssistantQuestions
+      v-if="request.questionAsks?.length"
+      :request="request"
+    />
     <AposAssistantImageRounds
       v-if="request.imageAsks?.length"
       :request="request"
@@ -310,8 +330,10 @@ import { createChipIcon } from '../lib/chip.js';
 import { createId } from 'apostrophe/lib/beneath.js';
 import AposAssistantMessage from './AposAssistantMessage.vue';
 import AposAssistantFiles from './AposAssistantFiles.vue';
+import AposAssistantChip from './AposAssistantChip.vue';
 import AposAssistantNotices from './AposAssistantNotices.vue';
 import AposAssistantImageRounds from './AposAssistantImageRounds.vue';
+import AposAssistantQuestions from './AposAssistantQuestions.vue';
 import { getFileUrl, isPicture } from '../lib/attachments.js';
 import {
   formatNames, getConfirmLines, getRevertFailure, getRevertStatus, splitCount
@@ -1198,6 +1220,16 @@ function onChipClick(event) {
   // Markdown, the message's and the reply's
   .apos-assistant-request__files {
     margin-bottom: 10px;
+  }
+
+  // What the message was sent about, chips as the composer shows them
+  .apos-assistant-request__chips {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -2px 10px;
+    padding: 0;
+    gap: 4px;
+    list-style: none;
   }
 
   .apos-assistant-request__text,

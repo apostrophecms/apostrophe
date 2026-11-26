@@ -90,6 +90,19 @@ module.exports = (self) => {
           additionalProperties: true
         },
         maxResultChars: self.apos.aposHarness.getReadBudget('document'),
+        // The document the editor holds, as the screen after the call shows
+        // it; a new one has no id yet
+        summary: ({ action }, output) => {
+          const { held } = findHeld(output?.screen);
+          return [
+            held?.docId && {
+              _id: held.docId,
+              ...(output.executed && {
+                action: isRead(action) ? 'readInEditor' : 'editedInEditor'
+              })
+            }
+          ];
+        },
         prepare: self.prepareOpenEditor,
         accept: self.acceptOpenEditorAnswer
       };
@@ -131,22 +144,19 @@ module.exports = (self) => {
      */
     findOpenEditor(req, screen, action) {
       const modals = screen?.modals || [];
-      const index = modals.findLastIndex(modal => getRoot(modal));
-      const shown = getWindowEditor(screen);
-      if ((index === -1) && !shown) {
-        throw self.apos.error('aiToolError', 'No editor is open on the user\'s screen; ' +
-          'change documents with the document tools.');
+      const {
+        index, editor, held
+      } = findHeld(screen);
+      if (!editor) {
+        throw self.apos.error('aiToolError', 'No editor is open on the user\'s screen. ' +
+          'If you were working in one, the user closed it: ask them what to do, and ' +
+          'change nothing until they answer. Otherwise change documents with the ' +
+          'document tools.');
       }
       if (index < modals.length - 1) {
         throw self.apos.error('aiToolError', `${describeModal(modals.at(-1))} is open over ` +
           'the editor; ask the user to close it first.');
       }
-      const editor = (index === -1) ? shown : modals[index];
-      const held = (index === -1)
-        ? shown
-        : modals
-          .slice(0, index + 1)
-          .findLast(modal => modal.docId || modal.docType) || null;
       const verb = isRead(action) ? 'view' : 'edit';
       if (!held?.docType || !self.apos.ai.can(req, verb, held.docType)) {
         throw self.apos.error('aiToolError', (verb === 'view')
@@ -489,6 +499,30 @@ module.exports = (self) => {
         } ]
         : [])
     ];
+  }
+
+  // The top editor modal of a screen, `index` its place among the modals,
+  // else the window when it edits a document (`index` -1), else none; and
+  // what names the document it holds: the editor itself, or the one below
+  // it for a nested editor that names none
+  function findHeld(screen) {
+    const modals = screen?.modals || [];
+    const index = modals.findLastIndex(modal => getRoot(modal));
+    if (index === -1) {
+      const shown = getWindowEditor(screen);
+      return {
+        index,
+        editor: shown,
+        held: shown
+      };
+    }
+    return {
+      index,
+      editor: modals[index],
+      held: modals
+        .slice(0, index + 1)
+        .findLast(modal => modal.docId || modal.docType) || null
+    };
   }
 
   // The screen's window when it edits a document

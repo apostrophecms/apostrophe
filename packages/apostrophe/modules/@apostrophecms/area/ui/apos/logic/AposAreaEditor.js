@@ -29,6 +29,12 @@ export default {
       default: false
     }
   },
+  // For the widgets of this area, see `addBeside`
+  provide() {
+    return {
+      aposAreaAddBeside: (...args) => this.addBeside(...args)
+    };
+  },
   props: {
     docId: {
       type: String,
@@ -1053,27 +1059,31 @@ export default {
           index
         });
       }
-      if (this.widgetIsContextual(name)) {
+      const newWidget = await this.newWidgetOfType(name, index);
+      if (newWidget) {
         return this.insert({
-          widget: {
-            ...this.newWidget(name),
-            ...this.contextualWidgetDefaultData(name),
-            aposPlaceholder: this.widgetHasPlaceholder(name)
-          },
+          widget: newWidget,
           index
         });
+      }
+    },
+    // A new widget of the type `name`, to be inserted at `index`, as `add`
+    // would make it: through its editor modal if it has one, in which case
+    // null means the user cancelled
+    async newWidgetOfType(name, index) {
+      if (this.widgetIsContextual(name)) {
+        return {
+          ...this.newWidget(name),
+          ...this.contextualWidgetDefaultData(name),
+          aposPlaceholder: this.widgetHasPlaceholder(name)
+        };
       }
       if (!this.widgetHasInitialModal(name)) {
-        const newWidget = this.newWidget(name);
-        return this.insert({
-          widget: {
-            ...newWidget,
-            aposPlaceholder: this.widgetHasPlaceholder(name)
-          },
-          index
-        });
+        return {
+          ...this.newWidget(name),
+          aposPlaceholder: this.widgetHasPlaceholder(name)
+        };
       }
-
       const componentName = this.widgetEditorComponent(name);
       apos.area.activeEditor = this;
       const preview = this.widgetPreview(name, index, true);
@@ -1087,12 +1097,94 @@ export default {
         preview
       });
       apos.area.activeEditor = null;
-      if (newWidget) {
-        return this.insert({
-          widget: newWidget,
-          index
+      return newWidget || null;
+    },
+    // Add a widget of the type `name` beside the widget `widgetId`, for that
+    // widget's own editor, as rich text's insert menu does.
+    //
+    // Once the new widget exists (the user may cancel its modal), `split` is
+    // called with `{ canSplit }`, whether there is room for two more
+    // widgets, and returns where the new widget goes:
+    //
+    // - `position`: `'before'` or `'after'` (the default) the widget
+    // - `update`: properties that change on the widget itself
+    // - `tail`: properties for a copy of the widget that follows the new
+    //   one, splitting the widget in two around it. Only when `canSplit`
+    //
+    // All of it is one edit, so that one undo takes it back.
+    async addBeside(widgetId, name, split) {
+      if (this.readOnly) {
+        return;
+      }
+      const indexOf = () => this.next.findIndex((widget) => widget._id === widgetId);
+      if (indexOf() === -1) {
+        return;
+      }
+      const widget = await this.newWidgetOfType(name, indexOf() + 1);
+      const at = indexOf();
+      if (!widget || (at === -1)) {
+        return;
+      }
+      if (!widget._id) {
+        widget._id = createId();
+      }
+      if (!widget.metaType) {
+        widget.metaType = 'widget';
+      }
+      const max = this.options.max || this.field?.max;
+      const canSplit = !max || (this.next.length + 2 <= max);
+      const {
+        position = 'after',
+        update = null,
+        tail = null
+      } = split?.({ canSplit }) || {};
+      const existing = this.next[at];
+      const updated = update
+        ? {
+          ...existing,
+          ...update
+        }
+        : existing;
+      const inserted = [ widget ];
+      if (tail && canSplit) {
+        inserted.push({
+          ...cloneWidget(existing),
+          ...tail
         });
       }
+      const items = (position === 'before')
+        ? [ ...this.next.slice(0, at), ...inserted, updated, ...this.next.slice(at + 1) ]
+        : [ ...this.next.slice(0, at), updated, ...inserted, ...this.next.slice(at + 1) ];
+      if (this.docId === window.apos.adminBar.contextId) {
+        this.contextEdited(
+          {
+            [`@${this.id}`]: {
+              _id: this.id,
+              metaType: 'area',
+              items
+            }
+          },
+          {
+            [`@${this.id}`]: {
+              _id: this.id,
+              metaType: 'area',
+              items: klona(this.next)
+            }
+          },
+          {
+            widgetId: widget._id,
+            anchorId: existing._id
+          }
+        );
+      }
+      this.next = items;
+      if (update) {
+        this.edited[existing._id] = true;
+      }
+      if (this.widgetIsContextual(widget.type)) {
+        this.edit({ index: items.indexOf(widget) });
+      }
+      this.setFocusedWidget(widget._id, this.areaId, { scrollTo: true });
     },
     widgetOptionsByType(name) {
       if (this.options.widgets) {

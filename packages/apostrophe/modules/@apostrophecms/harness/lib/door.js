@@ -14,7 +14,7 @@
 
 const DOOR_KEYS = [
   'door', 'lockId', 'family', 'chat', 'requestId', 'model', 'revert', 'seen', 'deferSeen',
-  'askBeforeOverwrite', 'client'
+  'askBeforeOverwrite', 'client', 'pendingSeen'
 ];
 
 module.exports = (self) => {
@@ -44,6 +44,9 @@ module.exports = (self) => {
      * @param {boolean} [context.deferSeen] Reads are added only by
      *   `commitSeen`, for a door whose model calls tools in steps: a write
      *   of a read's own step was written from what the model read before.
+     * @param {Map<string, string>} [context.pendingSeen] With `deferSeen`,
+     *   reads an earlier run of the request kept aside and never added: its
+     *   step waited, and its calls run on this request.
      * @param {boolean} [context.askBeforeOverwrite] A write refused because
      *   the document was saved since the read always says who saved it.
      *   With this, after another user's save the model is told to say what
@@ -76,7 +79,7 @@ module.exports = (self) => {
       }
       const {
         door, lockId, family, chat, requestId, model, revert, seen, deferSeen,
-        askBeforeOverwrite, client
+        askBeforeOverwrite, client, pendingSeen
       } = context;
       for (const [ name, value ] of Object.entries({
         door,
@@ -126,13 +129,16 @@ module.exports = (self) => {
       if ((seen !== undefined) && !(seen instanceof Map)) {
         throw self.apos.error('invalid', '"seen" must be a Map');
       }
+      if ((pendingSeen !== undefined) && (!deferSeen || !(pendingSeen instanceof Map))) {
+        throw self.apos.error('invalid', '"pendingSeen" must be a Map, with "deferSeen"');
+      }
       return req.clone({
         aposHarnessDoor: Object.freeze({
           door,
           lockId,
           requestId,
           seen: new Map(seen),
-          ...(deferSeen && { pendingSeen: new Map() }),
+          ...(deferSeen && { pendingSeen: new Map(pendingSeen) }),
           ...(family && { family }),
           ...(chat && { chat }),
           ...(revert && { revert }),

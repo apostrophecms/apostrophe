@@ -106,7 +106,7 @@ module.exports = (self) => {
           await self.deleteChatRecords(self.getOwnerReq(chat.ownerId), chat);
           return true;
         } catch (e) {
-          if (![ 'invalid', 'notfound' ].includes(e.name)) {
+          if (![ 'conflict', 'notfound' ].includes(e.name)) {
             self.logError('expire-chats', e.message, {
               chatId: chat._id,
               stack: e.stack
@@ -154,7 +154,7 @@ module.exports = (self) => {
           await self.deleteChatRecords(req, chat);
           chats++;
         } catch (e) {
-          if (e.name !== 'invalid') {
+          if (e.name !== 'conflict') {
             throw e;
           }
           busy++;

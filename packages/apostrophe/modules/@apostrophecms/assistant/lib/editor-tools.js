@@ -3,6 +3,11 @@
 // an ask the owning browser tab answers; `write_plan` keeps the request's
 // plan, which the panel shows above the composer. Each is an action on the
 // AI engine tagged `assistant`, so only the assistant's door selects it.
+//
+// The request keeps what the thread shows of each answered `ask_editor`
+// ask in `questionAsks`: `{ callId, questions }`, each question `{ question,
+// answer }` or `{ question, youDecide: true }`. A skip or a stop leaves no
+// record: the request's status says it.
 
 const QUESTION_MAX = 300;
 const OPTION_MAX = 120;
@@ -24,7 +29,20 @@ module.exports = (self) => {
       if (!self.options.enabled) {
         return;
       }
-      self.addAskKind('question', { accept: self.acceptQuestionAnswer });
+      self.addAskKind('question', {
+        accept: self.acceptQuestionAnswer,
+        answered: (req, request, ask, input) => self.requests.updateOne({
+          _id: request._id,
+          ownerId: request.ownerId
+        }, {
+          $push: {
+            questionAsks: {
+              callId: ask.callId,
+              questions: input.answers
+            }
+          }
+        })
+      });
       self.addAskKind('confirm', { accept: self.acceptConfirmAnswer });
       self.apos.ai.addTool({
         name: 'ask_editor',
@@ -41,6 +59,8 @@ module.exports = (self) => {
           'needs "other" or "youDecide" beside it. They may skip the whole set, which ' +
           'ends the request.',
         kind: 'action',
+        summary: ({ questions }) => questions
+          .map(({ question }) => ({ text: question })),
         tags: [ 'assistant' ],
         input: {
           type: 'object',
@@ -168,6 +188,7 @@ module.exports = (self) => {
           'first, every step pending, then ask here whether to go ahead with it; ' +
           'never put the plan in "details".',
         kind: 'action',
+        summary: ({ action }) => [ { text: action } ],
         tags: [ 'assistant' ],
         input: {
           type: 'object',
@@ -226,6 +247,7 @@ module.exports = (self) => {
           'the plan, so send every step each time, in order: one "active" while you work ' +
           'on it, "done" once finished. Send an empty list to drop the plan.',
         kind: 'action',
+        summary: ({ steps }) => steps.map(({ title }) => ({ text: title })),
         tags: [ 'assistant' ],
         input: {
           type: 'object',
