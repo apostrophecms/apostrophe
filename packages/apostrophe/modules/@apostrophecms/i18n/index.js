@@ -367,15 +367,19 @@ module.exports = {
         // Support for a single aposLocale query param that
         // also contains the mode, which is likely to occur
         // since we have the `aposLocale` property in docs
-        // structured that way
-        if (req.query.aposLocale && req.query.aposLocale.includes(':')) {
+        // structured that way.
+        //
+        // The query parser can also produce an object or an array
+        // (`?aposLocale[a]=1`, a repeated `aposLocale`), which is ignored
+        // just like a missing value
+        if (typeof req.query.aposLocale === 'string' && req.query.aposLocale.includes(':')) {
           const parts = req.query.aposLocale.split(':');
           req.query.aposLocale = parts[0];
           req.query.aposMode = parts[1];
         }
         const validModes = [ 'draft', 'published' ];
         let locale;
-        if (self.isValidLocale(req.query.aposLocale)) {
+        if (typeof req.query.aposLocale === 'string' && self.isValidLocale(req.query.aposLocale)) {
           locale = req.query.aposLocale;
         } else {
           locale = self.matchLocale(req);
