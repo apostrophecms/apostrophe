@@ -15,7 +15,8 @@ export function serializeDraft(parts) {
     .join('');
 }
 
-// The `@` and the letters typed after it, right before the caret
+// The letters of an `@` that opens a search: typed at the start or after a
+// space, a single word right before the caret
 export function findQuery(textBefore) {
   const match = textBefore.match(/(?:^|\s)@([^\s@\uFFFC]{0,30})$/);
   return match ? match[1] : null;
