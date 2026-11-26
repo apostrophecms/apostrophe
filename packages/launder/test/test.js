@@ -611,6 +611,8 @@ describe('launder', function() {
     });
     it('should convert 12h to 24h', function() {
       assert(launder.time('4:30pm') === '16:30:00');
+      assert(launder.time('12pm') === '12:00:00');
+      assert(launder.time('12:30pm') === '12:30:00');
     });
     it('should not require the m in pm', function() {
       assert(launder.time('4:30p') === '16:30:00');
