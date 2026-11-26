@@ -178,10 +178,13 @@ module.exports = (self) => {
               reason: status
             })),
           asks: null,
+          pendingSeen: null,
           updatedAt: now,
           endedAt: now
         }
       });
+      // The waiting calls never run: the reads of their step count
+      await self.apos.aposHarness.commitSeen(self.getRunReq(req, chat, request));
       for (const ask of request.asks) {
         const discard = self.askKinds[ask.kind]?.discard;
         try {

@@ -334,6 +334,11 @@ describe('Harness: doors, the write path and guards', function () {
       assert.throws(() => door(req, { model: 'm' }), { name: 'invalid' });
       assert.throws(() => door(req, { tab: 'x' }), { name: 'invalid' });
       assert.throws(() => door(req, { deferSeen: 'yes' }), { name: 'invalid' });
+      assert.throws(() => door(req, { pendingSeen: new Map() }), { name: 'invalid' });
+      assert.throws(() => door(req, {
+        deferSeen: true,
+        pendingSeen: []
+      }), { name: 'invalid' });
     });
 
     it('should reach every handler of a generate call, and mark its saves', async function () {
@@ -673,6 +678,34 @@ describe('Harness: doors, the write path and guards', function () {
       assert.equal(step.refused[0].reason, 'changed');
       assert.equal(next.written.length, 1);
       assert.equal((await findDraft(article._id)).body, 'From the model');
+    });
+
+    it('should count the reads an earlier run kept aside from commitSeen on', async function () {
+      const article = await insertArticle({ body: 'Original' });
+      const before = await findDraft(article._id);
+      const draft = await apos.doc.find(userReq('bob'), { _id: article._id }).toObject();
+      draft.body = 'Saved by Bob';
+      await apos.modules['harness-article'].update(userReq('bob'), draft);
+      const { updatedAt } = await findDraft(article._id);
+      // The earlier run read Bob's save in a step whose calls run now
+      const req = door(userReq('ann'), {
+        seen: new Map([ [ article._id, before.updatedAt.toISOString() ] ]),
+        deferSeen: true,
+        pendingSeen: new Map([ [ article._id, updatedAt.toISOString() ] ])
+      });
+
+      const step = await apos.aposHarness.writeDocuments(req, [ {
+        _id: article._id,
+        patch: { body: 'From the model' }
+      } ]);
+      await apos.aposHarness.commitSeen(req);
+      const next = await apos.aposHarness.writeDocuments(req, [ {
+        _id: article._id,
+        patch: { body: 'From the model' }
+      } ]);
+
+      assert.equal(step.refused[0].reason, 'changed');
+      assert.equal(next.written.length, 1);
     });
 
     it('should keep a write\'s stamp over a read of the same step', async function () {
