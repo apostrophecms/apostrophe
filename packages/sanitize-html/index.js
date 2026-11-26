@@ -442,10 +442,20 @@ function sanitizeHtml(html, options, _fallback) {
               allowedAttributesGlobMap[name].test(a)) ||
             (allowedAttributesGlobMap['*'] && allowedAttributesGlobMap['*'].test(a))) {
             passedAllowedAttributesMapCheck = true;
-          } else if (allowedAttributesMap && allowedAttributesMap[name]) {
-            for (const o of allowedAttributesMap[name]) {
-              if (isPlainObject(o) && o.name && (o.name === a)) {
-                passedAllowedAttributesMapCheck = true;
+          } else if (allowedAttributesMap) {
+            // Rules that restrict the values of this attribute, for this tag
+            // first and then for all tags (`*`). The value is kept if any
+            // rule allows it.
+            const valueRules = []
+              .concat(
+                (has(allowedAttributesMap, name) && allowedAttributesMap[name]) || [],
+                allowedAttributesMap['*'] || []
+              )
+              .filter(o => isPlainObject(o) && o.name && (o.name === a));
+            if (valueRules.length) {
+              passedAllowedAttributesMapCheck = true;
+              let allowedValue = '';
+              for (const o of valueRules) {
                 let newValue = '';
                 if (o.multiple === true) {
                   // verify the values that are allowed
@@ -463,8 +473,12 @@ function sanitizeHtml(html, options, _fallback) {
                   // verified an allowed value matches the entire attribute value
                   newValue = value;
                 }
-                value = newValue;
+                if (newValue !== '') {
+                  allowedValue = newValue;
+                  break;
+                }
               }
+              value = allowedValue;
             }
           }
           if (passedAllowedAttributesMapCheck) {
