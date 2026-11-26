@@ -45,3 +45,20 @@ export class UnsupportedPackageManagerError extends Error {
     this.errorCode = 'unsupported_pm';
   }
 }
+
+// Thrown when the running Node.js is too old for the chosen kit. Not a
+// StageError: a preflight precondition.
+export class UnsupportedNodeVersionError extends Error {
+  /**
+   * @param {string} nodeVersion Running version (e.g. '22.11.0').
+   * @param {number} requiredMajor Minimum major the kit needs (e.g. 24).
+   */
+  constructor(nodeVersion, requiredMajor) {
+    super(`Node.js ${requiredMajor} or newer is required (running ${nodeVersion})`);
+    this.name = 'UnsupportedNodeVersionError';
+    this.nodeVersion = nodeVersion;
+    this.requiredMajor = requiredMajor;
+    // Allowlisted preflight code (telemetry: install_fail, failStage:'preflight').
+    this.errorCode = 'unsupported_node';
+  }
+}

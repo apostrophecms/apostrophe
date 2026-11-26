@@ -15,10 +15,11 @@ import { KIT_IDS } from '../core/kits.js';
 /**
  * Symbolic error codes. Each value corresponds to a single
  * `throw new StageError(..., { code })` site (or the preflight
- * `UnsupportedPackageManagerError`). Not a contract type — internal to
- * the schema, mirrored from grep'ing `src/core/steps/*` + `errors.js`.
+ * `UnsupportedPackageManagerError` / `UnsupportedNodeVersionError`). Not a
+ * contract type — internal to the schema, mirrored from grep'ing
+ * `src/core/steps/*` + `errors.js`.
  * @typedef {(
- *   'unsupported_pm' |
+ *   'unsupported_pm' | 'unsupported_node' |
  *   'target_exists' |
  *   'git_missing' | 'git_spawn_failed' | 'git_clone_failed' |
  *   'missing_scaffold_file' | 'scaffold_io' |
@@ -82,7 +83,7 @@ export const FAIL_STAGES = Object.freeze([
  * @type {ReadonlyArray<ErrorCode>}
  */
 export const ERROR_CODES = Object.freeze([
-  'unsupported_pm',
+  'unsupported_pm', 'unsupported_node',
   'target_exists',
   'git_missing', 'git_spawn_failed', 'git_clone_failed',
   'missing_scaffold_file', 'scaffold_io',

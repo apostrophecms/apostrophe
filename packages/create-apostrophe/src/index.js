@@ -44,7 +44,8 @@
 
 /**
  * The stage a failed install is attributed to. `'preflight'` means the
- * failure happened before any stage ran (package manager check) — every step
+ * failure happened before any stage ran (package manager or Node.js version
+ * check) — every step
  * is skipped. Otherwise exactly one stage per failure. Always a string, so
  * the telemetry field stays single-typed.
  * @typedef {(
