@@ -24,7 +24,10 @@ module.exports = {
     // Whether an outside AI tool may publish, as far as the connected user
     // may. `false` keeps the publishing tools off this server alone: the
     // assistant keeps them
-    publish: true
+    publish: true,
+    // Seconds an MCP write's change log entries are kept; 0 keeps them for
+    // good. 60 days by default (see lib/retention.js)
+    changeLogExpireAfter: 60 * 24 * 60 * 60
     // maxImageSize: the largest image `save_image_to_media` takes, in
     //   bytes. Unset, it's the attachment module's `maxSize` when that is a
     //   number of bytes, otherwise 10 MB (10,000,000 bytes). The image comes
@@ -57,15 +60,6 @@ module.exports = {
     self.addImageTools();
     self.enableHttp();
   },
-  handlers(self) {
-    return {
-      '@apostrophecms/harness:documentSeen': {
-        async storeSeen(req, docId) {
-          await self.storeSeen(req, docId);
-        }
-      }
-    };
-  },
   middleware(self) {
     if (!self.options.enabled) {
       return {};
@@ -95,6 +89,48 @@ module.exports = {
       }
     };
   },
+  handlers(self) {
+    const seen = {
+      '@apostrophecms/harness:documentSeen': {
+        async storeSeen(req, docId) {
+          await self.storeSeen(req, docId);
+        }
+      }
+    };
+    if (!self.options.enabled) {
+      return seen;
+    }
+    return {
+      ...seen,
+      'apostrophe:ready': {
+        startSweeps() {
+          self.startSweeps();
+        }
+      },
+      'apostrophe:destroy': {
+        stopSweeps() {
+          self.stopSweeps();
+        }
+      }
+    };
+  },
+  tasks(self) {
+    return {
+      // Also on a site with the server off, for the entries it left
+      'expire-changes': {
+        usage: 'Delete the MCP change log entries past changeLogExpireAfter, as the ' +
+          'in-process sweep does.\n' +
+          'Usage: node app @apostrophecms/mcp:expire-changes',
+        async task() {
+          const deleted = await self.expireChanges();
+          // eslint-disable-next-line no-console
+          console.log((deleted === null)
+            ? 'Another process is sweeping; nothing done.'
+            : `${deleted} change log entries deleted.`);
+        }
+      }
+    };
+  },
   routes(self) {
     if (!self.options.enabled) {
       return {};
@@ -116,6 +152,7 @@ module.exports = {
       ...require('./lib/seen')(self),
       ...require('./lib/image-tools')(self),
       ...require('./lib/images')(self),
+      ...require('./lib/retention')(self),
 
       // New core modules can't have an alias, so @apostrophecms/oauth has none
       getOauth() {
@@ -140,7 +177,13 @@ module.exports = {
 
       validateOptions() {
         const {
-          enabled, allowedOrigins, title, seenLimit, publish, maxImageSize
+          enabled,
+          allowedOrigins,
+          title,
+          seenLimit,
+          publish,
+          maxImageSize,
+          changeLogExpireAfter
         } = self.options;
         if (typeof enabled !== 'boolean') {
           throw new Error('The "@apostrophecms/mcp" module\'s enabled option must be a boolean.');
@@ -153,6 +196,9 @@ module.exports = {
         }
         if ((maxImageSize !== undefined) && !self.isBytes(maxImageSize)) {
           throw new Error('The "@apostrophecms/mcp" module\'s maxImageSize option must be a positive whole number of bytes.');
+        }
+        if (!(Number.isFinite(changeLogExpireAfter) && (changeLogExpireAfter >= 0))) {
+          throw new Error('The "@apostrophecms/mcp" module\'s changeLogExpireAfter option must be a number of seconds, 0 or more.');
         }
         if ((allowedOrigins != null) && !(
           Array.isArray(allowedOrigins) &&

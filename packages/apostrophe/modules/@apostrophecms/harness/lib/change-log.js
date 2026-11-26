@@ -25,6 +25,7 @@ module.exports = (self) => {
         userId: 1,
         at: -1
       });
+      // Also serves deleteDoorChanges
       await self.changes.createIndex({
         door: 1,
         at: -1
@@ -257,6 +258,29 @@ module.exports = (self) => {
         chat,
         userId: req.user._id
       });
+    },
+
+    /**
+     * Deletes the change log entries of a door made before a date, for a
+     * door whose entries have no chat to go with, such as MCP's. The
+     * `{ door, at }` index serves it.
+     *
+     * @param {string} door The door's name.
+     * @param {Date} before Entries made before this are deleted.
+     * @returns {Promise<number>} How many entries were deleted.
+     */
+    async deleteDoorChanges(door, before) {
+      if ((typeof door !== 'string') || !door) {
+        throw self.apos.error('invalid', '"door" must be a non-empty string');
+      }
+      if (!(before instanceof Date) || Number.isNaN(before.getTime())) {
+        throw self.apos.error('invalid', '"before" must be a valid Date');
+      }
+      const { deletedCount } = await self.changes.deleteMany({
+        door,
+        at: { $lt: before }
+      });
+      return deletedCount;
     }
   };
 };
