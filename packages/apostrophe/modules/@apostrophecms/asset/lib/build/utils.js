@@ -8,6 +8,29 @@ const {
 } = require('../webpack/utils');
 
 module.exports = {
+  // The names of the modules whose UI sources no build includes: those
+  // whose `build.enable` is false, or a function returning false for the
+  // module's options as configured. The last level of the module that sets
+  // it decides. Read before any module is created, so it depends on
+  // configuration only (see moog's `getMetadata`). The module works as
+  // usual on the server; project level modules improving it bring no UI
+  // either. `modulesMeta` is the metadata of the registered modules.
+  getInactiveModules(modulesMeta) {
+    const inactive = new Set();
+    for (const { build, options, __meta } of modulesMeta) {
+      const enable = Object.values(build)
+        .findLast(level => level?.enable !== undefined)
+        ?.enable ?? true;
+      const isEnabled = (typeof enable === 'function')
+        ? enable(options)
+        : enable;
+      if (!isEnabled) {
+        inactive.add(__meta.name);
+      }
+    }
+    return inactive;
+  },
+
   // Walk through the modules, detect `build` property and
   // format it to configuration per build alias (vendor).
   // The format is the same as the legacy `webpack` configuration
@@ -20,9 +43,11 @@ module.exports = {
   //     }
   //   }
   // }
-  // The new `build` format:
+  // The new `build` format (`enable`, true by default, is not a build
+  // vendor: see `getInactiveModules()`):
   // {
   //   build: {
+  //     enable: true | false | (options) => Boolean,
   //     webpack: {
   //       bundles: {
   //         'bundle-name': {}
@@ -50,13 +75,17 @@ module.exports = {
   //     rebundleModules: [...]
   //   }
   // }
+  // `modulesMeta` is the metadata of the modules when the caller has it
+  // already, otherwise it is read with `getMetadata` for each of
+  // `modulesToInstantiate`.
   async getBuildExtensions({
-    getMetadata, modulesToInstantiate, rebundleModulesConfig = {}
+    modulesMeta, getMetadata, modulesToInstantiate, rebundleModulesConfig = {}
   }) {
-    const modulesMeta = [];
-
-    for (const name of modulesToInstantiate) {
-      modulesMeta.push(await getMetadata(name));
+    if (!modulesMeta) {
+      modulesMeta = [];
+      for (const name of modulesToInstantiate) {
+        modulesMeta.push(await getMetadata(name));
+      }
     }
 
     const rebundleModules = formatRebundleConfig(rebundleModulesConfig);
@@ -162,6 +191,11 @@ function formatBuildConfigs({
       }
 
       for (const [ alias, config ] of Object.entries(options)) {
+        // Whether the module's UI is built at all, not a build vendor (see
+        // `getInactiveModules()`)
+        if (alias === 'enable') {
+          continue;
+        }
         if (!Object.keys(config).length) {
           continue;
         }

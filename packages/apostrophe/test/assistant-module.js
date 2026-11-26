@@ -24,6 +24,31 @@ describe('Assistant: module and options', function () {
     }, { modules: browserToolModule('keeps') });
   });
 
+  it('keeps its UI out of the build unless enabled', async function () {
+    await withApos({}, async (apos) => {
+      assert.equal(apos.asset.isInactive('@apostrophecms/assistant'), true);
+    });
+    await withApos({ enabled: true }, async (apos) => {
+      assert.equal(apos.asset.isInactive('@apostrophecms/assistant'), false);
+    });
+  });
+
+  it('adds nothing when its UI is not built', async function () {
+    process.env.APOS_AI_MOCK = '1';
+    await withApos({ enabled: true }, async (apos) => {
+      assert.equal(apos.ai.active, true);
+      assert.equal(apos.aposAssistant.active, false);
+      await assertAbsent(apos);
+    }, {
+      modules: {
+        '@apostrophecms/assistant': {
+          options: { enabled: true },
+          build: { enable: false }
+        }
+      }
+    });
+  });
+
   it('adds nothing when enabled with no active AI engine', async function () {
     await withApos({ enabled: true }, async (apos) => {
       assert.equal(apos.ai.active, false);
@@ -409,6 +434,8 @@ describe('Assistant: module and options', function () {
   });
 
   it('refuses options of the wrong shape at startup', async function () {
+    // A startup per case
+    this.timeout(t.timeout * 4);
     const cases = [
       [ { enabled: 'yes' }, /enabled option must be a boolean/ ],
       [ { modelDisplay: 1 }, /modelDisplay option must be a boolean/ ],

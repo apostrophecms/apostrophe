@@ -2,7 +2,11 @@ const fs = require('fs-extra');
 const path = require('node:path');
 const util = require('node:util');
 const { glob } = require('../../lib/path');
-const { getBuildExtensions, fillExtraBundles } = require('./utils');
+const {
+  getBuildExtensions,
+  getInactiveModules,
+  fillExtraBundles
+} = require('./utils');
 const Concat = require('concat-with-sourcemaps');
 
 // Internal build interface.
@@ -17,9 +21,14 @@ module.exports = (self) => {
     // `build` property. Uses the public API `getRegisteredModules()` to get the
     // cached list of modules.
     async setBuildExtensions() {
+      const modulesMeta = [];
+      // Sequential: `getMetadata` defines what it autoloads
+      for (const name of self.getRegisteredModules()) {
+        modulesMeta.push(await self.apos.synth.getMetadata(name));
+      }
+      self.inactiveModules = getInactiveModules(modulesMeta);
       self.moduleBuildExtensions = await getBuildExtensions({
-        getMetadata: self.apos.synth.getMetadata,
-        modulesToInstantiate: self.getRegisteredModules(),
+        modulesMeta,
         rebundleModulesConfig: self.options.rebundleModules
       });
     },

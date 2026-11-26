@@ -155,6 +155,9 @@ module.exports = {
     // The properties above set by `setWebpackExtensions()` will be also
     // overridden.
     self.moduleBuildExtensions = {};
+    // Modules whose UI sources no build includes, also filled by
+    // `setBuildExtensions()` (see `getInactiveModules()` in lib/build/utils)
+    self.inactiveModules = new Set();
     await self.setBuildExtensions();
     // Set only if the external build module is registered. Contains
     // the entrypoints configuration for the current build module.
@@ -918,7 +921,17 @@ module.exports = {
         if (!lockPath) {
           return null;
         }
-        return self.apos.util.md5(await fs.readFile(lockPath, 'utf8'));
+        // A module becoming active or inactive changes what is built, like a
+        // dependency change
+        const inactive = [ ...self.inactiveModules ].sort().join(',');
+        return self.apos.util.md5(
+          await fs.readFile(lockPath, 'utf8') + `\ninactive:${inactive}`
+        );
+      },
+
+      // A module or chain entry name, its project level `my-` form included
+      isInactive(name) {
+        return self.inactiveModules.has(name.replace(/(^|\/)my-/, '$1'));
       },
 
       // Where the lock file hash from the last build is persisted.

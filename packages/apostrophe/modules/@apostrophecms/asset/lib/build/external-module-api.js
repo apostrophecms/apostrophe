@@ -295,7 +295,7 @@ function invoke() {
       for (const name of modules) {
         const metadata = await self.apos.synth.getMetadata(name);
         for (const entry of metadata.__meta.chain) {
-          if (seen[entry.dirname]) {
+          if (seen[entry.dirname] || self.isInactive(entry.name)) {
             continue;
           }
           const moduleName = entry.my
