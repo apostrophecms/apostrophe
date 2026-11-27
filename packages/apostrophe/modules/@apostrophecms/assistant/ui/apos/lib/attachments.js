@@ -131,16 +131,16 @@ export function createAttachments({ getChatId, report }) {
       const extension = getExtension(file.name);
       const kind = config.unreadable?.[extension];
       if (kind) {
-        lines.push(line(kind === 'pdf' ? 'apostrophe:assistantAttachNoPdf' : 'apostrophe:assistantAttachNoImages', file));
+        lines.push(line(kind === 'pdf' ? 'aposAssistant:assistantAttachNoPdf' : 'aposAssistant:assistantAttachNoImages', file));
       } else if (!config.extensions.includes(extension)) {
-        lines.push(line('apostrophe:assistantAttachType', file));
+        lines.push(line('aposAssistant:assistantAttachType', file));
       } else if (file.size > getMaxBytes(extension)) {
-        lines.push(line('apostrophe:assistantAttachSize', file, {
+        lines.push(line('aposAssistant:assistantAttachSize', file, {
           size: formatSize(file.size),
           limit: formatSize(getMaxBytes(extension))
         }));
       } else if (count >= config.maxCount) {
-        lines.push(line('apostrophe:assistantAttachCount', file, { count: config.maxCount }));
+        lines.push(line('aposAssistant:assistantAttachCount', file, { count: config.maxCount }));
       } else {
         count++;
         upload(id, batch, file);
@@ -211,34 +211,34 @@ export function createAttachments({ getChatId, report }) {
   // The server's reason, in the editor's words
   function refusalLine(e, file) {
     if (!e.status) {
-      return line('apostrophe:assistantAttachNoAnswer', file);
+      return line('aposAssistant:assistantAttachNoAnswer', file);
     }
     const data = e.body?.data || {};
     const config = getConfig();
     switch (data.reason) {
       case 'type':
-        return line('apostrophe:assistantAttachType', file);
+        return line('aposAssistant:assistantAttachType', file);
       case 'route':
-        return line((data.kind === 'pdf') ? 'apostrophe:assistantAttachNoPdf' : 'apostrophe:assistantAttachNoImages', file);
+        return line((data.kind === 'pdf') ? 'aposAssistant:assistantAttachNoPdf' : 'aposAssistant:assistantAttachNoImages', file);
       case 'size':
-        return line('apostrophe:assistantAttachSize', file, {
+        return line('aposAssistant:assistantAttachSize', file, {
           size: formatSize(file.size),
           limit: formatSize(data.limit || config.maxBytes)
         });
       case 'pages':
-        return line('apostrophe:assistantAttachPages', file, {
+        return line('aposAssistant:assistantAttachPages', file, {
           count: data.pages,
           limit: data.limit
         });
       case 'count':
-        return line('apostrophe:assistantAttachCount', file, { count: data.limit || config.maxCount });
+        return line('aposAssistant:assistantAttachCount', file, { count: data.limit || config.maxCount });
       case 'unreadable':
         return line((data.kind === 'image')
-          ? 'apostrophe:assistantAttachUnreadableImage'
-          : 'apostrophe:assistantAttachUnreadable', file);
+          ? 'aposAssistant:assistantAttachUnreadableImage'
+          : 'aposAssistant:assistantAttachUnreadable', file);
       default:
         report(e);
-        return line('apostrophe:assistantAttachRefused', file);
+        return line('aposAssistant:assistantAttachRefused', file);
     }
   }
 

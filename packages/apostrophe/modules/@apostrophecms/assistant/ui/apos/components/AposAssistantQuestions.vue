@@ -26,7 +26,7 @@
         class="apos-assistant-questions__answer apos-assistant-questions__answer--left"
         data-apos-test="assistant-questions-answer"
       >
-        {{ $t('apostrophe:assistantQuestionLeft') }}
+        {{ $t('aposAssistant:assistantQuestionLeft') }}
       </dd>
     </div>
   </dl>

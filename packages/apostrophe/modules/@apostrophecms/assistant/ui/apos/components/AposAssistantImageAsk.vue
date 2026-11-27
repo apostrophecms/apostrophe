@@ -2,7 +2,7 @@
   <AposAssistantDock
     tone="default"
     role="group"
-    :label="$t('apostrophe:assistantPickImage')"
+    :label="$t('aposAssistant:assistantPickImage')"
     data-apos-test="assistant-image-ask"
   >
     <template #toolbar>
@@ -12,8 +12,8 @@
         data-apos-test="assistant-image-ask-label"
       >
         {{ picked
-          ? $t('apostrophe:assistantOptionNext', { number: picked })
-          : $t('apostrophe:assistantPickImage') }}
+          ? $t('aposAssistant:assistantOptionNext', { number: picked })
+          : $t('aposAssistant:assistantPickImage') }}
       </p>
     </template>
     <template #aside>
@@ -32,7 +32,7 @@
         ref="grid"
         class="apos-assistant-image-ask__candidates"
         role="radiogroup"
-        :aria-label="$t('apostrophe:assistantPickImage')"
+        :aria-label="$t('aposAssistant:assistantPickImage')"
         @keydown="onGridKey"
       >
         <div
@@ -46,7 +46,7 @@
             class="apos-assistant-image-ask__pick"
             role="radio"
             :aria-checked="(candidateId === candidate._id) ? 'true' : 'false'"
-            :aria-label="$t('apostrophe:assistantOptionLabel', { number: index + 1 })"
+            :aria-label="$t('aposAssistant:assistantOptionLabel', { number: index + 1 })"
             :tabindex="(focusIndex === index) ? 0 : -1"
             :disabled="sending"
             data-apos-test="assistant-image-ask-candidate"
@@ -77,8 +77,8 @@
           <button
             type="button"
             class="apos-assistant-image-ask__zoom"
-            :aria-label="$t('apostrophe:assistantZoomOption', { number: index + 1 })"
-            :title="$t('apostrophe:assistantZoomOption', { number: index + 1 })"
+            :aria-label="$t('aposAssistant:assistantZoomOption', { number: index + 1 })"
+            :title="$t('aposAssistant:assistantZoomOption', { number: index + 1 })"
             data-apos-test="assistant-image-ask-zoom"
             @click="zoom(candidate)"
           >
@@ -104,7 +104,7 @@
         >
           <path d="M19,19H5V5H19M19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M13.96,12.29L11.21,15.83L9.25,13.47L6.5,17H17.5L13.96,12.29Z" />
         </svg>
-        <span>{{ $t('apostrophe:assistantReplacesInMedia', { title: replaces.title }) }}</span>
+        <span>{{ $t('aposAssistant:assistantReplacesInMedia', { title: replaces.title }) }}</span>
       </p>
       <button
         type="button"
@@ -115,8 +115,8 @@
         @click="answer({ action: 'use', candidate: candidateId })"
       >
         {{ picked
-          ? $t('apostrophe:assistantUseOption', { number: picked })
-          : $t('apostrophe:assistantSelectImage') }}
+          ? $t('aposAssistant:assistantUseOption', { number: picked })
+          : $t('aposAssistant:assistantSelectImage') }}
       </button>
       <button
         type="button"
@@ -125,19 +125,19 @@
         data-apos-test="assistant-image-ask-again"
         @click="answer({ action: 'again' })"
       >
-        {{ $t('apostrophe:assistantTryAgain') }}
+        {{ $t('aposAssistant:assistantTryAgain') }}
       </button>
       <div class="apos-assistant-image-ask__refine">
         <span
           class="apos-assistant-image-ask__refine-label"
           aria-hidden="true"
-        >{{ $t('apostrophe:assistantRefine') }}</span>
+        >{{ $t('aposAssistant:assistantRefine') }}</span>
         <input
           v-model="notes"
           type="text"
           class="apos-assistant-image-ask__input"
-          :aria-label="$t('apostrophe:assistantRefineLabel')"
-          :placeholder="$t('apostrophe:assistantRefinePlaceholder')"
+          :aria-label="$t('aposAssistant:assistantRefineLabel')"
+          :placeholder="$t('aposAssistant:assistantRefinePlaceholder')"
           :disabled="sending"
           maxlength="2000"
           data-apos-test="assistant-image-ask-notes"
@@ -150,7 +150,7 @@
           data-apos-test="assistant-image-ask-refine"
           @click="refine"
         >
-          {{ $t('apostrophe:assistantSend') }}
+          {{ $t('aposAssistant:assistantSend') }}
         </button>
       </div>
     </div>
@@ -233,7 +233,7 @@ function zoom(candidate) {
   const index = candidates.value.indexOf(candidate);
   apos.modal.execute('AposAssistantLightbox', {
     src: getFileUrl(props.chatId, candidate._id, 'preview'),
-    alt: $t('apostrophe:assistantOptionLabel', { number: index + 1 })
+    alt: $t('aposAssistant:assistantOptionLabel', { number: index + 1 })
   });
 }
 

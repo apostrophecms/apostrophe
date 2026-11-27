@@ -22,7 +22,7 @@
         data-apos-test="assistant-thread-loading"
       >
         <AposAssistantThinking />
-        <span>{{ $t('apostrophe:assistantLoadingChat') }}</span>
+        <span>{{ $t('aposAssistant:assistantLoadingChat') }}</span>
       </p>
       <p
         v-else-if="chat?.carry?.status === 'running'"
@@ -31,17 +31,17 @@
         data-apos-test="assistant-thread-carrying"
       >
         <AposAssistantThinking />
-        <span>{{ $t('apostrophe:assistantCarrying') }}</span>
+        <span>{{ $t('aposAssistant:assistantCarrying') }}</span>
       </p>
       <AposAssistantActivity
         v-else-if="chat?.carry?.status === 'failed'"
         class="apos-assistant-thread__failed"
         tone="error"
-        :title="$t('apostrophe:assistantCarryFailed')"
-        :text="$t('apostrophe:assistantCarryFailedText')"
+        :title="$t('aposAssistant:assistantCarryFailed')"
+        :text="$t('aposAssistant:assistantCarryFailedText')"
         :actions="[ {
           name: 'retryCarry',
-          label: $t('apostrophe:assistantRetry')
+          label: $t('aposAssistant:assistantRetry')
         } ]"
         data-apos-test="assistant-carry-failed"
         @action="store.retryCarry(chatId)"
@@ -50,10 +50,10 @@
         v-else-if="state === 'failed'"
         class="apos-assistant-thread__failed"
         tone="error"
-        :title="$t('apostrophe:assistantLoadFailed')"
+        :title="$t('aposAssistant:assistantLoadFailed')"
         :actions="[ {
           name: 'reload',
-          label: $t('apostrophe:assistantRetry')
+          label: $t('aposAssistant:assistantRetry')
         } ]"
         data-apos-test="assistant-thread-failed"
         @action="store.loadChat(chatId)"
@@ -62,7 +62,7 @@
         v-else
         class="apos-assistant-thread__greeting"
       >
-        {{ $t('apostrophe:assistantGreeting') }}
+        {{ $t('aposAssistant:assistantGreeting') }}
       </p>
     </div>
     <template

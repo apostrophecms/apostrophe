@@ -674,8 +674,12 @@ module.exports = {
                 continue;
               }
               self.namespaces[ns] = self.namespaces[ns] || {};
+              // Not for a module whose UI no build includes (see
+              // `build.enable`). Modules created before the asset module are
+              // core modules, always built.
+              const built = self.apos.asset?.isBuildEnabled(entry.name) ?? true;
               self.namespaces[ns].browser = self.namespaces[ns].browser ||
-                (metadata[ns] && metadata[ns].browser);
+                (metadata[ns]?.browser && built);
               const namespaceDir = path.join(localizationsDir, ns);
               if (!fs.statSync(namespaceDir).isDirectory()) {
                 // Skip non-directory items, such as hidden files

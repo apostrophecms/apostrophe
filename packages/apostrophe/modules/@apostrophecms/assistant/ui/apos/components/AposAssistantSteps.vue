@@ -67,7 +67,7 @@
             data-apos-test="assistant-step-loading"
           >
             <AposAssistantThinking />
-            <span>{{ $t('apostrophe:assistantLoading') }}</span>
+            <span>{{ $t('aposAssistant:assistantLoading') }}</span>
           </p>
           <p
             v-else-if="details[step.id] === 'failed'"
@@ -75,14 +75,14 @@
             role="status"
             data-apos-test="assistant-step-failed"
           >
-            <span>{{ $t('apostrophe:assistantStepLoadFailed') }}</span>
+            <span>{{ $t('aposAssistant:assistantStepLoadFailed') }}</span>
             <button
               type="button"
               class="apos-assistant-steps__retry"
               data-apos-test="assistant-step-retry"
               @click="load(step)"
             >
-              {{ $t('apostrophe:assistantRetry') }}
+              {{ $t('aposAssistant:assistantRetry') }}
             </button>
           </p>
           <template v-else-if="typeof details[step.id] === 'object'">
@@ -95,7 +95,7 @@
                 class="apos-assistant-steps__note"
                 data-apos-test="assistant-step-error"
               >
-                {{ $t('apostrophe:assistantStepFailed') }}
+                {{ $t('aposAssistant:assistantStepFailed') }}
               </p>
               <!-- Titles and the model's words are text here, never markup -->
               <ul
@@ -119,7 +119,7 @@
                   v-if="details[step.id].more"
                   class="apos-assistant-steps__summary-item apos-assistant-steps__summary-item--more"
                 >
-                  {{ $t('apostrophe:assistantStepMore', { count: details[step.id].more }) }}
+                  {{ $t('aposAssistant:assistantStepMore', { count: details[step.id].more }) }}
                 </li>
               </ul>
             </div>
@@ -145,8 +145,8 @@
                   <button
                     type="button"
                     class="apos-assistant-steps__copy"
-                    :aria-label="$t('apostrophe:assistantCopy', { title: $t(block.title) })"
-                    :title="$t('apostrophe:assistantCopy', { title: $t(block.title) })"
+                    :aria-label="$t('aposAssistant:assistantCopy', { title: $t(block.title) })"
+                    :title="$t('aposAssistant:assistantCopy', { title: $t(block.title) })"
                     @click="copy(step.id, block)"
                   >
                     <AposIndicator
@@ -193,50 +193,50 @@ const COPIED_FOR = 1500;
 // `type`, `count`, `locale` and `reason`; an item with another action, or
 // none, shows bare
 const ACTIONS = {
-  read: 'apostrophe:aiStepRead',
-  readHistory: 'apostrophe:aiStepReadHistory',
-  readChanges: 'apostrophe:aiStepReadChanges',
-  readUses: 'apostrophe:aiStepReadUses',
-  readTree: 'apostrophe:aiStepReadTree',
-  readFields: 'apostrophe:aiStepReadFields',
-  readGuidance: 'apostrophe:aiStepReadGuidance',
-  lookedThrough: 'apostrophe:aiStepLookedThrough',
-  created: 'apostrophe:aiStepCreated',
-  edited: 'apostrophe:aiStepEdited',
-  published: 'apostrophe:aiStepPublished',
-  alreadyLive: 'apostrophe:aiStepAlreadyLive',
-  addedWidgets: 'apostrophe:aiStepAddedWidgets',
-  movedWidgets: 'apostrophe:aiStepMovedWidgets',
-  removedWidgets: 'apostrophe:aiStepRemovedWidgets',
-  copiedWidgetsFrom: 'apostrophe:aiStepCopiedWidgetsFrom',
-  copiedWidgetsInto: 'apostrophe:aiStepCopiedWidgetsInto',
-  refused: 'apostrophe:aiStepRefused',
-  wentTo: 'apostrophe:aiStepWentTo',
-  lookedAtScreen: 'apostrophe:aiStepLookedAtScreen',
-  showedWidgets: 'apostrophe:aiStepShowedWidgets',
-  openedEditor: 'apostrophe:aiStepOpenedEditor',
-  readInEditor: 'apostrophe:aiStepReadInEditor',
-  editedInEditor: 'apostrophe:aiStepEditedInEditor',
-  lookedAt: 'apostrophe:aiStepLookedAt',
-  savedToMedia: 'apostrophe:aiStepSavedToMedia',
-  comparedLocale: 'apostrophe:aiStepComparedLocale',
-  localized: 'apostrophe:aiStepLocalized',
-  notLocalized: 'apostrophe:aiStepNotLocalized',
-  recordedLocalization: 'apostrophe:aiStepRecordedLocalization'
+  read: 'aposAssistant:aiStepRead',
+  readHistory: 'aposAssistant:aiStepReadHistory',
+  readChanges: 'aposAssistant:aiStepReadChanges',
+  readUses: 'aposAssistant:aiStepReadUses',
+  readTree: 'aposAssistant:aiStepReadTree',
+  readFields: 'aposAssistant:aiStepReadFields',
+  readGuidance: 'aposAssistant:aiStepReadGuidance',
+  lookedThrough: 'aposAssistant:aiStepLookedThrough',
+  created: 'aposAssistant:aiStepCreated',
+  edited: 'aposAssistant:aiStepEdited',
+  published: 'aposAssistant:aiStepPublished',
+  alreadyLive: 'aposAssistant:aiStepAlreadyLive',
+  addedWidgets: 'aposAssistant:aiStepAddedWidgets',
+  movedWidgets: 'aposAssistant:aiStepMovedWidgets',
+  removedWidgets: 'aposAssistant:aiStepRemovedWidgets',
+  copiedWidgetsFrom: 'aposAssistant:aiStepCopiedWidgetsFrom',
+  copiedWidgetsInto: 'aposAssistant:aiStepCopiedWidgetsInto',
+  refused: 'aposAssistant:aiStepRefused',
+  wentTo: 'aposAssistant:aiStepWentTo',
+  lookedAtScreen: 'aposAssistant:aiStepLookedAtScreen',
+  showedWidgets: 'aposAssistant:aiStepShowedWidgets',
+  openedEditor: 'aposAssistant:aiStepOpenedEditor',
+  readInEditor: 'aposAssistant:aiStepReadInEditor',
+  editedInEditor: 'aposAssistant:aiStepEditedInEditor',
+  lookedAt: 'aposAssistant:aiStepLookedAt',
+  savedToMedia: 'aposAssistant:aiStepSavedToMedia',
+  comparedLocale: 'aposAssistant:aiStepComparedLocale',
+  localized: 'aposAssistant:aiStepLocalized',
+  notLocalized: 'aposAssistant:aiStepNotLocalized',
+  recordedLocalization: 'aposAssistant:aiStepRecordedLocalization'
 };
 // A refusal's sentence when its reason is known, the reason's after it
 const BECAUSE = {
-  refused: 'apostrophe:aiStepRefusedBecause',
-  notLocalized: 'apostrophe:aiStepNotLocalizedBecause'
+  refused: 'aposAssistant:aiStepRefusedBecause',
+  notLocalized: 'aposAssistant:aiStepNotLocalizedBecause'
 };
 const REASONS = {
-  locked: 'apostrophe:aiStepReasonLocked',
-  forbidden: 'apostrophe:aiStepReasonForbidden',
-  invalid: 'apostrophe:aiStepReasonInvalid',
-  changed: 'apostrophe:aiStepReasonChanged',
-  notfound: 'apostrophe:aiStepReasonNotFound',
-  exists: 'apostrophe:aiStepReasonExists',
-  parentMissing: 'apostrophe:aiStepReasonParentMissing'
+  locked: 'aposAssistant:aiStepReasonLocked',
+  forbidden: 'aposAssistant:aiStepReasonForbidden',
+  invalid: 'aposAssistant:aiStepReasonInvalid',
+  changed: 'aposAssistant:aiStepReasonChanged',
+  notfound: 'aposAssistant:aiStepReasonNotFound',
+  exists: 'aposAssistant:aiStepReasonExists',
+  parentMissing: 'aposAssistant:aiStepReasonParentMissing'
 };
 // The actions whose sentence names the locale
 const LOCALE_ACTIONS = [ 'comparedLocale', 'localized', 'notLocalized',
@@ -262,18 +262,18 @@ const steps = computed(() => props.request.steps || []);
 const summary = computed(() => {
   const { createdAt, endedAt } = props.request;
   if (!endedAt) {
-    return $t('apostrophe:assistantStepCount', { count: steps.value.length });
+    return $t('aposAssistant:assistantStepCount', { count: steps.value.length });
   }
   const total = Math.max(1, Math.round((new Date(endedAt) - new Date(createdAt)) / 1000));
   const minutes = Math.floor(total / 60);
   const seconds = total % 60;
   const duration = minutes
-    ? $t('apostrophe:assistantMinutes', {
+    ? $t('aposAssistant:assistantMinutes', {
       minutes,
       seconds
     })
-    : $t('apostrophe:assistantSeconds', { seconds });
-  return $t('apostrophe:assistantThoughtFor', { duration });
+    : $t('aposAssistant:assistantSeconds', { seconds });
+  return $t('aposAssistant:assistantThoughtFor', { duration });
 });
 
 // A step read with its result or error stays as read; one read before it
@@ -356,17 +356,17 @@ function getBlocks(step) {
   return [
     detail.input && {
       name: 'input',
-      title: 'apostrophe:assistantStepArguments',
+      title: 'aposAssistant:assistantStepArguments',
       text: detail.input
     },
     detail.error && {
       name: 'error',
-      title: 'apostrophe:assistantStepError',
+      title: 'aposAssistant:assistantStepError',
       text: detail.error
     },
     detail.output && {
       name: 'output',
-      title: 'apostrophe:assistantStepResult',
+      title: 'aposAssistant:assistantStepResult',
       text: detail.output
     }
   ].filter(Boolean);

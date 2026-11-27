@@ -32,7 +32,7 @@
         v-else
         type="button"
         class="apos-assistant-image-rounds__open"
-        :aria-label="$t('apostrophe:assistantFileOpen', { name: ask.title })"
+        :aria-label="$t('aposAssistant:assistantFileOpen', { name: ask.title })"
         :disabled="!ask.image.src"
         data-apos-test="assistant-image-result-open"
         @click="zoom(ask.image, ask.title)"
@@ -52,8 +52,8 @@
       </button>
       <figcaption class="apos-assistant-image-rounds__caption">
         {{ $t((getOutcome(ask.outcome) === 'kept')
-          ? 'apostrophe:assistantPickedOption'
-          : 'apostrophe:assistantUsedOption', {
+          ? 'aposAssistant:assistantPickedOption'
+          : 'aposAssistant:assistantUsedOption', {
           number: ask.outcome.option
         }) }}
       </figcaption>
@@ -61,8 +61,8 @@
     <AposAssistantActivity
       v-if="ask.outcome?.action === 'cancel'"
       tone="general"
-      :title="$t('apostrophe:assistantImagesCancelled')"
-      :text="$t('apostrophe:assistantNothingSaved')"
+      :title="$t('aposAssistant:assistantImagesCancelled')"
+      :text="$t('aposAssistant:assistantNothingSaved')"
       data-apos-test="assistant-image-cancelled"
     />
   </template>

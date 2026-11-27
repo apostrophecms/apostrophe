@@ -77,6 +77,12 @@ module.exports = {
     // Off, its UI is never built: the browser gets none of it
     enable: options => options.enabled === true
   },
+  i18n: {
+    // Sent to the browser only while its UI is built
+    aposAssistant: {
+      browser: true
+    }
+  },
   init(self) {
     self.validateOptions();
     // Set once the AI engine is active too
@@ -97,7 +103,7 @@ module.exports = {
       self.addWidgetOperation('assistantLocalize', {
         label: 'apostrophe:localize',
         icon: 'translate-icon',
-        prompt: 'apostrophe:assistantLocalizePrompt'
+        prompt: 'aposAssistant:assistantLocalizePrompt'
       });
     }
     self.addAskKind('browser', { accept: self.acceptBrowserAnswer });
@@ -203,7 +209,7 @@ module.exports = {
           self.startSweeps();
           self.apos.modal.addTrigger('assistant', {
             componentName: 'AposAssistant',
-            label: 'apostrophe:assistantOpen',
+            label: 'aposAssistant:assistantOpen',
             icon: 'creation-icon'
           });
           // Every widget type's menus, now that the assistant can open

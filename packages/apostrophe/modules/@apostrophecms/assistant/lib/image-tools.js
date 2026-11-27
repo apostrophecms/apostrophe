@@ -82,7 +82,7 @@ module.exports = (self) => {
       self.addNoticeAction('saveToMedia', { run: self.retryKeptImage });
       self.apos.ai.addTool({
         name: 'generate_image',
-        label: 'apostrophe:aiToolGenerateImage',
+        label: 'aposAssistant:aiToolGenerateImage',
         description: 'Generate images and show them to the user, who picks one and uses ' +
           'it, asks for new ones, refines them with notes, or cancels. Only the image ' +
           'they use is saved to Media. To edit an image, name it as the source: ' +
@@ -103,7 +103,7 @@ module.exports = (self) => {
           : [
             output?.answered
               ? {
-                text: 'apostrophe:aiStepGeneratedImages',
+                text: 'aposAssistant:aiStepGeneratedImages',
                 title: prompt
               }
               : { text: prompt }
@@ -505,19 +505,19 @@ module.exports = (self) => {
       }
       const named = Boolean(failure.title);
       const locked = (failure.reason === 'locked') && (failure.lockedBy
-        ? 'apostrophe:assistantSaveLocked'
-        : 'apostrophe:assistantSaveLockedSelf');
+        ? 'aposAssistant:assistantSaveLocked'
+        : 'aposAssistant:assistantSaveLockedSelf');
       await self.addNotice(req, {
         callId: options.callId,
         tone: 'error',
-        title: 'apostrophe:assistantNotSavedToMedia',
+        title: 'aposAssistant:assistantNotSavedToMedia',
         text: locked || {
           forbidden: named
-            ? 'apostrophe:assistantSaveForbiddenImage'
-            : 'apostrophe:assistantSaveForbidden',
-          gone: 'apostrophe:assistantSaveGone',
-          changed: 'apostrophe:assistantSaveChanged'
-        }[failure.reason] || 'apostrophe:assistantSaveRefused',
+            ? 'aposAssistant:assistantSaveForbiddenImage'
+            : 'aposAssistant:assistantSaveForbidden',
+          gone: 'aposAssistant:assistantSaveGone',
+          changed: 'aposAssistant:assistantSaveChanged'
+        }[failure.reason] || 'aposAssistant:assistantSaveRefused',
         interpolate: {
           title: failure.title || '',
           name: failure.lockedBy || ''
@@ -526,7 +526,7 @@ module.exports = (self) => {
           ? null
           : {
             name: 'saveToMedia',
-            label: 'apostrophe:assistantRetry',
+            label: 'aposAssistant:assistantRetry',
             data: {
               attachmentId: record._id,
               ask: options.ask || null
@@ -567,8 +567,8 @@ module.exports = (self) => {
         await self.addNotice(req, {
           callId,
           tone: 'error',
-          title: 'apostrophe:assistantNotSavedToMedia',
-          text: 'apostrophe:assistantSaveGone'
+          title: 'aposAssistant:assistantNotSavedToMedia',
+          text: 'aposAssistant:assistantSaveGone'
         });
         outcome = { error: 'The picked image is no longer available.' };
       }

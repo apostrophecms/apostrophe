@@ -804,7 +804,7 @@ export const useAssistantStore = defineStore('assistant', () => {
     } else if (stage === 'retry') {
       progress.value[requestId] = { retrying: true };
     } else if (stage === 'summary') {
-      progress.value[requestId] = { label: 'apostrophe:assistantSummarizing' };
+      progress.value[requestId] = { label: 'aposAssistant:assistantSummarizing' };
     } else if (stage === 'carry') {
       applyCarry(chatId, event.status);
     } else if (stage === 'suggestion') {
@@ -2352,10 +2352,10 @@ export const useAssistantStore = defineStore('assistant', () => {
     }
     if (dock && (!e.status || always)) {
       refusals.value[id] = {
-        title: 'apostrophe:assistantNotDone',
+        title: 'aposAssistant:assistantNotDone',
         text: e.status
-          ? 'apostrophe:assistantNotDoneRefused'
-          : 'apostrophe:assistantNotDoneNoAnswer'
+          ? 'aposAssistant:assistantNotDoneRefused'
+          : 'aposAssistant:assistantNotDoneNoAnswer'
       };
     }
   }
@@ -2367,7 +2367,7 @@ export const useAssistantStore = defineStore('assistant', () => {
     newChat();
     drafts.value[NEW_CHAT] = draft;
     refusals.value[NEW_CHAT] = {
-      title: 'apostrophe:assistantChatDeleted'
+      title: 'aposAssistant:assistantChatDeleted'
     };
   }
 
@@ -2379,15 +2379,15 @@ export const useAssistantStore = defineStore('assistant', () => {
     }
     if (reason === 'requestOpen') {
       refusals.value[id] = {
-        title: 'apostrophe:assistantStillRunning',
-        text: 'apostrophe:assistantStillRunningText'
+        title: 'aposAssistant:assistantStillRunning',
+        text: 'aposAssistant:assistantStillRunningText'
       };
       return;
     }
     if (reason === 'revertRunning') {
       refusals.value[id] = {
-        title: 'apostrophe:assistantStillReverting',
-        text: 'apostrophe:assistantStillRevertingText'
+        title: 'aposAssistant:assistantStillReverting',
+        text: 'aposAssistant:assistantStillRevertingText'
       };
       return;
     }
@@ -2396,10 +2396,10 @@ export const useAssistantStore = defineStore('assistant', () => {
       return;
     }
     refusals.value[id] = {
-      title: 'apostrophe:assistantNotSent',
+      title: 'aposAssistant:assistantNotSent',
       text: e.status
-        ? 'apostrophe:assistantNotSentRefused'
-        : 'apostrophe:assistantNotSentNoAnswer'
+        ? 'aposAssistant:assistantNotSentRefused'
+        : 'aposAssistant:assistantNotSentNoAnswer'
     };
   }
 

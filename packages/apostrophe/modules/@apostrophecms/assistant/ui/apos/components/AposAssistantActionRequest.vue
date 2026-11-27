@@ -11,14 +11,14 @@
       data-apos-test="assistant-request-status"
     >
       <AposAssistantThinking />
-      <span>{{ $t('apostrophe:assistantWorking') }}</span>
+      <span>{{ $t('aposAssistant:assistantWorking') }}</span>
     </p>
     <AposAssistantNotices :request="request" />
     <AposAssistantActivity
       v-if="request.status === 'failed'"
       tone="error"
-      :title="$t('apostrophe:assistantError')"
-      :text="$t('apostrophe:assistantErrorText')"
+      :title="$t('aposAssistant:assistantError')"
+      :text="$t('aposAssistant:assistantErrorText')"
     />
   </div>
 </template>

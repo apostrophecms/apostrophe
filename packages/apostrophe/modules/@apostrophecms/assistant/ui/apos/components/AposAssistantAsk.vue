@@ -2,7 +2,7 @@
   <AposAssistantDock
     tone="default"
     role="group"
-    :label="$t('apostrophe:assistantQuestion')"
+    :label="$t('aposAssistant:assistantQuestion')"
     data-apos-test="assistant-ask"
   >
     <template #toolbar>
@@ -14,7 +14,7 @@
       >
         {{ single
           ? questions[0].question
-          : $t('apostrophe:assistantQuestionsPosition', {
+          : $t('aposAssistant:assistantQuestionsPosition', {
             current: current + 1,
             total: questions.length
           }) }}
@@ -28,7 +28,7 @@
         data-apos-test="assistant-ask-skip"
         @click="skip"
       >
-        {{ $t('apostrophe:assistantSkip') }}
+        {{ $t('aposAssistant:assistantSkip') }}
       </button>
     </template>
     <div
@@ -103,7 +103,7 @@
               class="apos-assistant-ask__number"
               aria-hidden="true"
             >{{ (entry.options || []).length + 1 }}</span>
-            <span class="apos-assistant-ask__option-label">{{ $t('apostrophe:assistantYouDecide') }}</span>
+            <span class="apos-assistant-ask__option-label">{{ $t('aposAssistant:assistantYouDecide') }}</span>
           </button>
           <div
             v-if="takesText(entry)"
@@ -123,14 +123,14 @@
               data-apos-test="assistant-ask-other"
               @click="pickText(index)"
             >
-              <span class="apos-assistant-ask__other-label">{{ $t('apostrophe:assistantOther') }}</span>
+              <span class="apos-assistant-ask__other-label">{{ $t('aposAssistant:assistantOther') }}</span>
             </button>
             <input
               v-model="texts[index]"
               type="text"
               class="apos-assistant-ask__input"
-              :aria-label="$t(entry.options ? 'apostrophe:assistantOtherAnswer' : 'apostrophe:assistantYourAnswer')"
-              :placeholder="$t('apostrophe:assistantAnswerPlaceholder')"
+              :aria-label="$t(entry.options ? 'aposAssistant:assistantOtherAnswer' : 'aposAssistant:assistantYourAnswer')"
+              :placeholder="$t('aposAssistant:assistantAnswerPlaceholder')"
               :disabled="sending"
               maxlength="2000"
               data-apos-test="assistant-ask-input"
@@ -145,7 +145,7 @@
               data-apos-test="assistant-ask-send"
               @click="submit"
             >
-              {{ $t('apostrophe:assistantSend') }}
+              {{ $t('aposAssistant:assistantSend') }}
             </button>
           </div>
         </div>
@@ -161,8 +161,8 @@
           type="outline"
           icon="chevron-left-icon"
           icon-only
-          label="apostrophe:assistantPreviousQuestion"
-          tooltip="apostrophe:assistantPreviousQuestion"
+          label="aposAssistant:assistantPreviousQuestion"
+          tooltip="aposAssistant:assistantPreviousQuestion"
           :modifiers="[ 'small' ]"
           :disabled="sending || current === 0"
           :attrs="{ 'data-apos-test': 'assistant-ask-previous' }"
@@ -173,8 +173,8 @@
           type="outline"
           icon="chevron-right-icon"
           icon-only
-          label="apostrophe:assistantNextQuestion"
-          tooltip="apostrophe:assistantNextQuestion"
+          label="aposAssistant:assistantNextQuestion"
+          tooltip="aposAssistant:assistantNextQuestion"
           :modifiers="[ 'small' ]"
           :disabled="sending || current === questions.length - 1"
           :attrs="{ 'data-apos-test': 'assistant-ask-next' }"
@@ -189,7 +189,7 @@
         data-apos-test="assistant-ask-send"
         @click="submit"
       >
-        {{ $t('apostrophe:assistantSendAnswers') }}
+        {{ $t('aposAssistant:assistantSendAnswers') }}
       </button>
     </div>
   </AposAssistantDock>

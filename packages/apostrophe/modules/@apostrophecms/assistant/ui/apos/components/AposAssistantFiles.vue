@@ -1,7 +1,7 @@
 <template>
   <ul
     class="apos-assistant-files"
-    :aria-label="$t('apostrophe:assistantFiles')"
+    :aria-label="$t('aposAssistant:assistantFiles')"
     data-apos-test="assistant-files"
   >
     <li

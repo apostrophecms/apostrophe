@@ -29,7 +29,7 @@
           type="text"
           class="apos-assistant-menu__rename"
           maxlength="60"
-          :aria-label="$t('apostrophe:assistantChatName')"
+          :aria-label="$t('aposAssistant:assistantChatName')"
           data-apos-test="assistant-rename-input"
           @keydown.enter.prevent="saveRename({ focus: true })"
           @keydown.esc.stop.prevent="cancelRename"
@@ -39,11 +39,11 @@
           v-else-if="confirmingId === row._id"
           class="apos-assistant-menu__confirm"
           role="group"
-          :aria-label="$t('apostrophe:assistantDeleteConfirm')"
+          :aria-label="$t('aposAssistant:assistantDeleteConfirm')"
         >
           <div class="apos-assistant-menu__confirm-line">
             <p class="apos-assistant-menu__confirm-copy">
-              {{ $t('apostrophe:assistantDeleteConfirm') }}
+              {{ $t('aposAssistant:assistantDeleteConfirm') }}
             </p>
             <button
               type="button"
@@ -65,7 +65,7 @@
             </button>
           </div>
           <p class="apos-assistant-menu__note">
-            {{ $t('apostrophe:assistantDeleteNote') }}
+            {{ $t('aposAssistant:assistantDeleteNote') }}
           </p>
         </div>
         <template v-else>
@@ -82,10 +82,10 @@
           <span class="apos-assistant-menu__actions">
             <button
               :ref="el => setRef(row._id, 'rename', el)"
-              v-apos-tooltip="'apostrophe:assistantRename'"
+              v-apos-tooltip="'aposAssistant:assistantRename'"
               type="button"
               class="apos-assistant-menu__icon"
-              :aria-label="$t('apostrophe:assistantRenameChat', { title: row.title })"
+              :aria-label="$t('aposAssistant:assistantRenameChat', { title: row.title })"
               data-apos-test="assistant-rename"
               @click="startRename(row)"
             >
@@ -97,12 +97,12 @@
             <button
               :ref="el => setRef(row._id, 'delete', el)"
               v-apos-tooltip="row.running
-                ? 'apostrophe:assistantDeleteRunning'
-                : 'apostrophe:assistantDelete'"
+                ? 'aposAssistant:assistantDeleteRunning'
+                : 'aposAssistant:assistantDelete'"
               type="button"
               class="apos-assistant-menu__icon"
               :aria-disabled="row.running ? 'true' : undefined"
-              :aria-label="$t('apostrophe:assistantDeleteChat', { title: row.title })"
+              :aria-label="$t('aposAssistant:assistantDeleteChat', { title: row.title })"
               data-apos-test="assistant-delete"
               @click="startDelete(row)"
             >
@@ -129,14 +129,14 @@
       role="status"
       data-apos-test="assistant-menu-failed"
     >
-      <span>{{ $t('apostrophe:assistantChatsFailed') }}</span>
+      <span>{{ $t('aposAssistant:assistantChatsFailed') }}</span>
       <button
         type="button"
         class="apos-assistant-menu__text-button"
         data-apos-test="assistant-menu-reload"
         @click="store.catchUp()"
       >
-        {{ $t('apostrophe:assistantRetry') }}
+        {{ $t('aposAssistant:assistantRetry') }}
       </button>
     </p>
     <p
@@ -146,14 +146,14 @@
       data-apos-test="assistant-menu-loading"
     >
       <AposAssistantThinking />
-      <span>{{ $t('apostrophe:assistantLoadingChats') }}</span>
+      <span>{{ $t('aposAssistant:assistantLoadingChats') }}</span>
     </p>
     <p
       v-if="usage !== null"
       class="apos-assistant-menu__usage"
       data-apos-test="assistant-chat-usage"
     >
-      <span>{{ $t('apostrophe:assistantChatUsage') }}</span>
+      <span>{{ $t('aposAssistant:assistantChatUsage') }}</span>
       <span class="apos-assistant-menu__usage-total">{{ usage }}</span>
     </p>
     <button
@@ -162,7 +162,7 @@
       data-apos-test="assistant-menu-new-chat"
       @click="newChat"
     >
-      {{ $t('apostrophe:assistantNewChat') }}
+      {{ $t('aposAssistant:assistantNewChat') }}
     </button>
   </div>
 </template>
@@ -215,13 +215,13 @@ const usage = computed(() => {
     .reduce((sum, { usage }) => sum + (usage.inputTokens || 0) +
       (usage.outputTokens || 0), 0);
   if (!tokens) {
-    return $t('apostrophe:assistantUsageNone');
+    return $t('aposAssistant:assistantUsageNone');
   }
   const format = new Intl.NumberFormat(apos.i18n.adminLocale, {
     notation: 'compact',
     maximumFractionDigits: 1
   });
-  return $t('apostrophe:assistantTokens', {
+  return $t('aposAssistant:assistantTokens', {
     count: tokens,
     tokens: format.format(tokens)
   });
@@ -336,10 +336,10 @@ async function confirmDelete(row) {
 
 function refuse(id, reason) {
   const texts = {
-    running: 'apostrophe:assistantDeleteRunning',
-    reverting: 'apostrophe:assistantDeleteReverting',
-    failed: 'apostrophe:assistantDeleteFailed',
-    noAnswer: 'apostrophe:assistantNotDoneNoAnswer'
+    running: 'aposAssistant:assistantDeleteRunning',
+    reverting: 'aposAssistant:assistantDeleteReverting',
+    failed: 'aposAssistant:assistantDeleteFailed',
+    noAnswer: 'aposAssistant:assistantNotDoneNoAnswer'
   };
   refusal.value = texts[reason]
     ? {

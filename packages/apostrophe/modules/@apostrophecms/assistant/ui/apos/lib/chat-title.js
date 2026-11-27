@@ -6,8 +6,8 @@ export function getChatTitle(chat, $t) {
     return chat.title;
   }
   if (chat?.continuedFrom) {
-    return $t('apostrophe:assistantContinuedTitle', {
-      title: chat.continuedFrom.title || $t('apostrophe:assistantUntitled')
+    return $t('aposAssistant:assistantContinuedTitle', {
+      title: chat.continuedFrom.title || $t('aposAssistant:assistantUntitled')
     });
   }
   return null;

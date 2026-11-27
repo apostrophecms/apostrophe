@@ -45,7 +45,7 @@ module.exports = (self) => {
     getOpenEditorTool() {
       return {
         name: TOOL,
-        label: 'apostrophe:aiToolEditOpenDocument',
+        label: 'aposAssistant:aiToolEditOpenDocument',
         description: 'Read and change what the editor open on top of the screen holds, ' +
           'unsaved: its document, or only its widget or array. Nothing is stored ' +
           'until the user saves, and they may cancel. "action" names a document tool and ' +

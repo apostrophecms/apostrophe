@@ -9,7 +9,7 @@
       v-if="attachRefusal"
       class="apos-assistant-composer__refusal"
       tone="error"
-      :title="$t('apostrophe:assistantNotAttached')"
+      :title="$t('aposAssistant:assistantNotAttached')"
       :dismiss-label="$t('apostrophe:close')"
       data-apos-test="assistant-attach-refusal"
       @dismiss="store.dismissAttachRefusal(chatId)"
@@ -62,7 +62,7 @@
           :id="listId"
           class="apos-assistant-mention__list"
           role="listbox"
-          :aria-label="$t('apostrophe:assistantMentionList')"
+          :aria-label="$t('aposAssistant:assistantMentionList')"
           data-apos-test="assistant-mention-list"
         >
           <div
@@ -88,7 +88,7 @@
           role="status"
           data-apos-test="assistant-mention-empty"
         >
-          {{ $t('apostrophe:assistantNoResults') }}
+          {{ $t('aposAssistant:assistantNoResults') }}
         </p>
         <p
           v-else
@@ -96,7 +96,7 @@
           role="status"
           data-apos-test="assistant-mention-searching"
         >
-          {{ $t('apostrophe:assistantSearching') }}
+          {{ $t('aposAssistant:assistantSearching') }}
         </p>
       </div>
       <AposAssistantFiles
@@ -111,8 +111,8 @@
         ref="input"
         :model-value="draft"
         :chat-id="chatId"
-        :placeholder="$t(dropping ? 'apostrophe:assistantDropToAttach' : 'apostrophe:assistantPlaceholder')"
-        :label="$t('apostrophe:assistantMessage')"
+        :placeholder="$t(dropping ? 'aposAssistant:assistantDropToAttach' : 'aposAssistant:assistantPlaceholder')"
+        :label="$t('aposAssistant:assistantMessage')"
         :aria="aria"
         @update:model-value="onInput"
         @send="send"
@@ -156,8 +156,8 @@
             v-if="canSelect"
             type="button"
             class="apos-assistant-composer__tool"
-            :aria-label="$t('apostrophe:assistantSelectOnPage')"
-            :title="$t('apostrophe:assistantSelectOnPage')"
+            :aria-label="$t('aposAssistant:assistantSelectOnPage')"
+            :title="$t('aposAssistant:assistantSelectOnPage')"
             data-apos-test="assistant-select-on-page"
             @click="selectOnPage"
           >
@@ -180,7 +180,7 @@
           class="apos-assistant-composer__send"
           :disabled="!stopShown && (!canSend || uploading)"
           :aria-disabled="(stopShown && stopping) ? 'true' : null"
-          :aria-label="$t(stopShown ? 'apostrophe:assistantStop' : 'apostrophe:assistantSend')"
+          :aria-label="$t(stopShown ? 'aposAssistant:assistantStop' : 'aposAssistant:assistantSend')"
           :title="sendTitle"
           :data-apos-test="stopShown ? 'assistant-stop' : 'assistant-send'"
           @click="stopShown && stop()"
@@ -279,10 +279,10 @@ const canUpload = store.canUpload();
 const canAttach = computed(() => store.canAttach(props.chatId));
 const attachRefusal = computed(() => store.attachRefusals[props.chatId] || null);
 const attachTitle = computed(() => (store.isFull(props.chatId)
-  ? $t('apostrophe:assistantAttachFull', {
+  ? $t('aposAssistant:assistantAttachFull', {
     count: apos.modules['@apostrophecms/assistant'].attachments.maxCount
   })
-  : $t('apostrophe:assistantAttach')));
+  : $t('aposAssistant:assistantAttach')));
 const accept = apos.modules['@apostrophecms/assistant'].attachments.extensions
   .map(extension => `.${extension}`)
   .join(',');
@@ -306,13 +306,13 @@ const files = computed(() => store.getAttached(props.chatId).map(file => {
 }));
 const sendTitle = computed(() => {
   if (stopShown.value) {
-    return $t('apostrophe:assistantStop');
+    return $t('aposAssistant:assistantStop');
   }
   if (uploading.value && draft.value.trim()) {
-    return $t('apostrophe:assistantUploading');
+    return $t('aposAssistant:assistantUploading');
   }
   return (carrying.value && draft.value.trim())
-    ? $t('apostrophe:assistantCarryingSend')
+    ? $t('aposAssistant:assistantCarryingSend')
     : null;
 });
 
@@ -330,16 +330,16 @@ const dock = computed(() => {
   if ((owner.value === 'elsewhere') && [ 'running', 'stopping' ].includes(open.status)) {
     return {
       tone: 'general',
-      title: 'apostrophe:assistantOtherTab',
-      text: 'apostrophe:assistantOtherTabText'
+      title: 'aposAssistant:assistantOtherTab',
+      text: 'aposAssistant:assistantOtherTabText'
     };
   }
   if ((owner.value === 'elsewhere') && (open.status === 'waiting')) {
     return {
       tone: 'warning',
-      title: 'apostrophe:assistantWaitingOtherTab',
-      text: 'apostrophe:assistantWaitingOtherTabText',
-      action: 'apostrophe:assistantContinueHere'
+      title: 'aposAssistant:assistantWaitingOtherTab',
+      text: 'aposAssistant:assistantWaitingOtherTabText',
+      action: 'aposAssistant:assistantContinueHere'
     };
   }
   return null;

@@ -70,7 +70,7 @@ module.exports = (self) => {
     addPublishGate() {
       self.addGate(PUBLISH_TOOL, 'publish', (args, { documentCount }) => ({
         title: {
-          key: 'apostrophe:assistantGatePublish',
+          key: 'aposAssistant:assistantGatePublish',
           values: { count: documentCount }
         },
         approve: 'apostrophe:publish'

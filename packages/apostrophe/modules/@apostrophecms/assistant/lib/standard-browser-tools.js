@@ -9,7 +9,7 @@ module.exports = (self) => {
   return [
     {
       name: 'read_screen',
-      label: 'apostrophe:aiToolReadScreen',
+      label: 'aposAssistant:aiToolReadScreen',
       description: 'Read the screen as it is now: the page, the modals open over it, ' +
         'the selected widgets and the field being edited. Every browser tool returns ' +
         'the screen after its action, so this is for when the user may have moved since.',
@@ -31,7 +31,7 @@ module.exports = (self) => {
     },
     {
       name: 'navigate',
-      label: 'apostrophe:aiToolNavigate',
+      label: 'aposAssistant:aiToolNavigate',
       description: 'Take the user to a page: a document with a page of its own by "_id", ' +
         'or a URL of this site. The page loads anew and answers: "executed" true means ' +
         'the browser arrived, and "screen" is the new page.',
@@ -57,7 +57,7 @@ module.exports = (self) => {
           ? done({ _id }, output, 'wentTo')
           : (output?.executed
             ? {
-              text: 'apostrophe:aiStepWentToUrl',
+              text: 'aposAssistant:aiStepWentToUrl',
               title: url
             }
             : { text: url })
@@ -84,7 +84,7 @@ module.exports = (self) => {
     },
     {
       name: 'open_editor',
-      label: 'apostrophe:aiToolOpenEditor',
+      label: 'aposAssistant:aiToolOpenEditor',
       description: 'Open the editor of a document, or of one of its widgets on the page ' +
         'the user is on. By default the answer comes once the editor is open. With ' +
         '"until": "closed" it comes when the user closes it, "saved" saying whether they ' +
@@ -138,7 +138,7 @@ module.exports = (self) => {
     },
     {
       name: 'show_widgets',
-      label: 'apostrophe:aiToolShowWidgets',
+      label: 'aposAssistant:aiToolShowWidgets',
       description: 'Show the user widgets on the page they are on: edit mode, scrolled to ' +
         'and selected, siblings in one area or the area holding them all. "selected" ' +
         'lists the widgets selected; "executed" false comes with the reason.',
