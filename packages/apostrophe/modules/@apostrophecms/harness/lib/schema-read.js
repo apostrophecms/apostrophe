@@ -23,6 +23,10 @@ const LEGEND = {
   color: 'color: a CSS color ("#1e90ff", "rgb(30 144 255)", a color name) or a CSS ' +
     'custom property name ("--brand-blue"); any other value is stored empty.',
   range: 'range: a number within its bounds, a multiple of its step.',
+  date: 'date: "YYYY-MM-DD".',
+  time: 'time: 24-hour, "HH:MM:SS".',
+  dateAndTime: 'dateAndTime: UTC, as "2026-12-01T14:00:00.000Z"; convert a local time ' +
+    'to UTC first.',
   folded: 'folded: a conditional field\'s own fields are left out; read them with ' +
     'get_schema "fields", by dot path of field names ("details.author"), one type at a time.',
   aiHow: 'aiHow: the site\'s rules for filling a field; "aiHow for" a field type gives ' +
@@ -212,6 +216,9 @@ module.exports = (self) => {
             ].filter(Boolean).join(', ');
           case 'box':
           case 'color':
+          case 'date':
+          case 'time':
+          case 'dateAndTime':
             legend.add(field.type);
             return [ field.type, ...bounds ].filter(Boolean).join(', ');
           default: {

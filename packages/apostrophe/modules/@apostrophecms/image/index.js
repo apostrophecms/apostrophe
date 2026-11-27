@@ -108,7 +108,9 @@ module.exports = {
       alt: {
         type: 'string',
         label: 'apostrophe:altText',
-        help: 'apostrophe:altTextHelp'
+        help: 'apostrophe:altTextHelp',
+        aiHow: 'What the image shows, for someone who can\'t see it: one short ' +
+          'sentence, without "image of" or the file name.'
       },
       credit: {
         type: 'string',

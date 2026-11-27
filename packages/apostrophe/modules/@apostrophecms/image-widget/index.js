@@ -86,7 +86,9 @@ module.exports = {
           label: 'apostrophe:image',
           max: 1,
           required: true,
-          withType: '@apostrophecms/image'
+          withType: '@apostrophecms/image',
+          aiHow: 'An image from Media. Its alt text belongs to the image itself, so a ' +
+            'change to it shows everywhere the image is used.'
         },
         caption: {
           label: 'apostrophe:caption',

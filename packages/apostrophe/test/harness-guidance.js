@@ -168,6 +168,10 @@ describe('Harness: guidance and language', function () {
         'When to use each type. A type marked "(aiHow)" has rules for working with it: ' +
           'read them with get_guidance first.',
         // Core's own guidance
+        '@apostrophecms/global: Global site settings, shared by every page.',
+        '@apostrophecms/html: Embed code from another service, pasted as given: a ' +
+          'form, a map, a booking widget. Never for text, images or layout the site\'s ' +
+          'own widgets can hold.',
         '@apostrophecms/layout (aiHow)',
         'guide-article: Guides and how-tos. (aiHow)',
         'guide-banner: A banner at the top of a landing page.',
@@ -301,6 +305,18 @@ describe('Harness: guidance and language', function () {
       assert(lines.includes('score: guideRating, help "Out of five"'));
       assert(legend.includes('\naiHow: '));
       assert(legend.includes('\naiHow for guideRating fields: A whole number from 1 to 5.'));
+    });
+
+    it('should give core\'s image fields their aiHow', async function () {
+      const { schema } = await run('get_schema', { types: [ '@apostrophecms/image' ] });
+      const lines = schema.split('\n');
+
+      // The image document's alt text, and the widget's image
+      assert(lines.includes('alt: string, aiHow "What the image shows, for someone who ' +
+        'can\'t see it: one short sentence, without \\"image of\\" or the file name."'));
+      assert(lines.includes('_image: relationship → @apostrophecms/image, max 1, required, ' +
+        'aiHow "An image from Media. Its alt text belongs to the image itself, so a change ' +
+        'to it shows everywhere the image is used."'));
     });
 
     it('should explain only the aiHow a read shows', async function () {

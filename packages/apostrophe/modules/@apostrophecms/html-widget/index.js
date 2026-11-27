@@ -10,7 +10,9 @@ module.exports = {
     label: 'apostrophe:rawHtml',
     className: false,
     icon: 'code-tags-icon',
-    preview: false
+    preview: false,
+    aiWhen: 'Embed code from another service, pasted as given: a form, a map, a ' +
+      'booking widget. Never for text, images or layout the site\'s own widgets can hold.'
   },
   fields: {
     add: {
