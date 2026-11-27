@@ -50,14 +50,14 @@ module.exports = (self) => {
         description: 'Ask the user and wait for the answers. Only when you can\'t go on ' +
           'without their direction: a choice between real alternatives, or details the ' +
           'task is missing. Each call interrupts them once, so ask everything you need ' +
-          'together, up to four questions. Give "options" when the choice is ' +
-          'enumerable, each a short label with a one-sentence description when the ' +
-          'label alone doesn\'t say what choosing it means, and "other": true when ' +
-          'they may answer in their own words besides; omit "options" for a ' +
-          'free-text answer. Set "youDecide": true when any answer would do and you ' +
-          'have a fair default, so they may leave that question to you; one option ' +
-          'needs "other" or "youDecide" beside it. They may skip the whole set, which ' +
-          'ends the request.',
+          'together, up to four questions, each taking one answer. Give "options" ' +
+          'when the choice is enumerable, each a short label with a one-sentence ' +
+          'description when the label alone doesn\'t say what choosing it means, and ' +
+          '"other": true when they may answer in their own words besides; omit ' +
+          '"options" for a free-text answer. Set "youDecide": true when any answer ' +
+          'would do and you have a fair default, so they may leave that question to ' +
+          'you; one option needs "other" or "youDecide" beside it. They may skip the ' +
+          'whole set, which ends the request.',
         kind: 'action',
         summary: ({ questions }) => questions
           .map(({ question }) => ({ text: question })),

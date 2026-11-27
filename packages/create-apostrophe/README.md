@@ -28,7 +28,9 @@ npm create apostrophe@latest -- --help
 > Everything after `--` is forwarded to the installer; npm swallows args without it.
 > Run `-- --help` any time for the full flag list.
 
-Requires **Node 22+** and **npm**, which comes with Node. The starter kits are
+Requires **Node 24+** and **npm**, which comes with Node. Node 22 can run the
+Standalone kits only; Astro kits need Node 24, and the installer refuses them
+on older versions before cloning anything. The starter kits are
 npm projects, so dependencies are always installed with npm. Starting the
 installer with pnpm (`pnpm create apostrophe`) works: it says so up front,
 installs with npm, and adds `"packageManager": "npm@<version>"` to the new
@@ -153,6 +155,10 @@ Grouped by the stage that emits them.
 - **`unsupported_pm`** - running under an unsupported package manager (yarn).
   Only unattended runs report it: the guided installer refuses before it has
   asked for telemetry consent, so nothing is sent.
+- **`unsupported_node`** - the running Node.js is too old for the chosen kit
+  (Astro kits need Node.js 24 or newer). Only unattended runs report it: the
+  guided installer catches it at the build question, before telemetry
+  consent, and offers Standalone instead.
 
 **clone**
 

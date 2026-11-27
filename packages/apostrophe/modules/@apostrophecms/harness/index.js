@@ -54,7 +54,11 @@ module.exports = {
         // A door's write to a document saved since the door last read or
         // wrote it is refused here: inside the save's own lock, after the
         // document was read for it, before anything is written. Once per
-        // save; a document without `updatedAt` is not checked
+        // save; a document without `updatedAt` is not checked. The error
+        // says who saved it: `updatedBy` is still the last save's here,
+        // since `beforeSave` sets it after this. `me` when it was the
+        // door's own user, in the admin UI. `askBeforeOverwrite` carries
+        // the door's choice of refusal (see `withDoor`)
         checkUnchanged(req, doc) {
           const expected = req.aposHarnessExpected;
           if (!expected || expected.checked || (expected.docId !== doc._id)) {
@@ -62,7 +66,13 @@ module.exports = {
           }
           expected.checked = true;
           if (self.isSavedSince(doc, expected.updatedAt)) {
-            throw self.apos.error('conflict');
+            const by = doc.updatedBy || {};
+            throw self.apos.error('conflict', {
+              me: Boolean(by._id && (by._id === req.user?._id)),
+              title: by.title || null,
+              username: by.username || null,
+              askBeforeOverwrite: Boolean(self.getDoor(req)?.askBeforeOverwrite)
+            });
           }
         }
       },

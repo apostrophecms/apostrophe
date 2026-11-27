@@ -48,7 +48,7 @@ module.exports = (self) => {
      * @returns {Promise<{ written: object[], refused: object[] }>}
      *   `written`: `{ _id, title, type, locale, published, notice, doc }`,
      *   `doc` the saved draft, for the tool's own result.
-     *   `refused`: `{ _id, title?, reason, message, lockedBy?, fields? }`,
+     *   `refused`: `{ _id, title?, reason, message, lockedBy?, savedBy?, fields? }`,
      *   `reason` one of `notfound`, `forbidden`, `locked`, `invalid`,
      *   `changed` (see `describeRefusal`).
      */
@@ -572,6 +572,7 @@ module.exports = (self) => {
             requestId: door.requestId,
             ...(door.chat && { chat: door.chat }),
             ...(door.model && { model: door.model }),
+            ...(door.client && { client: door.client }),
             ...(door.revert && { revert: true })
           }
         })
@@ -613,7 +614,9 @@ module.exports = (self) => {
     // `{ reason, message, ... }` for a write refused with `error`: a
     // `locked` one with `lockedBy`, the holder's name, `null` for the same
     // user elsewhere; an `invalid` one with the `fields` it names; a
-    // `changed` one saved by someone else since the door's last read
+    // `changed` one saved since the door's last read with `savedBy`, the
+    // saver's name, `null` for the door's own user. The baseline says to
+    // read it again; a door with `askBeforeOverwrite` handles its own case
     describeRefusal(error) {
       if (error.name === 'locked') {
         const lockedBy = error.data?.me
@@ -628,10 +631,38 @@ module.exports = (self) => {
         };
       }
       if (error.name === 'conflict') {
+        const me = Boolean(error.data?.me);
+        const savedBy = me
+          ? null
+          : (error.data?.title || error.data?.username || null);
+        const saved = me
+          ? 'The document was saved as the user, in the admin UI or another of ' +
+            'their chats or tools, since you last read it'
+          : `The document was saved by ${savedBy || 'someone else'} since you last read it`;
+        if (!error.data?.askBeforeOverwrite) {
+          return {
+            reason: 'changed',
+            savedBy,
+            message: `${saved}, so nothing was written to it. Read it again before writing it.`
+          };
+        }
+        // A door with no confirmation of its own (MCP). A save as the same
+        // user needs no question: the read shows it, and the write builds
+        // on it. Anyone else's could be lost, so the model stops and asks
+        if (me) {
+          return {
+            reason: 'changed',
+            savedBy,
+            message: `${saved}, so nothing was written to it. Read it again and make ` +
+              'your change to what was saved, keeping those changes.'
+          };
+        }
         return {
           reason: 'changed',
-          message: 'The document was saved by someone else since you last read it, so ' +
-            'nothing was written to it. Read it again before writing it.'
+          savedBy,
+          message: `${saved}, so nothing was written to it. Writing it now would ` +
+            'replace their work: read it again, tell the user what they changed, and ' +
+            'write it only if the user asks you to.'
         };
       }
       if (error.name === 'invalid') {

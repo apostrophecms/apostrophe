@@ -737,6 +737,36 @@ describe('cli/main — package manager', function () {
     // The generic block points at "messages above" that don't exist here.
     assert.doesNotMatch(output, /See the messages above/);
   });
+
+  it('unattended + unsupported_node result → names the version and nvm, exit 1', async function () {
+    const cp = stubCreateProject({
+      ok: false,
+      kitId: 'apostrophe-astro-demo',
+      dbChoice: 'sqlite',
+      packageManager: 'npm',
+      durationMs: 0,
+      failStage: 'preflight',
+      errorCode: 'unsupported_node'
+    });
+    const { code, output } = await captureIO(() => main(UNATTENDED, {
+      createProject: cp.fn,
+      createStore: store.createStore
+    }));
+    assert.equal(code, 1);
+    assert.match(output, /Node\.js 24 or newer is required/);
+    assert.match(
+      output,
+      /Apostrophe \+ Astro — Demo needs Node\.js 24 or newer, but you are running Node\.js \d/
+    );
+    assert.match(output, /nvm install 24/);
+    assert.match(output, /npm create apostrophe@latest -- --unattended \[flags]/);
+    assert.match(output, /Or install Apostrophe Standalone — Demo, which runs on Node\.js/);
+    assert.match(
+      output,
+      /npm create apostrophe@latest -- --unattended --kit=apostrophe-demo \[flags]/
+    );
+    assert.doesNotMatch(output, /See the messages above/);
+  });
 });
 
 describe('cli/main — telemetry subcommands', function () {
