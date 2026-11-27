@@ -418,6 +418,10 @@ describe('Harness: doors, the write path and guards', function () {
         model: {
           provider: 'p',
           model: 'm'
+        },
+        written: {
+          _id: article._id,
+          fields: [ 'body' ]
         }
       });
       assert.equal(settled[0].toolCall.name, 't_write');

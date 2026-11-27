@@ -25,6 +25,25 @@ describe('Harness: revert', function () {
             }
           }
         },
+        // A value computed on save
+        'revert-timed': {
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              body: { type: 'string' },
+              words: { type: 'integer' }
+            }
+          },
+          handlers() {
+            return {
+              beforeSave: {
+                countWords(req, doc) {
+                  doc.words = (doc.body || '').split(/\s+/).filter(Boolean).length;
+                }
+              }
+            };
+          }
+        },
         'revert-notice': {
           extend: '@apostrophecms/piece-type',
           options: {
@@ -288,6 +307,23 @@ describe('Harness: revert', function () {
     assert.equal(stored.title, 'Article 1');
     assert.equal(byDoc(results, articles[1]._id).outcome, 'putBack');
     assert.equal((await find(articles[1]._id)).body, 'Original');
+  });
+
+  it('should put back what a request wrote, not what its save computed', async function () {
+    const article = await apos.modules['revert-timed'].insert(userReq(), {
+      title: 'Timed',
+      body: 'One two three'
+    });
+    const req = door();
+    await write(req, article._id, { body: 'One two three four five' });
+
+    const [ result ] = await revert([ req ]);
+
+    assert.equal(result.outcome, 'putBack');
+    assert.deepEqual(result.rows.map(row => row.outcome), [ 'putBack' ]);
+    const stored = await find(article._id);
+    assert.equal(stored.body, 'One two three');
+    assert.equal(stored.words, 3);
   });
 
   it('should count a change already taken back as reverted, not as a conflict', async function () {
@@ -569,11 +605,14 @@ describe('Harness: revert', function () {
 
     it('should put back a widget moved between areas and edited since, keeping the edit', async function () {
       const req = door();
-      await write(req, page._id, {
-        $pullAllById: { [`@${page.main._id}.items`]: [ 'w-a' ] },
-        $push: { [`@${page.side._id}.items`]: richText('w-a', '<p>Alpha</p>') },
-        _lossless: false
-      });
+      // A patch applies one operator: a move is a pull, then a push
+      await write(req, page._id, async () => [
+        { $pullAllById: { [`@${page.main._id}.items`]: [ 'w-a' ] } },
+        {
+          $push: { [`@${page.side._id}.items`]: richText('w-a', '<p>Alpha</p>') },
+          _lossless: false
+        }
+      ]);
       await write(userReq(), page._id, { '@w-a.content': '<p>Alpha, edited</p>' });
 
       const [ result ] = await revert([ req ]);
@@ -583,6 +622,24 @@ describe('Harness: revert', function () {
       assert.deepEqual(areaIds(stored, 'main'), [ 'w-a', 'w-b' ]);
       assert.deepEqual(areaIds(stored, 'side'), []);
       assert.equal(stored.main.items[0].content, '<p>Alpha, edited</p>');
+    });
+
+    it('should take back a widget it added, not what its save cleaned up beside it', async function () {
+      // Stored before the area stopped allowing the markup
+      await apos.doc.db.updateOne({ _id: page._id }, {
+        $set: { 'main.items.1.content': '<p>Bravo</p><marquee>Old</marquee>' }
+      });
+      const req = door();
+      await write(req, page._id, {
+        $push: { [`@${page.main._id}.items`]: richText('w-new', '<p>New</p>') }
+      });
+      assert(!(await find(page._id)).main.items[1].content.includes('marquee'));
+
+      const [ result ] = await revert([ req ]);
+
+      assert.equal(result.outcome, 'putBack');
+      assert.deepEqual(result.rows.map(row => row.outcome), [ 'putBack' ]);
+      assert.deepEqual(areaIds(await find(page._id), 'main'), [ 'w-a', 'w-b' ]);
     });
 
     it('should put back several widgets the request removed, in their order', async function () {

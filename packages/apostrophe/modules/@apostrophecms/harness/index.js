@@ -106,7 +106,13 @@ module.exports = {
             }
             return;
           }
-          const entryId = await self.recordChange(req, settled);
+          // The paths the write named are its document's: another document
+          // its handlers save is recorded whole
+          const { written } = marker;
+          const entryId = await self.recordChange(req, {
+            ...settled,
+            fields: (written?._id === doc._id) ? written.fields : null
+          });
           self.rememberSettled(marker, {
             entryId,
             before: settled.before,
