@@ -200,6 +200,8 @@ module.exports = {
             !self.apos.ai.active ||
             !self.apos.asset.isBuildEnabled(self.__meta.name)
           ) {
+            // The answer for every module asking at run time
+            self.active = false;
             return;
           }
           self.validateEffortOptions();
