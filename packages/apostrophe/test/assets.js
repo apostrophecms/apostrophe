@@ -1817,6 +1817,19 @@ describe('Assets - modules whose UI is not built', function() {
     assert(names.includes('ui-build-on'));
   });
 
+  it('registers no extra bundle of an inactive module', function() {
+    // The `webpack` section, built without a build module
+    assert(Object.hasOwn(apos.asset.verifiedBundles, 'ui-build-on-extra'));
+    assert(!Object.hasOwn(apos.asset.verifiedBundles, 'ui-build-off-extra'));
+    assert(apos.asset.extraBundles.js.includes('ui-build-on-extra'));
+    assert(!apos.asset.extraBundles.js.includes('ui-build-off-extra'));
+
+    // The `build` section, for a build module
+    const { verifiedBundles } = apos.asset.moduleBuildExtensions.vite;
+    assert(Object.hasOwn(verifiedBundles, 'ui-build-on-extra'));
+    assert(!Object.hasOwn(verifiedBundles, 'ui-build-off-extra'));
+  });
+
   it('builds no component of an inactive module', async function() {
     await apos.asset.tasks.build.task();
     const bundle = await fs.readFile(
@@ -1826,6 +1839,13 @@ describe('Assets - modules whose UI is not built', function() {
     assert(bundle.includes('ui-build-on-marker'));
     assert(!bundle.includes('ui-build-off-marker'));
     assert(!bundle.includes('ui-build-override-marker'));
+
+    const extraBundle = name => path.join(
+      publicFolderPath,
+      `apos-frontend/default/${name}-module-bundle.js`
+    );
+    assert(await fs.pathExists(extraBundle('ui-build-on-extra')));
+    assert(!await fs.pathExists(extraBundle('ui-build-off-extra')));
   });
 });
 

@@ -142,23 +142,23 @@ module.exports = {
 
     self.enableBrowserData();
 
+    // The namespace filled by `setBuildExtensions()` (`build` property).
+    self.moduleBuildExtensions = {};
+    // Modules whose UI sources no build includes, also filled by
+    // `setBuildExtensions()` (see `getInactiveModules()` in lib/build/utils).
+    // First, the `webpack` property processing below leaves them out too.
+    self.inactiveModules = new Set();
+    await self.setBuildExtensions();
+
     // The namespace filled by `setWebpackExtensions()` (`webpack` property
-    // processing).
+    // processing). With an external build module, the `build` property
+    // data overrides it (`setBuildExtensionsForExternalModule()`).
     self.extraBundles = {};
     self.webpackExtensions = {};
     self.webpackExtensionOptions = {};
     self.verifiedBundles = {};
     self.rebundleModules = [];
     await self.setWebpackExtensions();
-
-    // The namespace filled by `setBuildExtensions()` (`build` property).
-    // The properties above set by `setWebpackExtensions()` will be also
-    // overridden.
-    self.moduleBuildExtensions = {};
-    // Modules whose UI sources no build includes, also filled by
-    // `setBuildExtensions()` (see `getInactiveModules()` in lib/build/utils)
-    self.inactiveModules = new Set();
-    await self.setBuildExtensions();
     // Set only if the external build module is registered. Contains
     // the entrypoints configuration for the current build module.
     self.moduleBuildEntrypoints = [];
@@ -752,7 +752,8 @@ module.exports = {
         } = await getWebpackExtensions({
           getMetadata: self.apos.synth.getMetadata,
           modulesToInstantiate: self.getRegisteredModules(),
-          rebundleModulesConfig: self.options.rebundleModules
+          rebundleModulesConfig: self.options.rebundleModules,
+          isInactive: self.isInactive
         });
 
         // For testing purposes, we can pass a result object

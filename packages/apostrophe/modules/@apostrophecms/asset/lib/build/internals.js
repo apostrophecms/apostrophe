@@ -29,7 +29,8 @@ module.exports = (self) => {
       self.inactiveModules = getInactiveModules(modulesMeta);
       self.moduleBuildExtensions = await getBuildExtensions({
         modulesMeta,
-        rebundleModulesConfig: self.options.rebundleModules
+        rebundleModulesConfig: self.options.rebundleModules,
+        isInactive: self.isInactive
       });
     },
 

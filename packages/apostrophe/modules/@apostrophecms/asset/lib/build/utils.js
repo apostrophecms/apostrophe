@@ -17,7 +17,9 @@ module.exports = {
   // either. `modulesMeta` is the metadata of the registered modules.
   getInactiveModules(modulesMeta) {
     const inactive = new Set();
-    for (const { build, options, __meta } of modulesMeta) {
+    for (const {
+      build, options, __meta
+    } of modulesMeta) {
       const enable = Object.values(build)
         .findLast(level => level?.enable !== undefined)
         ?.enable ?? true;
@@ -77,9 +79,14 @@ module.exports = {
   // }
   // `modulesMeta` is the metadata of the modules when the caller has it
   // already, otherwise it is read with `getMetadata` for each of
-  // `modulesToInstantiate`.
+  // `modulesToInstantiate`. `isInactive(name)` tells the module levels
+  // whose bundles are left out (see `getInactiveModules()`).
   async getBuildExtensions({
-    modulesMeta, getMetadata, modulesToInstantiate, rebundleModulesConfig = {}
+    modulesMeta,
+    getMetadata,
+    modulesToInstantiate,
+    rebundleModulesConfig = {},
+    isInactive = () => false
   }) {
     if (!modulesMeta) {
       modulesMeta = [];
@@ -92,7 +99,8 @@ module.exports = {
 
     const configsPerAlias = getModulesBuildConfigs(
       modulesMeta,
-      rebundleModules
+      rebundleModules,
+      isInactive
     );
 
     const configs = {};
@@ -116,7 +124,7 @@ module.exports = {
 
 };
 
-function getModulesBuildConfigs(modulesMeta, rebundleModules) {
+function getModulesBuildConfigs(modulesMeta, rebundleModules, isInactive) {
   const result = {};
 
   for (const meta of modulesMeta) {
@@ -124,7 +132,8 @@ function getModulesBuildConfigs(modulesMeta, rebundleModules) {
     const configsPerAlias = formatBuildConfigs({
       chain: __meta.chain,
       buildConfigs: build,
-      rebundleModules
+      rebundleModules,
+      isInactive
     });
 
     for (const [ alias, configs ] of Object.entries(configsPerAlias)) {
@@ -181,7 +190,7 @@ function getModulesBuildConfigs(modulesMeta, rebundleModules) {
 };
 
 function formatBuildConfigs({
-  chain, buildConfigs, rebundleModules, result = {}
+  chain, buildConfigs, rebundleModules, isInactive, result = {}
 }) {
   Object.entries(buildConfigs)
     .forEach(([ name, options ], i) => {
@@ -208,7 +217,8 @@ function formatBuildConfigs({
           extensions = {},
           extensionOptions = {}
         } = config;
-        const bundleNames = Object.keys(bundles);
+        // An inactive module's bundles are its UI sources: none is built
+        const bundleNames = isInactive(chain[i].name) ? [] : Object.keys(bundles);
 
         // Remapping only for the explicitly defined by the module bundle
         // configurations
