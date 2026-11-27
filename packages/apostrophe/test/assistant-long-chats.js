@@ -1576,7 +1576,11 @@ describe('Assistant: long chats', function () {
         release = resolve;
       });
       let turn = 0;
-      script = async () => {
+      // The pause may write a summary before the next run starts
+      script = async (request) => {
+        if (isSummary(request)) {
+          return summaryTurn({ decisions: [ 'Read the pages.' ] });
+        }
         turn++;
         if (turn <= 3) {
           return readTurn(`l9-${turn}`, `page ${turn}`, (turn === 3) ? 4500 : 100);
@@ -1585,14 +1589,26 @@ describe('Assistant: long chats', function () {
         await held;
         return textTurn('Read all three.', 2000);
       };
+      const runCalls = () => calls.filter(call => !isSummary(call)).length;
       const sent = await apos.aposAssistant.send(req, chat._id, {
         message: 'Read three pages',
         screen: { tabId: 'tab-1' }
       });
-      await waitFor(() => calls.length === 4);
-      const continued = await apos.aposAssistant.requests.findOne({ _id: sent._id });
-      const paused = await getJobs().db.findOne({ 'results.finishReason': 'paused' },
-        { sort: { startedAt: -1 } });
+      await waitFor(() => runCalls() === 4);
+      // The run's job id is stored once its job has started
+      let continued;
+      await waitFor(async () => {
+        continued = await apos.aposAssistant.requests.findOne({ _id: sent._id });
+        return continued.jobId;
+      });
+      // The paused job's results are stored as its job ends, which may come
+      // after the next run started
+      let paused;
+      await waitFor(async () => {
+        paused = await getJobs().db.findOne({ 'results.finishReason': 'paused' },
+          { sort: { startedAt: -1 } });
+        return paused;
+      });
       // The paused run's end comes again, as a reader passes it that read
       // the request before the pause was stored and its job after it ended
       const { runId, ...before } = continued;
@@ -1606,14 +1622,14 @@ describe('Assistant: long chats', function () {
         });
       }
       await sleep(200);
-      assert.equal(calls.length, 4);
+      assert.equal(runCalls(), 4);
       const still = await apos.aposAssistant.requests.findOne({ _id: sent._id });
       assert.equal(still.runId, runId);
       assert.equal(still.jobId, continued.jobId);
       release();
       const done = await waitForRequest(req, chat);
       assert.equal(done.status, 'completed');
-      assert.equal(calls.length, 4);
+      assert.equal(runCalls(), 4);
     });
 
     it('gives a summary written apart a chat of eight slices at most', async function () {
