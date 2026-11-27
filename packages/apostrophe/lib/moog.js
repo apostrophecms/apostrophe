@@ -433,6 +433,13 @@ module.exports = function(options) {
     // out queries
     (self.options.unparsedSections || []).forEach(section => capture(section));
 
+    // The options as configured, merged like `create` merges them, before
+    // `beforeSuperClass` or `init` can change them
+    that.options = {};
+    for (const step of steps) {
+      Object.assign(that.options, cloneOptions(step.options || {}));
+    }
+
     return that;
 
     function capture(section) {

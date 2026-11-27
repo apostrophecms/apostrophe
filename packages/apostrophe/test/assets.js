@@ -1743,6 +1743,112 @@ describe('Assets', function() {
   });
 });
 
+describe('Assets - modules whose UI is not built', function() {
+  this.timeout(5 * 60 * 1000);
+
+  let apos;
+  const {
+    publicFolderPath,
+    deleteBuiltFolders,
+    removeCache
+  } = loadUtils();
+
+  before(async function() {
+    await deleteBuiltFolders(publicFolderPath, true);
+    await removeCache();
+    apos = await t.create({
+      root: module,
+      modules: {
+        'ui-build-off': {},
+        'ui-build-on': {
+          options: {
+            enabled: true
+          }
+        },
+        'ui-build-override': {
+          build: {
+            enable: false,
+            vite: {
+              extensions: {
+                uiBuildOverride: {}
+              }
+            }
+          }
+        }
+      }
+    });
+  });
+
+  after(async function() {
+    await deleteBuiltFolders(publicFolderPath, true);
+    await removeCache();
+    await t.destroy(apos);
+  });
+
+  it('calls `build.enable` with the options as configured', function() {
+    assert.equal(apos.asset.isInactive('ui-build-off'), true);
+    assert.equal(apos.asset.isInactive('my-ui-build-off'), true);
+    assert.equal(apos.asset.isInactive('ui-build-on'), false);
+  });
+
+  it('takes `build.enable` from the last level setting it, a boolean too', function() {
+    assert.equal(apos.asset.isInactive('ui-build-override'), true);
+  });
+
+  it('takes `build.enable` for no build vendor', async function() {
+    const { getBuildExtensions } = require(
+      '../modules/@apostrophecms/asset/lib/build/utils'
+    );
+    const configs = await getBuildExtensions({
+      getMetadata: apos.synth.getMetadata,
+      modulesToInstantiate: [ 'ui-build-override' ]
+    });
+    assert.deepEqual(Object.keys(configs), [ 'vite' ]);
+    assert(Object.hasOwn(configs.vite.extensions, 'uiBuildOverride'));
+  });
+
+  it('gives a build module no sources of an inactive module', async function() {
+    const meta = await apos.asset.computeSourceMeta({
+      modules: apos.asset.getRegisteredModules(),
+      stats: false
+    });
+    const names = meta.map(entry => entry.name);
+    assert(!names.includes('ui-build-off'));
+    assert(names.includes('ui-build-on'));
+  });
+
+  it('registers no extra bundle of an inactive module', function() {
+    // The `webpack` section, built without a build module
+    assert(Object.hasOwn(apos.asset.verifiedBundles, 'ui-build-on-extra'));
+    assert(!Object.hasOwn(apos.asset.verifiedBundles, 'ui-build-off-extra'));
+    assert(apos.asset.extraBundles.js.includes('ui-build-on-extra'));
+    assert(!apos.asset.extraBundles.js.includes('ui-build-off-extra'));
+
+    // The `build` section, for a build module
+    const { verifiedBundles } = apos.asset.moduleBuildExtensions.vite;
+    assert(Object.hasOwn(verifiedBundles, 'ui-build-on-extra'));
+    assert(!Object.hasOwn(verifiedBundles, 'ui-build-off-extra'));
+  });
+
+  it('builds no component of an inactive module', async function() {
+    await apos.asset.tasks.build.task();
+    const bundle = await fs.readFile(
+      path.join(publicFolderPath, 'apos-frontend/default/apos-module-bundle.js'),
+      'utf8'
+    );
+    assert(bundle.includes('ui-build-on-marker'));
+    assert(!bundle.includes('ui-build-off-marker'));
+    assert(!bundle.includes('ui-build-override-marker'));
+
+    const extraBundle = name => path.join(
+      publicFolderPath,
+      `apos-frontend/default/${name}-module-bundle.js`
+    );
+    assert(await fs.pathExists(extraBundle('ui-build-on-extra')));
+    assert(!await fs.pathExists(extraBundle('ui-build-off-extra')));
+  });
+});
+
 function loadUtils () {
   const publicFolderPath = path.join(process.cwd(), 'test/public');
   const cacheFolderPath = process.env.APOS_ASSET_CACHE ||

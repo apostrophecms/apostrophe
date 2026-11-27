@@ -142,20 +142,23 @@ module.exports = {
 
     self.enableBrowserData();
 
+    // The namespace filled by `setBuildExtensions()` (`build` property).
+    self.moduleBuildExtensions = {};
+    // Modules whose UI sources no build includes, also filled by
+    // `setBuildExtensions()` (see `getInactiveModules()` in lib/build/utils).
+    // First, the `webpack` property processing below leaves them out too.
+    self.inactiveModules = new Set();
+    await self.setBuildExtensions();
+
     // The namespace filled by `setWebpackExtensions()` (`webpack` property
-    // processing).
+    // processing). With an external build module, the `build` property
+    // data overrides it (`setBuildExtensionsForExternalModule()`).
     self.extraBundles = {};
     self.webpackExtensions = {};
     self.webpackExtensionOptions = {};
     self.verifiedBundles = {};
     self.rebundleModules = [];
     await self.setWebpackExtensions();
-
-    // The namespace filled by `setBuildExtensions()` (`build` property).
-    // The properties above set by `setWebpackExtensions()` will be also
-    // overridden.
-    self.moduleBuildExtensions = {};
-    await self.setBuildExtensions();
     // Set only if the external build module is registered. Contains
     // the entrypoints configuration for the current build module.
     self.moduleBuildEntrypoints = [];
@@ -749,7 +752,8 @@ module.exports = {
         } = await getWebpackExtensions({
           getMetadata: self.apos.synth.getMetadata,
           modulesToInstantiate: self.getRegisteredModules(),
-          rebundleModulesConfig: self.options.rebundleModules
+          rebundleModulesConfig: self.options.rebundleModules,
+          isInactive: self.isInactive
         });
 
         // For testing purposes, we can pass a result object
@@ -918,7 +922,17 @@ module.exports = {
         if (!lockPath) {
           return null;
         }
-        return self.apos.util.md5(await fs.readFile(lockPath, 'utf8'));
+        // A module becoming active or inactive changes what is built, like a
+        // dependency change
+        const inactive = [ ...self.inactiveModules ].sort().join(',');
+        return self.apos.util.md5(
+          await fs.readFile(lockPath, 'utf8') + `\ninactive:${inactive}`
+        );
+      },
+
+      // A module or chain entry name, its project level `my-` form included
+      isInactive(name) {
+        return self.inactiveModules.has(name.replace(/(^|\/)my-/, '$1'));
       },
 
       // Where the lock file hash from the last build is persisted.

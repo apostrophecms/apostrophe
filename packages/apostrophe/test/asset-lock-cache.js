@@ -59,6 +59,17 @@ describe('Assets - lock file cache invalidation', function() {
     assert.notStrictEqual(before, after);
   });
 
+  it('produces a different hash when the inactive modules change', async function() {
+    const before = await apos.asset.getLockFileHash();
+    apos.asset.inactiveModules.add('some-module');
+    try {
+      assert.notStrictEqual(await apos.asset.getLockFileHash(), before);
+    } finally {
+      apos.asset.inactiveModules.delete('some-module');
+    }
+    assert.strictEqual(await apos.asset.getLockFileHash(), before);
+  });
+
   it('round-trips the saved lock file hash', async function() {
     await apos.asset.saveLockFileHash('abc123');
     assert.strictEqual(await apos.asset.readSavedLockFileHash(), 'abc123');
