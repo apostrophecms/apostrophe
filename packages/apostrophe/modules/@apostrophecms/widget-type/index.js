@@ -146,7 +146,9 @@
 // you to crop or resize the image.
 //
 // See the `widgetOperations` configuration of the image widget module
-// for an example use of widget operations with "standard" placement.
+// for an example use of widget operations with "standard" placement. A
+// module can add an operation to every widget type with
+// `apos.area.addWidgetOperation`.
 //
 // Widget operations can be restricted to users with a given permission,
 // and can be made to appear only when certain conditions are met,
@@ -200,14 +202,15 @@
 // must be an array of widgets, each replacing the selected widget with the
 // same `_id`, as one undo step.
 // - With `action`, for one widget, the action is emitted on `apos.bus` with
-// `{ widgetId, index }`, plus `widgetIds: [ widgetId ]` when `multiple` is
-// true. For a multiple selection it is emitted once with `{ widgetIds }`,
-// in document order.
+// `{ name, widgetId, index }`, plus `widgetIds: [ widgetId ]` when
+// `multiple` is true. For a multiple selection it is emitted once with
+// `{ name, widgetIds }`, in document order. `name` is the operation's, so
+// operations may share one action.
 
 const _ = require('lodash');
 
 module.exports = {
-  cascades: [ 'fields', 'styles', 'widgetOperations' ],
+  cascades: [ 'fields', 'shadowFields', 'styles', 'widgetOperations' ],
   options: {
     neverLoadSelf: true,
     initialModal: true,
@@ -434,6 +437,21 @@ module.exports = {
             throw new Error('Widget type ' + self.name + ': the field name ' + field.name + ' is forbidden');
           }
         });
+        // The data the widget keeps outside its schema, described as fields
+        // for those who read widgets (see `getAiSchema`), each marked
+        // `_shadow`. Information only: nothing converts, sanitizes or saves
+        // through it, and data it doesn't describe stays the widget's own
+        self.shadowSchema = self.apos.schema.fieldsToArray(
+          `Module ${self.__meta.name} (shadowFields)`,
+          self.shadowFields
+        );
+        for (const field of self.shadowSchema) {
+          if (forbiddenFields.includes(field.name) ||
+            self.schema.some(({ name }) => name === field.name)) {
+            throw new Error(`Widget type ${self.name}: the shadow field name ${field.name} is forbidden or already a field`);
+          }
+          field._shadow = true;
+        }
       },
 
       composeWidgetOperations() {
@@ -640,6 +658,14 @@ module.exports = {
       // `options` will receive the widget-level options passed in
       // this area, including any `defaultOptions` for the widget type.
       //
+      // `drops` and `dropPath` record what conversion drops, as `convert`
+      // describes, `dropPath` being the dot path of the widget.
+      //
+      // `existing` is the widget as stored, if it is. Its fields are the
+      // starting point, so that a field the input can't set, read only or
+      // beyond this user's permissions, keeps its stored value. The input
+      // still decides every field it can set.
+      //
       // Returns a new, sanitized widget object.
       //
       // Intentionally does not accept `ancestors`, widgets must be independent
@@ -647,8 +673,22 @@ module.exports = {
       // between documents as long as they accept that widget type, so they
       // automatically establish a new context for `following`.
 
-      async sanitize(req, input, options, { fetchRelationships = true } = {}) {
-        const convertOptions = { fetchRelationships };
+      async sanitize(
+        req,
+        input,
+        options,
+        {
+          fetchRelationships = true,
+          drops,
+          dropPath,
+          existing
+        } = {}
+      ) {
+        const convertOptions = {
+          fetchRelationships,
+          drops,
+          dropPath
+        };
         if (!input || typeof input !== 'object') {
           // Do not crash
           input = {};
@@ -661,6 +701,13 @@ module.exports = {
         output.type = self.name;
         output.aposPlaceholder = self.apos.launder.boolean(input.aposPlaceholder);
         if (!output.aposPlaceholder) {
+          if (existing) {
+            for (const field of self.schema) {
+              if (_.has(existing, field.name)) {
+                output[field.name] = existing[field.name];
+              }
+            }
+          }
           const schema = self.allowedSchema(req);
           await self.apos.schema.convert(req, schema, input, output, convertOptions);
         }
@@ -689,6 +736,14 @@ module.exports = {
             (field.viewPermission && canView()) ||
             false;
         });
+      },
+
+      // The schema AI tools read and write this widget type through: its
+      // shadow fields (`_shadow: true`), then its fields. Extend it and
+      // filter `_super(req)` to keep fields away from AI. Treat it as
+      // read-only
+      getAiSchema(req) {
+        return [ ...self.shadowSchema, ...self.schema ];
       },
 
       addSearchTexts(widget, texts) {
@@ -830,8 +885,12 @@ module.exports = {
         }
       },
 
+      // The type's own operations, then those added to every widget type
+      // (`apos.area.addWidgetOperation`) that the type doesn't override
       getAllowedWidgetOperations(req) {
-        return self.widgetOperations.filter(({ permission }) => {
+        const shared = self.apos.area.widgetOperations
+          .filter(({ name }) => !self.widgetOperations.some(own => own.name === name));
+        return [ ...self.widgetOperations, ...shared ].filter(({ permission }) => {
           if (permission?.action && permission?.type) {
             return self.apos.permission.can(req, permission.action, permission.type);
           }

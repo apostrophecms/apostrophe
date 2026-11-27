@@ -1,6 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert/strict');
 const { spawn } = require('child_process');
+const { DENIED_TYPES } = require('../modules/@apostrophecms/ai/lib/constants.js');
 
 // A registrable fake adapter following the adapter contract, minus
 // anything that would talk to a network
@@ -264,6 +265,18 @@ describe('AI engine', function() {
           }
         }
       }, /"effort\.levels\.high\.model" must be a string/);
+      rejects({
+        ...valid(),
+        effort: {
+          levels: {
+            high: {
+              provider: 'openai',
+              model: 'gpt-5.1',
+              description: [ 'deep' ]
+            }
+          }
+        }
+      }, /"effort\.levels\.high\.description" must be a string/);
     });
 
     it('rejects a malformed image route', function() {
@@ -377,6 +390,22 @@ describe('AI engine', function() {
             init(self) {
               self.apos.ai.addAdapter(fakeAdapter('fake'));
               self.apos.ai.addAdapter(fakeAdapter('other'));
+              // Its input is built at activation, from the effort table
+              self.apos.ai.addTool({
+                name: 'delegate_research',
+                description: 'Hand a research question to a subagent.',
+                kind: 'agent',
+                input: () => ({
+                  type: 'object',
+                  properties: {
+                    effort: self.apos.ai.effortSchema({
+                      description: 'How hard the subagent thinks.'
+                    })
+                  },
+                  required: [ 'effort' ]
+                }),
+                handler: async () => ({ ok: true })
+              });
             }
           },
           '@apostrophecms/ai': {
@@ -386,7 +415,10 @@ describe('AI engine', function() {
                 fake: {
                   apiKey: 'k1',
                   effort: {
-                    medium: { model: 'fake-medium-2' }
+                    medium: {
+                      model: 'fake-medium-2',
+                      description: 'Everyday edits.'
+                    }
                   }
                 },
                 other: { apiKey: 'k2' },
@@ -412,7 +444,8 @@ describe('AI engine', function() {
                 levels: {
                   high: {
                     provider: 'other',
-                    model: 'other-large'
+                    model: 'other-large',
+                    description: 'Hard research across many documents.'
                   }
                 }
               }
@@ -448,7 +481,10 @@ describe('AI engine', function() {
       // Native entry: adapter rows with entry overrides, level by level
       assert.deepEqual(fake.effort, {
         low: { model: 'fake-small' },
-        medium: { model: 'fake-medium-2' },
+        medium: {
+          model: 'fake-medium-2',
+          description: 'Everyday edits.'
+        },
         high: {
           model: 'fake-large',
           reasoning: 'high'
@@ -482,13 +518,35 @@ describe('AI engine', function() {
         },
         medium: {
           provider: 'fake',
-          model: 'fake-medium-2'
+          model: 'fake-medium-2',
+          description: 'Everyday edits.'
         },
         high: {
           provider: 'other',
-          model: 'other-large'
+          model: 'other-large',
+          description: 'Hard research across many documents.'
         }
       });
+    });
+
+    it('describes each effort level to a tool whose argument is one', function() {
+      const tool = apos.ai.getTool('delegate_research');
+      assert.deepEqual(tool.input.properties.effort, {
+        type: 'string',
+        enum: [ 'low', 'medium', 'high' ],
+        description: 'How hard the subagent thinks.\n' +
+          '- low\n' +
+          '- medium: Everyday edits.\n' +
+          '- high: Hard research across many documents.'
+      });
+      assert.equal(tool.validateArgs({ effort: 'high' }), true);
+      assert.equal(tool.validateArgs({ effort: 'extreme' }), false);
+      // Pickers read the descriptions too; routing never carries them
+      assert.equal(
+        apos.ai.modelCatalog().effort.levels.high.description,
+        'Hard research across many documents.'
+      );
+      assert.equal(Object.hasOwn(apos.ai.modelInfo({ effort: 'high' }), 'description'), false);
     });
 
     it('panics on activation when providers exist but no default resolves', async function() {
@@ -877,7 +935,11 @@ describe('AI engine', function() {
                   apiKey: 'k2',
                   capabilities: { image: true },
                   models: {
-                    'other-image': { aspects: [ '1:1', '16:9' ] }
+                    'other-image': { aspects: [ '1:1', '16:9' ] },
+                    'other-medium': {
+                      maxDocumentPages: 100,
+                      maxDocumentBytes: 32000000
+                    }
                   }
                 }
               },
@@ -954,6 +1016,8 @@ describe('AI engine', function() {
     });
 
     it('resolves an explicit provider and model directly', function() {
+      // The document limits the entry declares on the model are reported;
+      // undeclared, they are absent
       assert.deepEqual(apos.ai.modelInfo({
         provider: 'other',
         model: 'other-medium'
@@ -962,6 +1026,8 @@ describe('AI engine', function() {
         model: 'other-medium',
         contextWindow: 200000,
         maxOutputTokens: 16000,
+        maxDocumentPages: 100,
+        maxDocumentBytes: 32000000,
         capabilities: imageCapable
       });
     });
@@ -1086,11 +1152,7 @@ describe('AI engine', function() {
 
     it('denies a denied type, as a type name or a document', function() {
       const admin = apos.task.getReq();
-      const denied = [
-        '@apostrophecms/user',
-        '@apostrophecms-pro/advanced-permission-group'
-      ];
-      for (const type of denied) {
+      for (const type of DENIED_TYPES) {
         for (const action of [ 'view', 'edit', 'create', 'delete', 'publish' ]) {
           assert.equal(apos.ai.can(admin, action, type), false);
           assert.equal(apos.ai.can(admin, action, { type }, 'draft'), false);
@@ -1102,6 +1164,22 @@ describe('AI engine', function() {
       }
       // The denial is the AI policy, not a permission the admin lacks
       assert.equal(apos.permission.can(admin, 'edit', '@apostrophecms/user'), true);
+    });
+
+    it('denies the types getDeniedTypes returns, as a project extends it', function() {
+      const original = apos.ai.getDeniedTypes;
+      const admin = apos.task.getReq();
+      try {
+        apos.ai.getDeniedTypes = () => [
+          ...original().filter(type => type !== '@apostrophecms/user'),
+          '@apostrophecms/any-page-type'
+        ];
+        assert.equal(apos.ai.can(admin, 'edit', '@apostrophecms/any-page-type'), false);
+        assert.equal(apos.ai.can(admin, 'edit', '@apostrophecms/user'), true);
+      } finally {
+        apos.ai.getDeniedTypes = original;
+      }
+      assert.deepEqual(apos.ai.getDeniedTypes(), [ ...DENIED_TYPES ]);
     });
 
     it('denies without consulting apos.permission.can at all', function() {

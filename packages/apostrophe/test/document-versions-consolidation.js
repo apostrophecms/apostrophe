@@ -69,6 +69,19 @@ describe('Document Versions consolidation', function () {
     assert.deepEqual(consolidation.consolidate(all), all);
   });
 
+  it('should consolidate by AI involvement as saved, a version listing the fields AI wrote as one without', function () {
+    const listed = { aiFields: [ 'title' ] };
+
+    assert.deepEqual(shape(consolidation.consolidate(records(
+      [ 'b', 'ann', false, listed ],
+      [ 'a', 'ann', true ]
+    ))), [ [ 'b', 'a' ] ]);
+    assert.deepEqual(shape(consolidation.consolidate(records(
+      [ 'b', 'ann', false ],
+      [ 'a', 'ann', false, listed ]
+    ))), [ 'b', 'a' ]);
+  });
+
   it('should end a consolidated version at another author', function () {
     const items = consolidation.consolidate(records(
       [ 'e', 'ann', false ],

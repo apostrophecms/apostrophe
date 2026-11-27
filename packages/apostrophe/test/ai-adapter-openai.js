@@ -239,6 +239,83 @@ describe('AI adapter: openai', function() {
       ]);
     });
 
+    it('translates a document part to an input_file, with a filename either way', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'user',
+          content: [
+            text('summarize these'),
+            {
+              type: 'document',
+              document: {
+                data: 'JVBERi0=',
+                mediaType: 'application/pdf',
+                name: 'brief.pdf'
+              }
+            },
+            {
+              type: 'document',
+              document: {
+                data: 'JVBERi0=',
+                mediaType: 'application/pdf'
+              }
+            }
+          ]
+        } ]
+      }));
+      assert.deepEqual(body.input[0].content.slice(1), [
+        {
+          type: 'input_file',
+          filename: 'brief.pdf',
+          file_data: 'data:application/pdf;base64,JVBERi0='
+        },
+        {
+          type: 'input_file',
+          filename: 'document.pdf',
+          file_data: 'data:application/pdf;base64,JVBERi0='
+        }
+      ]);
+    });
+
+    it('sends any other type as it is, a nameless one as "document"', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'user',
+          content: [ 'text/csv', 'application/x-unlisted' ].map((mediaType) => ({
+            type: 'document',
+            document: {
+              data: 'YSxi',
+              mediaType
+            }
+          }))
+        } ]
+      }));
+      assert.deepEqual(body.input[0].content, [
+        {
+          type: 'input_file',
+          filename: 'document',
+          file_data: 'data:text/csv;base64,YSxi'
+        },
+        {
+          type: 'input_file',
+          filename: 'document',
+          file_data: 'data:application/x-unlisted;base64,YSxi'
+        }
+      ]);
+    });
+
+    it('declares document input and its byte limit on the chat models', function() {
+      const { capabilities, models } = apos.ai.getAdapter('openai');
+      assert.equal(capabilities.documentInput, true);
+      for (const id of [ 'gpt-6-luna', 'gpt-6.1-sol', 'gpt-6-astra', 'gpt-5.6-terra' ]) {
+        assert.equal(models[id].maxDocumentBytes, 50000000);
+        assert.equal(models[id].maxDocumentPages, undefined);
+      }
+      const info = apos.ai.modelInfo();
+      assert.equal(info.maxDocumentBytes, 50000000);
+      assert.equal('maxDocumentPages' in info, false);
+    });
+
     it('sends reasoning as the effort object', function() {
       assert.equal(adapter.buildBody(request()).reasoning, undefined);
       assert.deepEqual(
@@ -592,6 +669,47 @@ describe('AI adapter: openai', function() {
       }));
       assert.equal(error.message, 'Incorrect API key provided');
       assert.equal(error.data.requestId, 'req_9');
+    });
+
+    it('recognizes a request too long for the model', function() {
+      // The documented code, and its message from a host that drops it
+      for (const body of [
+        {
+          error: {
+            message: 'Your input exceeds the context window of this model. Please adjust your input and try again.',
+            type: 'invalid_request_error',
+            param: 'input',
+            code: 'context_length_exceeded'
+          }
+        },
+        {
+          error: {
+            message: 'Input tokens exceed the configured limit of 272000 tokens.',
+            type: 'invalid_request_error',
+            code: 'context_length_exceeded'
+          }
+        },
+        {
+          error: {
+            message: 'Your input exceeds the context window of this model. Please adjust your input and try again.',
+            type: 'invalid_request_error'
+          }
+        }
+      ]) {
+        const error = adapter.normalizeError(httpError(400, { 'x-request-id': 'req_4' }, body));
+        assert.equal(error.name, 'aiContextOverflow');
+        assert.equal(error.message, body.error.message);
+        assert.equal(error.data.requestId, 'req_4');
+      }
+      assert.equal(adapter.normalizeError(httpError(413)).name, 'aiContextOverflow');
+      const other = adapter.normalizeError(httpError(400, {}, {
+        error: {
+          message: 'Invalid value for \'reasoning.effort\'',
+          type: 'invalid_request_error',
+          code: 'invalid_value'
+        }
+      }));
+      assert.equal(other.name, 'invalid');
     });
 
     it('parses Retry-After as seconds and as an HTTP date', function() {

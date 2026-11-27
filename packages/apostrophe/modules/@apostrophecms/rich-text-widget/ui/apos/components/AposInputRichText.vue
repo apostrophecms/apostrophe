@@ -18,6 +18,7 @@
           :options="field.options"
           :doc-id="docId"
           :read-only="field.readOnly"
+          :generation="generation"
           empty-label="apostrophe:emptyRichText"
           @update:model-value="update"
         />
@@ -41,6 +42,12 @@ export default {
   // widget the field belongs to
   provide: {
     aposAreaInsert: null
+  },
+  props: {
+    generation: {
+      type: Number,
+      default: null
+    }
   },
   emits: [ 'update:modelValue' ],
   methods: {

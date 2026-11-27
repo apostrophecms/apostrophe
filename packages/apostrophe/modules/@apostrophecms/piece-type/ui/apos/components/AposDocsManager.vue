@@ -5,6 +5,7 @@
     :modal="modal"
     :modal-title="modalTitle"
     :modal-data="modalData"
+    :screen="screen"
     @esc="confirmAndCancel"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
@@ -124,6 +125,7 @@
             v-model:checked="checked"
             :items="items"
             :headers="headers"
+            :outside-states="outsideRows"
             :options="{
               ...moduleOptions,
               isRelationship: !!relationshipField,
@@ -183,6 +185,8 @@ export default {
       totalPages: 1,
       currentPage: 1,
       filterValues: {},
+      // The words the list is searched for, empty when it isn't
+      searchTerm: '',
       queryExtras: {
         viewContext: this.relationshipField ? 'relationship' : 'manage'
       },
@@ -196,6 +200,18 @@ export default {
     };
   },
   computed: {
+    screen() {
+      return {
+        kind: this.relationshipField ? 'chooser' : 'manager',
+        docType: this.moduleName,
+        field: this.relationshipField?.name || null,
+        selection: [ ...this.checked ],
+        filters: {
+          ...this.filterValues,
+          ...(this.searchTerm && { search: this.searchTerm })
+        }
+      };
+    },
     ...mapState(useModalStore, [ 'activeModal' ]),
     moduleOptions() {
       return window.apos.modules[this.moduleName];
@@ -320,7 +336,8 @@ export default {
     async finishSaved() {
       await this.managePieces();
     },
-    async request(mergeOptions) {
+    // `busy: false` keeps the global busy overlay off
+    async request(mergeOptions, { busy = true } = {}) {
       const options = {
         ...this.filterValues,
         ...this.queryExtras,
@@ -345,11 +362,11 @@ export default {
 
       return apos.http.get(this.moduleOptions.action, {
         qs,
-        busy: true,
+        busy,
         draft: true
       });
     },
-    async requestPieces(page = 1, mergeOptions = {}) {
+    async requestPieces(page = 1, mergeOptions = {}, requestOptions) {
       const {
         currentPage, pages, results, choices
       } = await this.request({
@@ -359,7 +376,7 @@ export default {
           { project: this.moduleOptions.managerApiProjection }
         ),
         page
-      });
+      }, requestOptions);
 
       return {
         currentPage,
@@ -394,17 +411,96 @@ export default {
 
       this.holdQueries = true;
 
+      // Without the search, which only `search` applies
+      this.searchTerm = '';
       const {
         currentPage, pages, results, choices
       } = await this.requestPieces(this.currentPage);
 
-      this.setPieces({
+      this.setPieces(await this.withOutsideOnTop({
         currentPage,
         pages,
         results,
         choices
-      });
+      }));
       this.holdQueries = false;
+    },
+    // Refreshes the list as it shows, search included, after writes from
+    // outside. Quietly: the list stays readable, its rows show the writes.
+    // The documents written come first, a small read, so their rows show
+    // the write at once (`shown`); the page follows
+    async refreshOutside({ shown } = {}) {
+      if (this.holdQueries) {
+        return;
+      }
+      this.holdQueries = true;
+      try {
+        const search = this.searchTerm
+          ? { autocomplete: this.searchTerm }
+          : {};
+        const quiet = { busy: false };
+        const written = await this.requestOutsideDocs(search, quiet);
+        // On the first page on top, on any other in place
+        const putWritten = (pieces) => {
+          if (pieces.currentPage === 1) {
+            return this.putOutsideOnTop(pieces, written);
+          }
+          const byId = new Map(written.map(doc => [ doc._id, doc ]));
+          return {
+            ...pieces,
+            results: pieces.results.map(doc => byId.get(doc._id) || doc)
+          };
+        };
+        this.setPieces(putWritten({
+          currentPage: this.currentPage,
+          pages: this.totalPages,
+          results: this.items,
+          choices: this.filterChoices
+        }));
+        shown?.();
+        const pieces = await this.requestPieces(this.currentPage, search, quiet);
+        this.setPieces(putWritten(pieces));
+      } finally {
+        this.holdQueries = false;
+      }
+    },
+    // The first page with the documents written from outside on top, those
+    // still matching the filters, the latest first
+    async withOutsideOnTop(pieces, mergeOptions = {}, requestOptions) {
+      if ((pieces.currentPage !== 1) || !this.outsideEdited.length) {
+        return pieces;
+      }
+      return this.putOutsideOnTop(
+        pieces,
+        await this.requestOutsideDocs(mergeOptions, requestOptions)
+      );
+    },
+    // The documents written from outside that still match the filters, the
+    // latest first
+    async requestOutsideDocs(mergeOptions = {}, requestOptions) {
+      if (!this.outsideEdited.length) {
+        return [];
+      }
+      const { results } = await this.request({
+        ...mergeOptions,
+        ...(
+          this.moduleOptions.managerApiProjection &&
+          { project: this.moduleOptions.managerApiProjection }
+        ),
+        _ids: this.outsideEdited,
+        perPage: this.outsideEdited.length,
+        page: 1,
+        choices: undefined,
+        dynamicChoices: undefined
+      }, requestOptions);
+      return results;
+    },
+    putOutsideOnTop(pieces, top) {
+      const ids = new Set(top.map(({ _id }) => _id));
+      return {
+        ...pieces,
+        results: [ ...top, ...pieces.results.filter(({ _id }) => !ids.has(_id)) ]
+      };
     },
     async manageAllPiecesTotal () {
       const total = await this.requestAllPiecesTotal();
@@ -450,16 +546,20 @@ export default {
 
       return {
         pieces,
-        total
+        total,
+        query
       };
     },
-    async search({ pieces, total }) {
+    async search({
+      pieces, total, query
+    }) {
       // Most probably due to empty/invalid query.
       if (!pieces) {
         return;
       }
 
       this.currentPage = 1;
+      this.searchTerm = query || '';
 
       this.setPieces(pieces);
       this.setAllPiecesSelection({

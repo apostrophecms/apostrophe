@@ -25,14 +25,33 @@ const { stripIndent } = require('common-tags');
 // cron jobs or command line tasks.
 
 module.exports = {
-  options: { collectionName: 'aposJobs' },
+  options: {
+    collectionName: 'aposJobs',
+    // Milliseconds between two beats of a job started with `heartbeat: true`
+    heartbeatInterval: 10000,
+    // Milliseconds without a beat after which such a job is abandoned
+    abandonAfter: 60000
+  },
   icons: {
     'database-export-icon': 'DatabaseExport'
   },
   async init(self) {
+    self.heartbeats = new Set();
     await self.ensureCollection();
 
     self.enableBrowserData();
+  },
+  handlers(self) {
+    return {
+      'apostrophe:destroy': {
+        stopHeartbeats() {
+          for (const timer of self.heartbeats) {
+            clearInterval(timer);
+          }
+          self.heartbeats.clear();
+        }
+      }
+    };
   },
   apiRoutes(self) {
     return {
@@ -91,6 +110,9 @@ module.exports = {
         }
 
         job.percentage = !job.total ? 0 : (job.processed / job.total * 100).toFixed(2);
+        if (self.isAbandoned(job)) {
+          job.status = 'abandoned';
+        }
 
         return job;
       }
@@ -145,7 +167,7 @@ module.exports = {
           // and job document always report it, even if processing finishes fast.
           await self.setTotal(job, ids.length);
           // Runs after response is already sent
-          run();
+          run().catch(e => self.logError('end-error', e.message, { jobId: job._id }));
 
           // Trigger the "in progress" notification.
           notification = notifications && await self.triggerNotification(req, 'progress', {
@@ -229,10 +251,11 @@ module.exports = {
       //
       // `reporting.isCanceling()` resolves to `true` once cancellation of
       // the job has been requested (see the cancel route and
-      // `requestCancel`) — or when the job document is gone or already
-      // marked ended: a record nobody can observe or cancel anymore is a
-      // standing instruction to stop, so an expired (`expireAfter`) or
-      // externally deleted record winds down its own orphaned run.
+      // `requestCancel`) — or when the job document is gone, already
+      // marked ended or abandoned (see `isAbandoned`): a record nobody can
+      // observe or cancel anymore is a standing instruction to stop, so an
+      // expired (`expireAfter`) or externally deleted record winds down its
+      // own orphaned run.
       // `doTheWork` may check it at convenient points and wind down
       // early; the job then ends with a `canceled` status. Jobs that
       // never check it simply run to completion.
@@ -270,7 +293,7 @@ module.exports = {
           run({
             notificationId: notification && notification.noteId,
             jobId: job._id
-          });
+          }).catch(e => self.logError('end-error', e.message, { jobId: job._id }));
 
           return {
             jobId: job._id
@@ -317,10 +340,13 @@ module.exports = {
                 const found = await self.db.findOne({ _id: job._id }, {
                   projection: {
                     cancelRequested: 1,
-                    ended: 1
+                    ended: 1,
+                    heartbeatAt: 1
                   }
                 });
-                return !found || Boolean(found.cancelRequested || found.ended);
+                return !found ||
+                  Boolean(found.cancelRequested || found.ended) ||
+                  self.isAbandoned(found);
               }
             }, info);
             good = true;
@@ -443,6 +469,10 @@ module.exports = {
       // comfortably above the longest expected run — this also cleans up
       // orphaned records whose process died before calling `end`. Jobs
       // without `expireAfter` are kept forever, as before.
+      //
+      // `heartbeat`: when true, this process stamps `heartbeatAt` on the
+      // job every `heartbeatInterval` milliseconds until `end`, so a job
+      // whose process died reads as abandoned (see `isAbandoned`).
       async start(options = {}) {
         const now = new Date();
         const job = {
@@ -460,7 +490,8 @@ module.exports = {
           ...(options.userId && { userId: options.userId }),
           ...(options.expireAfter && {
             expireAt: new Date(now.getTime() + options.expireAfter * 1000)
-          })
+          }),
+          ...(options.heartbeat && { heartbeatAt: now })
         };
         const context = {
           _id: job._id,
@@ -468,7 +499,52 @@ module.exports = {
         };
 
         await self.db.insertOne(job);
+        let lastBeat = now.getTime();
+        if (options.heartbeat) {
+          context.heartbeat = setInterval(beat, self.options.heartbeatInterval);
+          context.heartbeat.unref();
+          self.heartbeats.add(context.heartbeat);
+        }
         return context;
+
+        // Stops itself once the record is ended or gone, so a run that
+        // never reaches `end` can't keep a timer alive past its record,
+        // and once beats have failed for longer than `abandonAfter`, when
+        // every reader already sees the job as abandoned
+        async function beat() {
+          try {
+            const result = await self.db.updateOne({
+              _id: job._id,
+              ended: false
+            }, {
+              $set: { heartbeatAt: new Date() }
+            });
+            if (result.matchedCount === 0) {
+              stop();
+              return;
+            }
+            lastBeat = Date.now();
+          } catch (err) {
+            self.apos.util.error(err);
+            if (Date.now() - lastBeat > self.options.abandonAfter) {
+              stop();
+            }
+          }
+        }
+
+        function stop() {
+          clearInterval(context.heartbeat);
+          self.heartbeats.delete(context.heartbeat);
+        }
+      },
+      // True for a job record started with `heartbeat: true` that has not
+      // ended and whose last beat is older than `abandonAfter`: the process
+      // running it is gone, whatever its status says. The status route
+      // reports such a job with the `abandoned` status.
+      isAbandoned(job) {
+        return Boolean(job.heartbeatAt) &&
+          !job.ended &&
+          Date.now() - job.heartbeatAt.getTime() > self.options.abandonAfter;
       },
       // Call this to report that n items were good
       // (successfully processed).
@@ -543,10 +619,17 @@ module.exports = {
       // If `error` is present it is recorded on the job document:
       // an `Error` instance is reduced to `{ name, message, data? }`
       // (already-serializable payloads are stored as given).
+      //
+      // Results the database refuses to store end the job as `failed`,
+      // without them and with the reason as its error.
       async end(job, success, results, error) {
         // context object gets an update to avoid a
         // race condition with checkStopped
         job.ended = true;
+        if (job.heartbeat) {
+          clearInterval(job.heartbeat);
+          self.heartbeats.delete(job.heartbeat);
+        }
         // Read-then-update leaves a small window: a cancel request landing
         // between the two ends up `completed` with `cancelRequested: true`,
         // which is acceptable — cancellation is a request that arrived too
@@ -559,15 +642,29 @@ module.exports = {
         const status = success
           ? (current && current.cancelRequested ? 'canceled' : 'completed')
           : 'failed';
-        return self.db.updateOne({ _id: job._id }, {
-          $set: {
-            ended: true,
-            endedAt: new Date(),
-            status,
-            results,
-            ...(error !== undefined && { error: serializeError(error) })
-          }
-        });
+        try {
+          return await write(status, results, error);
+        } catch (e) {
+          // Results the database can't store (too large a document) never
+          // leave the job running: it ends as failed, without them
+          self.logError('end-error', e.message, { jobId: job._id });
+          return write('failed', undefined, {
+            name: 'error',
+            message: `The job's results could not be stored: ${e.message}`
+          });
+        }
+
+        function write(status, results, error) {
+          return self.db.updateOne({ _id: job._id }, {
+            $set: {
+              ended: true,
+              endedAt: new Date(),
+              status,
+              results,
+              ...(error !== undefined && { error: serializeError(error) })
+            }
+          });
+        }
 
         function serializeError(error) {
           if (error instanceof Error) {

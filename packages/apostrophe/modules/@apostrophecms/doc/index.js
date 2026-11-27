@@ -188,6 +188,11 @@ module.exports = {
             doc.archived = false;
           }
         },
+        // Once the document has its `aposDocId`, before other handlers can
+        // save anything else (see `getAiFields`)
+        claimAiFields(req, doc) {
+          claimAiFields(req, doc);
+        },
         // Makes using our model APIs directly less tedious
         ensureAreaAndWidgetIds(req, doc, options) {
           self.apos.area.walk(doc, area => {
@@ -305,6 +310,9 @@ module.exports = {
         }
       },
       '@apostrophecms/doc-type:beforeUpdate': {
+        claimAiFields(req, doc) {
+          claimAiFields(req, doc);
+        },
         async checkPermissionsBeforeUpdate(req, doc, options) {
           if (options.permissions !== false) {
             if (!self.apos.permission.can(req, 'edit', doc)) {
@@ -340,6 +348,60 @@ module.exports = {
     };
   },
   methods(self) {
+    // On a request marked with `req.aposSaveMarker`, an object of the
+    // caller's own, emits `afterSaveSettled` via the doc type manager once an
+    // insert or update is done, every `after*` handler included. Handlers
+    // receive `(req, doc, settled)`:
+    //
+    // - `marker`: `req.aposSaveMarker`
+    // - `before`: the stored document when this save started, `null` for an
+    //   insert
+    // - `after`: the stored document now
+    // - `toolCall`: the AI tool call that saved, `{ id, name }`, if any
+    // - `drops`: what the save flag healed in this document (see
+    //   `checkLosslessPatch` in the schema module), else `[]`
+    // - `options`: the save's options
+    //
+    // Several saves of one document in one request chain: each `before` is
+    // the previous `after`. A save of the document from the handlers of a
+    // save of it (an archive deduplicating the slug) is part of that save:
+    // it reads and emits nothing of its own. Unmarked requests emit nothing
+    // and read nothing
+    async function emitSaveSettled(req, doc, options, before) {
+      const marker = req.aposSaveMarker;
+      if (!marker) {
+        return;
+      }
+      await self.getManager(doc.type).emit('afterSaveSettled', req, doc, {
+        marker,
+        before,
+        after: await self.db.findOne({ _id: doc._id }),
+        toolCall: req.aposAiToolCall,
+        drops: req.aposHealedDrops?.[doc._id] || [],
+        options
+      });
+    }
+
+    // Whether a save of the document `_id` on `req` is one that settles:
+    // the request is marked and no save of the document is under way on it.
+    // Such a save is under way until `endSettling`
+    function startSettling(req, _id) {
+      if (!req.aposSaveMarker) {
+        return false;
+      }
+      // Shared with the clones its handlers make
+      req.aposSettling ||= new Set();
+      if (req.aposSettling.has(_id)) {
+        return false;
+      }
+      req.aposSettling.add(_id);
+      return true;
+    }
+
+    function endSettling(req, _id) {
+      req.aposSettling.delete(_id);
+    }
+
     return {
       // `pairs` is an array of arrays, each containing an old _id
       // and a new _id that should replace it.
@@ -672,6 +734,8 @@ module.exports = {
       // unique it is made unique. `beforeInsert`, `beforeSave`, `afterInsert`
       // and `afterSave` events are emitted via the appropriate doc type
       // manager, then awaited. They receive `(req, doc, options)`.
+      // On a marked request `afterSaveSettled` follows once they are all
+      // done (see `emitSaveSettled` above `methods`).
       //
       // Returns the inserted document.
       //
@@ -701,6 +765,7 @@ module.exports = {
           span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, doc.type);
           span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'insert');
 
+          let settles = false;
           try {
             options = options || {};
             const m = self.getManager(doc.type);
@@ -726,16 +791,25 @@ module.exports = {
               }
             }, span, {});
 
+            settles = startSettling(req, doc._id);
             await m.emit('afterInsert', req, doc, options);
             await m.emit('afterSave', req, doc, options);
             // TODO: Remove `afterLoad` in next major version. Deprecated.
             await m.emit('afterLoad', req, [ doc ]);
+            if (settles) {
+              endSettling(req, doc._id);
+              settles = false;
+              await emitSaveSettled(req, doc, options, null);
+            }
             span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
             return doc;
           } catch (err) {
             telemetry.handleError(span, err);
             throw err;
           } finally {
+            if (settles) {
+              endSettling(req, doc._id);
+            }
             span.end();
           }
         });
@@ -743,7 +817,8 @@ module.exports = {
       // Updates the given document. If the slug is not
       // unique it is made unique. `beforeUpdate`, `beforeSave`,
       // `afterUpdate` and `afterSave` events are emitted
-      // via the appropriate doc type manager.
+      // via the appropriate doc type manager, then on a marked request
+      // `afterSaveSettled` (see `emitSaveSettled` above `methods`).
       //
       // The second argument must be the document itself.
       // `$set`, `$inc`, etc. are NOT available via
@@ -772,9 +847,13 @@ module.exports = {
           span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, doc.type);
           span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'update');
 
+          let settles = startSettling(req, doc._id);
           try {
             options = options || {};
             const m = self.getManager(doc.type);
+            const before = settles
+              ? await self.db.findOne({ _id: doc._id })
+              : null;
             await m.emit('beforeUpdate', req, doc, options);
             await m.emit('beforeSave', req, doc, options);
 
@@ -801,12 +880,20 @@ module.exports = {
             await m.emit('afterSave', req, doc, options);
             // TODO: Remove `afterLoad` in next major version. Deprecated.
             await m.emit('afterLoad', req, [ doc ]);
+            if (settles) {
+              endSettling(req, doc._id);
+              settles = false;
+              await emitSaveSettled(req, doc, options, before);
+            }
             span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
             return doc;
           } catch (err) {
             telemetry.handleError(span, err);
             throw err;
           } finally {
+            if (settles) {
+              endSettling(req, doc._id);
+            }
             span.end();
           }
         });
@@ -1378,6 +1465,24 @@ module.exports = {
       getManager(type) {
         return self.managers[self.normalizeType(type)];
       },
+      // The content types: the managers of the page and piece types whose
+      // documents editors and AI work with, in registration order. Leaves
+      // out virtual types, which own no documents of their own (`virtual:
+      // true`, such as the recently edited manager and the archive page),
+      // and the placeholders for types in the database without a module.
+      // `kind` is `page` or `piece` for one kind only
+      getContentTypes({ kind } = {}) {
+        const bases = {
+          page: '@apostrophecms/page-type',
+          piece: '@apostrophecms/piece-type'
+        };
+        if (kind && !bases[kind]) {
+          throw self.apos.error('invalid', `kind must be "page" or "piece", not "${kind}"`);
+        }
+        const wanted = kind ? [ bases[kind] ] : Object.values(bases);
+        return Object.values(self.managers).filter(manager => !manager.options.virtual &&
+          wanted.some(base => self.apos.instanceOf(manager, base)));
+      },
       // Removes the fields the user may not view (`viewPermission`) from
       // every document found at any depth in `value`, a REST API response:
       // documents loaded through relationships (including those in widgets,
@@ -1433,6 +1538,9 @@ module.exports = {
         delete input._explicitSave;
         delete input._restoreVersion;
         delete input._ai;
+        // Read before the route by whoever wrote the fields (see
+        // `launderOutside`), never saved
+        delete input._outside;
         if (explicitSave) {
           req.aposExplicitSave = true;
         }
@@ -1441,6 +1549,60 @@ module.exports = {
         }
         if (ai) {
           req.aposAi = true;
+        }
+      },
+      // The paths of the fields AI wrote in a save a person makes, when
+      // `doc` is the document that save is of, else `null`. Code that
+      // checked them sets `req.aposAiFields` (such as the assistant, from
+      // `_outside`), never from a body as is: `title`, `seo.title`,
+      // `@<widget or item _id>.<field>`, `@<_id>` for one written whole. They
+      // belong to the first document whose save begins on `req`, in any mode,
+      // not to another one its handlers save
+      getAiFields(req, doc) {
+        return (req.aposAiFields && (req.aposAiFieldsDocId === doc.aposDocId))
+          ? req.aposAiFields
+          : null;
+      },
+      // The virtual `_outside` of a REST write body: which fields an editor
+      // saves were written into it from outside, such as by the assistant,
+      // as the browser sends it: `{ tabId, parts: [{ marker, fields }] }`,
+      // one part per `marker` the writer gave, `fields` their paths in the
+      // document (`title`, `@<widget or item _id>.<field>`). Only the shape is
+      // checked: a module that marks the save from it checks the markers are
+      // its own. `null` when there is nothing usable
+      launderOutside(outside) {
+        if (!outside || (typeof outside !== 'object') || !Array.isArray(outside.parts)) {
+          return null;
+        }
+        const parts = outside.parts
+          .filter(part => part && (typeof part === 'object'))
+          .map(part => ({
+            marker: launderMarker(part.marker),
+            fields: Array.isArray(part.fields)
+              ? [
+                ...new Set(part.fields
+                  .map(field => self.apos.launder.string(field))
+                  .filter(Boolean))
+              ]
+              : []
+          }))
+          .filter(part => part.marker && part.fields.length);
+        return parts.length
+          ? {
+            tabId: self.apos.launder.string(outside.tabId),
+            parts
+          }
+          : null;
+
+        // A writer's marker: an object of strings
+        function launderMarker(marker) {
+          if (!marker || (typeof marker !== 'object') || Array.isArray(marker)) {
+            return null;
+          }
+          const entries = Object.entries(marker)
+            .filter(([ , value ]) => typeof value === 'string')
+            .map(([ key, value ]) => [ key, self.apos.launder.string(value) ]);
+          return entries.length ? Object.fromEntries(entries) : null;
         }
       },
       // Lock the given doc to a given `tabId`, such
@@ -1464,6 +1626,18 @@ module.exports = {
       // is the same as the current lock holder you will receive
       // another successful response.
       //
+      // `options.family` lets a lock share the slot of another lock
+      // id of the same user, usually the browser tab that locks the
+      // page in edit mode: `lock(req, doc, chatId, { family: tabId })`.
+      // The family's own lock, and a free slot, are compatible; the
+      // lock id becomes the slot's `member` and expires on its own.
+      // While a member holds the slot the family's own lock calls
+      // still succeed and refresh only the family, so a second id of
+      // the same family is refused. `unlock` of the member hands the
+      // slot back to the family, or clears it when the family
+      // doesn't hold it. A `locked` error with `me: true` carries the
+      // holder's `lockId`.
+      //
       // This method will set the `advisoryLock` property of the
       // document both in the database and in the `doc` object
       // that you pass to it. This ensures it is present if you
@@ -1485,74 +1659,202 @@ module.exports = {
         if (!tabId) {
           throw self.apos.error('invalid', 'no tabId was passed');
         }
-        let criteria = { _id };
-        if (!options.force) {
-          criteria.$or = [
-            {
-              advisoryLock: {
-                $exists: 0
-              }
-            },
-            {
-              'advisoryLock.updatedAt': {
-                $lt: self.getAdvisoryLockExpiration()
-              }
-            },
-            {
-              'advisoryLock._id': tabId
-            }
-          ];
+        const { family, force } = options;
+        if (family === tabId) {
+          throw self.apos.error('invalid', 'a lock cannot be its own family');
         }
-        // Prevent nuisance locking by matching only
-        // documents the user can edit
-        criteria = {
-          $and: [
-            criteria,
-            self.apos.permission.criteria(req, 'edit')
+        const username = req.user && req.user.username;
+        const title = req.user && req.user.title;
+        const now = new Date();
+        const expired = { $lt: self.getAdvisoryLockExpiration() };
+        const noLiveMember = {
+          $or: [
+            { 'advisoryLock.member': { $exists: 0 } },
+            { 'advisoryLock.member.updatedAt': expired }
           ]
         };
-        doc.advisoryLock = {
-          username: req.user && req.user.username,
-          title: req.user && req.user.title,
-          _id: tabId,
-          updatedAt: new Date()
+        const free = {
+          $or: [
+            { advisoryLock: { $exists: 0 } },
+            {
+              $and: [
+                { 'advisoryLock.updatedAt': expired },
+                noLiveMember
+              ]
+            }
+          ]
         };
-        const { result } = await self.db.updateOne(criteria, {
-          $set: {
-            advisoryLock: doc.advisoryLock
+        if (!family) {
+          doc.advisoryLock = {
+            username,
+            title,
+            _id: tabId,
+            updatedAt: now
+          };
+          const takeOrRefresh = {
+            $or: [
+              free,
+              {
+                $and: [
+                  { 'advisoryLock._id': tabId },
+                  noLiveMember
+                ]
+              }
+            ]
+          };
+          if (await attempt(force ? null : takeOrRefresh, {
+            $set: {
+              advisoryLock: doc.advisoryLock
+            }
+          })) {
+            return;
           }
+          // The family's own lock while a member holds the slot
+          // refreshes the family only
+          if (!force && await attempt({
+            'advisoryLock._id': tabId,
+            'advisoryLock.username': username
+          }, {
+            $set: {
+              'advisoryLock.title': title,
+              'advisoryLock.updatedAt': now
+            }
+          })) {
+            doc.advisoryLock = (await getSlot()).advisoryLock;
+            return;
+          }
+        } else {
+          const member = {
+            _id: tabId,
+            updatedAt: now
+          };
+          // Join the family's lock, or refresh the membership
+          if (!force && await attempt({
+            'advisoryLock._id': family,
+            'advisoryLock.username': username,
+            $or: [
+              { 'advisoryLock.member._id': tabId },
+              ...noLiveMember.$or
+            ]
+          }, {
+            $set: {
+              'advisoryLock.member': member
+            }
+          })) {
+            doc.advisoryLock = (await getSlot()).advisoryLock;
+            return;
+          }
+          // A free slot: the family doesn't hold it, so releasing
+          // the member clears it
+          const slot = {
+            username,
+            title,
+            _id: family,
+            updatedAt: new Date(0),
+            member
+          };
+          if (await attempt(force ? null : free, {
+            $set: {
+              advisoryLock: slot
+            }
+          })) {
+            doc.advisoryLock = slot;
+            return;
+          }
+        }
+        const info = await getSlot();
+        if (!info) {
+          throw self.apos.error('notfound');
+        }
+        if (!info.advisoryLock) {
+          // Nobody else has a lock but you couldn't get one —
+          // must be permissions
+          throw self.apos.error('forbidden');
+        }
+        if (info.advisoryLock.username === req.user.username) {
+          const { member } = info.advisoryLock;
+          const memberAlive = member && (member.updatedAt >= expired.$lt);
+          throw self.apos.error('locked', {
+            me: true,
+            lockId: memberAlive ? member._id : info.advisoryLock._id
+          });
+        }
+        throw self.apos.error('locked', {
+          title: info.advisoryLock.title,
+          username: info.advisoryLock.username
         });
-        if (!result.nModified) {
-          const info = await self.db.findOne({
+
+        async function attempt(criteria, update) {
+          // Prevent nuisance locking by matching only
+          // documents the user can edit
+          const { result } = await self.db.updateOne({
+            $and: [
+              {
+                _id,
+                ...criteria
+              },
+              self.apos.permission.criteria(req, 'edit')
+            ]
+          }, update);
+          // Matched, not modified: a refresh in the same millisecond
+          // writes the timestamp already stored
+          return result.n > 0;
+        }
+
+        function getSlot() {
+          return self.db.findOne({
             _id
           }, {
             projection: {
               advisoryLock: 1
             }
           });
-          if (!info) {
-            throw self.apos.error('notfound');
-          }
-          if (!info.advisoryLock) {
-            // Nobody else has a lock but you couldn't get one —
-            // must be permissions
-            throw self.apos.error('forbidden');
-          }
-          if (!info.advisoryLock) {
-            // Nobody else has a lock but you couldn't get one —
-            // must be permissions
-            throw self.apos.error('forbidden');
-          }
-          if (info.advisoryLock.username === req.user.username) {
-            throw self.apos.error('locked', {
-              me: true
-            });
-          }
-          throw self.apos.error('locked', {
-            title: info.advisoryLock.title,
-            username: info.advisoryLock.username
-          });
         }
+      },
+      // Whether `lock` with the same arguments would succeed, without
+      // locking: `null` when it would, else the error it would throw, not
+      // thrown (`locked`, `forbidden` or `notfound`).
+      async checkLock(req, doc, tabId, options = {}) {
+        const { family, force } = options;
+        const stored = await self.db.findOne({
+          $and: [
+            { _id: doc._id },
+            self.apos.permission.criteria(req, 'edit')
+          ]
+        }, {
+          projection: {
+            advisoryLock: 1
+          }
+        });
+        if (!stored) {
+          return (await self.db.findOne({ _id: doc._id }, { projection: { _id: 1 } }))
+            ? self.apos.error('forbidden')
+            : self.apos.error('notfound');
+        }
+        const lock = stored.advisoryLock;
+        if (force || !lock) {
+          return null;
+        }
+        const expiry = self.getAdvisoryLockExpiration();
+        const memberAlive = Boolean(lock.member) && (lock.member.updatedAt >= expiry);
+        const mine = lock.username === req.user?.username;
+        const free = (lock.updatedAt < expiry) && !memberAlive;
+        const compatible = family
+          ? mine && (lock._id === family) &&
+            (!memberAlive || (lock.member._id === tabId))
+          : (lock._id === tabId) && (!memberAlive || mine);
+        if (free || compatible) {
+          return null;
+        }
+        return mine
+          ? self.apos.error('locked', {
+            me: true,
+            lockId: memberAlive ? lock.member._id : lock._id
+          })
+          : self.apos.error('locked', {
+            title: lock.title,
+            username: lock.username
+          });
       },
       // Any advisory lock whose `updatedAt` time is older than the Date
       // object returned by this method should be considered expired
@@ -1561,6 +1863,11 @@ module.exports = {
       },
       // Release a document lock set via `lock` for a particular tabId.
       // If the lock is already gone no error occurs.
+      //
+      // A member of a family hands the slot back to the family's own
+      // lock, or clears it when the family doesn't hold it. The family
+      // releasing while a member holds the slot leaves the member in
+      // place, and the member's release then clears the slot.
       //
       // This method will unset the `advisoryLock` property of the
       // document both in the database and in the `doc` object
@@ -1579,15 +1886,48 @@ module.exports = {
         if (!tabId) {
           throw self.apos.error('invalid', 'no tabId');
         }
-        await self.db.updateOne({
-          _id: id,
-          'advisoryLock._id': tabId
-        }, {
+        const expired = { $lt: self.getAdvisoryLockExpiration() };
+        const clear = {
           $unset: {
             advisoryLock: 1
           }
-        });
+        };
+        const released = await attempt({
+          'advisoryLock._id': tabId,
+          $or: [
+            { 'advisoryLock.member': { $exists: 0 } },
+            { 'advisoryLock.member.updatedAt': expired }
+          ]
+        }, clear) ||
+          await attempt({
+            'advisoryLock.member._id': tabId,
+            'advisoryLock.updatedAt': expired
+          }, clear) ||
+          await attempt({
+            'advisoryLock.member._id': tabId
+          }, {
+            $unset: {
+              'advisoryLock.member': 1
+            }
+          });
+        if (!released) {
+          await attempt({
+            'advisoryLock._id': tabId
+          }, {
+            $set: {
+              'advisoryLock.updatedAt': new Date(0)
+            }
+          });
+        }
         delete doc.advisoryLock;
+
+        async function attempt(criteria, update) {
+          const { result } = await self.db.updateOne({
+            _id: id,
+            ...criteria
+          }, update);
+          return result.nModified > 0;
+        }
       },
       // Returns the field names necessary to build URLs
       // for typical doc types. If a query specific to a
@@ -2148,3 +2488,11 @@ module.exports = {
     };
   }
 };
+
+// `req.aposAiFields` belong to the first document whose save begins on `req`
+// (see `getAiFields`)
+function claimAiFields(req, doc) {
+  if (req.aposAiFields && !req.aposAiFieldsDocId) {
+    req.aposAiFieldsDocId = doc.aposDocId;
+  }
+}

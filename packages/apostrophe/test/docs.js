@@ -979,6 +979,31 @@ describe('Docs', function() {
     }
   });
 
+  it('should refresh a lock, and a member of its family, at once and again', async function() {
+    const req = apos.task.getReq({
+      user: {
+        _id: 'ann',
+        username: 'ann',
+        title: 'Ann',
+        role: 'admin'
+      }
+    });
+    await insertPeople(apos);
+    const doc = { _id: 'carl:en:published' };
+    // Back to back, most refreshes write the timestamp already stored
+    for (let i = 0; i < 50; i++) {
+      await apos.doc.lock(req, doc, 'abc');
+    }
+    for (let i = 0; i < 50; i++) {
+      await apos.doc.lock(req, doc, 'chat', { family: 'abc' });
+    }
+    const { advisoryLock } = await apos.doc.db.findOne({ _id: doc._id });
+    assert.equal(advisoryLock._id, 'abc');
+    assert.equal(advisoryLock.member._id, 'chat');
+    await apos.doc.unlock(req, doc, 'chat');
+    await apos.doc.unlock(req, doc, 'abc');
+  });
+
   it('should be able to unlock a document', async function() {
     const req = apos.task.getReq();
     await insertPeople(apos);

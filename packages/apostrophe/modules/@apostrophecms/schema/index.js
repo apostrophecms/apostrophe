@@ -20,12 +20,14 @@ const { stripIndents } = require('common-tags');
 const addFieldTypes = require('./lib/addFieldTypes');
 const newInstance = require('./lib/newInstance.js');
 const { finalize, consultProbe } = require('./lib/extract.js');
+const { dropPathOf, relationshipIds } = require('./lib/drops.js');
 
 // Properties of a patch that are acted upon by the PATCH routes themselves
 // and never reach `convert`. See `patchWidgetIfSuitable`.
 const patchControlProperties = new Set([
   '_advisory',
   '_advisoryLock',
+  '_lossless',
   '_patches',
   '_position',
   '_publish',
@@ -793,6 +795,21 @@ module.exports = {
       // the context object at each level of nested sanitization, excluding
       // `destination` (the current level). This allows resolution of relative
       // `following` paths during sanitization.
+      //
+      // Conversion quietly drops a widget its area refuses or doesn't know, a
+      // relationship entry that doesn't resolve and array items past the
+      // field's `limit`, and ignores input for a read only field or a
+      // relationship this user can't view. If `drops` is an array, each such
+      // drop is pushed to it as `{ path, reason }`, plus `type` for a widget
+      // and `_id` when the dropped item has one. Ignored input is recorded
+      // only when it differs from what `destination` holds. `path` is the dot
+      // path in `data` of the item or field, `dropPath` the dot path of
+      // `data` itself when it is nested in a larger object. `reason` is
+      // `notAllowed`, `unknownType`, `notFound`, `invalid`, `limit`,
+      // `readOnly` or `forbidden`. A field type may record a value it
+      // replaces as `invalid` with a `message` saying what it takes: an
+      // unknown choice, a number outside a range, something that is no
+      // color.
 
       async convert(
         req,
@@ -802,12 +819,16 @@ module.exports = {
         {
           fetchRelationships = true,
           ancestors = [],
-          rootConvert = true
+          rootConvert = true,
+          drops,
+          dropPath = ''
         } = {}
       ) {
         const options = {
           fetchRelationships,
-          ancestors
+          ancestors,
+          drops,
+          dropPath
         };
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
@@ -816,6 +837,12 @@ module.exports = {
         const convertErrors = [];
         for (const field of schema) {
           if (field.readOnly) {
+            if (drops && _.has(data, field.name) && changesReadOnly(field)) {
+              drops.push({
+                path: dropPathOf(dropPath, field.name),
+                reason: 'readOnly'
+              });
+            }
             continue;
           }
 
@@ -880,6 +907,17 @@ module.exports = {
 
         if (validErrors.length) {
           throw validErrors;
+        }
+
+        // Patch input carries a relationship's documents, not its stored ids
+        function changesReadOnly(field) {
+          if (field.type === 'relationship') {
+            return !_.isEqual(
+              relationshipIds(data[field.name]),
+              relationshipIds(destination[field.name])
+            );
+          }
+          return !self.isEqual(req, [ field ], data, destination);
         }
       },
 
@@ -1532,8 +1570,17 @@ module.exports = {
       // ```
       //
       // Note that areas are *always* indexed.
+      //
+      // ### `aiHow`
+      //
+      // Optional. How AI should fill every field of this type: static text,
+      // sent to the model as is (never an i18n key) with the schema of a
+      // type that has such a field. A field's own `aiHow` adds to it.
 
       addFieldType(type) {
+        if ((type.aiHow != null) && (typeof type.aiHow !== 'string')) {
+          throw new Error(`The "${type.name}" field type's aiHow must be a string.`);
+        }
         let fieldType = type;
         if (type.extend) {
           // Allow a field type to extend another field type and merge
@@ -1946,6 +1993,10 @@ still output the value of this field with a regular template expression.`);
         if (field.hidden && field.hidden !== true && field.hidden !== false) {
           fail(`hidden must be a boolean, "${field.hidden}" provided.`);
         }
+        // How AI should fill the field, sent to the model as is
+        if ((field.aiHow != null) && (typeof field.aiHow !== 'string')) {
+          fail('aiHow must be a string.');
+        }
         if (field.if && field.if.$or && !Array.isArray(field.if.$or)) {
           fail(`$or conditional must be an array of conditions. Current $or configuration: ${JSON.stringify(field.if.$or)}`);
         }
@@ -2120,6 +2171,9 @@ still output the value of this field with a regular template expression.`);
       // `schema` must be the document's allowed schema, i.e. what the caller
       // would otherwise pass to `subsetSchemaForPatch`.
       //
+      // `drops` and `patchPaths` are recorded as `convert` and
+      // `implementPatchOperators` would record them.
+      //
       // Returns `false` if the patch is not that simple case, or if any part
       // of it cannot be verified, in which case the caller must carry on with
       // the general code path. Widgets can be patched in other valid ways
@@ -2130,7 +2184,11 @@ still output the value of this field with a regular template expression.`);
         schema,
         patch,
         destination,
-        { fetchRelationships = true } = {}
+        {
+          fetchRelationships = true,
+          drops,
+          patchPaths
+        } = {}
       ) {
         const keys = Object.keys(patch)
           .filter(key => !patchControlProperties.has(key));
@@ -2207,11 +2265,16 @@ still output the value of this field with a regular template expression.`);
           return false;
         }
         let widget;
+        // Kept apart until the shortcut is sure, like the widget itself
+        const widgetDrops = drops && [];
         try {
           // Clone so that a failed attempt leaves nothing behind for the
           // general code path to trip over
           widget = await manager.sanitize(req, klona(value), options, {
-            fetchRelationships
+            fetchRelationships,
+            drops: widgetDrops,
+            dropPath: found.dotPath,
+            existing: (found.object.type === value.type) ? found.object : null
           });
         } catch (e) {
           // The general code path reports validation errors with the dot path
@@ -2219,6 +2282,8 @@ still output the value of this field with a regular template expression.`);
           return false;
         }
         area.items[index] = widget;
+        drops?.push(...widgetDrops);
+        patchPaths?.push(found.dotPath);
         return true;
         function ownerSchemaOf(owner) {
           const manager = self.apos.util.getManagerOf(owner, { log: false });
@@ -2248,12 +2313,22 @@ still output the value of this field with a regular template expression.`);
       // when using `$position`, `$before` or `$after`. For durability, if
       // `$position`, `$before` or `$after` has an invalid value the insertion
       // takes place at the end of the existing array.
+      //
+      // If `patchPaths` is an array, the dot path in `patch` of everything the
+      // patch itself supplies is pushed to it: each pushed item, each value
+      // set by dot path or `@` reference, and each top level property. What
+      // lies beneath those paths is the patch's own, the rest was copied from
+      // `existingPage`.
 
-      implementPatchOperators(patch, existingPage) {
+      implementPatchOperators(patch, existingPage, { patchPaths } = {}) {
         const clonedBases = {};
         // An `@` reference names the document's own content, never what was
         // loaded into it, such as a related document holding the same `_id`
         const own = { ignoreDynamicProperties: true };
+        // Before any base is copied in from `existingPage`
+        patchPaths?.push(...Object.keys(patch).filter(key => {
+          return !'$@'.includes(key.charAt(0)) && !key.includes('.');
+        }));
         if (patch.$push) {
           append(patch.$push);
         } else if (patch.$pullAll) {
@@ -2324,14 +2399,17 @@ still output the value of this field with a regular template expression.`);
               if (key && patch[key.split('.')[0]]) {
                 // This base has already been cloned into the patch, or it
                 // otherwise touches this base, so we need to re-resolve
-                // the reference or indexes may be incorrect
-                key = self.apos.util.resolveAtReference(patch, atReference, own);
+                // the reference or indexes may be incorrect. Among the bases
+                // only: the value of an `@` key holds its own `_id`
+                const bases = _.omitBy(patch, (value, name) => '$@'.includes(name.charAt(0)));
+                key = self.apos.util.resolveAtReference(bases, atReference, own);
               }
             }
             // Simple replacement with a dot path
             if (atReference || (key.indexOf('.') !== -1)) {
               cloneOriginalBase(key);
               self.apos.util.set(patch, key, val);
+              patchPaths?.push(key);
             }
           }
         });
@@ -2373,10 +2451,20 @@ still output the value of this field with a regular template expression.`);
                 .concat(each)
                 .concat(existing.slice(position));
               self.apos.util.set(patch, key, updated);
+              if (patchPaths) {
+                const path = self.apos.util.resolveAtReference(patch, key, own);
+                for (let i = 0; i < each.length; i++) {
+                  patchPaths.push(`${path}.${position + i}`);
+                }
+              }
             } else {
               const existing = self.apos.util.get(patch, key, own) || [];
               existing.push(val);
               self.apos.util.set(patch, key, existing);
+              if (patchPaths) {
+                const path = self.apos.util.resolveAtReference(patch, key, own);
+                patchPaths.push(`${path}.${existing.length - 1}`);
+              }
             }
           });
         }
@@ -2411,6 +2499,35 @@ still output the value of this field with a regular template expression.`);
             }
             clonedBases[base] = true;
           }
+        }
+      },
+
+      // For a patch flagged `_lossless`, called by `applyPatch` once it is
+      // converted, with what `convert` dropped and the paths the patch
+      // sets (`patchPaths`). A drop that overlaps the patch's own content, lying within
+      // it or holding some of it, refuses the patch as `invalid`, naming each
+      // such drop. The other drops healed stale content, as any save does,
+      // and are kept in `req.aposHealedDrops` by document `_id`.
+      checkLosslessPatch(req, doc, drops, patchPaths) {
+        const own = drops.filter(drop => patchPaths.some(path => {
+          return (drop.path === path) ||
+            drop.path.startsWith(`${path}.`) ||
+            path.startsWith(`${drop.path}.`);
+        }));
+        if (own.length) {
+          const names = own.map(drop => `${drop.path} (${drop.reason})`);
+          throw self.apos.error(
+            'invalid',
+            `The patch would drop content it supplies: ${names.join(', ')}`,
+            { drops: own }
+          );
+        }
+        if (drops.length) {
+          req.aposHealedDrops ||= {};
+          req.aposHealedDrops[doc._id] = [
+            ...(req.aposHealedDrops[doc._id] || []),
+            ...drops
+          ];
         }
       },
 
@@ -2574,6 +2691,10 @@ still output the value of this field with a regular template expression.`);
         _.each(self.apos.area.widgetManagers, function (manager, type) {
           self.validate(manager.schema, {
             type: 'widget type',
+            subtype: type
+          });
+          self.validate(manager.shadowSchema, {
+            type: 'widget type shadow fields',
             subtype: type
           });
         });

@@ -1,12 +1,25 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { createId } from 'apostrophe/lib/beneath.js';
+import { getTabId } from 'Modules/@apostrophecms/ui/utils';
 
 export const useNotificationStore = defineStore('notification', () => {
   const backendNotifs = ref([]);
   const clientNotifs = ref([]);
-  const dismissed = ref([]);
   const processes = ref({});
+  // The poll's position: the newest `updatedAt` received, and what was
+  // received within the lookback below it, each id with its `updatedAt`.
+  // The server reads that far back, since a write can become visible
+  // late, and leaves these out. Every record moves it, bus carriers
+  // included
+  const cursor = {
+    at: null,
+    seen: new Map()
+  };
+  // With more held records than this the poll travels as a POST. A
+  // safety measure for bursts: a query string that long may be refused,
+  // and the same poll would then be retried without end
+  const maxSeenInQuery = 30;
 
   const notifications = computed(() => {
     return [ ...clientNotifs.value, ...backendNotifs.value ]
@@ -83,21 +96,23 @@ export const useNotificationStore = defineStore('notification', () => {
         // Wait for tab to become visible
         setTimeout(poll, 5000);
       } else {
-        const allNotifications = [ ...backendNotifs.value, ...dismissed.value ];
-        const latestTimestamp = allNotifications
-          .map(({ updatedAt }) => updatedAt)
-          .sort()
-          .at(-1);
-
-        const res = await apos.http.get(apos.notification.action, {
-          ...(latestTimestamp && {
-            qs: {
-              modifiedOnOrSince: latestTimestamp
-            }
+        const held = [ ...cursor.seen ];
+        const qs = {
+          tabId: getTabId(),
+          pageStart: apos.notification.pageStart,
+          ...(cursor.at && {
+            modifiedOnOrSince: cursor.at,
+            seen: Object.fromEntries(held.map(([ id, at ]) => [ id, Date.parse(at) ]))
           })
-        });
+        };
+        const res = held.length > maxSeenInQuery
+          ? await apos.http.post(apos.notification.action, {
+            body: { __aposGetWithQuery: qs }
+          })
+          : await apos.http.get(apos.notification.action, { qs });
 
         const incoming = res.notifications || [];
+        advance([ ...incoming, ...(res.dismissed || []) ]);
         // Bus notifications are pure event carriers: emit their events
         // and keep them out of the visible list
         await emitBusEvents(incoming.filter((notif) => notif.bus));
@@ -105,7 +120,6 @@ export const useNotificationStore = defineStore('notification', () => {
           ...backendNotifs.value,
           ...incoming.filter((notif) => !notif.bus)
         ];
-        dismissed.value = [ ...dismissed.value, ...(res.dismissed || []) ];
         if (res.dismissed.length) {
           backendNotifs.value = backendNotifs.value.filter((notif) => {
             return !res.dismissed.some((element) => notif._id === element._id);
@@ -125,12 +139,41 @@ export const useNotificationStore = defineStore('notification', () => {
       setTimeout(poll, 5000);
     }
 
-    // Emit each bus notification's event, oldest first — clearEvent
-    // makes exactly one tab the emitter — then dismiss the carrier.
-    // An already-cleared event is dismissed without emitting
+    // Move the cursor to the newest record received and keep only what
+    // is still within the lookback below it. `updatedAt` arrives as an
+    // ISO string, which sorts as the time it stands for
+    function advance(records) {
+      for (const { _id, updatedAt } of records) {
+        cursor.seen.set(_id, updatedAt);
+        if (!cursor.at || updatedAt > cursor.at) {
+          cursor.at = updatedAt;
+        }
+      }
+      if (!cursor.at) {
+        return;
+      }
+      const floor = new Date(
+        Date.parse(cursor.at) - apos.notification.lookback
+      ).toISOString();
+      for (const [ id, at ] of cursor.seen) {
+        if (at < floor) {
+          cursor.seen.delete(id);
+        }
+      }
+    }
+
+    // Emit each bus notification's event, oldest first. A carrier with
+    // a `tab` (every tab, or this one) is emitted as it comes: nobody
+    // claims or dismisses it, it expires. Any other is emitted by the one
+    // browser tab that wins clearEvent, then dismissed; an
+    // already-cleared event is dismissed without emitting
     async function emitBusEvents(notifs) {
       notifs.sort((a, b) => a.updatedAt > b.updatedAt ? 1 : -1);
       for (const notif of notifs) {
+        if (notif.tab) {
+          apos.bus.$emit(notif.event.name, notif.event.data);
+          continue;
+        }
         if (notif.event?.name && await clearEvent(notif._id)) {
           apos.bus.$emit(notif.event.name, notif.event.data);
         }

@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { useModalStore } from './modal';
 import {
   ref, shallowRef, computed, nextTick
 } from 'vue';
@@ -6,6 +7,24 @@ import {
 export const useWidgetStore = defineStore('widget', () => {
   const refs = ref({});
   const emphasizedWidgets = ref(new Set());
+  // Widgets something outside the page is writing, such as the assistant:
+  // shown busy until the write settles
+  const busyWidgets = ref(new Set());
+  // Widgets of an editor's areas written from outside it, by the id of the
+  // editor's `outside` handle: `{ [widgetId]: { busy, edited } }` per editor
+  const outsideWidgetsByEditor = shallowRef(new Map());
+  const outsideWidgets = computed(() => {
+    const merged = {};
+    for (const widgets of outsideWidgetsByEditor.value.values()) {
+      for (const [ _id, state ] of Object.entries(widgets)) {
+        merged[_id] = {
+          busy: Boolean(merged[_id]?.busy || state.busy),
+          edited: Boolean(merged[_id]?.edited || state.edited)
+        };
+      }
+    }
+    return merged;
+  });
   const focusedWidget = ref(null);
   const focusedArea = ref(null);
   // More than one widget. `focusedWidget` stays the primary (last clicked)
@@ -31,6 +50,9 @@ export const useWidgetStore = defineStore('widget', () => {
   // Fields edited in place, per the `{% field %}` custom tag. They wear the
   // same breadcrumb trail a widget does, so they take their turn here
   const focusedField = ref(null);
+  // What the focused field edits: `{ docId, name }`, `name` being its patch
+  // key (`title`, `@widgetId.title`) and `docId` null in a modal
+  const focusedFieldTarget = ref(null);
   const hoveredField = ref(null);
 
   // The one thing on the page that wears a breadcrumb trail, since two labels
@@ -74,6 +96,31 @@ export const useWidgetStore = defineStore('widget', () => {
     emphasizedWidgets.value.delete(id);
   }
 
+  function setBusyWidgets(ids, busy) {
+    for (const id of ids) {
+      if (busy) {
+        busyWidgets.value.add(id);
+      } else {
+        busyWidgets.value.delete(id);
+      }
+    }
+  }
+
+  // What came from outside for the widgets of one editor's areas, `null`
+  // once the editor ends. Editors no longer in the modal stack are dropped
+  // too, so nothing stays behind an editor that ended without saying so
+  function setOutsideWidgets(editorId, widgets) {
+    const open = new Set(useModalStore().stack.map(entry => entry.outside?.id));
+    const next = new Map([ ...outsideWidgetsByEditor.value ]
+      .filter(([ id ]) => open.has(id)));
+    if (widgets && Object.keys(widgets).length) {
+      next.set(editorId, widgets);
+    } else {
+      next.delete(editorId);
+    }
+    outsideWidgetsByEditor.value = next;
+  }
+
   function setHoveredWidget(id, nonForeignId) {
     hoveredWidget.value = id;
     hoveredNonForeignWidget.value = nonForeignId;
@@ -97,13 +144,15 @@ export const useWidgetStore = defineStore('widget', () => {
     }
   }
 
-  function setFocusedField(id) {
+  function setFocusedField(id, target = null) {
     focusedField.value = id;
+    focusedFieldTarget.value = target;
   }
 
   function clearFocusedField(id) {
     if (focusedField.value === id) {
       focusedField.value = null;
+      focusedFieldTarget.value = null;
     }
   }
 
@@ -291,6 +340,8 @@ export const useWidgetStore = defineStore('widget', () => {
   return {
     refs,
     emphasizedWidgets,
+    busyWidgets,
+    outsideWidgets,
     focusedWidget,
     focusedArea,
     selectedWidgetIds,
@@ -303,10 +354,13 @@ export const useWidgetStore = defineStore('widget', () => {
     hoveredWidget,
     hoveredNonForeignWidget,
     focusedField,
+    focusedFieldTarget,
     hoveredField,
     labeled,
     addEmphasizedWidget,
     removeEmphasizedWidget,
+    setBusyWidgets,
+    setOutsideWidgets,
     setHoveredWidget,
     setHoveredField,
     clearHoveredField,

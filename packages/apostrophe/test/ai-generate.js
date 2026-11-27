@@ -11,6 +11,7 @@ const fakeAdapter = (name, extras = {}) => ({
     tools: true,
     structured: true,
     imageInput: true,
+    documentInput: true,
     image: false,
     caching: true
   },
@@ -253,6 +254,13 @@ describe('AI generate', function() {
       );
     });
 
+    it('rejects a usageMetadata that is not an object', function() {
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', { usageMetadata: 'summary' }),
+        /"usageMetadata" must be an object/
+      );
+    });
+
     it('rejects malformed scalar options', function() {
       throwsInvalid(
         () => apos.ai.normalizeGenerateOptions('p', { system: 5 }),
@@ -277,6 +285,14 @@ describe('AI generate', function() {
       throwsInvalid(
         () => apos.ai.normalizeGenerateOptions('p', { onToolCall: 'tell me' }),
         /"onToolCall" must be a function/
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', { onRetry: true }),
+        /"onRetry" must be a function/
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeGenerateOptions('p', { betweenSteps: 'stop' }),
+        /"betweenSteps" must be a function/
       );
     });
 
@@ -498,6 +514,81 @@ describe('AI generate', function() {
           }
         ]
       } ]);
+    });
+
+    it('rebuilds document parts in canonical form', function() {
+      const normalized = apos.ai.normalizeMessages([ {
+        role: 'user',
+        content: [
+          {
+            type: 'document',
+            document: {
+              data: 'JVBERi0=',
+              mediaType: 'application/pdf',
+              name: 'brief.pdf',
+              stray: true
+            }
+          },
+          {
+            type: 'document',
+            document: {
+              data: 'YSxi',
+              mediaType: 'text/csv'
+            }
+          }
+        ]
+      } ]);
+      // Any media type passes: the provider answers for what it reads
+      assert.deepEqual(normalized[0].content, [
+        {
+          type: 'document',
+          document: {
+            data: 'JVBERi0=',
+            mediaType: 'application/pdf',
+            name: 'brief.pdf'
+          }
+        },
+        {
+          type: 'document',
+          document: {
+            data: 'YSxi',
+            mediaType: 'text/csv'
+          }
+        }
+      ]);
+    });
+
+    it('rejects malformed document parts and documents outside user messages', function() {
+      const document = (fields) => [ {
+        role: 'user',
+        content: [ {
+          type: 'document',
+          document: {
+            data: 'JVBERi0=',
+            mediaType: 'application/pdf',
+            ...fields
+          }
+        } ]
+      } ];
+      throwsInvalid(
+        () => apos.ai.normalizeMessages([ {
+          role: 'assistant',
+          content: document()[0].content
+        } ]),
+        /a "document" part is not valid in a "assistant" message/
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeMessages(document({ data: '' })),
+        /\.document must be an object like \{ data, mediaType, name\? \}/
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeMessages(document({ mediaType: '' })),
+        /\.document must be an object like \{ data, mediaType, name\? \}/
+      );
+      throwsInvalid(
+        () => apos.ai.normalizeMessages(document({ name: '' })),
+        /\.document\.name must be a non-empty string/
+      );
     });
 
     it('normalizes tool messages and tool parts', function() {
@@ -921,6 +1012,14 @@ describe('AI generate', function() {
                   apiKey: 'k3',
                   capabilities: { structured: false }
                 },
+                nomedia: {
+                  adapter: 'fake',
+                  apiKey: 'k5',
+                  capabilities: {
+                    imageInput: false,
+                    documentInput: false
+                  }
+                },
                 gateway: {
                   apiKey: 'k4',
                   region: 'eu-west-1',
@@ -991,6 +1090,10 @@ describe('AI generate', function() {
         ],
         finishReason: 'stop',
         usage: {
+          inputTokens: 12,
+          outputTokens: 7
+        },
+        lastStepUsage: {
           inputTokens: 12,
           outputTokens: 7
         },
@@ -1335,6 +1438,61 @@ describe('AI generate', function() {
           apos.ai.options.usageMetadata = saved;
         }
       });
+
+      it('merges a call\'s own usageMetadata over the module\'s on every attempt', async function() {
+        const saved = apos.ai.options.usageMetadata;
+        try {
+          apos.ai.options.usageMetadata = {
+            siteId: 's1',
+            purpose: 'site'
+          };
+          chatScript = [
+            // Billed and rejected, then accepted on the retry
+            () => turn({ content: [ { type: 'text' } ] }),
+            () => turn(),
+            () => turn()
+          ];
+          const usageMetadata = { purpose: 'summary' };
+          await apos.ai.generate(apos.task.getReq(), 'p', { usageMetadata });
+          await apos.ai.generate(apos.task.getReq(), 'p');
+          assert.deepEqual(
+            usageRecords.map(({ outcome, metadata }) => ({
+              outcome,
+              metadata
+            })),
+            [
+              {
+                outcome: 'rejected',
+                metadata: {
+                  siteId: 's1',
+                  purpose: 'summary'
+                }
+              },
+              {
+                outcome: 'accepted',
+                metadata: {
+                  siteId: 's1',
+                  purpose: 'summary'
+                }
+              },
+              // A call without its own carries the module's alone
+              {
+                outcome: 'accepted',
+                metadata: {
+                  siteId: 's1',
+                  purpose: 'site'
+                }
+              }
+            ]
+          );
+          // Each record a copy: the caller's object stays as given
+          usageRecords[0].metadata.extra = true;
+          assert.deepEqual(usageMetadata, { purpose: 'summary' });
+          assert.equal(usageRecords[1].metadata.extra, undefined);
+        } finally {
+          apos.ai.options.usageMetadata = saved;
+        }
+      });
     });
 
     it('ignores APOS_AI_MOCK set after startup', async function() {
@@ -1363,6 +1521,74 @@ describe('AI generate', function() {
       );
       assert.equal(chatCalls.length, 0);
       assert.equal(events.length, 0);
+    });
+
+    it('hands a document part to a provider declaring documentInput', async function() {
+      chatScript = [ () => turn() ];
+      const part = {
+        type: 'document',
+        document: {
+          data: 'JVBERi0=',
+          mediaType: 'application/pdf',
+          name: 'brief.pdf'
+        }
+      };
+      await apos.ai.generate(apos.task.getReq(), {
+        messages: [ {
+          role: 'user',
+          content: [ part, {
+            type: 'text',
+            text: 'summarize'
+          } ]
+        } ]
+      });
+      assert.deepEqual(chatCalls[0].messages[0].content[0], part);
+    });
+
+    it('refuses an image or document part on a provider without the input capability', async function() {
+      for (const [ part, capability ] of [
+        [ {
+          type: 'image',
+          image: {
+            data: 'aGk=',
+            mediaType: 'image/png'
+          }
+        }, 'imageInput' ],
+        [ {
+          type: 'document',
+          document: {
+            data: 'JVBERi0=',
+            mediaType: 'application/pdf'
+          }
+        }, 'documentInput' ]
+      ]) {
+        await assert.rejects(
+          apos.ai.generate(apos.task.getReq(), {
+            provider: 'nomedia',
+            model: 'fake-medium',
+            messages: [ {
+              role: 'user',
+              content: [ part ]
+            } ]
+          }),
+          (e) => {
+            assert.equal(e.name, 'invalid');
+            assert.equal(
+              e.message,
+              `provider "nomedia" does not declare the "${capability}" capability`
+            );
+            return true;
+          }
+        );
+      }
+      assert.equal(chatCalls.length, 0);
+      // Text alone still routes there
+      chatScript = [ () => turn() ];
+      await apos.ai.generate(apos.task.getReq(), 'p', {
+        provider: 'nomedia',
+        model: 'fake-medium'
+      });
+      assert.equal(chatCalls.length, 1);
     });
 
     describe('structured output', function() {
@@ -1675,6 +1901,84 @@ describe('AI generate', function() {
         );
       });
 
+      it('reports each retry to onRetry with the attempt and the wait', async function() {
+        chatScript = [
+          () => {
+            const e = httpError(429);
+            e.retryAfter = 3;
+            throw e;
+          },
+          () => {
+            const e = httpError(503);
+            e.retryAfter = 1.5;
+            throw e;
+          },
+          () => turn()
+        ];
+        const retries = [];
+        const result = await apos.ai.generate(apos.task.getReq(), 'p', {
+          onRetry: async (event) => {
+            // Reported before the wait starts
+            assert.equal(waits.length, retries.length);
+            retries.push(event);
+          }
+        });
+        assert.equal(result.text, 'a haiku');
+        assert.deepEqual(retries, [
+          {
+            attempt: 2,
+            wait: 3,
+            step: 1
+          },
+          {
+            attempt: 3,
+            wait: 2,
+            step: 1
+          }
+        ]);
+        assert.deepEqual(waits, [ 3000, 1500 ]);
+      });
+
+      it('stops the call when onRetry throws', async function() {
+        chatScript = [
+          () => {
+            throw httpError(429);
+          },
+          () => turn()
+        ];
+        await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p', {
+          onRetry: async () => {
+            throw new Error('panel gone');
+          }
+        }), /panel gone/);
+        assert.equal(chatCalls.length, 1);
+        assert.deepEqual(waits, []);
+      });
+
+      it('never retries a context overflow', async function() {
+        chatScript = [
+          () => {
+            throw apos.error('aiContextOverflow', 'prompt is too long', { status: 400 });
+          },
+          () => turn()
+        ];
+        const retries = [];
+        await assert.rejects(apos.ai.generate(apos.task.getReq(), 'p', {
+          onRetry: async (event) => retries.push(event)
+        }), (e) => {
+          assert.equal(e.name, 'aiContextOverflow');
+          assert.equal(e.message, 'prompt is too long');
+          return true;
+        });
+        assert.equal(chatCalls.length, 1);
+        assert.deepEqual(waits, []);
+        assert.deepEqual(retries, []);
+        assert.deepEqual(
+          logRecords.map(({ type, data }) => [ type, data.code, data.action ]),
+          [ [ 'failure', 'aiContextOverflow', 'stop' ] ]
+        );
+      });
+
       it('records exhausted attempts as the stop reason', async function() {
         const saved = apos.ai.options.retryAttempts;
         try {
@@ -1796,6 +2100,10 @@ describe('AI generate', function() {
           ],
           finishReason: 'stop',
           usage: {
+            inputTokens: 6,
+            outputTokens: 8
+          },
+          lastStepUsage: {
             inputTokens: 6,
             outputTokens: 8
           },

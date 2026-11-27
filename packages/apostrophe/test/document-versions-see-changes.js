@@ -520,6 +520,46 @@ describe('Document Versions draft changes', function () {
       assert.equal(deleted._changedWithAi, 'assisted');
       assert.equal(doc.aposMeta.title['@apostrophecms/document-versions:ai'], 'changed');
     });
+
+    it('should compare a version with the draft, crediting those after', async function () {
+      const [ byAnn ] = records;
+      const { rows, baseline } = await apos.docVersions
+        .getDraftChanges(ann(), draft._id, { since: byAnn._id });
+
+      assert.deepEqual(baseline, {
+        kind: 'version',
+        versionId: byAnn._id,
+        at: byAnn.updatedAt || byAnn.createdAt
+      });
+      assert.equal(rowAt(rows, ...row0, 'title'), undefined);
+      assert.equal(rowAt(rows, ...row0, 'body'), undefined);
+      const title = rowAt(rows, 'title');
+      assert.equal(title.old, 'Ann title');
+      assert.equal(title.new, 'Bob title');
+      assert.deepEqual(authorsOf(title), [ 'bob' ]);
+      assert.equal(title.ai, 'changed');
+      assert.ok(rowAt(rows, 'section', 'title').patchKey);
+    });
+
+    it('should list only what changed ahead of the newest version since it', async function () {
+      const { rows } = await apos.docVersions.getDraftChanges(ann(), draft._id, {
+        since: records.at(-1)._id
+      });
+
+      assert.deepEqual(rows.map(row => namesOf(row).join('/')), [ 'count' ]);
+      assert.deepEqual(rows[0].authors, []);
+    });
+
+    it('should refuse a version that is not of this document, and a malformed one', async function () {
+      await assert.rejects(
+        apos.docVersions.getDraftChanges(ann(), draft._id, { since: 'nosuchversion' }),
+        { name: 'notfound' }
+      );
+      await assert.rejects(
+        apos.docVersions.getDraftChanges(ann(), draft._id, { since: '<bad>' }),
+        { name: 'invalid' }
+      );
+    });
   });
 
   it('should credit no one when no version was recorded since the publication', async function () {
@@ -555,6 +595,41 @@ describe('Document Versions draft changes', function () {
     assert.equal(rowAt(rows, 'count').old, apos.nested.newInstance().count);
     assert.equal(rowAt(rows, 'count').ai, 'changed');
     assert.deepEqual(authorsOf(rowAt(rows, 'count')), [ 'bob' ]);
+  });
+
+  describe('a save holding fields AI wrote', function () {
+    function annWithAi(aiFields) {
+      return Object.assign(ann(), { aposAiFields: aiFields });
+    }
+
+    it('should mark the fields AI wrote AI\'s, the rest of the save the person\'s', async function () {
+      let draft = await insertPublished(apos.nested, nestedDoc());
+      draft.title = 'By AI';
+      draft.subtitle = 'By hand';
+      draft = await saveAs(apos.nested, annWithAi([ 'title' ]), draft);
+
+      const { rows, doc } = await apos.docVersions.getDraftChanges(ann(), draft._id, {
+        annotate: true
+      });
+      assert.equal(rowAt(rows, 'title').ai, 'changed');
+      assert.equal(rowAt(rows, 'subtitle').ai, false);
+      assert.deepEqual(authorsOf(rowAt(rows, 'title')), [ 'ann' ]);
+      assert.equal(doc.aposMeta.title['@apostrophecms/document-versions:ai'], 'changed');
+      assert.equal(doc.aposMeta.subtitle['@apostrophecms/document-versions:ai'], undefined);
+    });
+
+    it('should mark them in a document never published', async function () {
+      const draft = await apos.nested.insert(annWithAi([ 'title' ]), {
+        ...apos.nested.newInstance(),
+        title: 'By AI',
+        subtitle: 'By hand'
+      });
+
+      const { rows, baseline } = await apos.docVersions.getDraftChanges(ann(), draft._id);
+      assert.deepEqual(baseline, { kind: 'default' });
+      assert.equal(rowAt(rows, 'title').ai, 'changed');
+      assert.equal(rowAt(rows, 'subtitle').ai, false);
+    });
   });
 
   it('should compare a document never published with a new one as a save stores it', async function () {
@@ -1366,7 +1441,7 @@ describe('Document Versions draft changes', function () {
       assert.equal(rowAt(rows, 'main', 'link').restore, undefined);
     });
 
-    it('should neither restore nor edit a read only field, and edit the order of an array whole, never restore it', async function () {
+    it('should neither restore nor edit a read only field, and edit the order of an array whole', async function () {
       const { draft } = await edited({
         items: [ 'one', 'two' ].map(_id => ({
           _id,
@@ -1385,7 +1460,56 @@ describe('Document Versions draft changes', function () {
       assert.equal(rowAt(rows, 'items').kind, 'array');
       assert.equal(rowAt(rows, 'items').patchKey, 'items');
       assert.equal(rowAt(rows, 'items').editable, true);
-      assert.equal(rowAt(rows, 'items').restore, undefined);
+    });
+
+    it('should put the order of an array back, an item added since staying where it is', async function () {
+      const item = _id => ({
+        _id,
+        label: _id
+      });
+      const { draft, rows } = await edited({
+        items: [ 'one', 'two', 'three' ].map(item)
+      }, draft => {
+        const [ one, two, three ] = draft.items;
+        draft.items = [ two, item('new'), one, three ];
+      });
+      const { restore } = rowAt(rows, 'items');
+      const labels = async () => (await stored(draft._id)).items.map(item => item.label);
+
+      assert.deepEqual(restore.patch.items.map(item => item._id), [ 'one', 'new', 'two', 'three' ]);
+      await apply(draft._id, restore.patch);
+      assert.deepEqual(await labels(), [ 'one', 'new', 'two', 'three' ]);
+      assert.equal(rowAt(await rowsOf(draft._id), 'items'), undefined);
+      assert.equal(rowAt(await rowsOf(draft._id), 'items', 'new').type, 'added');
+
+      await apply(draft._id, restore.inverse);
+      assert.deepEqual(await labels(), [ 'two', 'new', 'one', 'three' ]);
+    });
+
+    it('should put the order of an area back at its _id, and not that of layout columns', async function () {
+      const { draft, rows } = await edited({
+        main: area('main1', [
+          richText('a', '<p>A</p>'),
+          richText('b', '<p>B</p>'),
+          layout('lay', [ column('one', 1, 'One'), column('two', 7, 'Two') ])
+        ])
+      }, draft => {
+        const [ a, b, lay ] = draft.main.items;
+        draft.main.items = [ lay, a, richText('d', '<p>D</p>'), b ];
+        lay.columns.items.reverse();
+      });
+      const { restore } = rowAt(rows, 'main');
+
+      assert.equal(rowAt(rows, 'main').patchKey, undefined);
+      assert.deepEqual(Object.keys(restore.patch), [ '@main1' ]);
+      await apply(draft._id, restore.patch);
+      assert.deepEqual(idsOf((await stored(draft._id)).main), [ 'a', 'b', 'd', 'lay' ]);
+      assert.equal(rowAt(await rowsOf(draft._id), 'main'), undefined);
+
+      const columns = rowAt(rows, 'main', 'lay', 'columns');
+      assert.equal(columns.kind, 'area');
+      assert.equal(columns.restore, undefined);
+      assert.equal(columns.unrestorable, 'layout');
     });
 
     it('should neither restore nor edit for an editor a field the editor may not edit, and not restore a widget holding one', async function () {
@@ -1787,6 +1911,462 @@ describe('Document Versions draft changes', function () {
       ]) {
         assert.equal(rowAt(rows, ...names).contextual, undefined, names.join('/'));
       }
+    });
+
+    describe('guarded', function () {
+      // A published story changed by `edit`, and its rows as a change log
+      // keeps them, stored as plain data
+      async function recorded(doc, edit) {
+        const inserted = await insertPublished(apos.modules.story, {
+          title: 'Story',
+          ...doc
+        });
+        // Converted, as every save of an editor is
+        await apply(inserted._id, Object.fromEntries(Object.keys(doc).map(name => {
+          return [ name, inserted[name] ];
+        })));
+        const draft = await apos.modules.story
+          .find(ann(), { _id: inserted._id })
+          .toObject();
+        const before = await stored(draft._id);
+        edit(draft);
+        await saveAs(apos.modules.story, ann(), draft);
+        const rows = await apos.docVersions.getChangeRowsBetween(
+          ann(),
+          before,
+          await stored(draft._id)
+        );
+        return {
+          _id: draft._id,
+          rows: JSON.parse(JSON.stringify(rows))
+        };
+      }
+
+      // Someone's edit of the draft since
+      async function later(_id, edit) {
+        const draft = await apos.modules.story.find(ann(), { _id }).toObject();
+        edit(draft);
+        return saveAs(apos.modules.story, ann(), draft);
+      }
+
+      async function checked(_id, rows) {
+        return apos.docVersions.checkChangeRows(ann(), await stored(_id), rows);
+      }
+
+      async function outcomesOf(_id, rows) {
+        return (await checked(_id, rows)).map(result => result.outcome);
+      }
+
+      function link(_id, items) {
+        return {
+          ...storyLink(_id, []),
+          inner: area(`${_id}-inner`, items)
+        };
+      }
+
+      it('should tell a row as the change left it from one reverted, edited or gone since', async function () {
+        const pinned = await apos.modules.story.insert(ann(), { title: 'Pinned' });
+        const other = await apos.modules.story.insert(ann(), { title: 'Other' });
+        const { _id, rows } = await recorded({
+          main: area('main1', [ 'a', 'b', 'c' ].map(id => richText(id, `<p>${id}</p>`))),
+          _stories: [ pinned ]
+        }, draft => {
+          draft.title = 'Edited';
+          for (const widget of draft.main.items) {
+            widget.content = widget.content.replace('</p>', ', edited</p>');
+          }
+          draft._stories = [ other ];
+        });
+        await later(_id, draft => {
+          const [ a, b ] = draft.main.items;
+          a.content = '<p>a</p>';
+          b.content = '<p>b, edited again</p>';
+          draft.main.items = [ a, b ];
+        });
+        await apos.doc.db.deleteMany({ aposDocId: pinned.aposDocId });
+
+        const picked = [ 'title', 'main/a', 'main/b', 'main/c', '_stories' ]
+          .map(names => rowAt(rows, ...names.split('/')));
+        const [ title, a, b, c, stories ] = await checked(_id, picked);
+        assert.deepEqual(title, {
+          outcome: 'clean',
+          restore: {
+            patch: { title: 'Story' },
+            inverse: { title: 'Edited' }
+          }
+        });
+        assert.deepEqual(a, { outcome: 'reverted' });
+        assert.deepEqual(b, { outcome: 'edited' });
+        assert.deepEqual(c, { outcome: 'gone' });
+        assert.deepEqual(stories, {
+          outcome: 'unrestorable',
+          reason: 'related'
+        });
+
+        await apply(_id, title.restore.patch);
+        assert.equal((await stored(_id)).title, 'Story');
+        assert.deepEqual(await outcomesOf(_id, [ picked[0] ]), [ 'reverted' ]);
+
+        await apos.doc.db.updateOne({ _id }, { $set: { archived: true } });
+        assert.deepEqual(await outcomesOf(_id, picked), picked.map(() => 'gone'));
+        const missing = await apos.docVersions.checkChangeRows(ann(), null, picked);
+        assert.deepEqual(missing.map(result => result.outcome), picked.map(() => 'gone'));
+      });
+
+      it('should not restore a value of an item no _id finds', async function () {
+        const { _id } = await recorded({}, draft => {
+          draft.title = 'Edited';
+        });
+        const doc = await stored(_id);
+        const rows = await apos.docVersions.getChangeRowsBetween(ann(), {
+          ...doc,
+          items: [ { label: 'one' } ]
+        }, {
+          ...doc,
+          items: [ { label: 'uno' } ]
+        });
+
+        assert.deepEqual(rows.map(namesOf), [ [ 'items', undefined, 'label' ] ]);
+        assert.deepEqual(await checked(_id, rows), [ {
+          outcome: 'unrestorable',
+          reason: 'id'
+        } ]);
+      });
+
+      it('should take out an added widget and put back a deleted one, never one the document holds elsewhere', async function () {
+        const { _id, rows } = await recorded({
+          main: area('main1', [
+            richText('a', '<p>A</p>'),
+            richText('b', '<p>B</p>'),
+            link('holder', [])
+          ])
+        }, draft => {
+          draft.main.items.splice(1, 1, richText('n', '<p>N</p>'));
+        });
+        const added = rowAt(rows, 'main', 'n');
+        const deleted = rowAt(rows, 'main', 'b');
+
+        const [ take ] = await checked(_id, [ added ]);
+        assert.equal(take.outcome, 'clean');
+        await apply(_id, take.restore.patch);
+        const [ put ] = await checked(_id, [ deleted ]);
+        assert.equal(put.outcome, 'clean');
+        await apply(_id, put.restore.patch);
+        assert.deepEqual(idsOf((await stored(_id)).main), [ 'a', 'b', 'holder' ]);
+        assert.deepEqual(await outcomesOf(_id, [ added, deleted ]), [ 'reverted', 'reverted' ]);
+
+        // `b` in another area, as by a cut and paste
+        await later(_id, draft => {
+          const [ a, b, holder ] = draft.main.items;
+          holder.inner.items.push(b);
+          draft.main.items = [ a, holder ];
+        });
+        assert.deepEqual(await outcomesOf(_id, [ deleted ]), [ 'edited' ]);
+
+        // A widget the deleted one held, pasted elsewhere since
+        const nested = await recorded({
+          main: area('main1', [ link('outer', [ richText('x', '<p>X</p>') ]) ])
+        }, draft => {
+          draft.main.items = [];
+        });
+        await later(nested._id, draft => {
+          draft.main.items.push(richText('x', '<p>X</p>'));
+        });
+        assert.deepEqual(await outcomesOf(nested._id, nested.rows), [ 'edited' ]);
+      });
+
+      it('should put a reorder back while its items stand as the change left them', async function () {
+        const { _id, rows } = await recorded({
+          main: area('main1', [ 'a', 'b', 'c' ].map(id => richText(id, `<p>${id}</p>`))),
+          items: [ 'one', 'two' ].map(id => ({
+            _id: id,
+            label: id
+          }))
+        }, draft => {
+          draft.main.items.reverse();
+          draft.items.reverse();
+        });
+        const order = [ rowAt(rows, 'main'), rowAt(rows, 'items') ];
+        await later(_id, draft => {
+          draft.main.items.unshift(richText('d', '<p>d</p>'));
+          draft.items.reverse();
+        });
+
+        const [ main, items ] = await checked(_id, order);
+        assert.equal(items.outcome, 'reverted');
+        assert.equal(main.outcome, 'clean');
+        await apply(_id, main.restore.patch);
+        assert.deepEqual(idsOf((await stored(_id)).main), [ 'd', 'a', 'b', 'c' ]);
+        assert.deepEqual(await outcomesOf(_id, order), [ 'reverted', 'reverted' ]);
+
+        await later(_id, draft => {
+          const [ d, a, b, c ] = draft.main.items;
+          draft.main.items = [ d, c, a, b ];
+        });
+        assert.deepEqual(await outcomesOf(_id, order), [ 'edited', 'reverted' ]);
+      });
+
+      it('should move a widget back with its later edits, between areas one inside the other or apart', async function () {
+        const { _id, rows } = await recorded({
+          main: area('main1', [
+            richText('a', '<p>A</p>'),
+            link('one', [ richText('b', '<p>B</p>') ]),
+            link('two', [])
+          ])
+        }, draft => {
+          const [ a, one, two ] = draft.main.items;
+          one.inner.items.push(a);
+          two.inner.items.push(one.inner.items.shift());
+          draft.main.items = [ one, two ];
+        });
+        assert.deepEqual(rows.map(row => [ row.type, namesOf(row).join('/') ]), [
+          [ 'moved', 'main/one/inner/a' ],
+          [ 'moved', 'main/two/inner/b' ]
+        ]);
+        assert.deepEqual(namesOf({ path: rows[0].from }), [ 'main', 'a' ]);
+        await later(_id, draft => {
+          const [ one, two ] = draft.main.items;
+          one.inner.items[0].content = '<p>A, later</p>';
+          two.inner.items[0].content = '<p>B, later</p>';
+        });
+
+        const [ a ] = await checked(_id, [ rows[0] ]);
+        assert.equal(a.outcome, 'clean');
+        // The area it came from holds the one it went to
+        assert.deepEqual(Object.keys(a.restore.patch), [ '@main1' ]);
+        await apply(_id, a.restore.patch);
+        const [ b ] = await checked(_id, [ rows[1] ]);
+        assert.equal(b.outcome, 'clean');
+        assert.deepEqual(Object.keys(b.restore.patch).sort(), [ '@one-inner', '@two-inner' ]);
+        await apply(_id, b.restore.patch);
+
+        const { main } = await stored(_id);
+        assert.deepEqual(idsOf(main), [ 'a', 'one', 'two' ]);
+        assert.equal(main.items[0].content, '<p>A, later</p>');
+        assert.deepEqual(idsOf(main.items[1].inner), [ 'b' ]);
+        assert.equal(main.items[1].inner.items[0].content, '<p>B, later</p>');
+        assert.deepEqual(idsOf(main.items[2].inner), []);
+        assert.deepEqual(await outcomesOf(_id, rows), [ 'reverted', 'reverted' ]);
+
+        await later(_id, draft => {
+          const [ widget, one, two ] = draft.main.items;
+          two.inner.items.push(widget);
+          draft.main.items = [ one, two ];
+        });
+        assert.deepEqual(await outcomesOf(_id, [ rows[0] ]), [ 'edited' ]);
+      });
+
+      it('should put a layout back whole, only as the change left it', async function () {
+        const { _id, rows } = await recorded({
+          main: area('main1', [
+            layout('lay', [ column('one', 1, 'One'), column('two', 7, 'Two') ])
+          ])
+        }, draft => {
+          const [ lay ] = draft.main.items;
+          lay.columns.items = [ lay.columns.items[0], column('three', 7, 'Three') ];
+          lay.columns.items[0].content.items[0].content = '<p>One, edited</p>';
+        });
+        assert.deepEqual(rows.map(row => [ row.kind, namesOf(row).join('/') ]), [
+          [ 'layout', 'main/lay' ]
+        ]);
+
+        const [ lay ] = await checked(_id, rows);
+        assert.equal(lay.outcome, 'clean');
+        assert.deepEqual(Object.keys(lay.restore.patch), [ '@lay' ]);
+        await apply(_id, lay.restore.patch);
+        const { main } = await stored(_id);
+        assert.deepEqual(idsOf(main.items[0].columns), [ 'one', 'two' ]);
+        assert.equal(main.items[0].columns.items[0].content.items[0].content, '<p>One</p>');
+        assert.deepEqual(await outcomesOf(_id, rows), [ 'reverted' ]);
+
+        await later(_id, draft => {
+          draft.main.items[0].columns.items[1].content.items[0].content = '<p>Two, later</p>';
+        });
+        assert.deepEqual(await outcomesOf(_id, rows), [ 'edited' ]);
+      });
+
+      it('should move a widget out of a layout column, and put back a layout a move left', async function () {
+        const { _id, rows } = await recorded({
+          main: area('main1', [
+            richText('a', '<p>A</p>'),
+            layout('lay', [ column('one', 1, 'One') ])
+          ])
+        }, draft => {
+          const [ a, lay ] = draft.main.items;
+          lay.columns.items[0].content.items.push(a);
+          draft.main.items = [ lay ];
+        });
+        assert.deepEqual(rows.map(row => [ row.type, namesOf(row).join('/') ]), [
+          [ 'moved', 'main/lay/columns/one/content/a' ]
+        ]);
+        const [ moved ] = await checked(_id, rows);
+        assert.deepEqual(Object.keys(moved.restore.patch), [ '@main1' ]);
+        await apply(_id, moved.restore.patch);
+        let { main } = await stored(_id);
+        assert.deepEqual(idsOf(main), [ 'a', 'lay' ]);
+        assert.deepEqual(idsOf(main.items[1].columns.items[0].content), [ 'one-text' ]);
+
+        // A move into a layout whose columns changed too: the layout puts
+        // back its end, the deletion the other, never both
+        const crossed = await recorded({
+          main: area('main1', [
+            richText('a', '<p>A</p>'),
+            layout('lay', [ column('one', 1, 'One'), column('two', 7, 'Two') ])
+          ])
+        }, draft => {
+          const [ a, lay ] = draft.main.items;
+          lay.columns.items[0].content.items.push(a);
+          lay.columns.items.pop();
+          draft.main.items = [ lay ];
+        });
+        assert.deepEqual(crossed.rows.map(row => [ row.kind, row.type, namesOf(row).join('/') ]), [
+          [ 'widget', 'deleted', 'main/a' ],
+          [ 'layout', 'modified', 'main/lay' ]
+        ]);
+        const [ deletion, layoutRow ] = await checked(crossed._id, crossed.rows);
+        assert.equal(deletion.outcome, 'edited');
+        assert.equal(layoutRow.outcome, 'clean');
+        await apply(crossed._id, layoutRow.restore.patch);
+        const [ again ] = await checked(crossed._id, [ crossed.rows[0] ]);
+        assert.equal(again.outcome, 'clean');
+        await apply(crossed._id, again.restore.patch);
+        ({ main } = await stored(crossed._id));
+        assert.deepEqual(idsOf(main), [ 'a', 'lay' ]);
+        assert.deepEqual(idsOf(main.items[1].columns), [ 'one', 'two' ]);
+        assert.deepEqual(idsOf(main.items[1].columns.items[0].content), [ 'one-text' ]);
+      });
+
+      describe('parts', function () {
+        // A published story changed by `edit`: its draft as stored before and
+        // after
+        async function changed(doc, edit) {
+          const { _id } = await recorded(doc, () => {});
+          const before = await stored(_id);
+          await later(_id, edit);
+          return {
+            _id,
+            before,
+            after: await stored(_id)
+          };
+        }
+
+        async function partsOf({ before, after }) {
+          return JSON.parse(JSON.stringify(
+            await apos.docVersions.getChangeParts(ann(), before, after)
+          ));
+        }
+
+        // Writes one value of each part, as a page's PATCH does
+        async function write(_id, parts, side) {
+          for (const part of parts) {
+            await apply(_id, { [part.key]: part[side] });
+          }
+        }
+
+        async function sameAs(_id, doc) {
+          const rows = await apos.docVersions
+            .getChangeRowsBetween(ann(), doc, await stored(_id));
+          return rows.length === 0;
+        }
+
+        it('should name each part a change made, to be written whole, the outer of two', async function () {
+          const change = await changed({
+            main: area('main1', [
+              richText('a', '<p>A</p>'),
+              link('one', [ richText('b', '<p>B</p>') ]),
+              link('two', [])
+            ])
+          }, draft => {
+            const [ a, one, two ] = draft.main.items;
+            draft.title = 'Edited';
+            a.content = '<p>A, edited</p>';
+            one.inner.items[0].content = '<p>B, edited</p>';
+            two.inner.items.push(richText('n', '<p>New</p>'));
+          });
+          const parts = await partsOf(change);
+          assert.deepEqual(parts.map(part => part.key), [ 'title', '@a', '@b', '@two-inner' ]);
+          assert.deepEqual(parts[0], {
+            key: 'title',
+            before: 'Story',
+            after: 'Edited'
+          });
+          assert.equal(parts[1].before.content, '<p>A</p>');
+          assert.equal(parts[1].after.content, '<p>A, edited</p>');
+          assert.deepEqual(idsOf(parts[3].before), []);
+          assert.deepEqual(idsOf(parts[3].after), [ 'n' ]);
+
+          const {
+            _id, before, after
+          } = change;
+          assert.equal(apos.docVersions.isAsPatched(ann(), after, parts.map(part => ({
+            [part.key]: part.after
+          }))), true);
+          assert.equal(apos.docVersions.isAsPatched(ann(), after, [ {
+            [parts[1].key]: parts[1].before
+          } ]), false);
+          await write(_id, parts, 'before');
+          assert(await sameAs(_id, before));
+          await write(_id, parts, 'after');
+          assert(await sameAs(_id, after));
+        });
+
+        it('should write a reorder, a move and a layout through the area or widget holding them', async function () {
+          const moved = await changed({
+            main: area('main1', [
+              richText('a', '<p>A</p>'),
+              link('one', [ richText('b', '<p>B</p>') ]),
+              layout('lay', [ column('c1', 1, 'One'), column('c2', 7, 'Two') ])
+            ])
+          }, draft => {
+            const [ a, one, lay ] = draft.main.items;
+            one.inner.items.push(a);
+            lay.columns.items = [ lay.columns.items[0] ];
+            draft.main.items = [ lay, one ];
+          });
+          const parts = await partsOf(moved);
+          assert.deepEqual(parts.map(part => part.key), [ '@main1' ]);
+          await write(moved._id, parts, 'before');
+          assert(await sameAs(moved._id, moved.before));
+
+          const laidOut = await changed({
+            main: area('main2', [
+              richText('d', '<p>D</p>'),
+              layout('lay2', [ column('c3', 1, 'One'), column('c4', 7, 'Two') ])
+            ])
+          }, draft => {
+            const [ , lay ] = draft.main.items;
+            // As a save converts it
+            lay.columns.items = [ lay.columns.items[0], {
+              ...column('c5', 7, 'Five'),
+              showTablet: false,
+              showMobile: false
+            } ];
+          });
+          const layoutParts = await partsOf(laidOut);
+          assert.deepEqual(layoutParts.map(part => part.key), [ '@lay2' ]);
+          await write(laidOut._id, layoutParts, 'before');
+          assert(await sameAs(laidOut._id, laidOut.before));
+          await write(laidOut._id, layoutParts, 'after');
+          assert(await sameAs(laidOut._id, laidOut.after));
+        });
+
+        it('should tell a document as patches leave it only for values it can read', async function () {
+          const { _id, after } = await changed({
+            main: area('main3', [ richText('e', '<p>E</p>') ])
+          }, draft => {
+            draft.title = 'Edited';
+          });
+          const isAs = patches => apos.docVersions.isAsPatched(ann(), after, patches);
+          assert.equal(isAs([ { title: 'Edited' } ]), true);
+          assert.equal(isAs([ { title: 'Story' } ]), false);
+          // In order, as a PATCH applies them
+          assert.equal(isAs([ { title: 'Story' }, { title: 'Edited' } ]), true);
+          assert.equal(isAs([ { '@e.content': '<p>E</p>' } ]), true);
+          assert.equal(isAs([ { '@gone': richText('gone', '<p>Gone</p>') } ]), false);
+          assert.equal(isAs([ { $push: { '@main3.items': { $each: [] } } } ]), null);
+          assert.equal((await stored(_id)).title, 'Edited');
+        });
+      });
     });
 
     describe('over HTTP', function () {

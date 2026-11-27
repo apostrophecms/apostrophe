@@ -13,15 +13,22 @@ module.exports = (self) => {
     throw self.apos.error('invalid', message);
   }
 
+  function checkUsageMetadata(usageMetadata) {
+    if (usageMetadata !== undefined && !isObject(usageMetadata)) {
+      invalid('"usageMetadata" must be an object');
+    }
+  }
+
   return {
     // Parse and validate generate's `(stringOrOptions, options)`
     // arguments into the canonical options object every later stage
     // reads: `{ system, messages, tools, maxSteps, pending,
     // pendingCalls, toolInput, schema, validateObject, effort,
     // provider, model, reasoning, maxTokens, cache, signal, onMessage,
-    // onToolCall }`, with a positional prompt string appended to
-    // `messages` as the final user turn, `tools` names resolved to
-    // their activated definitions and unset options left undefined.
+    // onToolCall, onRetry, betweenSteps, usageMetadata }`, with a positional prompt
+    // string appended to `messages` as the final user turn, `tools`
+    // names resolved to their activated definitions and unset options
+    // left undefined.
     // `pendingCalls` is computed, not an option: the transcript's
     // trailing unanswered tool calls in model order, present only
     // under pending: 'execute' — the default refuses the shape with a
@@ -52,8 +59,8 @@ module.exports = (self) => {
       }
       const {
         system, effort, provider, model, reasoning,
-        maxTokens, cache = 'short', signal, onMessage, onToolCall,
-        pending = 'refuse', toolInput
+        maxTokens, cache = 'short', signal, onMessage, onToolCall, onRetry,
+        betweenSteps, pending = 'refuse', toolInput, usageMetadata
       } = options;
       for (const [ name, value ] of Object.entries({
         system,
@@ -78,12 +85,15 @@ module.exports = (self) => {
       }
       for (const [ name, hook ] of Object.entries({
         onMessage,
-        onToolCall
+        onToolCall,
+        onRetry,
+        betweenSteps
       })) {
         if (hook !== undefined && typeof hook !== 'function') {
           invalid(`"${name}" must be a function`);
         }
       }
+      checkUsageMetadata(usageMetadata);
       if (!PENDING_POLICIES.includes(pending)) {
         invalid(`"pending" must be ${oneOf(PENDING_POLICIES)}`);
       }
@@ -150,7 +160,10 @@ module.exports = (self) => {
         cache,
         signal,
         onMessage,
-        onToolCall
+        onToolCall,
+        onRetry,
+        betweenSteps,
+        usageMetadata
       };
 
       // The tools option → the activated definitions it names
@@ -348,6 +361,27 @@ module.exports = (self) => {
               text: part.text
             });
           }
+          if (part.type === 'document') {
+            const document = part.document;
+            // Which types a provider reads is its own answer, not ours
+            if (!isObject(document) || typeof document.data !== 'string' ||
+              !document.data || typeof document.mediaType !== 'string' ||
+              !document.mediaType) {
+              invalid(`${partName}.document must be an object like { data, mediaType, name? }`);
+            }
+            if (document.name !== undefined &&
+              (typeof document.name !== 'string' || !document.name)) {
+              invalid(`${partName}.document.name must be a non-empty string`);
+            }
+            return withDialect(part, {
+              type: 'document',
+              document: {
+                data: document.data,
+                mediaType: document.mediaType,
+                ...(document.name !== undefined && { name: document.name })
+              }
+            });
+          }
           // image, the only remaining type
           const image = part.image;
           if (isObject(image) && typeof image.url === 'string') {
@@ -410,7 +444,7 @@ module.exports = (self) => {
         }
       }
       const {
-        count = 1, aspect, quality, provider, model, signal
+        count = 1, aspect, quality, provider, model, signal, usageMetadata
       } = options;
       if (!Number.isInteger(count) || count < 1) {
         invalid('"count" must be a positive integer');
@@ -439,6 +473,7 @@ module.exports = (self) => {
       if (signal !== undefined && !(signal instanceof AbortSignal)) {
         invalid('"signal" must be an AbortSignal');
       }
+      checkUsageMetadata(usageMetadata);
       return {
         prompt,
         count,
@@ -447,7 +482,8 @@ module.exports = (self) => {
         images: imageSources(options.images),
         provider,
         model,
-        signal
+        signal,
+        usageMetadata
       };
 
       // The images option → normalized source refs, or undefined when

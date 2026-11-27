@@ -4,14 +4,32 @@ const { klona } = require('klona');
 const { stripIndents } = require('common-tags');
 const joinr = require('./joinr');
 const { finalize, consultProbe } = require('./extract.js');
+const { dropPathOf, relationshipIds } = require('./drops.js');
 
 const dateRegex = /^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/;
 
 module.exports = (self) => {
   self.addFieldType({
     name: 'area',
-    async convert(req, field, data, destination, { fetchRelationships = true } = {}) {
-      const options = { fetchRelationships };
+    async convert(
+      req,
+      field,
+      data,
+      destination,
+      {
+        fetchRelationships = true,
+        drops,
+        dropPath
+      } = {}
+    ) {
+      const options = {
+        fetchRelationships,
+        existingItems: destination[field.name]?.items
+      };
+      if (drops) {
+        options.drops = drops;
+        options.dropPath = `${dropPathOf(dropPath, field.name)}.items`;
+      }
       const _id = self.apos.launder.id(
         data[field.name] && data[field.name]._id
       ) || self.apos.util.generateId();
@@ -246,6 +264,10 @@ module.exports = (self) => {
     },
     extract(req, field, value) {
       return richTextManager().isEmptyRichText(value) ? [] : [ { text: value } ];
+    },
+    // The sanitize-html options the field is saved with: the markup it keeps
+    getSanitizeHtmlOptions(field) {
+      return richTextManager().getSanitizeHtmlOptions(field.options || {});
     },
     convert(req, field, data, destination) {
       const manager = richTextManager();
@@ -589,9 +611,23 @@ module.exports = (self) => {
   self.addFieldType({
     name: 'select',
     dynamicChoices: true,
-    async convert(req, field, data, destination, { ancestors = [] } = {}) {
+    async convert(req, field, data, destination, {
+      ancestors = [], drops, dropPath
+    } = {}) {
       const choices = await self.getChoices(req, field, [ ...ancestors, destination ]);
       destination[field.name] = self.apos.launder.select(data[field.name], choices);
+      // A lossless save hears of a value it gave that is none of the choices
+      const given = data[field.name];
+      const blank = (given == null) || (given === '');
+      if (drops && !blank && (String(destination[field.name]) !== String(given))) {
+        drops.push({
+          path: dropPathOf(dropPath, field.name),
+          reason: 'invalid',
+          message: `Not one of the choices: ${
+            choices.map(choice => JSON.stringify(choice.value)).join(', ')
+          }.`
+        });
+      }
     },
     index: function (value, field, texts) {
       const silent = field.silent === undefined ? true : field.silent;
@@ -1002,7 +1038,7 @@ module.exports = (self) => {
   self.addFieldType({
     name: 'range',
     vueComponent: 'AposInputRange',
-    async convert(req, field, data, destination) {
+    async convert(req, field, data, destination, { drops, dropPath } = {}) {
       destination[field.name] = self.apos.launder.float(
         data[field.name],
         field.def,
@@ -1029,6 +1065,14 @@ module.exports = (self) => {
         data[field.name] > field.max
       ) {
         destination[field.name] = null;
+        // A lossless save hears of a number it gave outside the range
+        if (drops && !blank) {
+          drops.push({
+            path: dropPathOf(dropPath, field.name),
+            reason: 'invalid',
+            message: `Outside the range ${field.min} to ${field.max}.`
+          });
+        }
       }
     },
     validate: function (field, options, warn, fail) {
@@ -1063,7 +1107,9 @@ module.exports = (self) => {
       {
         fetchRelationships = true,
         ancestors = [],
-        rootConvert = true
+        rootConvert = true,
+        drops,
+        dropPath
       } = {}
     ) {
       const schema = field.schema;
@@ -1073,10 +1119,13 @@ module.exports = (self) => {
       }
       const results = [];
       if (field.limit && data.length > field.limit) {
+        if (drops) {
+          dropOverLimit();
+        }
         data = data.slice(0, field.limit);
       }
       const errors = [];
-      for (const datum of data) {
+      for (const [ index, datum ] of data.entries()) {
         const _id = self.apos.launder.id(datum._id) || self.apos.util.generateId();
         const [ found ] = destination[field.name]
           ?.filter?.(item => item._id === _id) || [];
@@ -1090,7 +1139,9 @@ module.exports = (self) => {
           const options = {
             fetchRelationships,
             ancestors: [ ...ancestors, destination ],
-            rootConvert
+            rootConvert,
+            drops,
+            dropPath: drops && `${dropPathOf(dropPath, field.name)}.${index}`
           };
           await self.convert(req, schema, datum, result, options);
         } catch (e) {
@@ -1130,6 +1181,27 @@ module.exports = (self) => {
       }
       if (errors.length) {
         throw errors;
+      }
+      // Input that grew the array past its limit loses something it brought,
+      // whichever items are cut. Otherwise the array was already too long,
+      // and the items cut are stored ones
+      function dropOverLimit() {
+        const path = dropPathOf(dropPath, field.name);
+        const stored = destination[field.name];
+        if (data.length > (Array.isArray(stored) ? stored.length : 0)) {
+          drops.push({
+            path,
+            reason: 'limit'
+          });
+          return;
+        }
+        for (let i = field.limit; i < data.length; i++) {
+          drops.push({
+            path: `${path}.${i}`,
+            reason: 'limit',
+            ...(((typeof data[i]?._id) === 'string') && { _id: data[i]._id })
+          });
+        }
       }
     },
     isEmpty: function (field, value) {
@@ -1198,7 +1270,9 @@ module.exports = (self) => {
         fetchRelationships = true,
         ancestors = {},
         rootConvert = true,
-        doc = {}
+        doc = {},
+        drops,
+        dropPath
       } = {}
     ) {
       data = data[field.name];
@@ -1211,7 +1285,9 @@ module.exports = (self) => {
       const options = {
         fetchRelationships,
         ancestors: [ ...ancestors, destination ],
-        rootConvert
+        rootConvert,
+        drops,
+        dropPath: drops && dropPathOf(dropPath, field.name)
       };
       if (data == null || typeof data !== 'object' || Array.isArray(data)) {
         data = {};
@@ -1314,7 +1390,9 @@ module.exports = (self) => {
       destination,
       {
         fetchRelationships = true,
-        rootConvert = true
+        rootConvert = true,
+        drops,
+        dropPath
       } = {}
     ) {
 
@@ -1336,7 +1414,20 @@ module.exports = (self) => {
         false;
 
       if (!can) {
-        // Silently leave the relationship alone
+        // Leave the relationship alone, recording input that would change it
+        if (
+          drops &&
+          _.has(data, field.name) &&
+          !_.isEqual(
+            relationshipIds(data[field.name]),
+            relationshipIds(destination[field.name])
+          )
+        ) {
+          drops.push({
+            path: dropPathOf(dropPath, field.name),
+            reason: 'forbidden'
+          });
+        }
         return;
       }
 
@@ -1414,7 +1505,17 @@ module.exports = (self) => {
           }
         });
       }
+      const path = drops && dropPathOf(dropPath, field.name);
       if (!clauses.length) {
+        // Nothing in the input could name a document
+        if (drops) {
+          for (const index of input.keys()) {
+            drops.push({
+              path: `${path}.${index}`,
+              reason: 'invalid'
+            });
+          }
+        }
         destination[field.name] = [];
       } else {
         const results = await manager
@@ -1424,16 +1525,27 @@ module.exports = (self) => {
         // Must maintain input order. Also discard things not actually found in
         // the db
         const actualDocs = [];
-        for (const item of input) {
+        for (const [ index, item ] of input.entries()) {
           if ((typeof item) === 'string') {
             const result = results
               .find(result => (result.title === item) || (result._id === item));
             if (result) {
               actualDocs.push(result);
+            } else {
+              drops?.push({
+                path: `${path}.${index}`,
+                reason: 'notFound'
+              });
             }
           } else if ((item && (typeof item._id === 'string'))) {
             const result = results.find(doc => (doc._id === item._id));
-            if (result) {
+            if (!result) {
+              drops?.push({
+                path: `${path}.${index}`,
+                reason: 'notFound',
+                _id: item._id
+              });
+            } else {
               if (field.schema) {
                 const destArray = Array.isArray(destination[field.name])
                   ? destination[field.name]
@@ -1449,12 +1561,23 @@ module.exports = (self) => {
                     field.schema,
                     item._fields || {},
                     result._fields,
-                    options
+                    drops
+                      ? {
+                        ...options,
+                        drops,
+                        dropPath: `${path}.${index}._fields`
+                      }
+                      : options
                   );
                 }
               }
               actualDocs.push(result);
             }
+          } else {
+            drops?.push({
+              path: `${path}.${index}`,
+              reason: 'invalid'
+            });
           }
         }
         destination[field.name] = actualDocs;

@@ -13,9 +13,22 @@
         v-for="item in itemsWithKeys"
         :key="item.__key"
         class="apos-media-manager-display__cell"
-        :class="{'apos-is-selected': checked.includes(item._id)}"
+        :class="{
+          'apos-is-selected': checked.includes(item._id),
+          'apos-is-busy': outsideStates[item._id]?.busy
+        }"
         :style="getCellStyles(item)"
+        :aria-busy="outsideStates[item._id]?.busy ? 'true' : null"
+        :data-apos-outside="getOutsideState(item._id)"
       >
+        <transition name="apos-media-manager-display__ai-mark">
+          <span
+            v-if="outsideStates[item._id]"
+            class="apos-media-manager-display__ai-mark"
+          >
+            <AposAiMark :busy="!!outsideStates[item._id].busy" />
+          </span>
+        </transition>
         <div class="apos-media-manager-display__checkbox">
           <AposCheckbox
             v-show="item._id !== 'placeholder' && !options.hideCheckboxes"
@@ -140,6 +153,14 @@ export default {
     isScrollLoading: {
       type: Boolean,
       default: false
+    },
+    // Images written from outside, such as by the assistant, by `_id`:
+    // `{ busy, edited }`
+    outsideStates: {
+      type: Object,
+      default() {
+        return {};
+      }
     }
   },
   emits: [
@@ -191,6 +212,13 @@ export default {
     this.$emit('set-load-ref', this.$refs.scrollLoad);
   },
   methods: {
+    getOutsideState(_id) {
+      const state = this.outsideStates[_id];
+      if (!state) {
+        return null;
+      }
+      return state.busy ? 'busy' : 'edited';
+    },
     getCellStyles(item) {
       if (this.largePreview && item.dimensions) {
         return {
@@ -244,6 +272,22 @@ export default {
     }
 
     &.apos-is-hidden { visibility: hidden; }
+
+    // Written from outside: tinted while busy, the mark in the corner
+    &::after {
+      position: absolute;
+      inset: 0;
+      content: '';
+      border: 1px solid color-mix(in srgb, var(--a-primary) 22%, transparent);
+      background-color: color-mix(in srgb, var(--a-primary) 10%, transparent);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 300ms ease-out;
+    }
+
+    &.apos-is-busy::after {
+      opacity: 1;
+    }
 
     &:hover,
     &.apos-is-selected,
@@ -355,6 +399,40 @@ export default {
       align-items: center;
       justify-content: center;
       height: 40px;
+    }
+  }
+
+  .apos-media-manager-display__ai-mark {
+    z-index: $z-index-default;
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: grid;
+    width: 20px;
+    height: 20px;
+    place-items: center;
+    border-radius: var(--a-border-radius);
+    background-color: var(--a-background-primary);
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--a-black) 14%, transparent);
+  }
+
+  .apos-media-manager-display__ai-mark-enter-active,
+  .apos-media-manager-display__ai-mark-leave-active {
+    transition: opacity 200ms ease-out, transform 200ms ease-out;
+  }
+
+  .apos-media-manager-display__ai-mark-enter-from,
+  .apos-media-manager-display__ai-mark-leave-to {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  /* stylelint-disable-next-line media-feature-name-allowed-list */
+  @media (prefers-reduced-motion: reduce) {
+    .apos-media-manager-display__cell::after,
+    .apos-media-manager-display__ai-mark-enter-active,
+    .apos-media-manager-display__ai-mark-leave-active {
+      transition: none;
     }
   }
 </style>

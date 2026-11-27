@@ -142,7 +142,7 @@ module.exports = {
         // Login page
         [self.login()]: async (req, res) => {
           if (req.user) {
-            return res.redirect('/');
+            return res.redirect(self.getReturnTo(req) || '/');
           }
           req.scene = 'apos';
           req.aposLoginPage = true;
@@ -163,33 +163,7 @@ module.exports = {
           if (!req.user) {
             throw self.apos.error('forbidden', req.t('apostrophe:logOutNotLoggedIn'));
           }
-          if (req.token) {
-            await self.bearerTokens.removeOne({
-              userId: req.user._id,
-              _id: req.token
-            });
-          }
-          if (req.session) {
-            const destroySession = () => {
-              return require('util').promisify(function (callback) {
-                // Be thorough, nothing in the session potentially
-                // related to the login should survive logout
-                return req.session.destroy(callback);
-              })();
-            };
-            const cookie = req.session.cookie;
-            await destroySession();
-            // Session cookie expiration isn't automatic with
-            // `req.session.destroy`. Fix that to reduce challenges for those
-            // attempting to implement custom caching strategies at the edge https://github.com/expressjs/session/issues/241
-            const expireCookie = new expressSession.Cookie(cookie);
-            expireCookie.expires = new Date(0);
-            const name = self.apos.modules['@apostrophecms/express'].sessionOptions.name;
-            req.res.header('set-cookie', expireCookie.serialize(name, 'deleted'));
-
-            // TODO: get cookie name from config
-            req.res.cookie(`${self.apos.shortName}.${loggedInCookieName}`, 'false');
-          }
+          return self.logOut(req);
         },
         async whoami(req) {
           return self.getWhoami(req);
@@ -458,10 +432,19 @@ module.exports = {
         }
 
         return {
-          env: process.env.APOS_ENV_LABEL || self.options.environmentLabel || process.env.NODE_ENV || 'development',
-          name: (process.env.npm_package_name && process.env.npm_package_name.replace(/-/g, ' ')) || 'Apostrophe',
-          version: aposPackage.version || '3',
+          ...self.getProjectHeader(),
+          version: aposPackage.version || '4',
           requirementProps
+        };
+      },
+
+      // The project's name and environment label, as the login page's
+      // header shows them: `{ env, name }`. Other pages a user reaches
+      // while logging in, such as OAuth's approval page, show the same
+      getProjectHeader() {
+        return {
+          env: process.env.APOS_ENV_LABEL || self.options.environmentLabel || process.env.NODE_ENV || 'development',
+          name: (process.env.npm_package_name && process.env.npm_package_name.replace(/-/g, ' ')) || 'Apostrophe'
         };
       },
 
@@ -493,6 +476,32 @@ module.exports = {
         return self.options.loginUrl ? self.options.loginUrl : '/login';
       },
 
+      // Where to send the user after logging in: the login page's
+      // `returnTo` query parameter, when it's a path on this site, or null.
+      // Only site-relative paths are taken, so the login page can't be used
+      // to send people to another site. The path is without the prefix, as
+      // `res.redirect` takes it
+      getReturnTo(req) {
+        const value = req.query && req.query.returnTo;
+        if (
+          (typeof value !== 'string') ||
+          (value.length > 2000) ||
+          !value.startsWith('/') ||
+          // "//host" and "/\host" are other sites to a browser
+          /^\/[/\\]/.test(value) ||
+          // Browsers drop tabs and newlines, and treat \ as /
+          [ ...value ].some(char => (char < ' ') || (char === '\u007f') || (char === '\\'))
+        ) {
+          return null;
+        }
+        const base = 'http://apos.invalid';
+        const url = URL.parse(value, base);
+        if (!url || (url.origin !== base)) {
+          return null;
+        }
+        return `${url.pathname}${url.search}${url.hash}`;
+      },
+
       // The text direction of the login page for this request: the `direction`
       // option when set, otherwise the direction of the request locale.
       // Pages related to login (rendered with `sendPage` while
@@ -509,6 +518,40 @@ module.exports = {
       // Callers must treat the answer as best effort.
       getLoginUrl() {
         return self.options.localLogin ? self.login() : null;
+      },
+
+      // Ends the logged-in user's login: the bearer token the request came
+      // with, or the session, whose cookie is expired. The logout route,
+      // and anything else that must log the user out, such as the OAuth
+      // approval page's "Not you?"
+      async logOut(req) {
+        if (req.token) {
+          await self.bearerTokens.removeOne({
+            userId: req.user._id,
+            _id: req.token
+          });
+        }
+        if (req.session) {
+          const destroySession = () => {
+            return require('util').promisify(function (callback) {
+              // Be thorough, nothing in the session potentially
+              // related to the login should survive logout
+              return req.session.destroy(callback);
+            })();
+          };
+          const cookie = req.session.cookie;
+          await destroySession();
+          // Session cookie expiration isn't automatic with
+          // `req.session.destroy`. Fix that to reduce challenges for those
+          // attempting to implement custom caching strategies at the edge https://github.com/expressjs/session/issues/241
+          const expireCookie = new expressSession.Cookie(cookie);
+          expireCookie.expires = new Date(0);
+          const name = self.apos.modules['@apostrophecms/express'].sessionOptions.name;
+          req.res.header('set-cookie', expireCookie.serialize(name, 'deleted'));
+
+          // TODO: get cookie name from config
+          req.res.cookie(`${self.apos.shortName}.${loggedInCookieName}`, 'false');
+        }
       },
 
       // Set the `serializeUser` method of `passport` to serialize the
@@ -657,6 +700,9 @@ module.exports = {
           action: self.action,
           passwordResetEnabled: self.isPasswordResetEnabled(),
           direction: self.getDirection(req),
+          ...(req.aposLoginPage && self.getReturnTo(req) && {
+            returnTo: self.getReturnTo(req)
+          }),
           ...(req.user
             ? {
               user: {

@@ -2259,6 +2259,247 @@ describe('Document Versions', function () {
     });
   });
 
+  describe('fields AI wrote in a person\'s save', function() {
+    let apos;
+
+    before(async function() {
+      apos = await bootstrap({
+        modules: {
+          article: {},
+          'default-page': {},
+          'module-autopublish_true-versions_true': {}
+        }
+      });
+    });
+
+    after(async function() {
+      await destroy(apos);
+    });
+
+    beforeEach(async function() {
+      await cleanup(apos);
+    });
+
+    // Alice's save, AI having written `aiFields`; `explicit` starts a version
+    function aliceReq(aiFields, { explicit = false, ...options } = {}) {
+      return draftReqAs(apos, 'alice', {
+        ...(aiFields && { aposAiFields: aiFields }),
+        ...(explicit && { aposExplicitSave: true }),
+        ...options
+      });
+    }
+
+    function lists(versions) {
+      return versions.map(version => [ version.ai, version.aiFields ?? null ]);
+    }
+
+    it('should list them on a new version, those that changed only', async function() {
+      const draft = await apos.article.insert(aliceReq(), { title: 'First' });
+      await saveDraft(apos, aliceReq([ 'title', 'int' ], { explicit: true }), draft, {
+        title: 'By AI'
+      });
+      assert.deepEqual(lists(await timeline(apos, draft)), [
+        [ false, [ 'title' ] ],
+        [ false, null ]
+      ]);
+    });
+
+    it('should list none when the fields changed nothing', async function() {
+      const draft = await apos.article.insert(aliceReq(), { title: 'First' });
+      await saveDraft(apos, aliceReq([ 'int' ], { explicit: true }), draft, {
+        title: 'By hand'
+      });
+      assert.deepEqual(lists(await timeline(apos, draft)), [
+        [ false, null ],
+        [ false, null ]
+      ]);
+    });
+
+    it('should list them on a first version, against a new document', async function() {
+      const draft = await apos.article.insert(aliceReq([ 'title', 'int' ]), {
+        title: 'By AI'
+      });
+      assert.deepEqual(lists(await timeline(apos, draft)), [ [ false, [ 'title' ] ] ]);
+    });
+
+    it('should list an item written whole for a move it explains', async function() {
+      const widgets = [ 'w1', 'w2', 'w3' ].map(_id => ({
+        _id,
+        metaType: 'widget',
+        type: '@apostrophecms/rich-text',
+        content: `<p>${_id}</p>`
+      }));
+      const draft = await apos.article.insert(aliceReq(), {
+        title: 'First',
+        main: {
+          metaType: 'area',
+          items: widgets
+        }
+      });
+      const [ w1, w2, w3 ] = widgets;
+      await saveDraft(apos, aliceReq([ '@w3', '@w1' ], { explicit: true }), draft, {
+        main: {
+          ...draft.main,
+          items: [ w3, w1, w2 ]
+        }
+      });
+      const [ newest ] = await timeline(apos, draft);
+      assert.deepEqual(newest.aiFields, [ '@w3' ]);
+    });
+
+    it('should list none for a save with AI, whose version is AI\'s whole', async function() {
+      const draft = await apos.article.insert(aliceReq(), { title: 'First' });
+      await saveDraft(apos, aliceReq([ 'title' ], { aposAi: true }), draft, {
+        title: 'By AI'
+      });
+      assert.deepEqual(lists(await timeline(apos, draft)), [
+        [ true, null ],
+        [ false, null ]
+      ]);
+    });
+
+    it('should carry them when a save replaces the version', async function() {
+      const draft = await apos.article.insert(aliceReq(), { title: 'First' });
+      await saveDraft(apos, aliceReq([ 'title' ], { explicit: true }), draft, {
+        title: 'By AI'
+      });
+      await saveDraft(apos, aliceReq(), draft, { int: 5 });
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(lists(versions), [
+        [ false, [ 'title' ] ],
+        [ false, null ]
+      ]);
+      assert.equal(versions[0].doc.int, 5);
+    });
+
+    it('should drop a field the replacing save changed', async function() {
+      const draft = await apos.article.insert(aliceReq(), { title: 'First' });
+      await saveDraft(apos, aliceReq([ 'title' ], { explicit: true }), draft, {
+        title: 'By AI'
+      });
+      await saveDraft(apos, aliceReq(), draft, { title: 'By hand' });
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(lists(versions), [
+        [ false, null ],
+        [ false, null ]
+      ]);
+      assert.equal(versions[0].doc.title, 'By hand');
+    });
+
+    it('should add the replacing save\'s own', async function() {
+      const draft = await apos.article.insert(aliceReq(), { title: 'First' });
+      await saveDraft(apos, aliceReq([ 'title' ], { explicit: true }), draft, {
+        title: 'By AI'
+      });
+      await saveDraft(apos, aliceReq([ 'int' ]), draft, { int: 5 });
+      assert.deepEqual(lists(await timeline(apos, draft)), [
+        [ false, [ 'title', 'int' ] ],
+        [ false, null ]
+      ]);
+    });
+
+    it('should keep them on the version a publish promotes', async function() {
+      const draft = await apos.article.insert(aliceReq(), { title: 'First' });
+      const saved = await saveDraft(apos, aliceReq([ 'title' ], { explicit: true }), draft, {
+        title: 'By AI'
+      });
+      await apos.article.publish(aliceReq(), saved);
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(
+        versions.map(version => [ version.mode, version.aiFields ?? null ]),
+        [ [ 'published', [ 'title' ] ], [ 'draft', null ] ]
+      );
+    });
+
+    it('should list them on the publication of an autopublish type', async function() {
+      const manager = apos.modules['module-autopublish_true-versions_true'];
+      const draft = await manager.insert(aliceReq(), { title: 'First' });
+      await manager.update(aliceReq([ 'title' ]), {
+        ...draft,
+        title: 'By AI'
+      });
+      const versions = await timeline(apos, draft);
+      assert.deepEqual(
+        versions.map(version => [ version.mode, version.aiFields ?? null ]),
+        [ [ 'published', [ 'title' ] ], [ 'published', null ] ]
+      );
+    });
+
+    it('should read a version that lists them as made with AI, AI\'s rows at them only', async function() {
+      const req = aliceReq();
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await saveDraft(apos, aliceReq([ 'title' ], { explicit: true }), draft, {
+        title: 'By AI',
+        int: 5
+      });
+      const criteria = apos.docVersions.getTimelineCriteria(draft);
+
+      const { results } = await apos.docVersions.getTimelinePage(req, criteria);
+      assert.deepEqual(results.map(item => [ item.ai, item.aiFields ]), [
+        [ true, undefined ],
+        [ false, undefined ]
+      ]);
+      const one = await apos.docVersions.getOne(req, results[0]._id, { annotate: true });
+      assert.equal(one.ai, true);
+      assert.equal(one.aiFields, undefined);
+      assert.equal(one.doc.aposMeta.title['@apostrophecms/document-versions:ai'], 'changed');
+      assert.equal(one.doc.aposMeta.int['@apostrophecms/document-versions:ai'], undefined);
+
+      const { rows, counts } = await apos.docVersions
+        .getVersionChanges(req, results[0]._id);
+      assert.deepEqual(rows.map(row => [ row.path[0].name, row.ai ]), [
+        [ 'title', 'changed' ],
+        [ 'int', false ]
+      ]);
+      assert.equal(counts.ai, 1);
+
+      await saveDraft(apos, aliceReq(undefined, { explicit: true }), draft, {
+        title: 'By hand'
+      });
+      const [ newest ] = await timeline(apos, draft);
+      const next = await apos.docVersions.getVersionChanges(req, newest._id);
+      assert.deepEqual(next.rows.map(row => [ row.path[0].name, row.ai ]), [
+        [ 'title', 'assisted' ]
+      ]);
+    });
+
+    it('should read a consolidated version holding one saved with AI and one that lists them', async function() {
+      const req = aliceReq();
+      const draft = await apos.article.insert(req, { title: 'First' });
+      await saveDraft(apos, aliceReq(undefined, { aposAi: true }), draft, { int: 5 });
+      await saveDraft(apos, aliceReq([ 'title' ]), draft, {
+        title: 'By AI',
+        float: 1.5
+      });
+      const criteria = apos.docVersions.getTimelineCriteria(draft);
+
+      const { results } = await apos.docVersions.getTimelinePage(req, criteria, {
+        consolidate: true
+      });
+      assert.equal(results.length, 1);
+      assert.equal(results[0].ai, true);
+      assert.equal(results[0].versionIds.length, 3);
+      const { rows } = await apos.docVersions.getVersionChanges(req, results[0]._id, {
+        consolidate: true
+      });
+      assert.deepEqual(rows.map(row => [ row.path[0].name, row.ai ]), [
+        [ 'title', 'changed' ],
+        [ 'int', 'changed' ],
+        [ 'float', false ]
+      ]);
+    });
+
+    it('should list them for the document the request saves first only', async function() {
+      const one = await apos.article.insert(aliceReq(), { title: 'One' });
+      const two = await apos.article.insert(aliceReq(), { title: 'Two' });
+      const req = aliceReq([ 'title' ], { explicit: true });
+      await saveDraft(apos, req, one, { title: 'One, by AI' });
+      await saveDraft(apos, req, two, { title: 'Two, by hand' });
+      assert.deepEqual((await timeline(apos, one))[0].aiFields, [ 'title' ]);
+      assert.equal((await timeline(apos, two))[0].aiFields, undefined);
+    });
+  });
+
   describe('archive round trip', function() {
     let apos;
 

@@ -46,7 +46,10 @@ module.exports = (self) => {
      * Map a failed request onto the normalized apos error the engine reacts
      * to, by HTTP status: 429 becomes the transient code with kind
      * 'rateLimit', 5xx the transient code with kind 'overload', 401 and 403
-     * 'forbidden', 404 'notfound', anything else 'invalid'. Ahead of the
+     * 'forbidden', 404 'notfound', 413 and any other client error the
+     * provider's `contextOverflow` test recognizes 'aiContextOverflow' (a
+     * request too long for the model: shorten it, retrying it as it is
+     * fails again), anything else 'invalid'. Ahead of the
      * status, two cases never reach it: a caller's own abort passes through
      * untouched, being no provider failure at all, while a timed-out or
      * unreachable request becomes transient with kind 'timeout' or 'network'.
@@ -66,6 +69,9 @@ module.exports = (self) => {
      *   provider's retry delay in seconds, consulted only when the
      *   `Retry-After` header is absent or unparseable — for a service that
      *   puts the delay somewhere of its own, in the error body say.
+     * @param {(error: Error) => boolean} [options.contextOverflow] Whether a
+     *   client error is the provider refusing the request as too long, read
+     *   from the provider's own error body.
      * @returns {Error} Carrying `status` on `data`, plus whichever of `kind`,
      *   `retryAfter` (seconds) and `requestId` apply.
      */
@@ -95,7 +101,8 @@ module.exports = (self) => {
         ...(requestId !== undefined && { requestId }),
         ...(retryAfter !== undefined && { retryAfter })
       };
-      const message = error.body?.error?.message || error.message;
+      const message = error.body?.error?.message || error.body?.message ||
+        error.message;
       if (status === 429) {
         return self.apos.error('aiRetry', message, {
           ...data,
@@ -113,6 +120,9 @@ module.exports = (self) => {
       }
       if (status === 404) {
         return self.apos.error('notfound', message, data);
+      }
+      if (status === 413 || options.contextOverflow?.(error)) {
+        return self.apos.error('aiContextOverflow', message, data);
       }
       return self.apos.error('invalid', message, data);
     },

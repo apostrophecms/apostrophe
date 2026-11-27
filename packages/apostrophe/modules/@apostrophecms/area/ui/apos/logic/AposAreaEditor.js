@@ -1,4 +1,5 @@
 import { createId } from 'apostrophe/lib/beneath.js';
+import { isSameOutsideValue } from 'Modules/@apostrophecms/ui/utils';
 import { unref } from 'vue';
 import { mapState, mapActions } from 'pinia';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
@@ -260,6 +261,7 @@ export default {
       apos.bus.$on('command-menu-area-duplicate-widget', this.handleDuplicate);
       apos.bus.$on('command-menu-area-paste-widget', this.handlePaste);
       apos.bus.$on('command-menu-area-remove-widget', this.handleRemove);
+      apos.bus.$on('widget-edit', this.onWidgetEdit);
       apos.bus.$on('widget-selection-collect', this.onSelectionCollect);
       apos.bus.$on('widget-selection-mutate', this.onSelectionMutate);
       apos.bus.$on('context-history-apply', this.contextHistoryApplyHandler);
@@ -273,6 +275,7 @@ export default {
       apos.bus.$off('command-menu-area-duplicate-widget', this.handleDuplicate);
       apos.bus.$off('command-menu-area-paste-widget', this.handlePaste);
       apos.bus.$off('command-menu-area-remove-widget', this.handleRemove);
+      apos.bus.$off('widget-edit', this.onWidgetEdit);
       apos.bus.$off('widget-selection-collect', this.onSelectionCollect);
       apos.bus.$off('widget-selection-mutate', this.onSelectionMutate);
       apos.bus.$off('context-history-apply', this.contextHistoryApplyHandler);
@@ -284,8 +287,16 @@ export default {
     isInsideFocusedArea() {
       return this.focusedArea === this.areaId;
     },
-    resetFocusedArea() {
+    // A click that keeps the widget selection, as on the selection's toolbar
+    // and its menus, keeps the area the selection is in
+    resetFocusedArea(event) {
       if (this.focusedArea !== this.areaId) {
+        return;
+      }
+      if (
+        event?.composedPath?.()
+          .some(el => el.matches?.('[data-apos-ignore-unfocus="true"]'))
+      ) {
         return;
       }
 
@@ -313,6 +324,17 @@ export default {
     },
     handleRemove() {
       this.runWidgetCommand('remove');
+    },
+    // `widget-edit` opens the editor of the widget selected alone, as a
+    // double click does, from outside the area. Only the area holding the
+    // selection answers, so a widget both on the page and in a modal opens
+    // once
+    onWidgetEdit({ widgetId } = {}) {
+      if ((this.selectedWidgetIds.length > 1) || !this.isInsideFocusedArea() ||
+        (this.focusedWidget !== widgetId) || (this.focusedWidgetIndex === -1)) {
+        return;
+      }
+      this.edit({ index: this.focusedWidgetIndex });
     },
     // Every area editor hears the shortcut. A multi-selection runs once,
     // from the area that owns the focused widget. A single widget runs
@@ -462,7 +484,9 @@ export default {
       ) {
         return;
       }
-      const result = applyPatch(this.id, this.next, event.patch);
+      const result = applyPatch(this.id, this.next, event.patch, {
+        base: event.base
+      });
       if (!result) {
         return;
       }
@@ -1400,8 +1424,23 @@ export default {
       }
     },
 
-    getValidItems() {
-      return this.items.filter(item => {
+    // Widgets from outside the editor, such as the assistant's, in place of
+    // those the area holds. Like `update`, a changed widget is a new object
+    // and an unchanged one keeps its own, so only changed widgets render
+    // again, in place
+    applyOutsideItems(items) {
+      const held = new Map(this.next.map(widget => [ widget._id, widget ]));
+      this.next = this.getValidItems(items).map(item => {
+        const widget = held.get(item._id);
+        if (widget && isSameOutsideValue(widget, item)) {
+          return widget;
+        }
+        this.edited[item._id] = true;
+        return item;
+      });
+    },
+    getValidItems(items = this.items) {
+      return items.filter(item => {
         if (!window.apos.modules[`${item.type}-widget`]) {
           // eslint-disable-next-line no-console
           console.warn(`The widget type ${item.type} exists in the content but is not configured.`);

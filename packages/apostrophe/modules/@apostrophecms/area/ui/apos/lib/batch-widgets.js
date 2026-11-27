@@ -77,6 +77,7 @@ export async function runWidgetOperation(operation, { hasAncestor } = {}) {
   const action = operation.action || operation.name;
   if (action) {
     apos.bus.$emit(action, {
+      name: operation.name,
       widgetIds: entries.map(({ widget }) => widget._id)
     });
   }
@@ -124,7 +125,7 @@ function removeSelection(ids, hasAncestor) {
     changes
   });
   report(changes, { undo: ids });
-  dropRemoved(ids, hasAncestor);
+  dropFromSelection(ids, hasAncestor);
 }
 
 // The copies become the selection. Undo selects the originals again, and
@@ -177,7 +178,9 @@ export function notifyClipboard(name, count) {
   );
 }
 
-function dropRemoved(removedIds, hasAncestor) {
+// Takes widgets out of the selection, with whatever `hasAncestor` says was
+// inside one of them; the rest stay selected
+export function dropFromSelection(removedIds, hasAncestor) {
   const store = useWidgetStore(pinia);
   const next = selectionWithout(
     {

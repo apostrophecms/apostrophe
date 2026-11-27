@@ -58,7 +58,7 @@
         :trigger-validation="triggerValidation"
         :server-error="fields[field.name].serverError"
         :doc-id="docId"
-        :generation="generation"
+        :generation="getFieldGeneration(field.name)"
         @update:model-value="handleFieldUpdate(field.name, $event)"
         @update-doc-data="onUpdateDocData"
         @validate="emitValidate()"

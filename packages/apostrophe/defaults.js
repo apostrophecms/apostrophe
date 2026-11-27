@@ -25,6 +25,7 @@ module.exports = {
     '@apostrophecms/admin-bar': {},
     '@apostrophecms/notification': {},
     '@apostrophecms/login': {},
+    '@apostrophecms/oauth': {},
     '@apostrophecms/doc': {},
     '@apostrophecms/job': {},
     '@apostrophecms/ai': {},
@@ -72,7 +73,10 @@ module.exports = {
     '@apostrophecms/command-menu': {},
     '@apostrophecms/translation': {},
     '@apostrophecms/document-versions': {},
-    // Builds on @apostrophecms/ai and document-versions
-    '@apostrophecms/ai-localize': {}
+    '@apostrophecms/harness': {},
+    '@apostrophecms/assistant': {},
+    // Builds on @apostrophecms/ai, document-versions and the harness
+    '@apostrophecms/ai-localize': {},
+    '@apostrophecms/mcp': {}
   }
 };

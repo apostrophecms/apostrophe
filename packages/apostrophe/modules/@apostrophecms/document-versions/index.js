@@ -30,6 +30,19 @@ function asAttachmentDoc(version) {
   };
 }
 
+// Whether AI had a part in a version: saved with AI, or listing the fields
+// AI wrote in a person's save
+function isMadeWithAi(version) {
+  return Boolean(version.ai || version.aiFields?.length);
+}
+
+// A version or list item as the browser reads it: `ai` when AI had a part in
+// it, without the fields
+function setMadeWithAi(item) {
+  item.ai = isMadeWithAi(item);
+  delete item.aiFields;
+}
+
 // The versions `criteria` names that are older than `date`
 function olderThan(criteria, date) {
   return {
@@ -225,6 +238,39 @@ module.exports = {
             consolidate: self.apos.launder.boolean(req.query.consolidate)
           });
         }
+      },
+      post: {
+        // Whether the document `docId`, which the user may edit, holds every
+        // value `patches` set (see `isAsPatched`): `{ asPatched }`, `null`
+        // when the patches are not ones this can tell
+        'as-patched': async (req) => {
+          const docId = self.apos.launder.id(req.body.docId);
+          const { patches } = req.body;
+          if (!docId || !Array.isArray(patches) ||
+            !patches.every(patch => patch && (typeof patch === 'object'))) {
+            throw self.apos.error('invalid');
+          }
+          // Found in the locale and mode its `_id` names
+          const [ , locale, mode ] = docId.split(':');
+          const findReq = (locale && mode)
+            ? req.clone({
+              locale,
+              mode
+            })
+            : req;
+          const found = await self.apos.doc.find(findReq, { _id: docId })
+            .permission('edit')
+            .project({ _id: 1 })
+            .toObject();
+          // As stored, the form the diff engine reads
+          const doc = found && await self.apos.doc.db.findOne({ _id: found._id });
+          if (!doc || !self.getManager(doc.type)) {
+            throw self.apos.error('notfound');
+          }
+          return {
+            asPatched: self.isAsPatched(req, doc, patches)
+          };
+        }
       }
     };
   },
@@ -300,6 +346,25 @@ module.exports = {
   },
 
   methods(self) {
+    // `req` in the locale and mode of `doc`, whatever `req` is in
+    function getDocReq(req, doc) {
+      const [ locale, mode ] = (doc.aposLocale || '').split(':');
+      return locale
+        ? req.clone({
+          locale,
+          mode
+        })
+        : req;
+    }
+
+    // The `_id` a save finds a related document by: its version in the mode
+    // and locale of `req`, unless its type is not localized
+    function getRelatedId(req) {
+      return (field, id) => (self.getManager(field.withType)?.isLocalized()
+        ? `${id}:${req.locale}:${req.mode}`
+        : id);
+    }
+
     return {
       async enableCollection() {
         self.db = await self.apos.db.collection('aposDocsVersions');
@@ -623,13 +688,23 @@ module.exports = {
         }
       },
       // Insert a new version of `doc` at the head of its timeline. A
-      // restore is a baseline and counts no changes
+      // restore is a baseline and counts no changes. The version lists the
+      // fields AI wrote in the save as `aiFields` (see `getVersionAiFields`)
       async insertVersion(req, doc) {
         const version = await self.newVersion(req, doc);
         const previous = !version.restoredFrom &&
           await self.findOne(req, self.getTimelineCriteria(doc));
+        const aiFields = version.restoredFrom
+          ? []
+          : await self.getVersionAiFields(
+            req,
+            doc,
+            previous?.doc,
+            self.apos.doc.getAiFields(req, doc)
+          );
         const instance = {
           ...version,
+          ...(aiFields.length && { aiFields }),
           changeCount: previous
             ? self.getChangeCount(req, doc, previous.doc)
             : 0
@@ -640,6 +715,8 @@ module.exports = {
       // Replace the content of the version `versionId` with `doc`; the record
       // keeps its `_id` and author. A draft that becomes a publication point
       // takes the publish time as `createdAt`. The change count is recomputed.
+      // The version's `aiFields` are carried: a field the save changed leaves
+      // them, being the user's from then on, the save's own join them.
       // Inserts a new version when that one is gone
       async replaceVersion(req, doc, versionId) {
         const version = await self.findOne(req, { _id: versionId }, { raw: true });
@@ -649,18 +726,62 @@ module.exports = {
         const before = await self.getPreviousVersion(req, version);
         const mode = self.getMode(doc);
         const promoted = mode !== version.mode;
+        const aiFields = await getCarriedAiFields();
+        const unset = {
+          ...(promoted && { updatedAt: 1 }),
+          ...(!aiFields.length && version.aiFields && { aiFields: 1 })
+        };
         await self.db.updateOne({ _id: version._id }, {
           $set: {
             doc: await self.pack(self.apos.util.clonePermanent(doc)),
             mode,
             ...(promoted ? { createdAt: new Date() } : { updatedAt: new Date() }),
+            ...(aiFields.length && { aiFields }),
             changeCount: before
               ? self.getChangeCount(req, doc, before.doc)
               : 0
           },
-          ...(promoted && { $unset: { updatedAt: 1 } })
+          ...(Object.keys(unset).length && { $unset: unset })
         });
         return self.updateReferencesFor(req, version._id);
+
+        async function getCarriedAiFields() {
+          const carried = version.aiFields || [];
+          const fields = self.apos.doc.getAiFields(req, doc) || [];
+          if (!carried.length && !fields.length) {
+            return [];
+          }
+          const replaced = carried.length
+            ? self.getChangeRows(
+              req,
+              await self.unpack(version.doc),
+              self.apos.util.clonePermanent(doc)
+            )
+            : [];
+          const kept = carried.filter(field => {
+            return !replaced.some(row => self.isWithinFields(row, [ field ]));
+          });
+          return self.getVersionAiFields(req, doc, before?.doc, [
+            ...new Set([ ...kept, ...fields ])
+          ]);
+        }
+      },
+      // The paths of the fields AI wrote that a version of `doc` lists (see
+      // `getAiFields` of the doc module): those of `fields` with a change
+      // from `older`, the version before it, or a new document of its type
+      // for a first version. A version lists them exactly when AI had a part
+      // in a save a person made. None for a save with `req.aposAi`, whose
+      // version is AI's whole
+      async getVersionAiFields(req, doc, older, fields) {
+        if (req.aposAi || !fields?.length) {
+          return [];
+        }
+        const rows = self.getChangeRows(
+          req,
+          older || await self.getEmptyDoc(req, doc.type),
+          self.apos.util.clonePermanent(doc)
+        );
+        return diff.getChangedFields(rows, fields);
       },
       // A new version record of `doc` as saved by `req`. `docId`, `mode`
       // and `locale` identify the document at top level, `author`,
@@ -924,7 +1045,10 @@ module.exports = {
         forbidden
       } = {}) {
         const limit = self.defaultLimit;
-        const project = self.getRestProjection();
+        const project = {
+          ...self.getRestProjection(),
+          aiFields: 1
+        };
         const found = await self.find(
           req,
           before ? olderThan(criteria, before) : criteria,
@@ -970,6 +1094,9 @@ module.exports = {
         }
         if (forbidden?.size) {
           await recountChanges(results.filter(item => !item.versionIds));
+        }
+        for (const item of results) {
+          setMadeWithAi(item);
         }
 
         return {
@@ -1097,6 +1224,7 @@ module.exports = {
 
         delete version.docId;
         delete version.locale;
+        setMadeWithAi(version);
 
         return version;
 
@@ -1134,7 +1262,8 @@ module.exports = {
               ...self.getRestProjection(),
               docId: 1,
               locale: 1,
-              doc: 1
+              doc: 1,
+              aiFields: 1
             }
           }
         );
@@ -1204,7 +1333,8 @@ module.exports = {
           .map((version, i) => ({
             older: i ? versions[i - 1].doc : previous?.doc,
             newer: version.doc,
-            ai: version.ai
+            ai: version.ai,
+            aiFields: version.aiFields
           }))
           .filter(pair => pair.older);
         return {
@@ -1219,13 +1349,14 @@ module.exports = {
       // out. The list item before is read as the list shows it, consolidated,
       // whether `item` is a consolidated version or not. A first version
       // saved with AI changed every path it holds, and its change list is
-      // empty: those paths are its rows
+      // empty: those paths are its rows; those at or below its `aiFields`
+      // for one that lists the fields AI wrote
       async getAiRowsBefore(req, { versions, previous }) {
         if (!previous) {
           return getCreatedRows(versions[0]);
         }
         const item = await self.getVersionPairs(req, previous, { consolidate: true });
-        if (!item.versions.some(version => version.ai)) {
+        if (!item.versions.some(isMadeWithAi)) {
           return [];
         }
         const created = item.previous ? [] : await getCreatedRows(item.versions[0]);
@@ -1235,14 +1366,21 @@ module.exports = {
         return self.getConsolidatedRows(req, item.pairs, { before: created })
           .filter(row => row.ai);
 
-        // Every path of `version` when it was saved with AI: its changes
+        // The paths of `version` AI wrote when it was the first: its changes
         // from a new document of its type
         async function getCreatedRows(version) {
           const { type } = version.doc;
-          if (!version.ai || !self.getManager(type)) {
+          if (!isMadeWithAi(version) || !self.getManager(type)) {
             return [];
           }
-          return self.getChangeRows(req, await self.getEmptyDoc(req, type), version.doc);
+          const rows = self.getChangeRows(
+            req,
+            await self.getEmptyDoc(req, type),
+            version.doc
+          );
+          return version.ai
+            ? rows
+            : rows.filter(row => self.isWithinFields(row, version.aiFields));
         }
       },
       // The change list of a version (see `getChangeList`) and the versions it
@@ -1279,13 +1417,18 @@ module.exports = {
       // restores it (see `addRestore`).
       // A document never published is compared with a new document of its
       // type as a save stores it; `baseline` says which, `{ kind:
-      // 'published', at }` or `{ kind: 'default' }`. `annotate` adds `doc`,
-      // the draft marked with the changes (see `getAnnotatedDoc`).
+      // 'published', at }` or `{ kind: 'default' }`. `since`, the `_id` of a
+      // version of the document in its locale, compares with that version
+      // instead, crediting the versions recorded after it: `{ kind:
+      // 'version', versionId, at }`. `annotate` adds `doc`, the draft marked
+      // with the changes (see `getAnnotatedDoc`).
       // Throws `invalid` for a malformed id, `notfound` when the draft does
-      // not exist, `req` cannot edit it or its type records no draft versions
-      async getDraftChanges(req, docId, { annotate = false } = {}) {
+      // not exist, `req` cannot edit it, its type records no draft versions
+      // or `since` is no version of it
+      async getDraftChanges(req, docId, { annotate = false, since = null } = {}) {
         const id = self.apos.launder.id(docId);
-        if (!id) {
+        const versionId = since && self.apos.launder.id(since);
+        if (!id || (since && !versionId)) {
           throw self.apos.error('invalid');
         }
         const draftReq = req.clone({ mode: 'draft' });
@@ -1298,31 +1441,115 @@ module.exports = {
         }
         const draft = self.apos.util.clonePermanent(found);
         const criteria = self.getTimelineCriteria(draft);
-        const [ published, publication ] = await Promise.all([
-          self.apos.doc.db.findOne({ _id: draft._id.replace(/:draft$/, ':published') }),
-          self.findOne(draftReq, {
-            ...criteria,
-            mode: 'published'
-          }, {
-            project: { createdAt: 1 },
-            raw: true
+        const {
+          older, after, baseline
+        } = versionId
+          ? await getVersionBaseline()
+          : await getPublicationBaseline();
+        const { rows, counts } = await self.getChangesSince(draftReq, draft, older, {
+          after
+        });
+        const ctx = self.getDiffContext(draftReq, draft);
+        diff.addFieldData(manager.schema, rows, draft, ctx);
+        // The order of an area has no `patchKey` and can be restored
+        if (rows.some(row => row.patchKey || (row.kind === 'area'))) {
+          // Both sides: a widget modified whole keeps the draft's fields
+          const options = await self.getRestoreOptions(draftReq, found, relatedId => {
+            return new Set([ older, draft ].flatMap(doc => [
+              ...diff.getRelatedIds(manager.schema, doc, ctx, relatedId)
+            ]));
+          });
+          diff.addRestore(manager.schema, rows, {
+            older,
+            newer: draft,
+            ...options
+          }, ctx);
+        }
+
+        return {
+          rows,
+          counts,
+          baseline,
+          ...(annotate && {
+            doc: self.getAnnotatedDoc(draftReq, older, draft, { rows })
           })
-        ]);
-        // The later of the two: a publish that changed nothing records no
-        // version, and a promoted draft takes the time of the publish
-        const since = published
-          ? [ published.lastPublishedAt, publication?.createdAt ]
-            .filter(Boolean)
-            .sort((one, two) => two - one)[0]
-          : null;
-        const records = await self.find(draftReq, {
-          ...criteria,
-          ...(since && { createdAt: { $gt: since } })
+        };
+
+        // The version `since` names, and the versions after it
+        async function getVersionBaseline() {
+          const version = await self.findOne(draftReq, {
+            ...criteria,
+            _id: versionId
+          });
+          if (!version) {
+            throw self.apos.error('notfound');
+          }
+          return {
+            older: version.doc,
+            after: version.createdAt,
+            baseline: {
+              kind: 'version',
+              versionId: version._id,
+              at: version.updatedAt || version.createdAt
+            }
+          };
+        }
+
+        // The published document, and the versions since it was published
+        async function getPublicationBaseline() {
+          const [ published, publication ] = await Promise.all([
+            self.apos.doc.db.findOne({ _id: draft._id.replace(/:draft$/, ':published') }),
+            self.findOne(draftReq, {
+              ...criteria,
+              mode: 'published'
+            }, {
+              project: { createdAt: 1 },
+              raw: true
+            })
+          ]);
+          // The later of the two: a publish that changed nothing records no
+          // version, and a promoted draft takes the time of the publish
+          const after = published
+            ? [ published.lastPublishedAt, publication?.createdAt ]
+              .filter(Boolean)
+              .sort((one, two) => two - one)[0]
+            : null;
+          return {
+            older: published || await self.getEmptyDoc(draftReq, found.type),
+            after,
+            baseline: published
+              ? {
+                kind: 'published',
+                at: published.lastPublishedAt ?? null
+              }
+              : { kind: 'default' }
+          };
+        }
+      },
+      // The change list from `older`, an earlier content of a document, to
+      // `draft`, its draft as stored now (see `getChangeList`), each changed
+      // path credited to the versions recorded in between (see `attribute`
+      // in `lib/diff.js`): `{ rows, counts }`. `after` is when the document
+      // held `older`, every version when not given; with `savedOver`, a
+      // version created by then and saved over since counts too, for an
+      // `after` that is no publication. Checks no permission
+      async getChangesSince(req, draft, older, { after = null, savedOver = false } = {}) {
+        const manager = self.getManager(draft.type);
+        const records = await self.find(req, {
+          ...self.getTimelineCriteria(draft),
+          ...(after && (savedOver
+            ? {
+              $or: [
+                { createdAt: { $gt: after } },
+                { updatedAt: { $gt: after } }
+              ]
+            }
+            : { createdAt: { $gt: after } }))
         }, {
           sort: { createdAt: 1 }
         });
         const contents = [
-          published || await self.getEmptyDoc(draftReq, found.type),
+          older,
           ...records.map(record => record.doc),
           draft
         ];
@@ -1334,6 +1561,7 @@ module.exports = {
             older: contents[i],
             newer,
             ai: Boolean(record?.ai),
+            aiFields: record?.aiFields,
             ...(record && {
               author: {
                 _id: record.authorId ?? null,
@@ -1343,69 +1571,46 @@ module.exports = {
             })
           };
         });
-
-        const { rows, counts } = await self.getChangeList(draftReq, pairs);
-        const ctx = self.getDiffContext(draftReq, draft);
-        diff.attribute(manager.schema, pairs, rows, ctx);
-        diff.addFieldData(manager.schema, rows, draft, ctx);
-        if (rows.some(row => row.patchKey)) {
-          const allowed = manager.allowedSchema(draftReq, found, found._ancestors?.at(-1))
-            .map(field => field.name);
-          // Both sides: a widget modified whole keeps the draft's fields
-          const ids = new Set([ contents[0], draft ].flatMap(doc => [
-            ...diff.getRelatedIds(manager.schema, doc, ctx, relatedId)
-          ]));
-          const loadable = ids.size
-            ? await self.apos.doc.find(draftReq, { _id: { $in: [ ...ids ] } })
-              .project({ _id: 1 })
-              .relationships(false)
-              .areas(false)
-              .toArray()
-            : [];
-          diff.addRestore(manager.schema, rows, {
-            older: contents[0],
-            newer: draft,
-            editable: new Set(allowed),
-            canEdit,
-            relatedId,
-            loadable: new Set(loadable.map(doc => doc._id))
-          }, ctx);
-        }
-
+        const { rows, counts } = await self.getChangeList(req, pairs);
+        diff.attribute(manager.schema, pairs, rows, self.getDiffContext(req, draft));
         return {
           rows,
-          counts,
-          baseline: published
-            ? {
-              kind: 'published',
-              at: published.lastPublishedAt ?? null
-            }
-            : { kind: 'default' },
-          ...(annotate && {
-            doc: self.getAnnotatedDoc(draftReq, contents[0], draft, { rows })
-          })
+          counts
+        };
+      },
+      // What `addRestore` and `check` of `lib/diff.js` need to know of `req`
+      // for `doc`, a document as `req` finds it in its mode:
+      // `{ editable, canEdit, relatedId, loadable }`. `collect(relatedId)`
+      // returns the related `_id`s whose loading the restores depend on
+      async getRestoreOptions(req, doc, collect) {
+        const manager = self.getManager(doc.type);
+        const editable = manager.allowedSchema(req, doc, doc._ancestors?.at(-1))
+          .map(field => field.name);
+        const relatedId = getRelatedId(req);
+        const ids = collect(relatedId);
+        const loadable = ids.size
+          ? await self.apos.doc.find(req, { _id: { $in: [ ...ids ] } })
+            .project({ _id: 1 })
+            .relationships(false)
+            .areas(false)
+            .toArray()
+          : [];
+        return {
+          editable: new Set(editable),
+          canEdit,
+          relatedId,
+          loadable: new Set(loadable.map(related => related._id))
         };
 
-        // A new document as a save with no input stores it, so that a field
-        // left alone is no change. A field that fails to convert, such as a
-        // required one, keeps what conversion wrote, else its initial value
         // A field's own permissions, as `allowedSchema` reads them at the top
         // level and a widget's at its own
         function canEdit(field) {
-          const can = ({ action, type }) => self.apos.permission
-            .can(draftReq, action, type);
+          const can = ({ action, type }) => self.apos.permission.can(req, action, type);
           return (!field.editPermission && !field.viewPermission) ||
             Boolean(field.editPermission && can(field.editPermission)) ||
             Boolean(field.viewPermission && can(field.viewPermission));
         }
 
-        // The `_id` a save of the draft finds a related document by: its
-        // draft in the draft's locale, unless its type is not localized
-        function relatedId(field, id) {
-          return self.getManager(field.withType)?.isLocalized()
-            ? `${id}:${draftReq.locale}:draft`
-            : id;
-        }
       },
       // The change list between contents of one document, as the modal shows
       // it: `{ rows, counts: { added, modified, deleted, ai } }`. `pairs` are
@@ -1561,6 +1766,90 @@ module.exports = {
           }
         }
         return self.apos.util.clonePermanent(doc);
+      },
+      // The rows between two stored states of one document, as a change log
+      // keeps them to check later (see `record` in `lib/diff.js`), `before`
+      // `null` when the document did not exist. A top-level field either
+      // side does not store, such as one added to the schema since, counts
+      // as its value in the empty document (see `getEmptyDoc`), so a save
+      // that stores its empty or default value lists no change
+      async getChangeRowsBetween(req, before, after) {
+        const docReq = getDocReq(req, after);
+        const empty = await self.getEmptyDoc(docReq, after.type);
+        const manager = self.getManager(after.type);
+        return diff.record(manager.schema, {
+          ...empty,
+          ...before
+        }, {
+          ...empty,
+          ...after
+        }, self.getDiffContext(docReq, after));
+      },
+      // Whether a change row is AI's in a save a person made: at or below one
+      // of `fields`, the paths AI wrote (see `isWithinFields` in
+      // `lib/diff.js`). The change log and a version's AI rows both decide by it
+      isWithinFields(row, fields) {
+        return diff.isWithinFields(row, fields);
+      },
+      // The parts of a document a change from `before` to `after`, two of its
+      // stored states, made, each to be written whole by a PATCH of the
+      // document in its locale and mode (see `parts` in `lib/diff.js`):
+      // `[{ key, before, after }]`, values in the form a save takes. `before`
+      // `null` when the document did not exist
+      async getChangeParts(req, before, after) {
+        const docReq = getDocReq(req, after);
+        const empty = await self.getEmptyDoc(docReq, after.type);
+        const manager = self.getManager(after.type);
+        const older = {
+          ...empty,
+          ...before
+        };
+        const newer = {
+          ...empty,
+          ...after
+        };
+        const ctx = self.getDiffContext(docReq, after);
+        const rows = diff.record(manager.schema, older, newer, ctx);
+        return diff.parts(manager.schema, older, newer, rows, ctx, getRelatedId(docReq))
+          .map(part => ({
+            key: part.key,
+            before: part.older,
+            after: part.newer
+          }));
+      },
+      // Whether `doc`, as stored now, holds every value `patches` set, so that
+      // writing them would change nothing; `null` when a patch is not one this
+      // can tell (see `isAsPatched` in `lib/diff.js`). In the locale and mode
+      // of `doc`
+      isAsPatched(req, doc, patches) {
+        const docReq = getDocReq(req, doc);
+        const manager = self.getManager(doc.type);
+        return diff.isAsPatched(
+          manager.schema,
+          doc,
+          patches,
+          self.getDiffContext(docReq, doc),
+          getRelatedId(docReq)
+        );
+      },
+      // Checks rows of `getChangeRowsBetween` against `doc`, the document as
+      // stored now, and makes the patch that puts each back for the user of
+      // `req`, in the locale and mode of `doc` whatever `req` is in:
+      // `{ outcome, reason?, restore? }` per row, `outcome` one of `clean`,
+      // `reverted`, `edited`, `gone` and `unrestorable` (see `check` in
+      // `lib/diff.js`). `doc` `null` when it no longer exists
+      async checkChangeRows(req, doc, rows) {
+        if (!doc || doc.archived) {
+          return rows.map(() => ({ outcome: 'gone' }));
+        }
+        const docReq = getDocReq(req, doc);
+        const manager = self.getManager(doc.type);
+        const ctx = self.getDiffContext(docReq, doc);
+        const options = await self.getRestoreOptions(docReq, doc, relatedId => new Set([
+          ...diff.getRelatedIds(manager.schema, doc, ctx, relatedId),
+          ...diff.getRowRelatedIds(manager.schema, rows, ctx, relatedId)
+        ]));
+        return diff.check(manager.schema, rows, doc, options, ctx);
       },
       // What the diff engine needs from the rest of Apostrophe. `doc`, the
       // document compared, names it in the log when the engine recovers from

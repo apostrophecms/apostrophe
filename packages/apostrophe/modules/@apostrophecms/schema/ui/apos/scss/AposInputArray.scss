@@ -423,3 +423,37 @@
     background-color: transparent;
   }
 }
+
+// Written from outside: "Edited by AI" before an item's label, busy in place
+// of its menu
+.apos-input-array-inline-ai-mark {
+  margin-right: 5px;
+}
+
+.apos-input-array-inline-ai-mark-enter-active,
+.apos-input-array-inline-ai-mark-leave-active,
+.apos-input-array-inline-control-enter-active,
+.apos-input-array-inline-control-leave-active {
+  transition: opacity 220ms ease-out, transform 220ms ease-out;
+}
+
+.apos-input-array-inline-ai-mark-enter-from,
+.apos-input-array-inline-ai-mark-leave-to,
+.apos-input-array-inline-control-enter-from,
+.apos-input-array-inline-control-leave-to {
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+.apos-input-array-inline-busy {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin: 0 $spacing-half;
+}
+
+.apos-input-array-inline-item--busy > .apos-input-array-inline-header {
+  background-color: color-mix(in srgb, var(--a-primary) 10%, var(--a-base-9));
+}

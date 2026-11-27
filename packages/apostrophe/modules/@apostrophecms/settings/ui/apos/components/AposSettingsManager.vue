@@ -3,6 +3,7 @@
     class="apos-settings"
     :modal="modal"
     :modal-title="$t('apostrophe:settings')"
+    :screen="screen"
     @esc="close"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"

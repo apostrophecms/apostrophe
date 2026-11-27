@@ -1,3 +1,4 @@
+import { unref } from 'vue';
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposInputFollowingMixin';
 import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixins/AposInputConditionalFieldsMixin';
@@ -17,6 +18,14 @@ export default {
     AposInputConditionalFieldsMixin
   ],
   emits: [ 'validate' ],
+  inject: {
+    aposOutsideStates: {
+      default: null
+    },
+    aposOutsideScope: {
+      default: null
+    }
+  },
   props: {
     generation: {
       type: Number,
@@ -190,6 +199,9 @@ export default {
       deep: true
     }
   },
+  created() {
+    this.itemSchemas = new Map();
+  },
   async mounted() {
     if (this.isInline) {
       await this.evaluateExternalConditions();
@@ -198,6 +210,61 @@ export default {
     }
   },
   methods: {
+    // The schema each inline item's fields show in, by the item's `_id`
+    setItemSchema(_id, schema) {
+      if (schema) {
+        this.itemSchemas.set(_id, schema);
+      } else {
+        this.itemSchemas.delete(_id);
+      }
+    },
+    // The scope of an inline item's fields in what came from outside the
+    // editor (see `getOutsidePlace`)
+    getItemOutsideScope(_id) {
+      return (unref(this.aposOutsideScope) === null) ? null : `@${_id}`;
+    },
+    // Busy or edited when something it holds came from outside the editor,
+    // shown on its header
+    getItemOutsideState(_id) {
+      if (unref(this.aposOutsideScope) === null) {
+        return null;
+      }
+      return unref(this.aposOutsideStates)?.items[_id] || null;
+    },
+    // A value from outside the editor, for an inline array: each item it
+    // keeps stays open or closed and takes the subfields it changes, a new
+    // one is added closed. `false` when it can't: an array whose items open
+    // in their own dialog redraws whole
+    applyOutsideInPlace(value) {
+      const values = Array.isArray(value) ? value : [];
+      const held = new Map(this.items.map(item => [ item._id, item ]));
+      const isTaken = this.isInline && values.every(itemValue => {
+        return itemValue?._id &&
+          (!held.has(itemValue._id) || this.itemSchemas.has(itemValue._id));
+      });
+      if (!isTaken) {
+        return false;
+      }
+      const added = [];
+      this.items = values.map(itemValue => {
+        const item = held.get(itemValue._id);
+        if (item) {
+          this.itemSchemas.get(item._id).applyOutsideData(itemValue);
+          return item;
+        }
+        added.push(itemValue._id);
+        return modelItems([ itemValue ], this.field, this.schema)[0];
+      });
+      for (const _id of held.keys()) {
+        if (!values.some(itemValue => itemValue._id === _id)) {
+          delete this.itemsConditionalFields[_id];
+        }
+      }
+      for (const _id of added) {
+        this.setItemsConditionalFields(_id);
+      }
+      return true;
+    },
     toggleAll(open) {
       this.items = this.items.map(item => ({
         ...item,

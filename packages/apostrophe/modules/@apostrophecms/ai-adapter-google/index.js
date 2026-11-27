@@ -36,6 +36,11 @@ const THINKING_LEVELS = Object.freeze([
 const FLASH_THINKING_LEVELS = Object.freeze([
   'low', 'medium', 'high'
 ]);
+// The document limits Gemini documents, per file
+const DOCUMENTS = Object.freeze({
+  maxDocumentPages: 1000,
+  maxDocumentBytes: 50000000
+});
 // The normalized quality tiers → the dialect's output resolution
 // (the uppercase K is required)
 const IMAGE_SIZES = {
@@ -96,6 +101,7 @@ module.exports = {
             structured: true,
             stream: true,
             imageInput: true,
+            documentInput: true,
             image: true,
             caching: true
           },
@@ -113,13 +119,15 @@ module.exports = {
               label: 'Gemini 3.5 Flash-Lite',
               contextWindow: 1048576,
               maxOutputTokens: 65536,
-              reasoning: THINKING_LEVELS
+              reasoning: THINKING_LEVELS,
+              ...DOCUMENTS
             },
             'gemini-3.8-flash': {
               label: 'Gemini 3.8 Flash',
               contextWindow: 1048576,
               maxOutputTokens: 65536,
-              reasoning: FLASH_THINKING_LEVELS
+              reasoning: FLASH_THINKING_LEVELS,
+              ...DOCUMENTS
             },
             'gemini-3.1-flash-image': {
               label: 'Gemini 3.1 Flash Image',
@@ -349,6 +357,13 @@ module.exports = {
               text: part.text
             };
           }
+          if (part.type === 'document') {
+            return {
+              type: 'document',
+              data: part.document.data,
+              mime_type: part.document.mediaType
+            };
+          }
           // part.type === 'image', in one of the two normalized forms
           return part.image.url !== undefined
             ? {
@@ -382,7 +397,8 @@ module.exports = {
       // step's text blocks become text parts. A `failed` interaction
       // throws what its `errors` say: a refusal when any of them is a
       // block, the broken-transcript error when one rejects a thought
-      // signature, otherwise a transient failure. Past that, a turn
+      // signature, a context overflow when one counts too many input
+      // tokens, otherwise a transient failure. Past that, a turn
       // that requested tools finishes as 'toolCalls' whatever its status;
       // otherwise `completed` maps to 'stop' and `incomplete` (the
       // output cap, thinking included) to 'length'. Any other status
@@ -612,7 +628,8 @@ module.exports = {
       // Map any error the transport produced to a normalized apos
       // error, the only shape the engine reacts to. A blocked
       // generation is a refusal, a generation error a transient
-      // failure and a rejected thought signature a broken transcript;
+      // failure, a rejected thought signature a broken transcript and
+      // too many input tokens a context overflow;
       // everything else takes the engine's shared status ladder. The
       // API gateway in front of the service answers an auth failure in
       // an older error shape, wrapped in an array. No request id header
@@ -672,5 +689,11 @@ function classifyError({ code, message } = {}) {
   }
   if (GENERATION_ERROR_CODES.includes(code)) {
     return [ 'aiRetry', message || code ];
+  }
+  // A request too long for the model, under whatever code the service
+  // files it: "The input token count (1632254) exceeds the maximum number
+  // of tokens allowed (1048576)."
+  if (/input token count .*exceeds the maximum number of tokens/i.test(message)) {
+    return [ 'aiContextOverflow', message ];
   }
 }

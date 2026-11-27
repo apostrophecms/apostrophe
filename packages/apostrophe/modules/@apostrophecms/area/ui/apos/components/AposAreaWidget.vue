@@ -2,7 +2,11 @@
   <div
     ref="widget"
     class="apos-area-widget-wrapper"
-    :class="{'apos-area-widget-wrapper--foreign': foreign}"
+    :class="{
+      'apos-area-widget-wrapper--foreign': foreign,
+      'apos-area-widget-wrapper--busy': isBusy
+    }"
+    :aria-busy="isBusy ? 'true' : undefined"
     :data-area-widget="widget._id"
     :data-area-label="widgetLabel"
     :data-apos-test="`widget:${widget.type}`"
@@ -234,6 +238,14 @@
         />
       </div>
     </div>
+    <transition name="apos-area-widget__ai-mark">
+      <AposAiMark
+        v-if="outsideState"
+        class="apos-area-widget__ai-mark"
+        :busy="isBusy"
+        labelled
+      />
+    </transition>
   </div>
 </template>
 
@@ -443,6 +455,8 @@ export default {
       'hoveredWidget',
       'hoveredNonForeignWidget',
       'emphasizedWidgets',
+      'busyWidgets',
+      'outsideWidgets',
       'labeled',
       'selectedWidgetIds',
       'selectionAnchorId',
@@ -596,6 +610,15 @@ export default {
     // even when not hovered or focused.
     isEmphasized() {
       return this.emphasizedWidgets.has(this.widget._id);
+    },
+    // Written from outside the page or the editor right now, by the
+    // assistant
+    isBusy() {
+      return this.busyWidgets.has(this.widget._id) || Boolean(this.outsideState?.busy);
+    },
+    // Written from outside the editor holding it: busy, then edited
+    outsideState() {
+      return this.outsideWidgets[this.widget._id] || null;
     },
     nonForeignHovered() {
       return this.nonForeignWidgetHovered === this.widget._id;
@@ -1058,15 +1081,19 @@ export default {
       }
     },
     unfocus(event) {
-      if (event.target.closest('[data-apos-ignore-unfocus="true"]')) {
+      // The path as dispatched: a control that re-renders away during the
+      // click still counts as inside its container
+      const path = event.composedPath();
+      const inside = selector => path.some(el => el.matches?.(selector));
+      if (inside('[data-apos-ignore-unfocus="true"]')) {
         return;
       }
       // Another widget handles its own click. Clearing here would drop a
       // widget that was just added to the selection.
-      if (event.target.closest('[data-apos-widget-id]')) {
+      if (inside('[data-apos-widget-id]')) {
         return;
       }
-      if (!this.$el.contains(event.target)) {
+      if (!path.includes(this.$el)) {
         this.removeClickOutsideListener();
 
         this.setFocusedWidget(null, null);
@@ -1226,6 +1253,51 @@ export default {
 
 .apos-area-widget-wrapper {
   position: relative;
+}
+
+// A widget the assistant is writing: dimmed under a tint of the primary
+// color, and out of reach, until the write settles
+.apos-area-widget-wrapper--busy {
+  > .apos-area-widget-inner {
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    box-sizing: border-box;
+    border: 1px solid color-mix(in srgb, var(--a-primary) 40%, transparent);
+    border-radius: var(--a-border-radius);
+    background-color: color-mix(in srgb, var(--a-primary) 14%, transparent);
+    pointer-events: none;
+  }
+}
+
+// Busy, then "AI edited", on a widget written from outside its editor. On
+// the widget's top edge, where it covers no content and stays clear of the
+// widget's label; its background cuts the edge's line
+.apos-area-widget__ai-mark {
+  z-index: $z-index-widget-label;
+  position: absolute;
+  top: 0;
+  right: 12px;
+  translate: 0 -50%;
+  padding: 2px 8px 2px 6px;
+  border-radius: var(--a-border-radius);
+  background-color: var(--a-background-primary);
+}
+
+.apos-area-widget__ai-mark-enter-active,
+.apos-area-widget__ai-mark-leave-active {
+  transition: opacity 220ms ease-out, transform 220ms ease-out;
+}
+
+.apos-area-widget__ai-mark-enter-from,
+.apos-area-widget__ai-mark-leave-to {
+  opacity: 0;
+  transform: scale(0.5);
 }
 
 // A widget a document version added, modified or deleted. The frame holds

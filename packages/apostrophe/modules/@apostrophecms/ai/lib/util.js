@@ -1,6 +1,8 @@
 // Shared predicates and parsers, imported as plain functions wherever they
 // are needed.
 
+const { USAGE_SHARE_KEYS } = require('./constants');
+
 // Any non-array object, class instances included — deliberately looser than
 // _.isPlainObject, which the engine relies on for adapter results and tool
 // arguments
@@ -37,6 +39,21 @@ function oneOf(values) {
   return `${quoted.slice(0, -1).join(', ')} or ${quoted.at(-1)}`;
 }
 
+// One validated turn's usage, copied with only the counts the engine
+// knows: a step's own size, as its provider counted it
+function stepUsage(usage) {
+  const copy = {
+    inputTokens: usage.inputTokens,
+    outputTokens: usage.outputTokens
+  };
+  for (const key of USAGE_SHARE_KEYS) {
+    if (usage[key] !== undefined) {
+      copy[key] = usage[key];
+    }
+  }
+  return copy;
+}
+
 // Startup-only: a bad configuration must kill the boot with a plain prefixed
 // Error. Runtime code throws self.apos.error(...) instead, so the name says
 // where this belongs.
@@ -49,5 +66,6 @@ module.exports = {
   isAbort,
   parseAspect,
   oneOf,
+  stepUsage,
   startupFail
 };

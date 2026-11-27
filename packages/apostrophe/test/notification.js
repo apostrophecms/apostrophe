@@ -427,3 +427,435 @@ describe('Notification authorization', function() {
     assert.equal(doc.dismissed, true);
   });
 });
+
+describe('Notification delivery', function() {
+  this.timeout(t.timeout);
+
+  const url = '/api/v1/@apostrophecms/notification';
+  let apos;
+  let req;
+  let jar;
+
+  before(async function() {
+    apos = await t.create({
+      root: module,
+      modules: {
+        // Every poll answers at once instead of waiting for news
+        '@apostrophecms/notification': {
+          options: {
+            longPolling: false
+          }
+        }
+      }
+    });
+    const admin = await t.createAdmin(apos);
+    req = apos.task.getReq({ user: admin });
+    jar = await t.loginAs(apos, 'admin');
+    await apos.http.get('/', { jar });
+  });
+
+  after(function() {
+    return t.destroy(apos);
+  });
+
+  beforeEach(function() {
+    return apos.notification.db.deleteMany({});
+  });
+
+  // A browser tab's poll as the notification store makes it: its own
+  // cursor, its tab id and the page start, through the real route
+  function poller(tabId, { pageStart } = {}) {
+    const cursor = {
+      at: null,
+      seen: new Map()
+    };
+    const tab = {
+      received: [],
+      // How the last poll traveled
+      method: null,
+      async poll() {
+        const held = [ ...cursor.seen ];
+        const qs = {
+          ...(tabId && { tabId }),
+          ...(pageStart && { pageStart: pageStart.toISOString() }),
+          ...(cursor.at && {
+            modifiedOnOrSince: cursor.at,
+            seen: Object.fromEntries(held.map(([ id, at ]) => [ id, Date.parse(at) ]))
+          })
+        };
+        tab.method = held.length > 30 ? 'POST' : 'GET';
+        const { notifications, dismissed } = tab.method === 'POST'
+          ? await apos.http.post(url, {
+            jar,
+            body: { __aposGetWithQuery: qs }
+          })
+          : await apos.http.get(url, {
+            jar,
+            qs
+          });
+        for (const { _id, updatedAt } of [ ...notifications, ...dismissed ]) {
+          cursor.seen.set(_id, updatedAt);
+          if (!cursor.at || updatedAt > cursor.at) {
+            cursor.at = updatedAt;
+          }
+        }
+        if (cursor.at) {
+          const floor = new Date(
+            Date.parse(cursor.at) - apos.notification.options.lookback
+          ).toISOString();
+          for (const [ id, at ] of cursor.seen) {
+            if (at < floor) {
+              cursor.seen.delete(id);
+            }
+          }
+        }
+        tab.received.push(...notifications.map(({ _id }) => _id));
+        return {
+          notifications: notifications.map(({ _id }) => _id),
+          dismissed: dismissed.map(({ _id }) => _id)
+        };
+      }
+    };
+    return tab;
+  }
+
+  // A stored notification with a chosen modification time
+  async function insert(_id, updatedAt, fields = {}) {
+    await apos.notification.db.insertOne({
+      _id,
+      userId: req.user._id,
+      message: _id,
+      createdAt: updatedAt,
+      updatedAt,
+      ...fields
+    });
+  }
+
+  function carrier(name = 'progress') {
+    return {
+      bus: true,
+      event: { name }
+    };
+  }
+
+  it('delivers records stamped in the same millisecond, each once', async function() {
+    const at = new Date(Date.now() - 10000);
+    const tab = poller('tab-a');
+    await insert('first', at);
+    assert.deepEqual((await tab.poll()).notifications, [ 'first' ]);
+    // Written after the poll read "first", in the same millisecond
+    await insert('second', at);
+    await insert('third', at);
+    assert.deepEqual((await tab.poll()).notifications.sort(), [ 'second', 'third' ]);
+    assert.deepEqual(await tab.poll(), {
+      notifications: [],
+      dismissed: []
+    });
+  });
+
+  it('delivers a record seen at the newest time again when it is dismissed or updated', async function() {
+    // The regression the move to a strict "after" cursor once fixed:
+    // skipping seen ids by id alone hid any later change to them while
+    // their time was still the poll's newest
+    const at = new Date(Date.now() - 10000);
+    const tab = poller('tab-a');
+    await insert('progress', at, { job: { _id: 'job1' } });
+    await insert('done', at);
+    assert.deepEqual((await tab.poll()).notifications.sort(), [ 'done', 'progress' ]);
+    await apos.notification.dismiss(req, 'done');
+    await apos.notification.db.updateOne(
+      { _id: 'progress' },
+      {
+        $set: {
+          job: {
+            _id: 'job1',
+            processed: 5
+          }
+        },
+        $currentDate: { updatedAt: true }
+      }
+    );
+    assert.deepEqual(await tab.poll(), {
+      notifications: [ 'progress' ],
+      dismissed: [ 'done' ]
+    });
+  });
+
+  it('delivers a record that becomes visible below the newest time, once', async function() {
+    // What a write still on its way looks like once a later one was read
+    const at = new Date(Date.now() - 10000);
+    const tab = poller('tab-a');
+    await insert('later', at);
+    assert.deepEqual((await tab.poll()).notifications, [ 'later' ]);
+    await insert('earlier', new Date(at.getTime() - 1));
+    assert.deepEqual((await tab.poll()).notifications, [ 'earlier' ]);
+    assert.deepEqual(await tab.poll(), {
+      notifications: [],
+      dismissed: []
+    });
+  });
+
+  it('delivers a dismissal stamped below the newest time', async function() {
+    const at = new Date(Date.now() - 10000);
+    const tab = poller('tab-a');
+    await insert('first', new Date(at.getTime() - 10));
+    await insert('later', at);
+    assert.deepEqual((await tab.poll()).notifications.sort(), [ 'first', 'later' ]);
+    await apos.notification.db.updateOne({ _id: 'first' }, {
+      $set: {
+        dismissed: true,
+        updatedAt: new Date(at.getTime() - 1)
+      }
+    });
+    assert.deepEqual(await tab.poll(), {
+      notifications: [],
+      dismissed: [ 'first' ]
+    });
+    assert.deepEqual(await tab.poll(), {
+      notifications: [],
+      dismissed: []
+    });
+  });
+
+  it('reads no further below the newest time than the lookback', async function() {
+    const { lookback } = apos.notification.options;
+    assert.equal(lookback, 2000);
+    const at = new Date(Date.now() - 10000);
+    const tab = poller('tab-a');
+    await insert('old', new Date(at.getTime() - lookback - 1));
+    await insert('later', at);
+    assert.deepEqual((await tab.poll()).notifications.sort(), [ 'later', 'old' ]);
+    // "old" is no longer in what the tab sends, and is not sent again
+    assert.deepEqual((await tab.poll()).notifications, []);
+    await insert('inside', new Date(at.getTime() - lookback));
+    await insert('outside', new Date(at.getTime() - lookback - 1));
+    assert.deepEqual((await tab.poll()).notifications, [ 'inside' ]);
+  });
+
+  it('sends a long list of what the tab holds in a request body', async function() {
+    const at = new Date(Date.now() - 10000);
+    const tab = poller('tab-a');
+    const ids = Array.from({ length: 200 }, (_, i) => `held${i}`);
+    for (const id of ids) {
+      await insert(id, at);
+    }
+    assert.deepEqual((await tab.poll()).notifications.sort(), [ ...ids ].sort());
+    await insert('earlier', new Date(at.getTime() - 1));
+    assert.deepEqual((await tab.poll()).notifications, [ 'earlier' ]);
+    assert.equal(tab.method, 'POST');
+    assert.deepEqual(await tab.poll(), {
+      notifications: [],
+      dismissed: []
+    });
+  });
+
+  it('answers a poll without the list with only what is newer', async function() {
+    // The poll of an earlier browser bundle
+    const at = new Date(Date.now() - 10000);
+    const poll = async () => {
+      const { notifications } = await apos.http.get(url, {
+        jar,
+        qs: { modifiedOnOrSince: at.toISOString() }
+      });
+      return notifications.map(({ _id }) => _id);
+    };
+    await insert('first', at);
+    await insert('later', new Date(at.getTime() + 1));
+    assert.deepEqual(await poll(), [ 'later' ]);
+    await insert('earlier', new Date(at.getTime() - 1));
+    assert.deepEqual(await poll(), [ 'later' ]);
+  });
+
+  it('delivers every carrier exactly once while several instances write at once', async function() {
+    const others = [
+      await t.create({
+        root: module,
+        shortName: apos.options.shortName
+      }),
+      await t.create({
+        root: module,
+        shortName: apos.options.shortName
+      })
+    ];
+    try {
+      const write = (instance) => instance.notification.trigger(req.user._id, {
+        ...carrier(),
+        tab: 'every'
+      });
+      // The race is rare on some databases: a single round seldom shows it
+      for (let round = 1; round <= 20; round++) {
+        await apos.notification.db.deleteMany({});
+        const tab = poller('tab-a');
+        const written = [];
+        const state = { writing: true };
+        const writers = Promise.all([ apos, ...others ].map(async (instance) => {
+          for (let batch = 0; batch < 10; batch++) {
+            const notes = await Promise.all([ 0, 1, 2, 3, 4 ].map(() => write(instance)));
+            written.push(...notes.map(({ noteId }) => noteId));
+          }
+        })).finally(() => {
+          state.writing = false;
+        });
+        while (state.writing) {
+          await tab.poll();
+        }
+        await writers;
+        await tab.poll();
+        assert.equal(written.length, 150);
+        assert.equal(new Set(tab.received).size, tab.received.length, `round ${round}`);
+        assert.deepEqual([ ...tab.received ].sort(), [ ...written ].sort(), `round ${round}`);
+      }
+    } finally {
+      for (const instance of others) {
+        await instance.destroy();
+      }
+    }
+  });
+
+  it('sends a browser tab what was triggered for it and for every tab, never another tab\'s', async function() {
+    const { noteId: forA } = await apos.notify(req, {
+      ...carrier(),
+      tab: 'tab-a'
+    });
+    const { noteId: forB } = await apos.notify(req, {
+      ...carrier(),
+      tab: 'tab-b'
+    });
+    const { noteId: every } = await apos.notify(req, {
+      ...carrier(),
+      tab: 'every'
+    });
+    const { noteId: claimable } = await apos.notify(req, carrier());
+    const { noteId: visible } = await apos.notify(req, 'hello');
+    // A rendered notification may name its tabs too
+    const { noteId: visibleEvery } = await apos.notify(req, 'hello all', { tab: 'every' });
+    const { noteId: visibleForA } = await apos.notify(req, 'hello a', { tab: 'tab-a' });
+    const everywhere = [ every, claimable, visible, visibleEvery ];
+    const received = async (tabId) => (await poller(tabId).poll()).notifications.sort();
+    assert.deepEqual(await received('tab-a'), [ ...everywhere, forA, visibleForA ].sort());
+    assert.deepEqual(await received('tab-b'), [ ...everywhere, forB ].sort());
+    assert.deepEqual(await received(null), [ ...everywhere ].sort());
+  });
+
+  it('sends a carrier for every browser tab to each tab once, and nobody claims it', async function() {
+    const { noteId } = await apos.notify(req, {
+      ...carrier(),
+      tab: 'every'
+    });
+    const a = poller('tab-a');
+    const b = poller('tab-b');
+    assert.deepEqual((await a.poll()).notifications, [ noteId ]);
+    assert.deepEqual((await b.poll()).notifications, [ noteId ]);
+    assert.deepEqual((await a.poll()).notifications, []);
+    assert.deepEqual((await b.poll()).notifications, []);
+    const stored = await apos.notification.db.findOne({ _id: noteId });
+    assert.equal(stored.tab, 'every');
+    assert.notEqual(stored.event, null);
+    assert.equal(stored.dismissed, undefined);
+  });
+
+  it('lets one browser tab claim an untargeted carrier while two race for it', async function() {
+    const { noteId } = await apos.notify(req, carrier('refresh'));
+    const a = poller('tab-a');
+    const b = poller('tab-b');
+    assert.deepEqual((await a.poll()).notifications, [ noteId ]);
+    assert.deepEqual((await b.poll()).notifications, [ noteId ]);
+    const clear = () => apos.http.post(
+      `/api/v1/@apostrophecms/notification/${noteId}/clear-event`,
+      {
+        jar,
+        body: {}
+      }
+    );
+    const claims = await Promise.all([ clear(), clear() ]);
+    assert.deepEqual(claims.sort(), [ false, true ]);
+  });
+
+  it('skips the bus carriers created before the page, never other notifications', async function() {
+    const pageStart = new Date();
+    const before = new Date(pageStart.getTime() - 1000);
+    await insert('old-carrier', before, {
+      ...carrier(),
+      tab: 'every'
+    });
+    await insert('old-claimable', before, carrier());
+    await insert('old-notice', before);
+    const { noteId: fresh } = await apos.notify(req, {
+      ...carrier(),
+      tab: 'every'
+    });
+    const tab = poller('tab-a', { pageStart });
+    assert.deepEqual((await tab.poll()).notifications.sort(), [ fresh, 'old-notice' ].sort());
+    // Without a page start, nothing is skipped
+    assert.equal((await poller('tab-a').poll()).notifications.length, 4);
+  });
+
+  it('refuses a malformed page start', async function() {
+    await assert.rejects(
+      apos.http.get(url, {
+        jar,
+        qs: { pageStart: 'soon' }
+      }),
+      (e) => e.status === 400
+    );
+  });
+
+  it('expires each kind of carrier on its own, and a poll that slept through it never sees it', async function() {
+    const kinds = {
+      tab: await apos.notify(req, {
+        ...carrier(),
+        tab: 'tab-a'
+      }),
+      every: await apos.notify(req, {
+        ...carrier(),
+        tab: 'every'
+      }),
+      claimable: await apos.notify(req, carrier())
+    };
+    const { carrierExpireAfter, expireAfter } = apos.notification.options;
+    for (const [ kind, { noteId } ] of Object.entries(kinds)) {
+      const { createdAt, expireAt } = await apos.notification.db.findOne({ _id: noteId });
+      const seconds = kind === 'claimable' ? expireAfter : carrierExpireAfter;
+      assert.ok(Math.abs(expireAt - createdAt - seconds * 1000) < 1000, kind);
+    }
+    assert.equal(carrierExpireAfter, 60);
+    // Nobody polled until all of them were past their time
+    await apos.notification.db.updateMany({}, {
+      $set: { expireAt: new Date(Date.now() - 1000) }
+    });
+    assert.deepEqual(await poller('tab-a').poll(), {
+      notifications: [],
+      dismissed: []
+    });
+  });
+
+  it('accepts any tab name and refuses only a value that is none', async function() {
+    for (const tab of [ 42, '', [ 'tab-a' ] ]) {
+      await assert.rejects(
+        apos.notification.trigger(req, {
+          ...carrier(),
+          tab
+        }),
+        (e) => {
+          assert.equal(e.name, 'invalid');
+          assert.match(e.message, /"tab" must be "every" or a browser tab id/);
+          return true;
+        }
+      );
+    }
+    // A rendered notification keeps the module expiry whatever its tab
+    const { noteId } = await apos.notify(req, 'hello a', { tab: 'tab-a' });
+    const stored = await apos.notification.db.findOne({ _id: noteId });
+    const kept = stored.expireAt - stored.createdAt;
+    assert.equal(stored.tab, 'tab-a');
+    assert.ok(Math.abs(kept - apos.notification.options.expireAfter * 1000) < 1000);
+  });
+
+  it('gives each page its start and the lookback in the browser data', function() {
+    const before = Date.now();
+    const { pageStart, lookback } = apos.notification.getBrowserData(req);
+    assert.equal(lookback, apos.notification.options.lookback);
+    assert.ok(pageStart instanceof Date);
+    assert.ok(pageStart.getTime() >= before && pageStart.getTime() <= Date.now());
+  });
+});

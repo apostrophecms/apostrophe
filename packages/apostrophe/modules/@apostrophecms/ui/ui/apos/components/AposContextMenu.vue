@@ -1,9 +1,11 @@
 <template>
-  <!-- onTab only triggered when not teleported -->
   <section
     ref="contextMenuRef"
     :class="rootClasses"
   >
+    <!-- No comment above the root: a fragment root can't leave a transition
+      in some Vue versions' development builds -->
+    <!-- onTab only triggered when not teleported -->
     <slot name="prebutton" />
     <div
       ref="dropdown"

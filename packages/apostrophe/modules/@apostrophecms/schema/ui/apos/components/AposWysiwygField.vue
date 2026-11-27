@@ -118,6 +118,7 @@ import { unref } from 'vue';
 import { mapState, mapActions } from 'pinia';
 import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme.js';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useDocVersionMarkersStore } from 'Modules/@apostrophecms/document-versions/stores/docVersionMarkers.js';
 import { wysiwygProps } from 'Modules/@apostrophecms/schema/mixins/AposWysiwygInputMixin';
 
@@ -212,6 +213,13 @@ export default {
         this.labeled.id === this.id;
     }
   },
+  created() {
+    // Set while focus is in a window stacked above every modal, and the
+    // field's own listeners while it is focused or parked there
+    this.parked = false;
+    this.pointerTarget = null;
+    this.onLeave = null;
+  },
   mounted() {
     this.getAncestors();
   },
@@ -219,7 +227,7 @@ export default {
     // Whatever replaced us, the page must not be left with a trail belonging
     // to a field that is no longer there, and no way to raise another
     this.clearHoveredField(this.id);
-    this.clearFocusedField(this.id);
+    this.leave();
   },
   methods: {
     ...mapActions(useWidgetStore, [
@@ -229,6 +237,7 @@ export default {
       'setFocusedField',
       'clearFocusedField'
     ]),
+    ...mapActions(useModalStore, [ 'getStackedOnTop' ]),
 
     mouseover(e) {
       // The innermost thing under the mouse is the thing to name, just as it
@@ -249,12 +258,63 @@ export default {
     },
 
     focus() {
-      this.setFocusedField(this.id);
+      this.parked = false;
+      this.watchLeave();
+      this.setFocusedField(this.id, {
+        docId: this.docId,
+        name: this.patchKey || this.field.name
+      });
       this.adjust();
     },
 
-    blur() {
+    // Focus taken into a window stacked above every modal, such as the
+    // assistant's, or onto its trigger, leaves the field focused for the
+    // screen, its trail included, until focus or a click lands anywhere
+    // else. A click on a window's text moves focus nowhere, so the last
+    // pointer press says where it went
+    blur(event) {
+      const to = event?.relatedTarget || this.pointerTarget;
+      if (this.isFocused && this.isWindowLayer(to)) {
+        this.parked = true;
+        return;
+      }
+      this.leave();
+    },
+
+    watchLeave() {
+      if (this.onLeave) {
+        return;
+      }
+      this.onLeave = (event) => {
+        if (event.type === 'pointerdown') {
+          this.pointerTarget = event.target;
+        }
+        if (this.parked && !this.$el.contains(event.target) &&
+          !this.isWindowLayer(event.target)) {
+          this.leave();
+        }
+      };
+      document.addEventListener('pointerdown', this.onLeave, true);
+      document.addEventListener('focusin', this.onLeave, true);
+    },
+
+    leave() {
+      this.parked = false;
+      this.pointerTarget = null;
+      if (this.onLeave) {
+        document.removeEventListener('pointerdown', this.onLeave, true);
+        document.removeEventListener('focusin', this.onLeave, true);
+        this.onLeave = null;
+      }
       this.clearFocusedField(this.id);
+    },
+
+    isWindowLayer(el) {
+      if (!(el instanceof Element)) {
+        return false;
+      }
+      return Boolean(el.closest('[data-apos-window-trigger]')) ||
+        this.getStackedOnTop().some(({ modalEl }) => modalEl?.contains(el));
     },
 
     // The trail sits above the field, where the admin bar may well be. When
@@ -278,7 +338,7 @@ export default {
       }
       // Hand over the trail as well. Clicking the crumb put the focus in it,
       // which is inside this field, but the user asked for the widget
-      this.clearFocusedField(this.id);
+      this.leave();
       const el = document.querySelector(`[data-area-widget="${widgetId}"]`);
       const area = el && apos.util.closest(el, '[data-apos-area]');
       this.setFocusedWidget(widgetId, area ? area.dataset.aposArea : null);

@@ -1,10 +1,27 @@
 // HAS to be module import, because it's universal CJS code.
+import { computed, unref } from 'vue';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 import { getConditionTypesObject } from '../lib/conditionalFields';
+import { isSameOutsideValue } from 'Modules/@apostrophecms/ui/utils';
 
 export default {
   name: 'AposSchema',
+  provide() {
+    return {
+      // What came from outside the editor (see `AposEditorMixin`), for the
+      // fields of this schema and of those nested in it, and the scope
+      // naming this schema's own fields in it
+      aposOutsideStates: computed(() => {
+        return this.outsideStates || unref(this.aposParentOutsideStates);
+      }),
+      aposOutsideScope: computed(() => (this.outsideStates ? '' : this.outsideScope))
+    };
+  },
   inject: {
+    aposParentOutsideStates: {
+      from: 'aposOutsideStates',
+      default: null
+    },
     // A read only view, such as See Changes or a document version: every
     // field is shown as read only
     aposReadOnly: {
@@ -104,6 +121,18 @@ export default {
       default() {
         return [];
       }
+    },
+    // What came from outside the editor, given to an editor's schema (see
+    // `AposEditorMixin`)
+    outsideStates: {
+      type: Object,
+      default: null
+    },
+    // The scope of a nested schema's fields in those states: an object's
+    // dot path, `@<item id>` for an inline array item (see `getOutsidePlace`)
+    outsideScope: {
+      type: String,
+      default: null
     }
   },
   emits: [
@@ -122,7 +151,9 @@ export default {
       },
       fieldState: {},
       fieldComponentMap: window.apos.schema.components.fields || {},
-      changedFields: new Set()
+      changedFields: new Set(),
+      // Per field, how many values came from outside (see `applyOutsideValue`)
+      outsideGenerations: {}
     };
   },
   computed: {
@@ -305,6 +336,42 @@ export default {
     handleFieldUpdate(name, val) {
       this.fieldState[name] = val;
       this.changedFields.add(name);
+    },
+    // A value from outside the editor, such as the assistant's. The field's
+    // input takes it as a new value from its parent and validates and emits
+    // it as typed. Inputs that reload only on `generation` (area, array,
+    // object) take it in place when they can, so what kept its value stays
+    // as shown; otherwise they get a generation of their own, so the other
+    // fields keep their state
+    applyOutsideValue(name, value) {
+      const input = [ this.$refs[name] ].flat()[0];
+      const isInPlace = Boolean(input?.applyOutsideInPlace?.(value));
+      this.fieldState[name] = {
+        ...this.fieldState[name],
+        data: value,
+        error: false
+      };
+      if (!isInPlace) {
+        this.outsideGenerations[name] = (this.outsideGenerations[name] || 0) + 1;
+      }
+    },
+    // Values from outside the editor for this schema's fields, by name: each
+    // field whose value changes takes it (see `applyOutsideValue`)
+    applyOutsideData(data) {
+      for (const field of this.schema) {
+        if (
+          Object.hasOwn(data, field.name) &&
+          !isSameOutsideValue(this.fieldState[field.name]?.data, data[field.name])
+        ) {
+          this.applyOutsideValue(field.name, data[field.name]);
+        }
+      }
+    },
+    getFieldGeneration(name) {
+      const outside = this.outsideGenerations[name];
+      return outside
+        ? (this.generation || 0) + outside
+        : this.generation;
     },
     displayComponent({ name, hidden = false }) {
       if (hidden === true) {

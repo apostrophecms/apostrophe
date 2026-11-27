@@ -3010,6 +3010,56 @@ describe(`Database Adapter (${ADAPTER})`, function() {
         .toArray();
       expect(down.map(doc => doc.rank)).to.deep.equal([ ...mixed ].reverse());
     });
+
+    it('should sort null and missing values lowest, in both directions', async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'n1',
+          rank: null
+        },
+        { _id: 'n2' },
+        {
+          _id: 's1',
+          rank: 'apple'
+        }
+      ]);
+
+      const up = await db.collection('test')
+        .find({})
+        .sort({ rank: 1 })
+        .toArray();
+      const down = await db.collection('test')
+        .find({})
+        .sort({ rank: -1 })
+        .toArray();
+      expect(up.slice(0, 2).map(doc => doc._id).sort()).to.deep.equal([ 'n1', 'n2' ]);
+      expect(up.slice(2).map(doc => doc.rank)).to.deep.equal([ ...ascending, 'apple' ]);
+      expect(down.slice(0, -2).map(doc => doc.rank)).to.deep.equal([ ...ascending, 'apple' ].reverse());
+      expect(down.slice(-2).map(doc => doc._id).sort()).to.deep.equal([ 'n1', 'n2' ]);
+    });
+
+    it('should sort a null date after the others when descending', async function() {
+      await db.collection('test').insertMany([
+        {
+          _id: 'never',
+          at: null
+        },
+        {
+          _id: 'old',
+          at: new Date('2026-01-01')
+        },
+        {
+          _id: 'new',
+          at: new Date('2026-06-01')
+        }
+      ]);
+
+      const down = await db.collection('test')
+        .find({ _id: { $in: [ 'never', 'old', 'new' ] } })
+        .sort({ at: -1 })
+        .toArray();
+      expect(down.map(doc => doc._id)).to.deep.equal([ 'new', 'old', 'never' ]);
+    });
   });
 
   // ============================================

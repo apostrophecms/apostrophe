@@ -6,6 +6,8 @@
 module.exports = {
   extend: '@apostrophecms/piece-type',
   options: {
+    // Owns no documents: it lists other types' submitted drafts
+    virtual: true,
     quickCreate: false,
     label: 'apostrophe:submittedDraft',
     pluralLabel: 'apostrophe:submittedDrafts',
@@ -95,8 +97,7 @@ module.exports = {
       'apostrophe:modulesRegistered': {
         patchTypeField() {
           const typeField = self.schema.find(field => field.name === '_type');
-          const managers = Object.values(self.apos.doc.managers);
-          typeField.choices = managers
+          typeField.choices = self.apos.doc.getContentTypes()
             .filter(manager => manager.isLocalized() && !manager.options.autopublish)
             .map(manager => ({
               label: manager.options.label || manager.name || manager.__meta.name,

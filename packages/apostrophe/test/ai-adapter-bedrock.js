@@ -238,10 +238,13 @@ describe('AI adapter: bedrock', function() {
       assert.deepEqual(Object.keys(definition.models), [
         'claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5'
       ]);
-      assert.deepEqual(
-        definition.models['claude-opus-5-5'],
-        vendor.models['claude-opus-5-5']
-      );
+      // Bedrock's own document limits replace the vendor's
+      assert.deepEqual(definition.models['claude-opus-5-5'], {
+        ...vendor.models['claude-opus-5-5'],
+        maxDocumentPages: 100,
+        maxDocumentBytes: 20000000
+      });
+      assert.equal(definition.capabilities.documentInput, true);
     });
 
     it('lists only the served models in the catalog, plus an entry\'s own', function() {
@@ -291,6 +294,61 @@ describe('AI adapter: bedrock', function() {
         assert.equal(denied.name, 'forbidden');
         assert.equal(denied.message, 'Invalid API Key format');
       });
+
+      it('recognizes a request too long for the model, in Bedrock\'s shape or the vendor\'s', function() {
+        const doors = [ 'bedrock-anthropic', 'bedrock-openai', 'bedrock-openai-compatible' ]
+          .map((name) => Object.values(apos.ai.providers)
+            .find((record) => record.adapterName === name).adapter);
+        // Bedrock's own ValidationException: the message at the top level
+        for (const message of [
+          'Input is too long for requested model.',
+          'prompt is too long: 210000 tokens > 200000 maximum'
+        ]) {
+          for (const door of doors) {
+            const error = door.normalizeError(httpError(400, {
+              'x-amzn-requestid': 'req-8',
+              'x-amzn-errortype': 'ValidationException:http://internal.amazon.com/coral/com.amazon.bedrock/'
+            }, { message }));
+            assert.equal(error.name, 'aiContextOverflow');
+            assert.equal(error.message, message);
+            assert.equal(error.data.requestId, 'req-8');
+          }
+        }
+        // Each door also reads its vendor's own shape
+        const [ anthropic, openai, compatible ] = doors;
+        const vendorShaped = [
+          [ anthropic, errorBody('invalid_request_error', 'prompt is too long: 215000 tokens > 200000 maximum') ],
+          [ openai, {
+            error: {
+              message: 'Your input exceeds the context window of this model. Please adjust your input and try again.',
+              type: 'invalid_request_error',
+              code: 'context_length_exceeded'
+            }
+          } ],
+          [ compatible, {
+            error: {
+              message: 'This model\'s maximum context length is 32768 tokens. However, you requested 40000 tokens.',
+              type: 'invalid_request_error'
+            }
+          } ]
+        ];
+        for (const [ door, body ] of vendorShaped) {
+          assert.equal(door.normalizeError(httpError(400, {}, body)).name, 'aiContextOverflow');
+        }
+        // The module's own method, with no dialect, reads Bedrock's shape only
+        assert.equal(
+          adapter.normalizeError(httpError(400, {}, { message: 'Input is too long for requested model.' })).name,
+          'aiContextOverflow'
+        );
+        assert.equal(
+          adapter.normalizeError(httpError(400, {}, vendorShaped[1][1])).name,
+          'invalid'
+        );
+        assert.equal(
+          anthropic.normalizeError(httpError(400, {}, { message: 'Malformed input request' })).name,
+          'invalid'
+        );
+      });
     });
 
     describe('the wire', function() {
@@ -320,6 +378,30 @@ describe('AI adapter: bedrock', function() {
         // medium row's level
         assert.deepEqual(call.options.body.thinking, { type: 'adaptive' });
         assert.deepEqual(call.options.body.output_config, { effort: 'medium' });
+      });
+
+      it('sends a document part as the vendor dialect\'s document block', async function() {
+        httpScript = [ () => fixture() ];
+        await apos.ai.generate(apos.task.getReq(), {
+          messages: [ {
+            role: 'user',
+            content: [ {
+              type: 'document',
+              document: {
+                data: 'JVBERi0=',
+                mediaType: 'application/pdf'
+              }
+            }, text('summarize') ]
+          } ]
+        });
+        assert.deepEqual(httpCalls[0].options.body.messages[0].content[0], {
+          type: 'document',
+          source: {
+            type: 'base64',
+            media_type: 'application/pdf',
+            data: 'JVBERi0='
+          }
+        });
       });
 
       it('reports the catalog id, whatever the response echoes', async function() {
@@ -420,10 +502,11 @@ describe('AI adapter: bedrock', function() {
       assert.deepEqual(Object.keys(definition.models), [
         'gpt-6-luna', 'gpt-6.1-sol', 'gpt-6-astra', 'gpt-5.6-terra'
       ]);
-      assert.deepEqual(
-        definition.models['gpt-6.1-sol'],
-        vendor.models['gpt-6.1-sol']
-      );
+      // Bedrock documents no document limits for these models
+      const { maxDocumentBytes, ...meta } = vendor.models['gpt-6.1-sol'];
+      assert.equal(maxDocumentBytes, 50000000);
+      assert.deepEqual(definition.models['gpt-6.1-sol'], meta);
+      assert.equal(definition.capabilities.documentInput, true);
     });
 
     it('lists only the served chat models in the catalog', function() {

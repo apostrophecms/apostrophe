@@ -1,5 +1,8 @@
 <template>
-  <div :class="themeClass">
+  <div
+    :class="themeClass"
+    @keydown.tab="onKeydownTab"
+  >
     <component
       v-bind="modal.props"
       :is="modal.componentName"
@@ -8,19 +11,31 @@
       :modal-data="modal"
       @modal-result="store.setModalResult(modal.id, $event)"
     />
+    <AposWindowTrigger
+      v-for="trigger in shownTriggers"
+      :key="trigger.name"
+      :trigger="trigger"
+    />
   </div>
 </template>
 
 <script>
-import { onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme';
+import { useAposFocus } from 'Modules/@apostrophecms/modal/composables/AposFocus';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export default {
   name: 'TheAposModals',
   setup() {
     const { themeClass } = useAposTheme();
+    const { cycleAcrossGroups, getStackedFocusGroups } = useAposFocus();
     const store = useModalStore();
+
+    // A trigger hides while its window is open
+    const shownTriggers = computed(() => (apos.modal.triggers || [])
+      .filter(trigger => !store.stack
+        .some(modal => modal.componentName === trigger.componentName)));
 
     onMounted(() => {
       // Open one of the server-side configured top level admin bar menus by
@@ -57,6 +72,22 @@ export default {
       });
     });
 
+    // Tab from a window above every modal, or a trigger, stays in the cycle
+    // of the modal under it that traps focus
+    function onKeydownTab(event) {
+      if (!event.target.closest?.('[data-apos-stacking="top"]')) {
+        return;
+      }
+      const modal = store.activeModal;
+      if (!modal?.modalEl || !modal.trapsFocus) {
+        return;
+      }
+      const groups = getStackedFocusGroups(modal.modalEl);
+      if (groups) {
+        cycleAcrossGroups(event, groups);
+      }
+    }
+
     function getModuleName(itemName) {
       if (!itemName) {
         return null;
@@ -66,7 +97,9 @@ export default {
 
     return {
       themeClass,
-      store
+      store,
+      shownTriggers,
+      onKeydownTab
     };
   }
 };

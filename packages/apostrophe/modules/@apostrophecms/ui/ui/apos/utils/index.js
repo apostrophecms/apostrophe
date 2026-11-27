@@ -1,9 +1,24 @@
+import { getTabId } from './tab-id.js';
+import {
+  getOutsidePlace,
+  getOutsideSave,
+  getOutsideValue,
+  hasOutsideId,
+  isSameOutsideValue
+} from './outside.js';
+
 export {
   debounceAsync,
   // BC alias
   debounceAsync as debounce,
   throttle,
-  asyncTaskQueue
+  asyncTaskQueue,
+  getTabId,
+  getOutsidePlace,
+  getOutsideSave,
+  getOutsideValue,
+  hasOutsideId,
+  isSameOutsideValue
 };
 
 // Debounce the async function "fn". For synchronous functions, use

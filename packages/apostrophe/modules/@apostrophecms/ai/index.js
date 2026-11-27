@@ -8,9 +8,11 @@
 
 const Ajv = require('ajv/dist/2020').default;
 const {
-  isObject, isAbort, startupFail
+  isObject, isAbort, stepUsage, startupFail
 } = require('./lib/util');
-const { DENIED_TYPES, USAGE_SHARE_KEYS } = require('./lib/constants');
+const {
+  DENIED_TYPES, USAGE_SHARE_KEYS, PART_CAPABILITIES
+} = require('./lib/constants');
 
 // The protocol shapes this surface hands out or takes in, named once so the
 // blocks below can use them bare. lib/types.js declares them and nothing else.
@@ -32,14 +34,17 @@ module.exports = {
     //   returning the key, called before every request
     providers: {},
     // provider: the default provider name; inferred when only one is configured
-    // effort: { default, levels: { name: { provider, model, reasoning } } }
+    // effort: { default, levels: { name: { provider, model, reasoning,
+    //   description } } }; `description` tells a model choosing a level
+    //   what it is for (see effortSchema)
     // image: { provider, model, aspect, quality }
     // mock: (req, request) => assistant turn, consulted only under
     //   APOS_AI_MOCK
     // mockImage: (req, request) => adapter image result, consulted only
     //   under APOS_AI_MOCK
     // usageMetadata: an object copied onto every `usage` record as its
-    //   `metadata`, e.g. the site a multisite instance serves
+    //   `metadata`, e.g. the site a multisite instance serves; a call's own
+    //   `usageMetadata` is merged over it
     // Conservative agent-loop cap; any call may override it
     maxSteps: 5,
     // Transient-failure retry cap, counting calls
@@ -63,6 +68,9 @@ module.exports = {
     self.providers = {};
     self.effortTable = {};
     self.tools = {};
+    // Names removeTool took out; applied again at activation, so a
+    // removal wins over a registration that comes later
+    self.removedTools = new Set();
     // getTools query caches, built once at activation: the registry is
     // static, so they never go stale, and they hold the same
     // definition objects it does, not copies.
@@ -94,6 +102,7 @@ module.exports = {
     self.apos.http.addError('aiRefusal', 422);
     self.apos.http.addError('aiToolError', 422);
     self.apos.http.addError('aiInput', 422);
+    self.apos.http.addError('aiContextOverflow', 413);
   },
   handlers(self) {
     return {
@@ -151,11 +160,13 @@ module.exports = {
        *   intersection of the provider naming rules.
        * @property {string} description Non-empty text the model chooses the
        *   tool by; treat it as part of the prompt.
-       * @property {object} input The JSON Schema (draft 2020-12) the model's
-       *   arguments must satisfy. Sent to the provider; must declare an object
-       *   root. Declared "default" values are written into the arguments the
-       *   handler receives when the model omits them; the conversation
-       *   transcript keeps the call as the model made it.
+       * @property {object|(() => object)} input The JSON Schema (draft
+       *   2020-12) the model's arguments must satisfy. Sent to the provider;
+       *   must declare an object root. Declared "default" values are written
+       *   into the arguments the handler receives when the model omits them;
+       *   the conversation transcript keeps the call as the model made it. A
+       *   function returning the schema is called once at activation, when
+       *   the effort table exists (see effortSchema).
        * @property {object} [schema] The handler result's shape as a JSON
        *   Schema (draft 2020-12) with an object root — the same format as
        *   `input`, but internal: never sent to the model. When present, every
@@ -177,6 +188,22 @@ module.exports = {
        * @property {string} [label] A human-facing name — what a chat log or an
        *   activity trail shows for the tool; may be an i18n key. Defaults from
        *   the name ('find_pages' → 'Find Pages'). Never sent to the model.
+       * @property {(input: object, output: object|null) => object[]} [summary]
+       *   What happened in a call, for a UI that shows it (the assistant's
+       *   steps); optional, and without it a UI shows no summary of the
+       *   call. Called with the arguments as the model gave them (unchecked
+       *   when the call was refused for them) and the result, `null` when the
+       *   call failed or hasn't returned. Returns a list of items:
+       *   - a document, `{ _id, title?, locale?, action? }` (a missing title
+       *     is read from the document);
+       *   - a type, `{ type, action? }`;
+       *   - text, `{ text, title?, type?, locale? }`: an i18n key or plain
+       *     text, translated with `title`, `type` and `locale` interpolated.
+       *   `action` names what happened to a document or type from the UI's
+       *   list (for the assistant, `ACTIONS` in `AposAssistantSteps.vue`),
+       *   with `count`, `reason` or `toLocale` where that action takes them;
+       *   an item without one the UI knows shows bare. Never sent to the
+       *   model.
        * @property {string[]} [tags] Strings to query the registry by, see
        *   getTools.
        * @property {'query'|'action'|'agent'} [kind] The tool's consequence
@@ -212,6 +239,26 @@ module.exports = {
           startupFail('addTool requires a definition with a "name" of 1 to 64 letters, digits, "_" or "-", starting with a letter');
         }
         self.tools[tool.name] = tool;
+      },
+
+      /**
+       * Take a tool out of the registry, so no call and no tag selection
+       * ever sees it. A removal wins whatever the module order: a tool
+       * registered under a removed name later still never activates. A
+       * name nobody registers removes nothing. Like addTool, it must run
+       * before "apostrophe:ready".
+       *
+       * @param {string} name
+       */
+      removeTool(name) {
+        if (self.toolsActive) {
+          startupFail('tools must be removed before "apostrophe:ready"');
+        }
+        if (typeof name !== 'string' || !name) {
+          startupFail('removeTool requires a tool name');
+        }
+        self.removedTools.add(name);
+        delete self.tools[name];
       },
 
       /**
@@ -296,7 +343,7 @@ module.exports = {
        */
       modelInfo(options = {}) {
         const {
-          provider, model, reasoning, aspect, quality, ...inline
+          provider, model, reasoning, aspect, quality, description, ...inline
         } = self.resolve(options);
         const record = self.providers[provider];
         const metadata = {
@@ -309,6 +356,10 @@ module.exports = {
           ...(reasoning !== undefined && { reasoning }),
           contextWindow: metadata.contextWindow,
           maxOutputTokens: metadata.maxOutputTokens,
+          ...(metadata.maxDocumentPages !== undefined &&
+            { maxDocumentPages: metadata.maxDocumentPages }),
+          ...(metadata.maxDocumentBytes !== undefined &&
+            { maxDocumentBytes: metadata.maxDocumentBytes }),
           capabilities: { ...record.capabilities }
         };
         if (options.capability === 'image') {
@@ -365,6 +416,35 @@ module.exports = {
       },
 
       /**
+       * The JSON Schema of a tool argument that names an effort level: a
+       * string enum of the configured levels, its description listing each
+       * level with the `description` the effort table gives it. The table is
+       * built at activation, so call this from a tool's `input` function.
+       *
+       * @param {object} [options]
+       * @param {string} [options.description] Text placed before the list
+       *   of levels.
+       * @returns {{ type: 'string', enum: string[], description: string }}
+       */
+      effortSchema({ description } = {}) {
+        const levels = Object.keys(self.effortTable);
+        // Mock mode with no providers routes nothing; the default level
+        // is the only name a call can pass
+        if (!levels.length) {
+          levels.push(self.effortDefault);
+        }
+        const lines = levels.map((level) => {
+          const text = self.effortTable[level]?.description;
+          return text ? `- ${level}: ${text}` : `- ${level}`;
+        });
+        return {
+          type: 'string',
+          enum: levels,
+          description: [ description, ...lines ].filter(Boolean).join('\n')
+        };
+      },
+
+      /**
        * The AI permission seam: whether this AI action is permitted for `req`.
        * Same signature and semantics as
        * `apos.permission.can(req, action, docOrType, mode)`, and otherwise a
@@ -374,8 +454,9 @@ module.exports = {
        * here, centrally, without touching a single handler. It can only ever
        * be as restrictive as `apos.permission.can` or more, never looser.
        *
-       * Denied doc types are refused unconditionally, for every action and
-       * whether named as a type string or passed as a document.
+       * Denied doc types (see getDeniedTypes) are refused unconditionally,
+       * for every action and whether named as a type string or passed as a
+       * document.
        *
        * @param {object} req
        * @param {...*} args As `apos.permission.can`: action, docOrType, mode.
@@ -384,10 +465,21 @@ module.exports = {
       can(req, ...args) {
         const docOrType = args[1];
         const type = isObject(docOrType) ? docOrType.type : docOrType;
-        if (DENIED_TYPES.includes(type)) {
+        if (self.getDeniedTypes().includes(type)) {
           return false;
         }
         return self.apos.permission.can(req, ...args);
+      },
+
+      /**
+       * The doc types AI may never read or write, whatever the user's
+       * permissions: users and permission groups. A project extends this
+       * method to add its own types or to filter out core's.
+       *
+       * @returns {string[]}
+       */
+      getDeniedTypes() {
+        return [ ...DENIED_TYPES ];
       },
 
       /**
@@ -457,6 +549,25 @@ module.exports = {
        *   naming no registered tool never starts and is not reported. A throw
        *   stops the call, except from the end report of a handler whose own
        *   failure is already stopping it.
+       * @property {(event: object) => Promise<void>} [onRetry] Called
+       *   before each retry of a provider call with `{ attempt, wait, step }`:
+       *   the number of the attempt about to be made, the wait before it in
+       *   whole seconds and the model turn it belongs to; awaited, and a
+       *   throw stops the call.
+       * @property {(meta: object) => Promise<object|void>} [betweenSteps]
+       *   Called after each step whose tool calls all ran, before the next
+       *   model call, with `{ step, usage, messages, signal }`, `usage` being
+       *   that step's own (AiUsage), `messages` the transcript so far, ending
+       *   in the step's tool message (read only), and `signal` the call's
+       *   own, when it has one, for work the hook starts. Returning
+       *   `{ stop: true }` ends the run with
+       *   finishReason 'paused': the transcript ends in the complete tool
+       *   message, and a later call given it as `messages` continues the
+       *   work. A throw stops the call.
+       * @property {object} [usageMetadata] Merged over the module's
+       *   `usageMetadata` on every `usage` record of this call, retries
+       *   included, so a caller can tell its calls apart, e.g.
+       *   `{ purpose: 'summary' }`.
        */
 
       /**
@@ -503,6 +614,13 @@ module.exports = {
        * included, every one is billed — with that response's own token
        * counts (see reportUsage in lib/adapter-call.js). `afterGenerate`
        * fires only when the call returns; `usage` is the billing record.
+       * `beforeToolCall` fires once a call's arguments are valid, with them
+       * on `payload.args` as the handler will receive them, `_context`
+       * included: a handler of it may throw `aiToolError` or `aiInput` to
+       * refuse or suspend the call, as the tool's own handler would. An
+       * `afterToolCall` handler may replace the `result` of a call that
+       * succeeded: the model reads the replacement, which is not validated
+       * again.
        *
        * @param {object} req The caller's request object, carried into events,
        *   the adapter and every tool handler — the core never invents auth.
@@ -514,9 +632,15 @@ module.exports = {
        * @returns {Promise<AiResult>}
        * @throws Normalized apos errors: "invalid" for bad calls, "aiRetry" when
        *   transient provider failures outlast the retry budget, "aiRefusal"
-       *   when the model refuses. A tool handler's standard-coded throw (and
-       *   any handler bug) stops the call as-is, with no trace of it in any
-       *   model-bound message.
+       *   when the model refuses, "aiContextOverflow" when the provider
+       *   refuses the request as too long for the model. A tool handler's
+       *   standard-coded throw (and any handler bug) stops the call as-is,
+       *   with no trace of it in any model-bound message. Whatever stops the
+       *   run, the error carries the work done before it as
+       *   `aposAiPartial`: a result as a canceled run returns it (the
+       *   transcript ending in the calls that executed, `steps`, `usage`),
+       *   with finishReason 'error' and, when a tool call threw,
+       *   `failedToolCall` (`{ id, name }`).
        */
       async generate(req, stringOrOptions, options) {
         const canonical = self.normalizeGenerateOptions(stringOrOptions, options);
@@ -546,6 +670,13 @@ module.exports = {
           }
           if (canonical.schema) {
             self.checkCapability(provider, 'structured');
+          }
+          // Every media part the transcript carries, replayed ones too
+          for (const [ type, capability ] of Object.entries(PART_CAPABILITIES)) {
+            if (canonical.messages.some(({ content }) =>
+              content.some((part) => part.type === type))) {
+              self.checkCapability(provider, capability);
+            }
           }
         }
         const record = self.mockMode
@@ -578,6 +709,7 @@ module.exports = {
         let pending = null;
         let suspended = null;
         let canceled = false;
+        let paused = false;
         try {
           await continuePending();
           if (!suspended && !canceled) {
@@ -588,7 +720,7 @@ module.exports = {
           // only while this call's signal has fired — a genuine failure
           // racing a cancel still throws
           if (!isAbort(e) || !canonical.signal?.aborted) {
-            throw e;
+            throw withPartial(e);
           }
           canceled = true;
         }
@@ -600,6 +732,7 @@ module.exports = {
           object: turn?.object,
           hadTools: tools.size > 0 || Boolean(canonical.pendingCalls),
           ...(suspended && { finishReason: 'input' }),
+          ...(paused && { finishReason: 'paused' }),
           ...(canceled && { finishReason: 'cancel' })
         });
         await self.emit('afterGenerate', req, context);
@@ -618,7 +751,8 @@ module.exports = {
                   provider,
                   step: turns,
                   attempt,
-                  request: context.request
+                  request: context.request,
+                  usageMetadata: canonical.usageMetadata
                 }, answer, () => {
                   self.validateTurn(answer);
                   // Only a 'stop' turn is the answer: tool turns run the
@@ -629,7 +763,10 @@ module.exports = {
                     self.validateStructured(answer, canonical.validateObject);
                   }
                 });
-              });
+              }, canonical.onRetry && ((event) => canonical.onRetry({
+                ...event,
+                step: turns
+              })));
             usage.inputTokens += turn.usage.inputTokens;
             usage.outputTokens += turn.usage.outputTokens;
             // A share appears on the call only once a turn reported it
@@ -700,6 +837,20 @@ module.exports = {
             if (canonical.signal?.aborted) {
               canceled = true;
               break;
+            }
+            // The transcript ends in a complete tool message here, so
+            // a run stopped now continues from it as it stands
+            if (canonical.betweenSteps) {
+              const verdict = await canonical.betweenSteps({
+                step: turns,
+                usage: stepUsage(turn.usage),
+                messages: context.request.messages,
+                ...(canonical.signal && { signal: canonical.signal })
+              });
+              if (verdict?.stop === true) {
+                paused = true;
+                break;
+              }
             }
           }
         }
@@ -784,32 +935,56 @@ module.exports = {
           if (canonical.signal?.aborted) {
             canceled = true;
           }
+        }
 
-          // The new results into the trailing tool message, rebuilt in
-          // the assistant turn's call order; appended as a new message
-          // when nothing was answered before
-          function mergeTrailing(executed) {
-            if (!executed.length) {
-              return;
-            }
-            const messages = context.request.messages;
-            const last = messages.at(-1);
-            if (last?.role !== 'tool') {
-              messages.push({
-                role: 'tool',
-                content: toolResultParts(executed)
-              });
-              return;
-            }
-            const byId = new Map(
-              [ ...last.content, ...toolResultParts(executed) ]
-                .map((part) => [ part.toolCallId, part ])
-            );
-            last.content = messages.at(-2).content
-              .filter((part) => part.type === 'toolCall')
-              .map((call) => byId.get(call.id))
-              .filter(Boolean);
+        // The new results into the trailing tool message, rebuilt in the
+        // assistant turn's call order; appended as a new message when
+        // nothing was answered before
+        function mergeTrailing(executed) {
+          if (!executed.length) {
+            return;
           }
+          const messages = context.request.messages;
+          const last = messages.at(-1);
+          if (last?.role !== 'tool') {
+            messages.push({
+              role: 'tool',
+              content: toolResultParts(executed)
+            });
+            return;
+          }
+          const byId = new Map(
+            [ ...last.content, ...toolResultParts(executed) ]
+              .map((part) => [ part.toolCallId, part ])
+          );
+          last.content = messages.at(-2).content
+            .filter((part) => part.type === 'toolCall')
+            .map((call) => byId.get(call.id))
+            .filter(Boolean);
+        }
+
+        // A failed run keeps the work done before it, as a canceled run
+        // does: the calls the stopped batch executed join the steps and the
+        // transcript, and the error carries the result so far
+        function withPartial(e) {
+          if (!e || (typeof e !== 'object')) {
+            return e;
+          }
+          const failure = e.aposAiToolFailure;
+          delete e.aposAiToolFailure;
+          const executed = failure?.executed || [];
+          steps.push(...executed);
+          mergeTrailing(executed);
+          e.aposAiPartial = {
+            ...self.assembleResult(context, turn, {
+              steps,
+              usage,
+              hadTools: tools.size > 0 || Boolean(canonical.pendingCalls),
+              finishReason: 'error'
+            }),
+            ...(failure?.toolCall && { failedToolCall: failure.toolCall })
+          };
+          return e;
         }
       },
 
@@ -832,6 +1007,8 @@ module.exports = {
        *   not apply then.
        * @property {string} [model]
        * @property {AbortSignal} [signal] Aborts the in-flight provider call.
+       * @property {object} [usageMetadata] Merged over the module's
+       *   `usageMetadata` on the call's `usage` records.
        */
 
       /**
@@ -927,7 +1104,8 @@ module.exports = {
               provider,
               step: 1,
               attempt,
-              request: context.request
+              request: context.request,
+              usageMetadata: canonical.usageMetadata
             }, batch, () => self.validateImageResult(batch));
           });
         // The envelope: the adapter's minimal result plus what the
@@ -951,8 +1129,8 @@ module.exports = {
 
       /**
        * What generateJob accepts on top of everything generate accepts, which
-       * is passed through untouched — `onMessage` and `onToolCall` are called
-       * with `{ jobId }` merged into their meta here.
+       * is passed through untouched — `onMessage`, `onToolCall` and `onRetry`
+       * are called with `{ jobId }` merged into their meta here.
        *
        * @typedef {object} AiJobOptions
        * @property {(error: Error|null, result: AiResult|undefined) => Promise<void>}
@@ -961,12 +1139,19 @@ module.exports = {
        *   'cancel'). Its own throw is logged, never recorded on the job.
        * @property {number} [expireAfter] Seconds the job record is kept,
        *   defaulting to the `jobExpireAfter` option; 0 keeps it forever.
+       * @property {(result: AiResult) => object} [jobResults] What the job
+       *   record keeps as `results`, from the run's result; the result itself
+       *   by default. For a run whose transcript should not be stored whole:
+       *   one carrying images or documents holds their bytes. `onEnd` still
+       *   gets the result as it is.
        * @property {boolean} [notify] Publish the run's progress to the caller's
        *   browser (see publishJobEvent); true by default. 'started' once the
        *   record exists, 'message' per intermediate assistant turn with the
        *   turn as `message`, 'tool' as each tool call starts and ends —
        *   summarized, never the result itself, which the transcript carries —
-       *   and 'ended' with the record's terminal `status`
+       *   'retry' before each retry of a provider call with its `attempt`,
+       *   `wait` (seconds) and `step`, and 'ended' with the record's terminal
+       *   `status`
        *   plus the result's `finishReason` or the failure's `error`
        *   ({ name, message }). Correlate by `jobId` and read the stored result
        *   from the job's status route — the record may flip to its terminal
@@ -980,8 +1165,10 @@ module.exports = {
        * `@apostrophecms/job`. The `await` covers job creation only — the method
        * returns as soon as the job record exists, the run continues in the
        * background, and the exact object generate would have returned is stored
-       * on the record as `results` (a failure stores its error instead),
-       * readable via the job module's status route.
+       * on the record as `results`, or what `jobResults` makes of it (a
+       * failure stores its error instead),
+       * readable via the job module's status route. The job has a heartbeat,
+       * so a run whose process died reads as `abandoned` there.
        *
        * Invalid options throw here, synchronously — a job record is created
        * only for a run that can start. Tool handlers may not start jobs: a
@@ -1015,10 +1202,13 @@ module.exports = {
           self.normalizeGenerateOptions(stringOrOptions, options);
         }
         const {
-          onEnd, expireAfter, notify = true, ...generateOptions
+          onEnd, expireAfter, notify = true, jobResults, ...generateOptions
         } = source;
         if (onEnd !== undefined && typeof onEnd !== 'function') {
           throw self.apos.error('invalid', '"onEnd" must be a function');
+        }
+        if (jobResults !== undefined && typeof jobResults !== 'function') {
+          throw self.apos.error('invalid', '"jobResults" must be a function');
         }
         if (typeof notify !== 'boolean') {
           throw self.apos.error('invalid', '"notify" must be a boolean');
@@ -1071,10 +1261,21 @@ module.exports = {
                 await generateOptions.onToolCall(event, { jobId });
               }
             }
+          }),
+          ...((notify || generateOptions.onRetry) && {
+            onRetry: async (event) => {
+              if (notify) {
+                await self.publishJobEvent(req, jobId, 'retry', event);
+              }
+              if (generateOptions.onRetry) {
+                await generateOptions.onRetry(event, { jobId });
+              }
+            }
           })
         };
         const returned = await jobModule.run(req, doTheWork, {
           notifications: false,
+          heartbeat: true,
           ...(req.user?._id && { userId: req.user._id }),
           ...(ttl > 0 && { expireAfter: ttl })
         });
@@ -1105,7 +1306,7 @@ module.exports = {
             const result = isPrompt
               ? await self.generate(workReq, stringOrOptions, backgroundOptions)
               : await self.generate(workReq, backgroundOptions);
-            reporting.setResults(result);
+            reporting.setResults(jobResults ? jobResults(result) : result);
             await report(null, result);
           } catch (error) {
             await report(error, undefined);
@@ -1196,10 +1397,12 @@ module.exports = {
       /**
        * The built-in progress publisher for generateJob: deliver one stage of a
        * background run to the job owner's browser over the notification
-       * channel. Each stage is a bus notification — never rendered — whose
-       * one-shot browser-bus event "ai-generate-job" is emitted in exactly one
-       * tab, carrying { jobId, stage, ...data }:
+       * channel. Each stage is a bus notification — never rendered — for every
+       * browser tab of the owner: each tab that is polling emits the
+       * browser-bus event "ai-generate-job" once, carrying
+       * { jobId, stage, ...data }:
        * `apos.bus.$on('ai-generate-job', (data) => ...)`, filtered by jobId.
+       * A stage expires after the notification module's `carrierExpireAfter`.
        *
        * Notifications reach logged-in users only, so a req without a user _id
        * is a silent no-op — there is nobody to deliver to. A delivery failure
@@ -1207,7 +1410,7 @@ module.exports = {
        *
        * @param {object} req
        * @param {string} jobId
-       * @param {'started'|'message'|'tool'|'ended'} stage
+       * @param {'started'|'message'|'tool'|'retry'|'ended'} stage
        * @param {object} [data] The stage's payload.
        * @returns {Promise<void>}
        */
@@ -1218,6 +1421,7 @@ module.exports = {
         try {
           await self.apos.notification.trigger(req, {
             bus: true,
+            tab: 'every',
             event: {
               name: 'ai-generate-job',
               data: {

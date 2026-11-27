@@ -929,12 +929,17 @@ function buildOrderBy(sort, options = {}) {
       if (field === '_id') {
         clauses.push(`_id ${direction === -1 ? 'DESC' : 'ASC'}`);
       } else {
-        // Numbers compare numerically, everything else as text: text alone
-        // puts 10 before 2. Non-numbers are NULL in the first clause, so they
-        // follow the numbers ascending and precede them descending, as in MongoDB.
+        // Null and missing values sort lowest, as in MongoDB; PostgreSQL
+        // puts NULL first only when descending. Then numbers compare
+        // numerically, everything else as text: text alone puts 10 before 2.
+        // Non-numbers are NULL in the numeric clause, so they follow the
+        // numbers ascending and precede them descending, as in MongoDB.
         const order = direction === -1 ? 'DESC' : 'ASC';
         const jsonPath = buildJsonPath(field);
         const jsonTextPath = buildJsonTextPath(field);
+        clauses.push(
+          `COALESCE(jsonb_typeof(${jsonPath}), 'null') <> 'null' ${order}`
+        );
         clauses.push(
           `CASE WHEN jsonb_typeof(${jsonPath}) = 'number' THEN (${jsonTextPath})::numeric END ${order}`
         );

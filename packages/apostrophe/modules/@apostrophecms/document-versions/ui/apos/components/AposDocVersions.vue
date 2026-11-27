@@ -5,6 +5,7 @@
     :modal="modal"
     :modal-title="{ key: 'apostrophe:versionPluralLabel' }"
     :graph-key="graphKey"
+    :screen="screen"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="close"
@@ -164,6 +165,12 @@ const props = defineProps({
 });
 
 defineEmits([ 'modal-result', 'safe-close' ]);
+
+const screen = computed(() => ({
+  kind: 'versions',
+  docId: props.doc._id,
+  docType: props.doc.type
+}));
 
 const $t = inject('i18n');
 

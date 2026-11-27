@@ -4,13 +4,26 @@
     :class="{
       [`apos-field__wrapper--${field.type}`]: true,
       'apos-field__wrapper--full-width': modifiers.includes('full-width'),
+      'apos-field__wrapper--outside': outsideState,
+      'apos-field__wrapper--busy': outsideState?.busy
     }"
+    :aria-busy="outsideState?.busy ? 'true' : null"
   >
+    <!-- Out of reach while busy: its value is about to be replaced -->
     <component
       :is="wrapEl"
       :class="classList"
+      :inert="isOutsideInert || null"
     >
       <div class="apos-field__info">
+        <!-- Beside the label, never in it: not part of the field's name -->
+        <transition name="apos-field__ai-mark">
+          <AposAiMark
+            v-if="outsideState && field.label && !field.hideLabel"
+            class="apos-field__ai-mark"
+            :busy="outsideState.busy"
+          />
+        </transition>
         <component
           :is="labelEl"
           v-if="field.label"
@@ -148,6 +161,59 @@ export default {
   max-width: 100%;
 }
 
+// Room for the mark at the start of the label line, centred on that line
+// however tall its meta makes it: both share the first cell
+.apos-field__wrapper--outside > .apos-field > .apos-field__info {
+  position: relative;
+  display: grid;
+
+  > * {
+    grid-column: 1;
+  }
+
+  > .apos-field__label {
+    grid-row: 1;
+    padding-left: 20px;
+  }
+
+  // The label's gap below it is in the cell too
+  > .apos-field__ai-mark {
+    position: static;
+    grid-row: 1;
+    place-self: center start;
+    margin-bottom: var(--apos-field-label-gap, #{$spacing-base});
+  }
+}
+
+// Where the mark fades out once the field is no longer marked
+.apos-field__ai-mark {
+  position: absolute;
+  top: 1px;
+  left: 0;
+}
+
+.apos-field__ai-mark-enter-active,
+.apos-field__ai-mark-leave-active {
+  transition: opacity 220ms ease-out, transform 220ms ease-out;
+}
+
+.apos-field__ai-mark-enter-from,
+.apos-field__ai-mark-leave-to {
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+// A field AI is about to change: dimmed and out of reach until its value
+// lands, then back in a fade
+.apos-field__wrapper--outside > .apos-field > :deep(:not(.apos-field__info, .apos-field__error)) {
+  transition: opacity 360ms ease-out;
+}
+
+.apos-field__wrapper--busy > .apos-field > :deep(:not(.apos-field__info, .apos-field__error)) {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 .apos-field {
   border-width: 0;
   padding: 0;
@@ -170,7 +236,8 @@ export default {
     flex-wrap: nowrap;
     align-items: center;
     justify-content: space-between;
-    margin: 0 0 $spacing-base;
+    // Set where a field's context changes it, so the AI mark can follow
+    margin: 0 0 var(--apos-field-label-gap, #{$spacing-base});
     padding: 0;
     color: var(--a-text-primary);
     gap: $spacing-double;
@@ -252,11 +319,9 @@ export default {
   align-items: center;
   justify-content: space-between;
 
-  .apos-field__label {
-    margin-bottom: 0;
-  }
-
   .apos-field__info {
+    --apos-field-label-gap: 0;
+
     margin-right: 30px;
   }
 
@@ -291,6 +356,15 @@ export default {
     .apos-input-wrapper {
       width: 100%;
     }
+  }
+}
+
+/* stylelint-disable-next-line media-feature-name-allowed-list */
+@media (prefers-reduced-motion: reduce) {
+  .apos-field__ai-mark-enter-active,
+  .apos-field__ai-mark-leave-active,
+  .apos-field__wrapper--outside > .apos-field > :deep(:not(.apos-field__info, .apos-field__error)) {
+    transition: none;
   }
 }
 </style>

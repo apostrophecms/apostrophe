@@ -9,6 +9,7 @@
     }"
     :modal="modal"
     :modal-data="modalData"
+    :screen="screen"
     @esc="close"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
@@ -603,6 +604,14 @@ export default {
     };
   },
   computed: {
+    // A batch of documents is localized from a manager, which names them
+    screen() {
+      return {
+        kind: 'localize',
+        docId: this.doc?._id || null,
+        docType: this.doc?.type || null
+      };
+    },
     moduleOptions() {
       return window.apos.i18n;
     },

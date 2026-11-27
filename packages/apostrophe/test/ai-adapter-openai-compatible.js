@@ -216,6 +216,55 @@ describe('AI adapter: openai-compatible', function() {
       ]);
     });
 
+    it('translates a document part to a file part, with a filename either way', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'user',
+          content: [
+            text('summarize these'),
+            {
+              type: 'document',
+              document: {
+                data: 'JVBERi0=',
+                mediaType: 'application/pdf',
+                name: 'brief.pdf'
+              }
+            },
+            {
+              type: 'document',
+              document: {
+                data: 'JVBERi0=',
+                mediaType: 'application/pdf'
+              }
+            }
+          ]
+        } ]
+      }));
+      assert.deepEqual(body.messages[0].content.slice(1), [
+        {
+          type: 'file',
+          file: {
+            filename: 'brief.pdf',
+            file_data: 'data:application/pdf;base64,JVBERi0='
+          }
+        },
+        {
+          type: 'file',
+          file: {
+            filename: 'document.pdf',
+            file_data: 'data:application/pdf;base64,JVBERi0='
+          }
+        }
+      ]);
+    });
+
+    it('declares no document input; an entry opts in', function() {
+      assert.equal(
+        apos.ai.getAdapter('openai-compatible').capabilities.documentInput,
+        false
+      );
+    });
+
     it('passes reasoning through as reasoning_effort', function() {
       assert.equal(adapter.buildBody(request()).reasoning_effort, undefined);
       assert.equal(
@@ -546,6 +595,59 @@ describe('AI adapter: openai-compatible', function() {
       }));
       assert.equal(error.message, 'Incorrect API key provided');
       assert.equal(error.data.requestId, 'req_9');
+    });
+
+    it('recognizes a request too long for the model, as each host words it', function() {
+      for (const body of [
+        // OpenAI proper and hosts that copy its code
+        {
+          error: {
+            message: 'Please reduce the length of the messages or completion.',
+            type: 'invalid_request_error',
+            code: 'context_length_exceeded'
+          }
+        },
+        // OpenAI's older wording, kept by vLLM, OpenRouter and DeepSeek
+        {
+          error: {
+            message: 'This model\'s maximum context length is 32768 tokens. However, you requested 40000 tokens (36000 in the messages, 4000 in the completion). Please reduce the length of the messages or completion.',
+            type: 'invalid_request_error'
+          }
+        },
+        // Mistral
+        {
+          error: {
+            message: 'Prompt contains 40000 tokens and 0 draft tokens, too large for model with 32768 maximum context length',
+            type: 'invalid_request_error'
+          }
+        },
+        // A server that puts the error at the top level of the body
+        {
+          object: 'error',
+          message: 'This model\'s maximum context length is 4096 tokens. However, you requested 5000 tokens.',
+          type: 'BadRequestError',
+          code: 400
+        },
+        // Anthropic's OpenAI-compatible endpoint
+        {
+          error: {
+            message: 'prompt is too long: 215000 tokens > 200000 maximum',
+            type: 'invalid_request_error'
+          }
+        }
+      ]) {
+        const error = adapter.normalizeError(httpError(400, {}, body));
+        assert.equal(error.name, 'aiContextOverflow');
+        assert.equal(error.message, body.error?.message ?? body.message);
+      }
+      assert.equal(adapter.normalizeError(httpError(413)).name, 'aiContextOverflow');
+      const other = adapter.normalizeError(httpError(400, {}, {
+        error: {
+          message: '\'messages\' must contain at least one message',
+          type: 'invalid_request_error'
+        }
+      }));
+      assert.equal(other.name, 'invalid');
     });
 
     it('parses Retry-After as seconds and as an HTTP date', function() {

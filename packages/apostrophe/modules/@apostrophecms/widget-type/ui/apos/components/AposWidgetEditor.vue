@@ -3,6 +3,9 @@
     class="apos-widget-editor"
     :modal="modal"
     :modal-title="editLabel"
+    :screen="screen"
+    :outside="outside"
+    :announcement="outsideAnnouncement"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
@@ -45,6 +48,7 @@
         :tabs="tabs"
         orientation="horizontal"
         :errors="fieldErrors"
+        :outside-states="outsideTabs"
         @select-tab="switchPane"
       />
     </template>
@@ -68,6 +72,7 @@
               :following-values="followingValues()"
               :conditional-fields="conditionalFields"
               :server-errors="serverErrors"
+              :outside-states="outsideStates"
               @update:model-value="updateDocFields"
               @validate="triggerValidate"
             />
@@ -191,6 +196,17 @@ export default {
     };
   },
   computed: {
+    // The document is the area's, given by the opener on the page only: in
+    // a modal it is the editor's below this one. A new widget has no id
+    // until the area inserts it
+    screen() {
+      return {
+        kind: 'widgetEditor',
+        docId: this.$attrs.docId || null,
+        widgetId: this.id || null,
+        field: this.areaFieldId?.split('.').pop() || null
+      };
+    },
     changeDisplayIcon() {
       const name = this.isDisplayWindow ? this.modal.origin || 'right' : 'window';
       return `dock-${name}-icon`;
@@ -476,6 +492,7 @@ export default {
         ...this.docFields.data,
         ...value.data
       };
+      this.dropTouchedOutside();
       this.evaluateConditions();
       this.updatePreview(value);
     },
@@ -669,6 +686,7 @@ export default {
         this.areaDebounceUpdate.cancel?.();
         const widget = this.getWidgetObject();
         this.saving = true;
+        this.handOverOutside();
         this.$emit('modal-result', widget);
         this.modal.showModal = false;
       });
@@ -732,7 +750,25 @@ export default {
       return newInstance(this.schema);
     },
     getAposSchema(field) {
-      return this.$refs[field.group.name][0];
+      return this.$refs[field.group.name]?.[0];
+    },
+    // The widget's fields, by their path in the document
+    getOutsideRootId() {
+      return this.id || this.newId;
+    },
+    getOutsideRoot() {
+      return {
+        kind: 'widget',
+        data: this.getWidgetObject(),
+        areaFieldId: this.areaFieldId,
+        locale: this.getOutsideLocale()
+      };
+    },
+    getOutsideData() {
+      return {
+        ...this.docFields.data,
+        _id: this.id || this.newId
+      };
     }
   }
 };

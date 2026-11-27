@@ -14,7 +14,9 @@
       <li
         :data-row-id="row._id"
         data-apos-tree-row
+        :data-apos-outside="getOutsideState(row._id)"
         :class="getRowClasses(row)"
+        :aria-busy="getOutsideState(row._id) === 'busy' ? 'true' : null"
         :aria-role="options.selectable ? 'button' : null"
         :tabindex="options.selectable ? 0 : null"
         v-on="options.selectable ? {
@@ -90,6 +92,13 @@
               :choice="{ value: row._id }"
               @pointerdown="pointerEvent"
             />
+            <transition name="apos-tree__ai-mark">
+              <AposAiMark
+                v-if="index === 0 && getOutsideState(row._id)"
+                class="apos-tree__ai-mark"
+                :busy="getOutsideState(row._id) === 'busy'"
+              />
+            </transition>
             <span class="apos-tree__cell__value">
               <AposIndicator
                 v-if="getEffectiveIcon(col, row)"
@@ -374,10 +383,20 @@ export default {
         });
       }
     },
+    // A row written from outside, such as by the assistant: `busy`, then
+    // `edited` (see the tree's `outsideStates` option)
+    getOutsideState(_id) {
+      const state = this.options.outsideStates?.[_id];
+      if (!state) {
+        return null;
+      }
+      return state.busy ? 'busy' : 'edited';
+    },
     getRowClasses(row) {
       const classes = [
         'apos-tree__row',
         {
+          'apos-is-busy': this.getOutsideState(row._id) === 'busy',
           'apos-is-parked': !!row.parked,
           'apos-tree__row--parent': row._children && row._children.length > 0,
           'apos-tree__row--selectable': this.options.selectable,
@@ -551,6 +570,26 @@ export default {
     .apos-tree__row--selected > & {
       background-color: var(--a-base-9);
     }
+
+    .apos-tree__row.apos-is-busy > & {
+      background-color: color-mix(in srgb, var(--a-primary) 10%, var(--a-background-primary));
+    }
+  }
+
+  .apos-tree__ai-mark {
+    align-self: center;
+    margin-right: 0.5em;
+  }
+
+  .apos-tree__ai-mark-enter-active,
+  .apos-tree__ai-mark-leave-active {
+    transition: opacity 220ms ease-out, transform 220ms ease-out;
+  }
+
+  .apos-tree__ai-mark-enter-from,
+  .apos-tree__ai-mark-leave-to {
+    opacity: 0;
+    transform: scale(0.5);
   }
 
   .apos-tree__row--parent {
@@ -664,6 +703,14 @@ export default {
     & {
       padding: $cell-padding;
       border-bottom: 1px solid var(--a-base-8);
+    }
+  }
+
+  /* stylelint-disable-next-line media-feature-name-allowed-list */
+  @media (prefers-reduced-motion: reduce) {
+    .apos-tree__ai-mark-enter-active,
+    .apos-tree__ai-mark-leave-active {
+      transition: none;
     }
   }
 

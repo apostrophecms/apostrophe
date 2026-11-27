@@ -391,6 +391,50 @@ describe('Document Versions: i18n', function () {
         0
       );
     });
+
+    it('should check and restore the rows of a change in the locale of the document, whatever the request\'s', async function () {
+      const localized = async title => {
+        const doc = await apos.article.insert(req(), { title });
+        await apos.article.localize(draftReq(), await findDraft('en', doc), 'fr');
+        return findDraft('fr', doc);
+      };
+      const pinned = await localized('Pinned');
+      const other = await localized('Other');
+      const article = await localized('Article');
+      const stored = () => apos.doc.db.findOne({ _id: article._id });
+      await apos.article.update(draftReq('fr'), {
+        ...article,
+        _related: [ pinned ]
+      });
+      const before = await stored();
+      await apos.article.update(draftReq('fr'), {
+        ...await findDraft('fr', article),
+        _related: [ other ]
+      });
+
+      // Recorded and checked from a request in English
+      const rows = await apos.docVersions.getChangeRowsBetween(
+        draftReq('en'),
+        before,
+        await stored()
+      );
+      const [ related ] = await apos.docVersions.checkChangeRows(
+        draftReq('en'),
+        await stored(),
+        JSON.parse(JSON.stringify(rows))
+      );
+      assert.equal(related.outcome, 'clean');
+      assert.deepEqual(
+        related.restore.patch._related.map(entry => entry._id),
+        [ `${pinned.aposDocId}:fr:draft` ]
+      );
+
+      await apos.article.convertPatchAndRefresh(draftReq('fr'), {
+        _patches: [ related.restore.patch ]
+      }, article._id);
+      const { idsStorage } = apos.article.schema.find(field => field.name === '_related');
+      assert.deepEqual((await stored())[idsStorage], [ pinned.aposDocId ]);
+    });
   });
 
   describe('AI localization', function () {

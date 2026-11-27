@@ -31,6 +31,9 @@ export default {
     moduleOptions() {
       return apos.settings;
     },
+    screen() {
+      return { kind: 'settings' };
+    },
     action() {
       return this.moduleOptions.action;
     },

@@ -53,7 +53,7 @@
 import { mapState } from 'pinia';
 import { markRaw, toRaw } from 'vue';
 import { klona } from 'klona';
-import { createId } from 'apostrophe/lib/beneath.js';
+import { getTabId, getOutsideSave } from 'Modules/@apostrophecms/ui/utils';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
@@ -85,6 +85,12 @@ const entryKeys = [ 'patch', 'inverse', 'target', 'onSaved' ];
 // The `onSaved` callbacks of the patches waiting to be saved, by patch
 const onSavedByPatch = new WeakMap();
 
+// Widgets busy while a write from outside the page is under way, by the
+// document `_id` it writes, see `onContentChangeStarting`
+const busyWrites = new Map();
+// A write whose end never arrives leaves nothing busy longer than this
+const busyTimeout = 30000;
+
 export default {
   name: 'TheAposContextBar',
   mixins: [ AposPublishMixin, AposAdvisoryLockMixin ],
@@ -115,6 +121,9 @@ export default {
       historyBusy: false,
       savePromise: null,
       patchesSinceSave: [],
+      // Fields an editor on the page wrote from outside, handed over for the
+      // next save, by path (see `AposEditorMixin`)
+      outsidePending: {},
       editMode: false,
       // See Changes, a mode within edit mode: the page shows the changes of
       // the draft since its last publication. Never remembered across
@@ -234,23 +243,23 @@ export default {
     apos.bus.$on('pop-context', this.onPopContext);
     apos.bus.$on('context-editing', this.onContextEditing);
     apos.bus.$on('context-edited', this.onContextEdited);
+    apos.bus.$on('outside-handed-over', this.onOutsideHandedOver);
     apos.bus.$on('context-history-record', this.onContextHistoryRecord);
     apos.bus.$on('content-changed', this.onContentChanged);
+    apos.bus.$on('content-change-starting', this.onContentChangeStarting);
+    apos.bus.$on('content-change-settled', this.onContentChangeSettled);
     // Versions module: its See Changes operation
     apos.bus.$on('see-changes', this.onSeeChanges);
 
     window.addEventListener('beforeunload', this.onBeforeUnload);
     window.addEventListener('storage', this.onStorage);
 
-    // sessionStorage because it is deliberately browser-tab specific
-    let tabId = sessionStorage.getItem('aposTabId');
-    if (!tabId) {
-      tabId = createId();
-      sessionStorage.setItem('aposTabId', tabId);
-    }
-    window.apos.adminBar.tabId = tabId;
+    // Kept as an alias of the ui module's tab id
+    window.apos.adminBar.tabId = getTabId();
     window.apos.adminBar.editMode = false;
     window.apos.adminBar.seeChanges = false;
+    window.apos.adminBar.setEditMode = this.setEditMode;
+    window.apos.adminBar.hasUnsavedChanges = this.hasUnsavedChanges;
     const lastBaseContext = JSON.parse(sessionStorage.getItem('aposLastBaseContext') || '{}');
     // Explicit query parameter beats our state on the previous page
     lastBaseContext.draftMode = this.queryDraftMode || lastBaseContext.draftMode;
@@ -412,8 +421,14 @@ export default {
         }
       }
     },
+    // `apos.adminBar.hasUnsavedChanges()`: the page has in-context changes
+    // not saved yet, being saved or still being typed, the state that asks
+    // before the page is left. Reactive when read inside a watcher
+    hasUnsavedChanges() {
+      return Boolean(this.patchesSinceSave.length || this.saving || this.editing);
+    },
     onBeforeUnload(e) {
-      if (this.patchesSinceSave.length || this.saving || this.editing) {
+      if (this.hasUnsavedChanges()) {
         e.preventDefault();
         // No actual control over the message is possible in modern browsers,
         // but Chrome requires we set a string here
@@ -435,11 +450,21 @@ export default {
           const body = {
             _patches: patchesSinceSave
           };
+          const outside = this.outsidePending;
+          if (Object.keys(outside).length) {
+            body._outside = getOutsideSave(outside);
+          }
           this.addLockToRequest(body);
           const doc = await apos.http.patch(`${this.action}/${this.context._id}`, {
             body
           });
           this.context = doc;
+          if (body._outside) {
+            this.outsidePending = Object.fromEntries(
+              Object.entries(this.outsidePending)
+                .filter(([ path ]) => !Object.hasOwn(outside, path))
+            );
+          }
           this.retrying = false;
           saved = true;
           this.settlePatches(patchesSinceSave, null);
@@ -487,6 +512,12 @@ export default {
           scrollcheck: true
         });
       }
+    },
+    onOutsideHandedOver({ fields }) {
+      this.outsidePending = {
+        ...this.outsidePending,
+        ...fields
+      };
     },
     // Calls the `onSaved` of each patch that has one
     settlePatches(patches, error) {
@@ -710,8 +741,7 @@ export default {
       this.patchesSinceLoaded.push(entry);
       if (this.patchesSinceLoaded.length > maxHistory) {
         const forgotten = this.patchesSinceLoaded.shift();
-        const patch = this.forwardPatch(forgotten);
-        if (patch) {
+        for (const patch of this.forwardPatches(forgotten)) {
           this.commitPatch(patch);
         }
       }
@@ -730,14 +760,15 @@ export default {
       }
       this.committedPatches.push(patch);
     },
-    // The patch that makes the edit in `entry`
-    forwardPatch(entry) {
+    // The patches that make the edit in `entry`, in order: one, or several
+    // for a write made outside the page
+    forwardPatches(entry) {
       if (entry.richText) {
         return entry.richText.target
-          ? { [entry.richText.target]: html(entry.richText, 'redo') }
-          : null;
+          ? [ { [entry.richText.target]: html(entry.richText, 'redo') } ]
+          : [];
       }
-      return entry.patch;
+      return [ entry.patch ].flat();
     },
     queuePatch(patch, onSaved) {
       if (onSaved) {
@@ -785,6 +816,189 @@ export default {
           scrollcheck: e.action === 'history'
         });
       }
+    },
+    // A write from outside the page, such as the assistant's, starts: the
+    // widgets it names on this page are busy until it settles
+    onContentChangeStarting({ docId, ids = [] } = {}) {
+      if (docId !== this.context._id) {
+        return;
+      }
+      this.clearBusy(docId);
+      useWidgetStore().setBusyWidgets(ids, true);
+      busyWrites.set(docId, {
+        ids,
+        timer: setTimeout(() => this.clearBusy(docId), busyTimeout)
+      });
+    },
+    clearBusy(docId) {
+      const busy = busyWrites.get(docId);
+      if (!busy) {
+        return;
+      }
+      clearTimeout(busy.timer);
+      useWidgetStore().setBusyWidgets(busy.ids, false);
+      busyWrites.delete(docId);
+    },
+    // A write from outside the page has settled, with `parts`, each part it
+    // changed with its value before and after (see the harness's change
+    // events). In edit mode it is one step of the undo history, shown in
+    // place: writes of one request to the page fold into one step, unless
+    // anything was done in between. Otherwise the page renders it again.
+    //
+    // What the editor is typing where the write landed is saved first, the
+    // later save of the two. The write is then shown in place only while the
+    // draft still holds it, else the page renders the draft as saved.
+    //
+    // A publish from outside (`published`) changes no draft content: the
+    // page's document is read again in its mode, with its published copy,
+    // and a page showing the published copy renders it again
+    async onContentChangeSettled({
+      docId, requestId, written, published, entryId, parts
+    } = {}) {
+      const busy = busyWrites.get(docId);
+      try {
+        if (written && published) {
+          const document = _id => _id.replace(/:(draft|published)$/, '');
+          if (document(docId) !== document(this.context._id)) {
+            return;
+          }
+          this.context = await apos.http.get(`${this.action}/${this.context._id}`, {});
+          this.published = await this.getPublished();
+          if (this.draftMode === 'published') {
+            await this.refresh();
+          }
+          return;
+        }
+        if (!written || (docId !== this.context._id)) {
+          return;
+        }
+        if (!this.editMode || !parts) {
+          await this.saveTyping();
+          this.context = await apos.http.get(`${this.action}/${this.context._id}`, {});
+          await this.refresh();
+          return;
+        }
+        if (!parts.length) {
+          this.context = await apos.http.get(`${this.action}/${this.context._id}`, {});
+          return;
+        }
+        const patch = parts.map(part => ({ [part.key]: part.after }));
+        const inverse = parts.map(part => ({ [part.key]: part.before }));
+        const top = this.patchesSinceLoaded.at(-1);
+        if (
+          (top?.outside?.entryId === entryId) &&
+          (top.outside.requestId === requestId)
+        ) {
+          top.patch = [ ...top.patch, ...patch ];
+          top.inverse = [ ...inverse, ...top.inverse ];
+        } else {
+          this.pushEntry({
+            id: this.nextEntryId++,
+            patch,
+            inverse,
+            target: {
+              docId,
+              widgetId: getWidgetId(parts[0])
+            },
+            outside: {
+              requestId,
+              entryId
+            }
+          });
+        }
+        this.mergeableEntryId = null;
+        this.undone = [];
+        await this.saveTyping(parts);
+        this.context = await apos.http.get(`${this.action}/${this.context._id}`, {});
+        if (this.seeChanges) {
+          await this.refresh({ scrollcheck: true });
+          return;
+        }
+        const base = Object.fromEntries(parts.map(part => [ part.key, part.before ]));
+        const shown = await this.isAsPatched(patch).catch(() => false) &&
+          patch.map(each => this.applyToPage(each, [], base)).every(Boolean);
+        if (!shown) {
+          await this.saveTyping();
+          await this.refresh({ scrollcheck: true });
+        }
+      } finally {
+        // Out of reach until shown, unless the next write took them over
+        if (busyWrites.get(docId) === busy) {
+          this.clearBusy(docId);
+        }
+      }
+
+      // A widget the part is, or the first one it added or changed
+      function getWidgetId({
+        key, before, after
+      }) {
+        if (!key.startsWith('@')) {
+          return null;
+        }
+        if (after?.metaType !== 'area') {
+          return key.substring(1);
+        }
+        const was = new Map((before?.items || [])
+          .map(item => [ item._id, JSON.stringify(item) ]));
+        const item = (after.items || []).find(item => {
+          return was.get(item._id) !== JSON.stringify(item);
+        });
+        return item?._id || null;
+      }
+    },
+    // Saves what the editor is typing on the page, as leaving the field
+    // does: an editor's unsaved typing goes with its focus. With `parts` of
+    // a write from outside the page, only typing in one of them. Resolves
+    // once the page has nothing left to save
+    async saveTyping(parts) {
+      const active = document.activeElement;
+      if (
+        active?.matches('textarea, input, select, [contenteditable="true"]') &&
+        active.closest('[data-apos-refreshable]') &&
+        (!parts || parts.some(part => isIn(part)))
+      ) {
+        active.blur();
+        // A rich text editor saves on the tick after it loses focus
+        await this.$nextTick();
+      }
+      await this.flushSaves();
+
+      // Whether focus is in what `part` wrote: the field it names, or a
+      // widget or array item it holds
+      function isIn({
+        key, before, after
+      }) {
+        const field = active.closest('[data-apos-wysiwyg-field-editable]')
+          ?.getAttribute('data-patch-key');
+        const widgetId = active.closest('[data-apos-widget-id]')
+          ?.getAttribute('data-apos-widget-id');
+        const typed = field || (widgetId && `@${widgetId}`);
+        if (!typed) {
+          return false;
+        }
+        const [ name ] = typed.split('.');
+        if (!name.startsWith('@')) {
+          return name === key;
+        }
+        const id = name.substring(1);
+        return (key === name) || holds(before, id) || holds(after, id);
+      }
+
+      function holds(value, id) {
+        return !!value && (typeof value === 'object') &&
+          ((value._id === id) || Object.values(value).some(each => holds(each, id)));
+      }
+    },
+    // `apos.adminBar.setEditMode(editing)`: edit mode switched from outside
+    // the admin bar, as its Edit and Preview buttons do, when they are
+    // offered. Resolves whether edit mode is on once the page shows it; a
+    // lock someone else holds may leave it off
+    async setEditMode(editing) {
+      if (this.contextBarActive && (editing !== this.editMode) &&
+        (editing || !this.hasCustomUi)) {
+        await this.switchEditMode(editing);
+      }
+      return this.editMode;
     },
     async switchEditMode(editing) {
       if (!editing) {
@@ -1015,6 +1229,12 @@ export default {
         return;
       }
       const entry = this.patchesSinceLoaded.at(-1);
+      // Only a step of a write made outside the page waits for its check;
+      // the user's own go at once, as they always have
+      if (entry.outside && (!await this.confirmHistoryChange(entry, 'undo') ||
+        (this.patchesSinceLoaded.at(-1) !== entry))) {
+        return;
+      }
       if (!this.isReversible(entry)) {
         this.undone.push(this.patchesSinceLoaded.pop());
         return this.refreshAfterHistoryChange('apostrophe:undoFailed');
@@ -1028,6 +1248,10 @@ export default {
         return;
       }
       const entry = this.undone.at(-1);
+      if (entry.outside && (!await this.confirmHistoryChange(entry, 'redo') ||
+        (this.undone.at(-1) !== entry))) {
+        return;
+      }
       if (!this.isReversible(entry)) {
         this.patchesSinceLoaded.push(this.undone.pop());
         return this.refreshAfterHistoryChange('apostrophe:redoFailed');
@@ -1038,6 +1262,51 @@ export default {
     },
     isReversible(entry) {
       return !!(entry.richText || entry.inverse);
+    },
+    // For a step the page did not make itself, such as the assistant's
+    // write: asks the server whether those parts changed since the step (or
+    // since its undo, for a redo). If they did, the user decides whether
+    // undoing may replace that change. Resolves whether to go on
+    async confirmHistoryChange(entry, direction) {
+      const undo = direction === 'undo';
+      this.historyBusy = true;
+      try {
+        await this.flushSaves();
+        if (await this.isAsPatched(undo ? entry.patch : entry.inverse)) {
+          return true;
+        }
+        return await apos.confirm({
+          icon: false,
+          heading: undo ? 'apostrophe:undoChangedSinceHeading' : 'apostrophe:redoChangedSinceHeading',
+          description: undo
+            ? 'apostrophe:undoChangedSinceDescription'
+            : 'apostrophe:redoChangedSinceDescription',
+          negativeLabel: 'apostrophe:keep',
+          affirmativeLabel: undo ? 'apostrophe:undoAnyway' : 'apostrophe:redoAnyway'
+        });
+      } catch (e) {
+        // Unchecked, it goes on as any other step does
+        // eslint-disable-next-line no-console
+        console.error(e);
+        return true;
+      } finally {
+        this.historyBusy = false;
+      }
+    },
+    // Whether the draft as saved holds every value `patches` set, as far as
+    // the versions module can tell
+    async isAsPatched(patches) {
+      const { action } = apos.modules['@apostrophecms/document-versions'] || {};
+      if (!action) {
+        return true;
+      }
+      const { asPatched } = await apos.http.post(`${action}/as-patched`, {
+        body: {
+          docId: this.context._id,
+          patches
+        }
+      });
+      return asPatched !== false;
     },
     // Undo or redo `entry` in place: change what is on the page, and save
     // the change just like any other edit. Nothing else on the page is
@@ -1118,11 +1387,14 @@ export default {
     // Ask whatever on the page holds the content `patch` touches, such as an
     // area editor or a field edited in place, to show the change. Returns
     // true if something did
-    applyToPage(patch, removed = []) {
+    applyToPage(patch, removed = [], base = null) {
       let claimed = false;
       apos.bus.$emit('context-history-apply', {
         patch,
         removed,
+        // Only for a change made elsewhere and shown here: the values its
+        // keys had before it
+        base,
         claim() {
           claimed = true;
         }
@@ -1201,8 +1473,7 @@ export default {
               this.original,
               ...this.committedPatches,
               ...this.patchesSinceLoaded
-                .map(entry => this.forwardPatch(entry))
-                .filter(Boolean)
+                .flatMap(entry => this.forwardPatches(entry))
             ]
           },
           busy: true

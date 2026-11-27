@@ -1,0 +1,74 @@
+// The harness's tools on the AI engine, and the toolset each door selects.
+
+// The tags each door selects, and those it refuses whatever else a tool
+// carries: `content` is the one tag both doors share, a browser tool never
+// reaches the MCP server and an MCP tool never reaches the assistant. A
+// type's `aiHow` is for both doors; `howOption` names the type option
+// holding the door's own procedure for it
+const DOORS = {
+  assistant: {
+    tags: [ 'content', 'assistant' ],
+    refuse: [ 'mcp' ],
+    howOption: 'aiHowAssistant'
+  },
+  mcp: {
+    tags: [ 'content', 'mcp' ],
+    refuse: [ 'assistant', 'browser' ],
+    howOption: 'aiHowMcp'
+  }
+};
+
+const readTools = require('./read-tools');
+const writeTools = require('./write-tools');
+
+const { BUDGETS } = readTools;
+
+module.exports = (self) => {
+  return {
+    // Registers the harness's tools on the engine, each tagged `content`
+    addTools() {
+      for (const tool of [ ...readTools(self), ...writeTools(self) ]) {
+        self.apos.ai.addTool({
+          ...tool,
+          tags: [ 'content', ...(tool.tags || []) ]
+        });
+      }
+    },
+
+    /**
+     * A read's budget, in characters of the serialized result: `document`
+     * for a document read, whoever serves it.
+     *
+     * @param {string} name
+     * @returns {number}
+     */
+    getReadBudget(name) {
+      return BUDGETS[name];
+    },
+
+    // The names of the doors the harness knows
+    getDoorNames() {
+      return Object.keys(DOORS);
+    },
+
+    /**
+     * The tool definitions a door selects, as registered after activation:
+     * the harness's tools and the door's own. Throws `invalid` for an
+     * unknown door.
+     *
+     * @param {string} door `assistant` or `mcp`.
+     * @returns {object[]}
+     */
+    getDoorTools(door) {
+      const selection = Object.hasOwn(DOORS, door) && DOORS[door];
+      if (!selection) {
+        throw self.apos.error('invalid', `unknown door "${door}"`);
+      }
+      return self.apos.ai.getTools({ tags: selection.tags })
+        .filter(tool => !tool.tags?.some(tag => selection.refuse.includes(tag)))
+        .sort((one, two) => one.name.localeCompare(two.name));
+    }
+  };
+};
+
+module.exports.DOORS = DOORS;

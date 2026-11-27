@@ -1,0 +1,189 @@
+// What the editor is looking at: the page and its document, the modals open
+// over it from bottom to top, the widgets selected and the field being
+// edited inline. Ids, types and names only, never a document's content.
+//
+// Each modal reports its own part, its kind included, through `AposModal`'s
+// `screen` prop, since only the modal knows what it is and where it holds
+// its ids; a modal that reports nothing is `other`. A widget or array editor
+// that names no document works on the document of the editor below it.
+// Windows are not modals of the screen: they sit beside what the editor is
+// looking at. A window that reports a screen part, through its `screen`
+// prop or as a standalone window of the modal store, is the screen's
+// `window`: the last opened of those, one at most.
+//
+// `getScreen()` reads it when it is needed, as part of it lives outside any
+// reactive store (the admin bar's context).
+
+import { useModalStore } from '../stores/modal';
+import { useWidgetStore } from '../stores/widget';
+import { getTabId } from '../utils';
+
+const KEYS = [ 'docId', 'docType', 'widgetId', 'field', 'itemId', 'selection', 'filters' ];
+// Kinds that edit part of a document they are never told about
+const NESTED_KINDS = [ 'widgetEditor', 'arrayEditor' ];
+const MANAGER_KINDS = [ 'manager', 'pageTree', 'mediaManager', 'recentlyEdited', 'chooser' ];
+
+export function useScreen() {
+  const modalStore = useModalStore();
+  const widgetStore = useWidgetStore();
+
+  return { getScreen };
+
+  function getScreen() {
+    const adminBar = window.apos.adminBar;
+    const context = adminBar?.context;
+    const entries = modalStore.stack.filter(entry => !isWindow(entry));
+    const modals = getModals(entries);
+    return {
+      tabId: getTabId(),
+      visible: document.visibilityState !== 'hidden',
+      url: `${window.location.pathname}${window.location.search}`,
+      locale: modalStore.getActiveLocale(),
+      mode: context?.aposMode || null,
+      editing: adminBar?.editMode === true,
+      view: getView(modals, adminBar),
+      document: context?._id
+        ? {
+          _id: context._id,
+          type: context.type,
+          title: context.title
+        }
+        : null,
+      modals,
+      window: getWindow(),
+      selection: getSelection(modals),
+      field: getField(modals)
+    };
+  }
+
+  function getModals(entries) {
+    let owner = null;
+    return entries.map(entry => {
+      const modal = getPart(entry.screen);
+      const { kind } = modal;
+      if (!modal.docId && owner && NESTED_KINDS.includes(kind)) {
+        modal.docId = owner.docId;
+        modal.docType = owner.docType;
+      }
+      if (modal.docId) {
+        owner = modal;
+      }
+      return modal;
+    });
+  }
+
+  function getWindow() {
+    const entry = getScreenWindow(modalStore);
+    return entry ? getPart(entry.screen) : null;
+  }
+
+  // A modal's or a window's part, as it reports it
+  function getPart(screen) {
+    const part = { kind: screen?.kind || 'other' };
+    for (const key of KEYS) {
+      const value = screen?.[key];
+      if ((value !== null) && (value !== undefined)) {
+        part[key] = value;
+      }
+    }
+    return part;
+  }
+
+  // A manager or the versions in front, else the page, in See Changes or not
+  function getView(modals, adminBar) {
+    const top = modals.at(-1);
+    if (MANAGER_KINDS.includes(top?.kind)) {
+      return 'manager';
+    }
+    if (top?.kind === 'versions') {
+      return 'versions';
+    }
+    return (adminBar?.seeChanges === true) ? 'seeChanges' : 'page';
+  }
+
+  // The selected widgets, siblings in one area, while they are in view.
+  // Their document is the topmost modal's when they were selected in it,
+  // else the one the page area names. The area itself is named by the server
+  // from the document
+  function getSelection(modals) {
+    const areaEl = getSelectionArea(modalStore, widgetStore);
+    if (!areaEl) {
+      return null;
+    }
+    const docId = areaEl.closest('[data-apos-modal]')
+      ? modals.at(-1)?.docId
+      : areaEl.closest('[data-doc-id]')?.getAttribute('data-doc-id');
+    return docId
+      ? {
+        docId,
+        widgetIds: [ ...widgetStore.selectedWidgetIds ]
+      }
+      : null;
+  }
+
+  // The field edited inline. In a modal it names no document: it is the
+  // topmost modal's
+  function getField(modals) {
+    const target = widgetStore.focusedField && widgetStore.focusedFieldTarget;
+    if (!target?.name) {
+      return null;
+    }
+    const docId = target.docId || modals.findLast(modal => modal.docId)?.docId;
+    return docId
+      ? {
+        docId,
+        name: target.name
+      }
+      : null;
+  }
+}
+
+/**
+ * The element of the area holding the selected widgets, while the editor
+ * sees them: selected on the page with no modal over it, or in the topmost
+ * modal. A selection a modal covers stays in the widget store for when the
+ * modal closes, but is not on the screen. The store's `focusedArea` is the
+ * area editor's own id, not the area's.
+ *
+ * @param {object} modalStore
+ * @param {object} widgetStore
+ * @returns {Element|null}
+ */
+export function getSelectionArea(modalStore, widgetStore) {
+  const editorId = widgetStore.focusedArea;
+  if (!widgetStore.selectedWidgetIds.length || !editorId) {
+    return null;
+  }
+  const areaEl = document.querySelector(`[data-apos-area="${CSS.escape(editorId)}"]`);
+  if (!areaEl) {
+    return null;
+  }
+  const top = modalStore.stack.findLast(entry => !isWindow(entry));
+  const modalEl = areaEl.closest('[data-apos-modal]');
+  return (top ? modalEl && (modalEl === top.modalEl) : !modalEl)
+    ? areaEl
+    : null;
+}
+
+// The modal store's entry of the screen's window: the last opened of the
+// windows reporting a screen part, in the stack or standalone
+export function getScreenWindow(modalStore) {
+  return [
+    ...modalStore.stack.filter(entry => isWindow(entry)),
+    ...modalStore.standaloneWindows
+  ]
+    .filter(entry => entry.screen)
+    .sort((a, b) => (a.opened || 0) - (b.opened || 0))
+    .at(-1) || null;
+}
+
+/**
+ * Whether a modal stack entry is a window, beside what the editor is looking
+ * at rather than over it.
+ *
+ * @param {object} entry
+ * @returns {boolean}
+ */
+export function isWindow(entry) {
+  return (entry.stacking === 'top') || (entry.overlay === 'none');
+}

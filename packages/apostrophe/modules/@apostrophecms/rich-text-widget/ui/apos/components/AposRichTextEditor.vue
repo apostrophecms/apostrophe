@@ -322,6 +322,12 @@ export default {
     historyTarget: {
       type: String,
       default: null
+    },
+    // Changes when the value changed for an outside reason, such as a value
+    // written from outside a modal: the editor shows it, whatever its history
+    generation: {
+      type: Number,
+      default: null
     }
   },
   emits: [ 'update:modelValue', 'focus', 'blur', 'interaction' ],
@@ -610,6 +616,13 @@ export default {
       // reported, as after an undo of a widget split by the insert menu,
       // would look like an echo and be ignored
       this.lastEmitted = value;
+    },
+    generation() {
+      if (!this.editor || (this.modelValue === this.editor.getHTML())) {
+        return;
+      }
+      setContent(this.editor, this.transformNamedAnchors(this.modelValue || ''));
+      this.lastEmitted = null;
     },
     isFocused(newVal) {
       if (!newVal) {

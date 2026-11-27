@@ -211,6 +211,48 @@ describe('AI adapter: google', function() {
       ]);
     });
 
+    it('translates a document part to inline document content', function() {
+      const body = adapter.buildBody(request({
+        messages: [ {
+          role: 'user',
+          content: [
+            text('summarize these'),
+            {
+              type: 'document',
+              document: {
+                data: 'JVBERi0=',
+                mediaType: 'application/pdf',
+                name: 'brief.pdf'
+              }
+            },
+            {
+              type: 'document',
+              document: {
+                data: 'JVBERi0=',
+                mediaType: 'application/pdf'
+              }
+            }
+          ]
+        } ]
+      }));
+      // The dialect has no name for a document
+      const document = {
+        type: 'document',
+        data: 'JVBERi0=',
+        mime_type: 'application/pdf'
+      };
+      assert.deepEqual(body.input[0].content.slice(1), [ document, document ]);
+    });
+
+    it('declares document input and its limits on the chat models', function() {
+      const { capabilities, models } = apos.ai.getAdapter('google');
+      assert.equal(capabilities.documentInput, true);
+      for (const id of [ 'gemini-3.5-flash-lite', 'gemini-3.8-flash' ]) {
+        assert.equal(models[id].maxDocumentPages, 1000);
+        assert.equal(models[id].maxDocumentBytes, 50000000);
+      }
+    });
+
     it('passes reasoning through as the thinking level', function() {
       assert.equal(
         adapter.buildBody(request()).generation_config.thinking_level,
@@ -689,6 +731,10 @@ describe('AI adapter: google', function() {
         code: 'missing_thought_signature',
         message: 'The response is missing a required thought signature.'
       } ]), 'invalid', /^Gemini rejected the replayed conversation: The response is missing/);
+      throwsAs(failed([ {
+        code: 'invalid_request',
+        message: 'The input token count (1632254) exceeds the maximum number of tokens allowed (1048576).'
+      } ]), 'aiContextOverflow', /^The input token count \(1632254\)/);
       throwsAs(failed([ { code: 'malformed_function_call' } ]), 'aiRetry', /^malformed_function_call$/);
       throwsAs(failed([ {
         code: 'api_error',
@@ -1044,6 +1090,40 @@ describe('AI adapter: google', function() {
         assert.equal(error.name, 'aiRetry');
         assert.equal(error.message, code);
       }
+    });
+
+    it('recognizes a request too long for the model, by its message', function() {
+      const message = 'The input token count (1632254) exceeds the maximum number of tokens allowed (1048576).';
+      for (const body of [
+        // The Interactions API's own shape
+        {
+          error: {
+            code: 'invalid_request',
+            message
+          }
+        },
+        // The older generateContent shape, a numeric code and a status
+        {
+          error: {
+            code: 400,
+            message,
+            status: 'INVALID_ARGUMENT'
+          }
+        }
+      ]) {
+        const error = adapter.normalizeError(httpError(400, {}, body));
+        assert.equal(error.name, 'aiContextOverflow');
+        assert.equal(error.message, message);
+        assert.equal(error.data.status, 400);
+      }
+      assert.equal(adapter.normalizeError(httpError(413)).name, 'aiContextOverflow');
+      const other = adapter.normalizeError(httpError(400, {}, {
+        error: {
+          code: 'invalid_request',
+          message: 'Invalid value at \'generation_config.max_output_tokens\''
+        }
+      }));
+      assert.equal(other.name, 'invalid');
     });
 
     it('explains a rejected thought signature, by its message or its code', function() {

@@ -11,9 +11,12 @@
       :class="classes"
       role="dialog"
       :aria-modal="modal.overlay === 'none' ? null : 'true'"
-      :aria-labelledby="props.modalData.id"
+      :aria-labelledby="titleLabel ? null : props.modalData.id"
+      :aria-label="titleLabel"
       data-apos-modal
       :data-apos-graph-key="props.graphKey || undefined"
+      :data-apos-stacking="modal.stacking || undefined"
+      :data-apos-ignore-unfocus="isWindowModal ? 'true' : undefined"
       tabindex="0"
       @focus.capture="captureFocus"
       @keydown.tab="onKeydownTab"
@@ -48,6 +51,15 @@
           data-apos-modal-inner
           @mousedown="startDragging"
         >
+          <div
+            v-if="props.announcement !== null"
+            class="apos-sr-only"
+            aria-live="polite"
+            aria-atomic="true"
+            data-apos-test="modal-announcement"
+          >
+            {{ props.announcement }}
+          </div>
           <template v-if="modal.busy">
             <div class="apos-modal__busy">
               <p class="apos-modal__busy-text">
@@ -166,14 +178,16 @@
 // transition.
 
 import {
-  ref, onMounted, onUnmounted, computed, watch, nextTick, useSlots, useTemplateRef
+  ref, onMounted, onUnmounted, computed, watch, nextTick, useSlots, useTemplateRef, inject
 } from 'vue';
-import { useAposFocus } from 'Modules/@apostrophecms/modal/composables/AposFocus';
+import { useAposFocus, focusableSelector } from 'Modules/@apostrophecms/modal/composables/AposFocus';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { useDraggableWindow } from 'Modules/@apostrophecms/ui/composables/useDraggableWindow.js';
 
 const {
   cycleElementsToFocus,
+  cycleAcrossGroups,
+  getStackedFocusGroups,
   focusElement,
   focusLastModalFocusedElement,
   storeFocusedElement,
@@ -194,6 +208,27 @@ const props = defineProps({
     required: true
   },
   graphKey: {
+    type: String,
+    default: null
+  },
+  // What the modal is and shows, for the screen (see `useScreen`): its
+  // `kind` (`editor`, `manager` and so on; a project modal names its own),
+  // `docId` and `docType` of the document it works on, and as they apply
+  // `widgetId`, `field`, `itemId`, `selection` (checked rows) and `filters`.
+  // Only the modal knows them, so it reports them here
+  screen: {
+    type: Object,
+    default: null
+  },
+  // What code outside the modal may write into it through, such as an
+  // editor's handle for values from outside (see `AposEditorMixin`). Kept on
+  // the modal's stack entry, found there by the screen it reports
+  outside: {
+    type: Object,
+    default: null
+  },
+  // Read to screen readers when it changes; `null` for no live region
+  announcement: {
     type: String,
     default: null
   }
@@ -218,22 +253,6 @@ const nonDraggableElements = [
   '.apos-input-color__sample-picker',
   '.apos-input-array-inline-table'
 ];
-
-// Selector for focusable elements inside the modal. Used both at trap setup
-// and on every Tab keydown to refresh the cycle list, so that elements that
-// became disabled/hidden (e.g. Save when validation fails) or newly visible
-// are reflected.
-const focusableSelector = [
-  '[tabindex]',
-  '[href]',
-  'input',
-  'select',
-  'textarea',
-  'button',
-  '[data-apos-focus-priority]'
-]
-  .map(s => `${s}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden]):not(.apos-sr-only)`)
-  .join(', ');
 
 const resizeSides = [
   {
@@ -308,10 +327,32 @@ const {
   maxHeight: props.modal.maxHeight || null
 });
 
-// A modal without an overlay leaves the page usable: the store tells such
-// modals apart from those that block the page
+// A modal without an overlay leaves the page usable, and a window with
+// `stacking: 'top'` stays above every modal: the store tells them apart
 watch(() => props.modal.overlay, overlay => {
   store.updateModalData(props.modalData.id, { overlay });
+}, { immediate: true });
+watch(() => props.modal.stacking, stacking => {
+  store.updateModalData(props.modalData.id, { stacking });
+}, { immediate: true });
+// Every report is a new object: only a change of value rewrites the stack
+let reportedScreen;
+watch(() => props.screen, screen => {
+  const json = JSON.stringify(screen ?? null);
+  if (json !== reportedScreen) {
+    reportedScreen = json;
+    store.updateModalData(props.modalData.id, { screen: screen ?? null });
+  }
+}, {
+  immediate: true,
+  deep: true
+});
+// A modal whose handle belongs to a part of it, such as the media manager's
+// image editor, gets it once that part is there
+watch(() => props.outside, outside => {
+  if (outside) {
+    store.updateModalData(props.modalData.id, { outside });
+  }
 }, { immediate: true });
 
 // Wrap handler to only work for window modals and primary mouse button. A
@@ -345,13 +386,30 @@ const transitionType = computed(() => {
   return 'slide-left';
 });
 
+// A window above every modal never takes focus from the modal under it,
+// unless it asks to, as a viewer over everything does
 const shouldTrapFocus = computed(() => {
+  if (props.modal.stacking === 'top') {
+    return props.modal.trapFocus === true;
+  }
   return props.modal.trapFocus || props.modal.trapFocus === undefined;
 });
+
+watch(shouldTrapFocus, trapsFocus => {
+  store.updateModalData(props.modalData.id, { trapsFocus });
+}, { immediate: true });
 
 const triggerFocusRefresh = computed(() => {
   return props.modal.triggerFocusRefresh;
 });
+
+const $t = inject('i18n');
+
+// A modal without a header has no heading to be named by: its title, when
+// it has one, names it
+const titleLabel = computed(() => ((props.modal.disableHeader && props.modalTitle)
+  ? $t(props.modalTitle)
+  : null));
 
 const hasBeenLocalized = computed(() => {
   return Object.keys(apos.i18n.locales).length > 1;
@@ -372,6 +430,9 @@ const classes = computed(() => {
       classes.push('apos-modal--origin-right');
     }
     classes.push('apos-modal--full-height');
+  }
+  if (props.modal.stacking) {
+    classes.push(`apos-modal--stacking-${props.modal.stacking}`);
   }
   if (props.modal.busy) {
     classes.push('apos-modal--busy');
@@ -532,6 +593,12 @@ function onKeydownTab(event) {
   if (event.target?.nodeName?.toLowerCase() === 'textarea') {
     return;
   }
+  // Windows above every modal and window triggers join the cycle
+  const groups = getStackedFocusGroups(modalEl.value);
+  if (groups) {
+    cycleAcrossGroups(event, groups);
+    return;
+  }
   // Skip visually hidden elements when cycling — but only here, not in
   // trapFocus. Initial focus runs while `renderingElements` is still true,
   // which puts the content under display:none and makes every candidate's
@@ -614,8 +681,7 @@ async function trapFocus() {
 }
 
 function close() {
-  const activeModalId = store.activeModal?.id;
-  if (activeModalId === props.modalData.id) {
+  if (store.isOnTop(modalEl.value)) {
     emit('esc');
   }
 }
@@ -717,6 +783,11 @@ defineExpose({
       opacity: 0;
       transform: scale(0.95);
     }
+  }
+
+  .apos-modal--stacking-top .apos-modal__inner,
+  .apos-modal--stacking-top .apos-modal__overlay {
+    z-index: $z-index-window-top;
   }
 
   .apos-modal--window {

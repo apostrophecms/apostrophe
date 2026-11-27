@@ -23,6 +23,13 @@ const FINAL_ANSWER_DESCRIPTION = 'Provide your final answer by calling this tool
 // model accepts every level, so the provider has the final word
 const EFFORT_LEVELS = Object.freeze([ 'low', 'medium', 'high', 'xhigh', 'max' ]);
 
+// The document limits Anthropic documents, counted over the whole request. A
+// model with a context window under 1M tokens takes 100 pages
+const DOCUMENTS = Object.freeze({
+  maxDocumentPages: 600,
+  maxDocumentBytes: 128000000
+});
+
 module.exports = {
   options: {
     // The anthropic-version request header
@@ -76,6 +83,7 @@ module.exports = {
             structured: true,
             stream: true,
             imageInput: true,
+            documentInput: true,
             image: false,
             caching: true
           },
@@ -109,19 +117,22 @@ module.exports = {
               label: 'Haiku 5.5',
               contextWindow: 1000000,
               maxOutputTokens: 64000,
-              reasoning: reasoningValues('claude-haiku-5-5')
+              reasoning: reasoningValues('claude-haiku-5-5'),
+              ...DOCUMENTS
             },
             'claude-sonnet-5-5': {
               label: 'Sonnet 5.5',
               contextWindow: 1000000,
               maxOutputTokens: 64000,
-              reasoning: reasoningValues('claude-sonnet-5-5')
+              reasoning: reasoningValues('claude-sonnet-5-5'),
+              ...DOCUMENTS
             },
             'claude-opus-5-5': {
               label: 'Opus 5.5',
               contextWindow: 1000000,
               maxOutputTokens: 64000,
-              reasoning: reasoningValues('claude-opus-5-5')
+              reasoning: reasoningValues('claude-opus-5-5'),
+              ...DOCUMENTS
             }
           },
           validate() {
@@ -298,6 +309,28 @@ module.exports = {
                 }
             };
           }
+          if (part.type === 'document') {
+            const {
+              data, mediaType, name
+            } = part.document;
+            return {
+              type: 'document',
+              // Any text travels as the dialect's plain-text source,
+              // the one text type it documents
+              source: mediaType.startsWith('text/')
+                ? {
+                  type: 'text',
+                  media_type: 'text/plain',
+                  data: Buffer.from(data, 'base64').toString('utf8')
+                }
+                : {
+                  type: 'base64',
+                  media_type: mediaType,
+                  data
+                },
+              ...(name !== undefined && { title: name })
+            };
+          }
           // Another dialect's part; not ours to translate
           return null;
         }
@@ -378,6 +411,9 @@ module.exports = {
             end_turn: 'stop',
             stop_sequence: 'stop',
             max_tokens: 'length',
+            // The output ran into the model's context window: cut short
+            // by a limit, like max_tokens
+            model_context_window_exceeded: 'length',
             tool_use: 'toolCalls'
           }[response.stop_reason],
           usage,
@@ -428,12 +464,25 @@ module.exports = {
       },
       // Map any error the transport produced to a normalized apos
       // error, the only shape the engine reacts to: the engine's shared
-      // status ladder, plus the one fact that is this service's own —
-      // its request id rides the `request-id` header.
+      // status ladder, plus what is this service's own — its request id
+      // rides the `request-id` header, and a too-long request is told
+      // apart by its message.
       normalizeError(error) {
         return self.apos.ai.normalizeHttpError(error, {
-          requestIdHeader: 'request-id'
+          requestIdHeader: 'request-id',
+          contextOverflow: self.isContextOverflow
         });
+      },
+      // Whether an error body is the Messages API refusing a request as
+      // too long for the model: an `invalid_request_error` whose message
+      // names the prompt's size or the context limit, as in "prompt is
+      // too long: 215000 tokens > 200000 maximum" or "input length and
+      // `max_tokens` exceed context limit: 197202 + 21333 > 200000". The
+      // dialect's test, so the Bedrock door reads the same errors.
+      isContextOverflow(error) {
+        const { type, message } = error?.body?.error || {};
+        return type === 'invalid_request_error' &&
+          /prompt is too long|exceed context limit/i.test(message);
       }
     };
   }

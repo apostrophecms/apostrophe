@@ -9,17 +9,22 @@
  *   the `followingValues` method
  * 4. A scaffold for handling conditional fields, via the
  *   `conditionalFields` method
+ * 5. Values from outside the editor, such as the assistant's, through the
+ *   `outside` handle (see `AposOutsideMixin`), written through the
+ *   editor's schemas
  *
  * This mixin is designed to accommodate extension by components like
  *   AposDocEditor that split the UI into several AposSchemas.
  */
 
 import { klona } from 'klona';
+import AposOutsideMixin from 'Modules/@apostrophecms/modal/mixins/AposOutsideMixin';
 import {
   evaluateExternalConditions, getConditionalFields, getConditionTypesObject
 } from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
 
 export default {
+  mixins: [ AposOutsideMixin ],
   props: {
     parentFollowingValues: {
       type: Object,
@@ -174,6 +179,13 @@ export default {
     // to return the appropriate ref
     getAposSchema(field) {
       return this.$refs.schema;
+    },
+    // A value from outside goes into a field through the schema showing it
+    canWriteOutside(field) {
+      return Boolean(this.getAposSchema(field));
+    },
+    writeOutsideValue(field, value) {
+      this.getAposSchema(field).applyOutsideValue(field.name, value);
     },
     // Handle a server-side save error, attaching it to the right field
     // in the schema. fallback is a fallback error message, if none is provided

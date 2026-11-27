@@ -1,0 +1,215 @@
+// This module is the site's MCP server: an outside AI
+// tool (Claude, ChatGPT, an IDE) connects to it and works on the site's
+// content with the harness's tools, through the `mcp` door. The outside tool
+// brings its own model; this module never calls Apostrophe's AI.
+//
+// Off by default. Unless `enabled` is set it adds no routes and no tools. It
+// serves one HTTP route, `self.action`, for both the current MCP spec
+// (2026-07-28) and 2025-era clients, on the official TypeScript SDK.
+//
+// The route is an OAuth protected resource: the user approves the outside
+// tool through `@apostrophecms/oauth`, which the route's registration turns
+// on, and the tool sends that server's access tokens (see lib/auth.js).
+//
+// Besides the harness's tools, it has its own for the media library's
+// images (lib/image-tools.js), which only the `mcp` door selects.
+
+module.exports = {
+  options: {
+    enabled: false,
+    // How many documents each connection remembers for the stale-write
+    // guard: the most recently read or written. A write to a document it no
+    // longer remembers isn't checked (see lib/seen.js)
+    seenLimit: 100,
+    // Whether an outside AI tool may publish, as far as the connected user
+    // may. `false` keeps the publishing tools off this server alone: the
+    // assistant keeps them
+    publish: true,
+    // Seconds an MCP write's change log entries are kept; 0 keeps them for
+    // good. 60 days by default (see lib/retention.js)
+    changeLogExpireAfter: 60 * 24 * 60 * 60
+    // maxImageSize: the largest image `save_image_to_media` takes, in
+    //   bytes. Unset, it's the attachment module's `maxSize` when that is a
+    //   number of bytes, otherwise 10 MB (10,000,000 bytes). The image comes
+    //   as base64 in a JSON body, a third larger than the file, so a limit
+    //   over about 12 MB also needs the express module's
+    //   `bodyParser.json.limit` (16mb by default) raised.
+    // allowedOrigins: the hostnames a browser-sent `Origin` header may name.
+    //   Requests with no `Origin` (every non-browser client) always pass.
+    //   Defaults to the hostname of `baseUrl`, or localhost when unset.
+    // title: the server's display name in MCP clients. Defaults to the
+    //   site's `shortName`, which is always the server's `name`.
+  },
+  async init(self) {
+    self.validateOptions();
+    if (!self.options.enabled) {
+      return;
+    }
+    self.devToken = self.getDevToken();
+    // Turns the OAuth server on, unless the site turned it off. Then only
+    // the development token works
+    self.oauthResource = self.getOauth().addResource(self.action, {
+      name: 'Apostrophe MCP server',
+      // What the approval page promises the user who sees it
+      description: req => req.t(self.canPublish(req)
+        ? 'apostrophe:mcpOauthDescriptionPublish'
+        : 'apostrophe:mcpOauthDescription')
+    });
+    await self.ensureSeenCollection();
+    self.maxImageSize = self.getMaxImageSize();
+    self.addImageTools();
+    self.enableHttp();
+  },
+  middleware(self) {
+    if (!self.options.enabled) {
+      return {};
+    }
+    return {
+      // Before the express module's middleware, so that for the route:
+      //
+      // - Its bearer token check is skipped. It would refuse the route's
+      //   tokens as unknown login tokens (see lib/auth.js).
+      // - Its CSRF check is skipped. MCP clients send no cookies, so the
+      //   cookie-based check would refuse every POST. The route's only
+      //   identity is the `Authorization` header, which a browser never sends
+      //   by itself, and it drops any session or cookie identity, so there is
+      //   nothing for a cross-site request to borrow.
+      //
+      // `isRoute` decides both, as it does routing: with or without a query
+      // string or a trailing slash, and nothing below the route's path.
+      ownRoute: {
+        before: '@apostrophecms/express',
+        middleware(req, res, next) {
+          if (self.isRoute(req)) {
+            req.aposMcpBearerToken = true;
+            req.csrfExempt = true;
+          }
+          return next();
+        }
+      }
+    };
+  },
+  handlers(self) {
+    const seen = {
+      '@apostrophecms/harness:documentSeen': {
+        async storeSeen(req, docId) {
+          await self.storeSeen(req, docId);
+        }
+      }
+    };
+    if (!self.options.enabled) {
+      return seen;
+    }
+    return {
+      ...seen,
+      'apostrophe:ready': {
+        startSweeps() {
+          self.startSweeps();
+        }
+      },
+      'apostrophe:destroy': {
+        stopSweeps() {
+          self.stopSweeps();
+        }
+      }
+    };
+  },
+  tasks(self) {
+    return {
+      // Also on a site with the server off, for the entries it left
+      'expire-changes': {
+        usage: 'Delete the MCP change log entries past changeLogExpireAfter, as the ' +
+          'in-process sweep does.\n' +
+          'Usage: node app @apostrophecms/mcp:expire-changes',
+        async task() {
+          const deleted = await self.expireChanges();
+          // eslint-disable-next-line no-console
+          console.log((deleted === null)
+            ? 'Another process is sweeping; nothing done.'
+            : `${deleted} change log entries deleted.`);
+        }
+      }
+    };
+  },
+  routes(self) {
+    if (!self.options.enabled) {
+      return {};
+    }
+    // The 2025-era session operations (GET, DELETE) reach the SDK too, which
+    // answers them itself
+    const handler = (req, res) => self.handleHttp(req, res);
+    return {
+      post: { [self.action]: handler },
+      get: { [self.action]: handler },
+      delete: { [self.action]: handler }
+    };
+  },
+  methods(self) {
+    return {
+      ...require('./lib/http')(self),
+      ...require('./lib/auth')(self),
+      ...require('./lib/tools')(self),
+      ...require('./lib/seen')(self),
+      ...require('./lib/image-tools')(self),
+      ...require('./lib/images')(self),
+      ...require('./lib/retention')(self),
+
+      // New core modules can't have an alias, so @apostrophecms/oauth has none
+      getOauth() {
+        return self.apos.modules['@apostrophecms/oauth'];
+      },
+
+      // Whether a tool connected as `req.user` could publish anything: the
+      // `publish` option is on, and the user may publish at least one type
+      // that keeps drafts. Types that are live on save don't count, since
+      // their writes publish whatever the tool does. The same checks
+      // publish_document makes, so the approval page can't promise more
+      canPublish(req) {
+        if (!self.options.publish) {
+          return false;
+        }
+        const harness = self.apos.aposHarness;
+        return Object.keys(self.apos.doc.managers).some(type =>
+          (harness.getPublishing(type) === 'drafts') &&
+          self.apos.ai.can(req, 'publish', type)
+        );
+      },
+
+      validateOptions() {
+        const {
+          enabled,
+          allowedOrigins,
+          title,
+          seenLimit,
+          publish,
+          maxImageSize,
+          changeLogExpireAfter
+        } = self.options;
+        if (typeof enabled !== 'boolean') {
+          throw new Error('The "@apostrophecms/mcp" module\'s enabled option must be a boolean.');
+        }
+        if (typeof publish !== 'boolean') {
+          throw new Error('The "@apostrophecms/mcp" module\'s publish option must be a boolean.');
+        }
+        if (!(Number.isSafeInteger(seenLimit) && (seenLimit > 0))) {
+          throw new Error('The "@apostrophecms/mcp" module\'s seenLimit option must be a positive whole number.');
+        }
+        if ((maxImageSize !== undefined) && !self.isBytes(maxImageSize)) {
+          throw new Error('The "@apostrophecms/mcp" module\'s maxImageSize option must be a positive whole number of bytes.');
+        }
+        if (!(Number.isFinite(changeLogExpireAfter) && (changeLogExpireAfter >= 0))) {
+          throw new Error('The "@apostrophecms/mcp" module\'s changeLogExpireAfter option must be a number of seconds, 0 or more.');
+        }
+        if ((allowedOrigins != null) && !(
+          Array.isArray(allowedOrigins) &&
+          allowedOrigins.every(name => (typeof name === 'string') && name.length)
+        )) {
+          throw new Error('The "@apostrophecms/mcp" module\'s allowedOrigins option must be an array of hostnames.');
+        }
+        if ((title != null) && !((typeof title === 'string') && title.length)) {
+          throw new Error('The "@apostrophecms/mcp" module\'s title option must be a non-empty string.');
+        }
+      }
+    };
+  }
+};

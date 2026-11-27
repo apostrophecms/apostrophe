@@ -20,6 +20,7 @@
         <Component
           :is="editorComponent"
           :id="next._id"
+          ref="editor"
           :options="field.options"
           :items="next.items"
           :meta="areaMeta"

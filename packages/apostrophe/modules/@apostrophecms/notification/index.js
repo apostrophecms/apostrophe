@@ -33,6 +33,18 @@
 // resent on every admin page load. Defaults to 86400 (one day); set it to
 // 0 to keep notifications until they are dismissed. Individual
 // notifications may override it via the `expireAfter` option of `trigger`.
+//
+// ### `carrierExpireAfter`: seconds a bus carrier with a `tab` (see
+// `trigger`) is kept. Nobody claims or dismisses those, so this expiry is
+// what removes them. Defaults to 60.
+//
+// ### `lookback`: milliseconds a poll reads below the newest modification
+// time its browser tab has received. A notification written at about the
+// same moment as that one, by another process or server, may become visible
+// only after it while carrying an earlier time. The browser tab says what
+// it holds in that range, so nothing is sent twice. Defaults to 2000
+// (2 seconds). Raise it if servers whose clocks may differ by more than
+// that write notifications to the same database.
 
 const delay = require('bluebird').delay;
 
@@ -44,7 +56,9 @@ module.exports = {
     queryInterval: 1000,
     // Used only when longPolling is false
     pollingInterval: 5000,
-    expireAfter: 86400
+    expireAfter: 86400,
+    carrierExpireAfter: 60,
+    lookback: 2000
   },
   extend: '@apostrophecms/module',
   async init(self) {
@@ -62,12 +76,28 @@ module.exports = {
     // its rendered, localized markup, as well as `_id`, `createdAt`
     // and `id` (if one was provided when it was triggered).
     //
-    // The client should provide `modifiedOnOrSince` and `seenIds` in the
+    // The client should provide `modifiedOnOrSince` and `seen` in the
     // query. `modifiedOnOrSince` is the timestamp of the most recent
-    // notification modification time (updatedAt) the client has already seen,
-    // and `seenIds` must contain the _ids of the notifications with that
-    // exact notification time that the client has already seen, for
-    // disambiguation.
+    // notification modification time (updatedAt) the client has already seen.
+    // `seen` holds what the client received within the `lookback` option
+    // below that time: an object of notification _ids, each with the
+    // modification time it was received with, in milliseconds. Those are
+    // left out of the response, and anything else in that range is sent: a
+    // notification written by another process can become visible late,
+    // with a time earlier than one the client has already seen.
+    //
+    // A client that sends no `seen` is sent only what was modified after
+    // `modifiedOnOrSince`.
+    //
+    // When `seen` is too long for a query string, the same request may be
+    // sent as a POST with the query as the `__aposGetWithQuery` property
+    // of its body.
+    //
+    // `tabId` is the polling browser tab's id: it receives what was
+    // triggered for that tab besides everything else, never what was
+    // triggered for another tab.
+    // `pageStart`, the `pageStart` of the page's browser data, skips the
+    // bus carriers created before the page was rendered.
     //
     // Waits up to 10 seconds for new notifications (long polling),
     // but then responds with an empty array to avoid proxy server timeouts.
@@ -85,7 +115,14 @@ module.exports = {
         } catch (e) {
           throw self.apos.error('invalid');
         }
-        const seenIds = req.query.seenIds && self.apos.launder.ids(req.query.seenIds);
+        const seen = launderSeen(req.query.seen);
+        const tabId = self.apos.launder.string(req.query.tabId) || null;
+        const pageStart = req.query.pageStart
+          ? new Date(self.apos.launder.string(req.query.pageStart))
+          : null;
+        if (pageStart && isNaN(pageStart.getTime())) {
+          throw self.apos.error('invalid', '"pageStart" must be a timestamp');
+        }
         return await attempt();
 
         async function attempt() {
@@ -101,7 +138,9 @@ module.exports = {
 
           const { notifications, dismissed } = await self.find(req, {
             modifiedOnOrSince,
-            seenIds
+            seen,
+            tabId,
+            pageStart
           });
           if (self.options.longPolling && !notifications.length && !dismissed.length) {
             await delay(self.options.queryInterval || 1000);
@@ -111,6 +150,22 @@ module.exports = {
             notifications,
             dismissed
           };
+        }
+
+        // A map of _ids to modification times, or null if there are none
+        function launderSeen(input) {
+          if (!input || (typeof input !== 'object') || Array.isArray(input)) {
+            return null;
+          }
+          const seen = new Map();
+          for (const [ key, value ] of Object.entries(input)) {
+            const _id = self.apos.launder.id(key);
+            const time = self.apos.launder.integer(value, null);
+            if (_id && (time !== null)) {
+              seen.set(_id, time);
+            }
+          }
+          return seen.size ? seen : null;
         }
       }
     },
@@ -235,7 +290,10 @@ module.exports = {
         return {
           action: self.action,
           longPolling: self.options.longPolling,
-          pollingInterval: self.options.pollingInterval
+          pollingInterval: self.options.pollingInterval,
+          lookback: self.options.lookback,
+          // A page never replays the bus carriers created before it
+          pageStart: new Date()
         };
       },
       // When used server-side, call with `req` as the first argument,
@@ -283,13 +341,25 @@ module.exports = {
       //
       // `options.event`, an object with `name` and optional `data`
       // properties, is emitted on the browser bus (`apos.bus`) in exactly
-      // one tab when the notification arrives.
+      // one tab when the notification arrives (unless `options.tab` says
+      // otherwise, see below).
       //
       // If `options.bus` is set to `true`, the notification is a pure
       // message-bus carrier: it is never rendered — the browser emits its
       // `event` and dismisses it. `event` is then required, the `message`
       // argument becomes optional, and the options object may be passed in
       // its place: `apos.notify(req, { bus: true, event })`.
+      //
+      // `options.tab` says which of the user's browser tabs receive it:
+      //
+      // - absent: a notification is shown in every tab, a bus carrier is
+      //   emitted by the first tab that claims it.
+      // - `'every'`: every tab. A bus carrier is emitted by each tab once.
+      // - a browser tab id: only that tab.
+      //
+      // A bus carrier with a `tab` is never claimed or dismissed: it
+      // expires after the `carrierExpireAfter` option unless `expireAfter`
+      // is given.
       //
       // Throws an error if there is no `req.user`.
       //
@@ -323,6 +393,10 @@ module.exports = {
         if (!message && !options.bus) {
           throw self.apos.error('required');
         }
+        if (options.tab !== undefined &&
+          (typeof options.tab !== 'string' || !options.tab)) {
+          throw self.apos.error('invalid', '"tab" must be "every" or a browser tab id');
+        }
 
         req.body = req.body || {};
 
@@ -350,7 +424,9 @@ module.exports = {
 
         const expireAfter = (options.expireAfter != null)
           ? options.expireAfter
-          : self.options.expireAfter;
+          : (options.bus && options.tab)
+            ? self.options.carrierExpireAfter
+            : self.options.expireAfter;
         delete notification.expireAfter;
         if (expireAfter) {
           notification.expireAt = new Date(Date.now() + expireAfter * 1000);
@@ -442,38 +518,80 @@ module.exports = {
       // Resolves with an object with `notifications` and `dismissed`
       // properties.
       //
-      // If `options.modifiedOnOrSince` is set, notifications
-      // greater than the timestamp are sent,
-      // minus any notifications whose IDs are in `options.seenIds`.
+      // If `options.modifiedOnOrSince` is set, only notifications modified
+      // after it are sent.
+      //
+      // With `options.seen` as well, a Map of notification IDs to
+      // modification times in milliseconds, everything modified no earlier
+      // than the `lookback` option before `modifiedOnOrSince` is sent,
+      // except what `seen` holds with that exact time. A write gets its
+      // time before it becomes visible, so a notification can show up
+      // below a time that was already read. Several notifications may
+      // share a time, and one may be modified again (a dismissal) while
+      // its time is still the newest: the exact time tells those apart.
+      //
+      // A notification triggered for one browser tab is sent only when
+      // `options.tabId` names that tab. With `options.pageStart`, bus
+      // carriers created before it are left out; other notifications are
+      // not.
 
       async find(req, options) {
+        const since = options.modifiedOnOrSince &&
+          new Date(options.modifiedOnOrSince);
         try {
           const results = await self.db.find({
             userId: req.user._id,
-            // The database sweeps expired notifications periodically rather
-            // than instantly, and not every supported database honors expiry
-            // yet, so never send one that is still stored past its time
-            $or: [
-              { expireAt: null },
-              { expireAt: { $gt: new Date() } }
-            ],
-            ...(options.modifiedOnOrSince && {
-              updatedAt: {
-                $gt: new Date(options.modifiedOnOrSince)
-              }
-            }),
-            ...(options.seenIds && {
-              _id: {
-                $nin: options.seenIds
-              }
-            })
+            $and: [
+              // The database sweeps expired notifications periodically
+              // rather than instantly, and not every supported database
+              // honors expiry yet, so never send one that is still stored
+              // past its time
+              {
+                $or: [
+                  { expireAt: null },
+                  { expireAt: { $gt: new Date() } }
+                ]
+              },
+              ...(since && options.seen
+                ? [ {
+                  updatedAt: {
+                    $gte: new Date(since.getTime() - self.options.lookback)
+                  }
+                } ]
+                : []),
+              ...(since && !options.seen
+                ? [ { updatedAt: { $gt: since } } ]
+                : []),
+              {
+                $or: [
+                  { tab: null },
+                  { tab: 'every' },
+                  ...(options.tabId ? [ { tab: options.tabId } ] : [])
+                ]
+              },
+              ...(options.pageStart
+                ? [ {
+                  $or: [
+                    { bus: { $ne: true } },
+                    { createdAt: { $gte: new Date(options.pageStart) } }
+                  ]
+                } ]
+                : [])
+            ]
           }).sort({ createdAt: 1 }).toArray();
 
-          const notifications = results.filter(result => !result.dismissed);
-          const dismissed = results.filter(result => result.dismissed);
+          const unseen = since && options.seen
+            ? results.filter(({ _id, updatedAt }) => {
+              return options.seen.get(_id) !== updatedAt.getTime();
+            })
+            : results;
+          const notifications = unseen.filter(result => !result.dismissed);
+          const dismissed = unseen.filter(result => result.dismissed);
           dismissed.forEach(element => {
-            // 5-minute delay before deleting
-            setTimeout(() => self.restApiRoutes.delete(req, element._id), 300000);
+            // 5-minute delay before deleting. A cleanup, never a reason
+            // to keep the process alive
+            setTimeout(() => self.restApiRoutes.delete(req, element._id), 300000)
+              .unref();
           });
 
           return {

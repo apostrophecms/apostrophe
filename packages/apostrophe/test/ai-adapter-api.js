@@ -76,7 +76,8 @@ describe('AI: adapter API', function() {
         [ 403, 'forbidden', undefined ],
         [ 404, 'notfound', undefined ],
         [ 400, 'invalid', undefined ],
-        [ 422, 'invalid', undefined ]
+        [ 422, 'invalid', undefined ],
+        [ 413, 'aiContextOverflow', undefined ]
       ]) {
         const error = apos.ai.normalizeHttpError(httpError(status));
         assert.equal(error.name, code);
@@ -95,6 +96,49 @@ describe('AI: adapter API', function() {
         detail: 'no message here'
       }));
       assert.equal(transport.message, 'HTTP error 400');
+      // A message at the top level of the body, as some services send it
+      const topLevel = apos.ai.normalizeHttpError(httpError(400, {}, {
+        message: 'Input is too long for requested model.'
+      }));
+      assert.equal(topLevel.message, 'Input is too long for requested model.');
+    });
+
+    it('asks the adapter\'s contextOverflow test about client errors only', function() {
+      const asked = [];
+      const contextOverflow = (error) => {
+        asked.push(error.status);
+        return error.body?.error?.code === 'too_long';
+      };
+      const tooLong = {
+        error: {
+          code: 'too_long',
+          message: 'too many tokens'
+        }
+      };
+      const overflow = apos.ai.normalizeHttpError(httpError(400, {}, tooLong), {
+        contextOverflow
+      });
+      assert.equal(overflow.name, 'aiContextOverflow');
+      assert.equal(overflow.message, 'too many tokens');
+      assert.equal(overflow.data.status, 400);
+      const other = apos.ai.normalizeHttpError(httpError(400, {}, {
+        error: { code: 'bad_field' }
+      }), { contextOverflow });
+      assert.equal(other.name, 'invalid');
+      // Rate limits, overloads, credentials and missing models keep their
+      // codes whatever their bodies say
+      for (const [ status, code ] of [
+        [ 429, 'aiRetry' ],
+        [ 503, 'aiRetry' ],
+        [ 401, 'forbidden' ],
+        [ 404, 'notfound' ]
+      ]) {
+        const error = apos.ai.normalizeHttpError(httpError(status, {}, tooLong), {
+          contextOverflow
+        });
+        assert.equal(error.name, code);
+      }
+      assert.deepEqual(asked, [ 400, 400 ]);
     });
 
     it('carries the request id from the named header only', function() {
