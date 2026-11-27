@@ -307,7 +307,7 @@ describe('Assistant: describe_images and delegate', function () {
       assert.match(effort.description, /\n- low: Quick reads\n- medium: Most work\n- high: Hard problems$/);
     });
 
-    it('runs on delegationEffort with its own instructions, the site\'s and the read tools only, and stops at delegationMaxSteps', async function () {
+    it('runs on delegationEffort with its own instructions, the site\'s and the read tools only, stops at delegationMaxSteps and answers in one closing turn', async function () {
       const req = userReq(editor);
       const chat = await apos.aposAssistant.createChat(req);
       script = {
@@ -315,14 +315,17 @@ describe('Assistant: describe_images and delegate', function () {
           toolTurn('delegate', { instructions: 'Find the notes about launches' }),
           { text: 'Found nothing.' }
         ]),
-        // Never answers: the cap ends it
-        subagent: () => toolTurn('search_content', { query: 'launch' }, `search-${calls.length}`)
+        // Reads until the cap ends it, then answers in the closing turn
+        subagent: (req, request) => isClosing(request)
+          ? { text: 'No launch notes so far; the archive is unread.' }
+          : toolTurn('search_content', { query: 'launch' }, `search-${calls.length}`)
       };
       const request = await runToEnd(req, chat, 'Which notes are about launches?');
 
       assert.equal(request.status, 'completed');
       const subagent = calls.filter(call => call.caller === 'subagent');
-      assert.equal(subagent.length, 3);
+      // Three steps, then the closing turn
+      assert.equal(subagent.length, 4);
       for (const { request: call } of subagent) {
         assert.equal(call.model, 'fake-small');
       }
@@ -340,6 +343,38 @@ describe('Assistant: describe_images and delegate', function () {
         'find_references', 'get_changes', 'get_document', 'get_guidance', 'get_page_tree',
         'get_schema', 'list_types', 'search_content'
       ]);
+      // The closing turn: the same subagent, its last call answered as not
+      // run, and the request to answer from what it read
+      const { request: last } = subagent[3];
+      assert.equal(last.system, first.system);
+      assert.deepEqual(last.tools.map(tool => tool.name), tools);
+      const unrun = last.messages.findLast(message => message.role === 'tool');
+      const ask = last.messages.findLast(message => message.role === 'user');
+      assert.deepEqual(unrun.content.map(part => part.output), [ {
+        executed: false,
+        reason: 'maxSteps'
+      } ]);
+      assert.match(ask.content[0].text, /^You are out of steps\./);
+      assert.deepEqual(resultOf(request, 'call-delegate').output, {
+        answer: 'No launch notes so far; the archive is unread.',
+        finishReason: 'maxSteps'
+      });
+    });
+
+    it('answers empty when the subagent still calls a tool in its closing turn', async function () {
+      const req = userReq(editor);
+      const chat = await apos.aposAssistant.createChat(req);
+      script = {
+        run: sequence([
+          toolTurn('delegate', { instructions: 'Find the notes about launches' }),
+          { text: 'Found nothing.' }
+        ]),
+        subagent: () => toolTurn('search_content', { query: 'launch' }, `search-${calls.length}`)
+      };
+      const request = await runToEnd(req, chat, 'Which notes are about launches?');
+
+      const subagent = calls.filter(call => call.caller === 'subagent');
+      assert.equal(subagent.length, 4);
       assert.deepEqual(resultOf(request, 'call-delegate').output, {
         answer: '',
         finishReason: 'maxSteps'
@@ -412,6 +447,8 @@ describe('Assistant: describe_images and delegate', function () {
       assert(resultOf(request, 'call-delegate').output.screen);
       const { refused } = resultOf(request, 'call-update').output;
       assert.equal(refused[0].reason, 'changed');
+      // Saved by someone else: the assistant asks before overwriting it
+      assert.match(refused[0].message, /only if the user asks you to/);
     });
   });
 
@@ -444,6 +481,10 @@ function getCaller(request) {
     return 'vision';
   }
   return request.system?.includes('You are a research assistant') ? 'subagent' : 'run';
+}
+
+function isClosing(request) {
+  return /^You are out of steps\./.test(request.messages.at(-1).content[0]?.text || '');
 }
 
 function sequence(turns) {

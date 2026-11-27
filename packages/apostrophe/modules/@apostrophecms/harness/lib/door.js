@@ -14,7 +14,7 @@
 
 const DOOR_KEYS = [
   'door', 'lockId', 'family', 'chat', 'requestId', 'model', 'revert', 'seen', 'deferSeen',
-  'askBeforeOverwrite', 'client', 'pendingSeen'
+  'client', 'pendingSeen'
 ];
 
 module.exports = (self) => {
@@ -47,13 +47,6 @@ module.exports = (self) => {
      * @param {Map<string, string>} [context.pendingSeen] With `deferSeen`,
      *   reads an earlier run of the request kept aside and never added: its
      *   step waited, and its calls run on this request.
-     * @param {boolean} [context.askBeforeOverwrite] A write refused because
-     *   the document was saved since the read always says who saved it.
-     *   With this, after another user's save the model is told to say what
-     *   they changed and write only if the user asks; after the same user's,
-     *   to read it again and build on it. For a door with no confirmation of
-     *   its own, such as MCP; without it, the refusal says to read the
-     *   document again before writing it.
      * @param {object} [context.client] The outside tool the request comes
      *   from, for a door that serves several, such as MCP. Recorded on the
      *   request's change-log entries, which outlive the tool's connection.
@@ -79,7 +72,7 @@ module.exports = (self) => {
       }
       const {
         door, lockId, family, chat, requestId, model, revert, seen, deferSeen,
-        askBeforeOverwrite, client, pendingSeen
+        client, pendingSeen
       } = context;
       for (const [ name, value ] of Object.entries({
         door,
@@ -111,9 +104,6 @@ module.exports = (self) => {
       if ((deferSeen !== undefined) && (typeof deferSeen !== 'boolean')) {
         throw self.apos.error('invalid', '"deferSeen" must be a boolean');
       }
-      if ((askBeforeOverwrite !== undefined) && (typeof askBeforeOverwrite !== 'boolean')) {
-        throw self.apos.error('invalid', '"askBeforeOverwrite" must be a boolean');
-      }
       if ((client !== undefined) && !(
         (typeof client?.id === 'string') && client.id &&
         [ 'name', 'clientHost' ].every(
@@ -142,7 +132,6 @@ module.exports = (self) => {
           ...(family && { family }),
           ...(chat && { chat }),
           ...(revert && { revert }),
-          ...(askBeforeOverwrite && { askBeforeOverwrite }),
           ...(client && {
             client: Object.freeze({
               id: client.id,

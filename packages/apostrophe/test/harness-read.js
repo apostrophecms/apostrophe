@@ -378,6 +378,25 @@ describe('Harness: read tools and the schema read', function () {
       } ]);
     });
 
+    it('should give a document with a URL its permalink for rich text', async function () {
+      const page = await apos.page.insert(userReq(), '_home', 'lastChild', {
+        title: 'Our pricing',
+        type: 'read-page',
+        slug: '/pricing'
+      });
+
+      const { results } = await run('search_content', { query: 'pricing' });
+      await apos.page.delete(userReq(), page);
+
+      assert.deepEqual(results.map(({ url, richTextPermalink }) => ({
+        url,
+        richTextPermalink
+      })), [ {
+        url: '/pricing',
+        richTextPermalink: `#apostrophe-permalink-${page.aposDocId}?updateTitle=0`
+      } ]);
+    });
+
     it('should list a type, in another locale', async function () {
       const result = await run('search_content', {
         type: 'read-article',
