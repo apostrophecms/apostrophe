@@ -158,9 +158,11 @@ module.exports = (self) => {
             finishReason: {
               type: 'string',
               enum: [ 'stop', 'length', 'cancel', 'maxSteps' ],
-              description: '"stop": a finished answer. "maxSteps" or "length": the ' +
-                'research ran out of budget; narrow the task or read yourself rather than ' +
-                'delegating the same instructions again. "cancel": the request was stopped'
+              description: '"stop": a finished answer. "maxSteps": the research ran out ' +
+                'of steps; the answer is what it found by then and what it did not get to. ' +
+                '"length": the answer was cut off. After either, read the rest yourself or ' +
+                'delegate a narrower task, never the same instructions again. "cancel": the ' +
+                'request was stopped'
             }
           },
           required: [ 'answer', 'finishReason' ],
@@ -437,40 +439,81 @@ module.exports = (self) => {
       // The `delegate` handler: the task runs as a subagent on the harness's
       // read tools, on the effort the model names or `delegationEffort`, for at
       // most `delegationMaxSteps` model steps. Its reads count as the chat's
-      // own, so a write after them is checked against what they read.
+      // own, so a write after them is checked against what they read. A
+      // subagent out of steps gets one more turn to answer from what it read.
       async function delegate(req, {
         instructions, effort, _context
       }) {
         const level = effort || self.options.delegationEffort;
-        const tools = self.apos.aposHarness.getDoorTools('assistant')
-          .filter(tool => (tool.kind === 'query') && !tool.tags?.includes('browser') &&
-            !tool.tags?.includes('assistant'))
-          .map(tool => tool.name);
-        let result;
-        try {
-          result = await self.apos.ai.generate(req, instructions, {
-            system: [ DELEGATE_SYSTEM, self.apos.aposHarness.getSiteInstructions(req) ]
-              .filter(Boolean)
-              .join('\n\n'),
-            tools,
-            maxSteps: self.options.delegationMaxSteps,
-            usageMetadata: { purpose: 'delegate' },
-            ...(level && { effort: level }),
-            ...(_context.signal && { signal: _context.signal })
-          });
-        } catch (e) {
-          const error = MODEL_ERRORS[e.name];
-          if (!error) {
-            throw e;
-          }
-          await self.addAgentUsage(req, [ e.aposAiPartial?.usage ]);
-          throw self.apos.error('aiToolError', `${error} Narrow the task or read yourself.`);
+        const options = {
+          system: [ DELEGATE_SYSTEM, self.apos.aposHarness.getSiteInstructions(req) ]
+            .filter(Boolean)
+            .join('\n\n'),
+          tools: self.apos.aposHarness.getDoorTools('assistant')
+            .filter(tool => (tool.kind === 'query') && !tool.tags?.includes('browser') &&
+              !tool.tags?.includes('assistant'))
+            .map(tool => tool.name),
+          usageMetadata: { purpose: 'delegate' },
+          ...(level && { effort: level }),
+          ...(_context.signal && { signal: _context.signal })
+        };
+        const result = await research({
+          ...options,
+          messages: [ text(instructions) ],
+          maxSteps: self.options.delegationMaxSteps
+        });
+        let answer = result.text || '';
+        if ((result.finishReason === 'maxSteps') && !_context.signal?.aborted) {
+          answer = (await closing(result.messages)).text || answer;
         }
-        await self.addAgentUsage(req, [ result.usage ]);
         return {
-          answer: result.text || '',
+          answer,
           finishReason: result.finishReason
         };
+
+        // The calls the last turn asked for are answered as not run; the
+        // tools stay declared, as a transcript with tool calls needs them, but
+        // a call asked for here is never run either
+        function closing(messages) {
+          return research({
+            ...options,
+            messages: [
+              ...self.completeCalls(messages, () => ({
+                executed: false,
+                reason: 'maxSteps'
+              })),
+              text('You are out of steps. Do not call any tool. Answer now from what ' +
+                'you have read: what you found, and what you did not get to.')
+            ],
+            maxSteps: 1
+          });
+        }
+
+        function text(value) {
+          return {
+            role: 'user',
+            content: [ {
+              type: 'text',
+              text: value
+            } ]
+          };
+        }
+
+        async function research(generateOptions) {
+          let result;
+          try {
+            result = await self.apos.ai.generate(req, generateOptions);
+          } catch (e) {
+            const error = MODEL_ERRORS[e.name];
+            if (!error) {
+              throw e;
+            }
+            await self.addAgentUsage(req, [ e.aposAiPartial?.usage ]);
+            throw self.apos.error('aiToolError', `${error} Narrow the task or read yourself.`);
+          }
+          await self.addAgentUsage(req, [ result.usage ]);
+          return result;
+        }
       }
     },
 

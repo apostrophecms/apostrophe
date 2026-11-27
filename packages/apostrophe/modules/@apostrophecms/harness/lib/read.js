@@ -62,7 +62,14 @@ module.exports = (self) => {
             type: doc.type,
             title: doc.title,
             ...(doc.slug && { slug: doc.slug }),
-            ...(doc._url && { url: doc._url }),
+            ...(doc._url && {
+              url: doc._url,
+              // The href rich text links to it by, as the editor's link
+              // dialog writes it. Given here, where the model looks a link
+              // target up, it was always used in live runs. A candidate for
+              // the tool's description alone, if data shows that is enough
+              richTextPermalink: `#apostrophe-permalink-${doc.aposDocId}?updateTitle=0`
+            }),
             updatedAt: doc.updatedAt,
             ...self.getPublication(doc)
           })),

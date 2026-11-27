@@ -414,17 +414,35 @@ describe('Assistant: module and options', function () {
     });
   });
 
-  it('refuses an effort option naming no effort level at startup', async function () {
+  it('refuses an effort option naming no effort level', async function () {
     process.env.APOS_AI_MOCK = '1';
-    for (const name of [ 'effort', 'titleEffort', 'delegationEffort', 'summaryEffort' ]) {
-      await assert.rejects(
-        withApos({
-          enabled: true,
-          [name]: 'nope'
-        }, () => {}, { provider: true }),
-        new RegExp(`${name} option names the effort level "nope"`)
-      );
-    }
+    // Startup runs the check
+    await assert.rejects(
+      withApos({
+        enabled: true,
+        effort: 'nope'
+      }, () => {}, { provider: true }),
+      /effort option names the effort level "nope"/
+    );
+    // One startup with the engine's effort levels, each option checked against it
+    await withApos({ enabled: true }, (apos) => {
+      const assistant = apos.aposAssistant;
+      const defaults = assistant.options;
+      try {
+        for (const name of [ 'effort', 'titleEffort', 'delegationEffort', 'summaryEffort' ]) {
+          assistant.options = {
+            ...defaults,
+            [name]: 'nope'
+          };
+          assert.throws(
+            () => assistant.validateEffortOptions(),
+            new RegExp(`${name} option names the effort level "nope"`)
+          );
+        }
+      } finally {
+        assistant.options = defaults;
+      }
+    }, { provider: true });
   });
 
   it('accepts the configured effort levels and titleEffort "none"', async function () {
@@ -440,9 +458,7 @@ describe('Assistant: module and options', function () {
     }, { provider: true });
   });
 
-  it('refuses options of the wrong shape at startup', async function () {
-    // A startup per case
-    this.timeout(t.timeout * 4);
+  it('refuses options of the wrong shape', async function () {
     const cases = [
       [ { enabled: 'yes' }, /enabled option must be a boolean/ ],
       [ { modelDisplay: 1 }, /modelDisplay option must be a boolean/ ],
@@ -470,9 +486,24 @@ describe('Assistant: module and options', function () {
       [ { contextThreshold: 91 }, /contextThreshold option must be a whole number from 10 to 90/ ],
       [ { contextThreshold: 75.5 }, /contextThreshold option must be a whole number from 10 to 90/ ]
     ];
-    for (const [ options, pattern ] of cases) {
-      await assert.rejects(withApos(options, () => {}), pattern);
-    }
+    // Startup runs the check
+    await assert.rejects(withApos({ enabled: 'yes' }, () => {}), /enabled option must be a boolean/);
+    // One startup on the defaults, each case checked against it
+    await withApos({}, (apos) => {
+      const assistant = apos.aposAssistant;
+      const defaults = assistant.options;
+      try {
+        for (const [ options, pattern ] of cases) {
+          assistant.options = {
+            ...defaults,
+            ...options
+          };
+          assert.throws(() => assistant.validateOptions(), pattern);
+        }
+      } finally {
+        assistant.options = defaults;
+      }
+    });
   });
 
   it('refuses a browser tool with no screen effect at startup', async function () {
