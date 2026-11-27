@@ -24,6 +24,31 @@ describe('Assistant: module and options', function () {
     }, { modules: browserToolModule('keeps') });
   });
 
+  it('keeps its UI out of the build unless enabled', async function () {
+    await withApos({}, async (apos) => {
+      assert.equal(apos.asset.isBuildEnabled('@apostrophecms/assistant'), false);
+    });
+    await withApos({ enabled: true }, async (apos) => {
+      assert.equal(apos.asset.isBuildEnabled('@apostrophecms/assistant'), true);
+    });
+  });
+
+  it('adds nothing when its UI is not built', async function () {
+    process.env.APOS_AI_MOCK = '1';
+    await withApos({ enabled: true }, async (apos) => {
+      assert.equal(apos.ai.active, true);
+      assert.equal(apos.aposAssistant.active, false);
+      await assertAbsent(apos);
+    }, {
+      modules: {
+        '@apostrophecms/assistant': {
+          options: { enabled: true },
+          build: { enable: false }
+        }
+      }
+    });
+  });
+
   it('adds nothing when enabled with no active AI engine', async function () {
     await withApos({ enabled: true }, async (apos) => {
       assert.equal(apos.ai.active, false);

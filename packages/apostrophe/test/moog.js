@@ -98,6 +98,31 @@ describe('moog', function() {
       assert(myObject.options.color === 'red');
     });
 
+    it('should give the options as configured with the metadata', async function() {
+      const moog = require('../lib/moog.js')({});
+      const isEnabled = options => options.color === 'red';
+
+      await moog.define('baseClass', {
+        options: {
+          color: 'blue',
+          shape: 'round',
+          isEnabled
+        }
+      });
+
+      await moog.define('subClass', {
+        options: {
+          color: 'red'
+        },
+        extend: 'baseClass'
+      });
+
+      const { options } = await moog.getMetadata('subClass');
+      assert(options.color === 'red');
+      assert(options.shape === 'round');
+      assert(options.isEnabled === isEnabled);
+    });
+
     it('should report an error gracefully if subclass to be extended does not exist (async)', async function() {
       const moog = require('../lib/moog.js')({});
 

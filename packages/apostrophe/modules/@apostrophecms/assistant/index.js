@@ -73,6 +73,10 @@ module.exports = {
     'stop-icon': 'Stop',
     'check-icon': 'Check'
   },
+  build: {
+    // Off, its UI is never built: the browser gets none of it
+    enable: options => options.enabled === true
+  },
   init(self) {
     self.validateOptions();
     // Set once the AI engine is active too
@@ -183,7 +187,15 @@ module.exports = {
         // After the AI engine's own activation, which comes first in the
         // module order
         async activate() {
-          if (!self.options.enabled || !self.apos.ai.active) {
+          // Its UI must be in the build too (see `build.enable`): browser
+          // data never names an assistant the browser doesn't have
+          if (
+            !self.options.enabled ||
+            !self.apos.ai.active ||
+            !self.apos.asset.isBuildEnabled(self.__meta.name)
+          ) {
+            // The answer for every module asking at run time
+            self.active = false;
             return;
           }
           self.validateEffortOptions();

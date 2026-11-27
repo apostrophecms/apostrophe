@@ -142,20 +142,24 @@ module.exports = {
 
     self.enableBrowserData();
 
+    // The namespace filled by `setBuildExtensions()` (`build` property).
+    self.moduleBuildExtensions = {};
+    // Modules whose UI sources no build includes, also filled by
+    // `setBuildExtensions()` (see `getBuildDisabledModules()` in
+    // lib/build/utils). First, the `webpack` property processing below leaves
+    // them out too.
+    self.buildDisabledModules = new Set();
+    await self.setBuildExtensions();
+
     // The namespace filled by `setWebpackExtensions()` (`webpack` property
-    // processing).
+    // processing). With an external build module, the `build` property
+    // data overrides it (`setBuildExtensionsForExternalModule()`).
     self.extraBundles = {};
     self.webpackExtensions = {};
     self.webpackExtensionOptions = {};
     self.verifiedBundles = {};
     self.rebundleModules = [];
     await self.setWebpackExtensions();
-
-    // The namespace filled by `setBuildExtensions()` (`build` property).
-    // The properties above set by `setWebpackExtensions()` will be also
-    // overridden.
-    self.moduleBuildExtensions = {};
-    await self.setBuildExtensions();
     // Set only if the external build module is registered. Contains
     // the entrypoints configuration for the current build module.
     self.moduleBuildEntrypoints = [];
@@ -749,7 +753,8 @@ module.exports = {
         } = await getWebpackExtensions({
           getMetadata: self.apos.synth.getMetadata,
           modulesToInstantiate: self.getRegisteredModules(),
-          rebundleModulesConfig: self.options.rebundleModules
+          rebundleModulesConfig: self.options.rebundleModules,
+          isBuildEnabled: self.isBuildEnabled
         });
 
         // For testing purposes, we can pass a result object
@@ -918,7 +923,18 @@ module.exports = {
         if (!lockPath) {
           return null;
         }
-        return self.apos.util.md5(await fs.readFile(lockPath, 'utf8'));
+        // A module's build turned on or off changes what is built, like a
+        // dependency change
+        const disabled = [ ...self.buildDisabledModules ].sort().join(',');
+        return self.apos.util.md5(
+          await fs.readFile(lockPath, 'utf8') + `\nbuildDisabled:${disabled}`
+        );
+      },
+
+      // Whether the UI of a module is built (see `build.enable`), by module or
+      // chain entry name, its project level `my-` form included
+      isBuildEnabled(name) {
+        return !self.buildDisabledModules.has(name.replace(/(^|\/)my-/, '$1'));
       },
 
       // Where the lock file hash from the last build is persisted.
