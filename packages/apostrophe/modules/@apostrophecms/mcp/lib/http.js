@@ -22,6 +22,16 @@ const { version } = require('../../../../package.json');
 
 const LOCALHOST = [ 'localhost', '127.0.0.1', '[::1]' ];
 
+// The door's own section: for a tool that can also browse the site. About
+// Apostrophe's admin UI, so the same on every site. Every MCP session gets
+// it, so it stays under 100 tokens; a draft write's notice says where to
+// preview the change
+const BROWSER = 'In a browser on this site, only look and preview. Change content only ' +
+  'with the content tools: never through the browser, the site\'s API or its AI ' +
+  'assistant. Before you write, close editors you opened without saving and exit edit ' +
+  'mode. If the site says a document is being edited elsewhere, ask the user; never ' +
+  'take control.';
+
 module.exports = (self) => {
   return {
     enableHttp() {
@@ -61,8 +71,9 @@ module.exports = (self) => {
     // One server per request, as the SDK's handler asks. Named for the site,
     // so that a client connected to several sites can tell them apart. The
     // instructions are read through the `mcp` door, so a type's guidance
-    // for MCP alone (`aiHowMcp`) counts; nothing is written on that request,
-    // so one id serves as its lock and request ids
+    // for MCP alone (`aiHowMcp`) counts, and end with the door's own
+    // section; nothing is written on that request, so one id serves as its
+    // lock and request ids
     createServer(req) {
       const id = self.apos.util.generateId();
       const doorReq = self.apos.aposHarness.withDoor(req, {
@@ -75,7 +86,7 @@ module.exports = (self) => {
         title: self.options.title || self.apos.shortName,
         version
       }, {
-        instructions: self.apos.aposHarness.getInstructions(doorReq),
+        instructions: self.apos.aposHarness.getInstructions(doorReq, [ BROWSER ]),
         // The list depends on the user's locale (titles), so no shared
         // caches
         cacheHints: { 'tools/list': { cacheScope: 'private' } }
@@ -96,3 +107,5 @@ module.exports = (self) => {
     }
   };
 };
+
+module.exports.MODEL_TEXTS = [ BROWSER ];

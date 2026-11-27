@@ -5,7 +5,7 @@ const REFUSALS = new Set([ 'notfound', 'forbidden', 'locked', 'invalid', 'confli
 
 const LIVE_NOTICE = 'The change is live on the site now.';
 const DRAFT_NOTICE = 'The change is saved in the draft; it goes live once the draft is ' +
-  'published.';
+  'published. A logged-in editor sees it in the draft view.';
 const MIXED_NOTICE = 'Changes with "published": true are live on the site now; the others ' +
   'are saved in drafts and go live once published.';
 const PUBLISHED_NOTICE = 'The published documents are live on the site now.';
