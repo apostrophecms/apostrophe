@@ -1786,13 +1786,13 @@ describe('Assets - modules whose UI is not built', function() {
   });
 
   it('calls `build.enable` with the options as configured', function() {
-    assert.equal(apos.asset.isInactive('ui-build-off'), true);
-    assert.equal(apos.asset.isInactive('my-ui-build-off'), true);
-    assert.equal(apos.asset.isInactive('ui-build-on'), false);
+    assert.equal(apos.asset.isBuildEnabled('ui-build-off'), false);
+    assert.equal(apos.asset.isBuildEnabled('my-ui-build-off'), false);
+    assert.equal(apos.asset.isBuildEnabled('ui-build-on'), true);
   });
 
   it('takes `build.enable` from the last level setting it, a boolean too', function() {
-    assert.equal(apos.asset.isInactive('ui-build-override'), true);
+    assert.equal(apos.asset.isBuildEnabled('ui-build-override'), false);
   });
 
   it('takes `build.enable` for no build vendor', async function() {
@@ -1807,7 +1807,7 @@ describe('Assets - modules whose UI is not built', function() {
     assert(Object.hasOwn(configs.vite.extensions, 'uiBuildOverride'));
   });
 
-  it('gives a build module no sources of an inactive module', async function() {
+  it('gives a build module no sources of a module whose build is disabled', async function() {
     const meta = await apos.asset.computeSourceMeta({
       modules: apos.asset.getRegisteredModules(),
       stats: false
@@ -1817,7 +1817,7 @@ describe('Assets - modules whose UI is not built', function() {
     assert(names.includes('ui-build-on'));
   });
 
-  it('registers no extra bundle of an inactive module', function() {
+  it('registers no extra bundle of a module whose build is disabled', function() {
     // The `webpack` section, built without a build module
     assert(Object.hasOwn(apos.asset.verifiedBundles, 'ui-build-on-extra'));
     assert(!Object.hasOwn(apos.asset.verifiedBundles, 'ui-build-off-extra'));
@@ -1830,7 +1830,7 @@ describe('Assets - modules whose UI is not built', function() {
     assert(!Object.hasOwn(verifiedBundles, 'ui-build-off-extra'));
   });
 
-  it('builds no component of an inactive module', async function() {
+  it('builds no component of a module whose build is disabled', async function() {
     await apos.asset.tasks.build.task();
     const bundle = await fs.readFile(
       path.join(publicFolderPath, 'apos-frontend/default/apos-module-bundle.js'),

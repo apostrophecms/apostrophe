@@ -653,7 +653,7 @@ module.exports = (self) => ({
       for (const name of modulesToInstantiate) {
         const metadata = await self.apos.synth.getMetadata(name);
         for (const entry of metadata.__meta.chain) {
-          if (options.ignoreModules?.[entry.name] || self.isInactive(entry.name)) {
+          if (options.ignoreModules?.[entry.name] || !self.isBuildEnabled(entry.name)) {
             seen[entry.dirname] = true;
           }
           if (seen[entry.dirname]) {

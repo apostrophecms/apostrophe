@@ -192,7 +192,7 @@ module.exports = {
           if (
             !self.options.enabled ||
             !self.apos.ai.active ||
-            self.apos.asset.isInactive(self.__meta.name)
+            !self.apos.asset.isBuildEnabled(self.__meta.name)
           ) {
             return;
           }

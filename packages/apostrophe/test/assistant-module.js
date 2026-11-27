@@ -26,10 +26,10 @@ describe('Assistant: module and options', function () {
 
   it('keeps its UI out of the build unless enabled', async function () {
     await withApos({}, async (apos) => {
-      assert.equal(apos.asset.isInactive('@apostrophecms/assistant'), true);
+      assert.equal(apos.asset.isBuildEnabled('@apostrophecms/assistant'), false);
     });
     await withApos({ enabled: true }, async (apos) => {
-      assert.equal(apos.asset.isInactive('@apostrophecms/assistant'), false);
+      assert.equal(apos.asset.isBuildEnabled('@apostrophecms/assistant'), true);
     });
   });
 
