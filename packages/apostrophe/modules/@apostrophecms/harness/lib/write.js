@@ -343,6 +343,12 @@ module.exports = (self) => {
           ...input
         }));
         const saveReq = self.getSaveRequest(draftReq, doc);
+        if (saveReq.aposSaveMarker) {
+          saveReq.aposSaveMarker.written = {
+            _id: doc._id,
+            fields: getPatchFields(patches)
+          };
+        }
         const body = (inputs.length === 1)
           ? inputs[0]
           : { _patches: inputs };
@@ -359,6 +365,53 @@ module.exports = (self) => {
         await self.publishChangeSettled(draftReq, doc, saveReq.aposSaveMarker);
         await self.rememberSeen(draftReq, saved);
         return saved;
+      }
+
+      // The paths `patches` write, as Document Versions' `isWithinFields`
+      // takes them: each key, and `@<_id>` of each item an operator pushes,
+      // pulls or moves. The change log keeps only the rows within them, not
+      // what save handlers compute or a save normalizes. `null`, the save
+      // whole, for a path by index or an item without an `_id`
+      function getPatchFields(patches) {
+        const fields = new Set();
+        for (const patch of patches) {
+          for (const [ key, value ] of Object.entries(patch)) {
+            if (key === '_lossless') {
+              continue;
+            }
+            if (key.startsWith('$')) {
+              const ids = getOperatorIds(key, value);
+              if (!ids) {
+                return null;
+              }
+              ids.forEach(id => fields.add(`@${id}`));
+            } else if (key.split('.').some(segment => /^\d+$/.test(segment))) {
+              return null;
+            } else {
+              fields.add(key);
+            }
+          }
+        }
+        return [ ...fields ];
+      }
+
+      // The `_id`s of the items a patch operator writes, `null` if one has none
+      function getOperatorIds(operator, paths) {
+        const ids = Object.values(paths || {}).flatMap(value => {
+          switch (operator) {
+            case '$push':
+              return (value?.$each || [ value ]).map(item => item?._id);
+            case '$pullAll':
+              return [ value ].flat().map(item => item?._id);
+            case '$pullAllById':
+              return [ value ].flat();
+            case '$move':
+              return [ value?.$item ];
+            default:
+              return [ null ];
+          }
+        });
+        return ids.every(id => id && (typeof id === 'string')) ? ids : null;
       }
     },
 

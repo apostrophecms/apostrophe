@@ -280,7 +280,8 @@ describe('Harness: the change log', function () {
     const entries = await entriesOf(req);
     assert.equal(entries.length, 1);
     assert.equal(entries[0].effect, 'archive');
-    assert.deepEqual(pathsOf(entries[0]).sort(), [ 'archived', 'slug' ]);
+    // Not the slug the archive deduplicates on save
+    assert.deepEqual(pathsOf(entries[0]), [ 'archived' ]);
   });
 
   it('should close the request\'s entries at its end', async function () {

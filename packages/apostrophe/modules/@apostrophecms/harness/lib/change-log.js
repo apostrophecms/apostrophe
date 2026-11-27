@@ -44,16 +44,20 @@ module.exports = (self) => {
      * because someone else saved in between, starts a new entry, so no
      * other save is ever recorded as the request's.
      *
-     * An editor's save of fields the request wrote into it from outside
-     * (see the assistant's `markOutsideSave`) records only the rows at or
-     * below those `fields`: the editor's own stay the editor's. Such a save
-     * after the request ended leaves a closed entry.
+     * A save with `fields` records only the rows at or below them, what
+     * save handlers compute and what a save normalizes left out. A door's
+     * write names the paths it wrote (see `writeDraft`). An editor's save of
+     * fields the request wrote into it from outside (see the assistant's
+     * `markOutsideSave`) names those: the editor's own stay the editor's,
+     * and such a save that changed none of them records nothing. Such a save
+     * after the request ended leaves a closed entry. An entry that holds the
+     * document's creation stays whole.
      *
      * @param {object} req The `req` of the save.
-     * @param {object} settled The `afterSaveSettled` payload, and for an
-     *   editor's save `fields` and `ended`.
+     * @param {object} settled The `afterSaveSettled` payload, with `fields`
+     *   when the save names them, and for an editor's save `ended`.
      * @returns {Promise<string|null>} The `_id` of the entry the save landed
-     *   in, `null` when none of `fields` changed.
+     *   in, `null` for an editor's save that changed none of `fields`.
      */
     async recordChange(req, {
       marker, before, after, toolCall, drops, fields = null, ended = false
@@ -70,12 +74,14 @@ module.exports = (self) => {
       const base = continues
         ? (open.base && await self.apos.docVersions.unpack(open.base))
         : before;
-      const allFields = fields && [ ...new Set([ ...(open?.fields || []), ...fields ]) ];
+      const whole = continues && !open.fields;
+      const allFields = fields && !whole &&
+        [ ...new Set([ ...(open?.fields || []), ...fields ]) ];
       const between = await self.apos.docVersions.getChangeRowsBetween(req, base, after);
       const rows = allFields
         ? between.filter(row => self.apos.docVersions.isWithinFields(row, allFields))
         : between;
-      if (allFields && !rows.length) {
+      if (allFields && !rows.length && marker.outside) {
         return null;
       }
       const now = new Date();
