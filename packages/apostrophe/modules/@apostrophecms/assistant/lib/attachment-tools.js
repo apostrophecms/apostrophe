@@ -34,7 +34,7 @@ module.exports = (self) => {
       };
       self.apos.ai.addTool({
         name: 'read_attachment',
-        label: 'apostrophe:aiToolReadAttachment',
+        label: 'aposAssistant:aiToolReadAttachment',
         description: 'Read a file attached to this chat. HTML and SVG come trimmed of ' +
           'scripts, path data, data URLs and comments; CSS trimmed of comments; token ' +
           'files as a list of tokens; Markdown as text. A long file comes in parts: read ' +
@@ -43,7 +43,7 @@ module.exports = (self) => {
         kind: 'query',
         summary: (input, output) => [
           output && {
-            text: 'apostrophe:aiStepReadFile',
+            text: 'aposAssistant:aiStepReadFile',
             title: output.name
           }
         ],
@@ -66,7 +66,7 @@ module.exports = (self) => {
       });
       self.apos.ai.addTool({
         name: 'save_attachment_to_media',
-        label: 'apostrophe:aiToolSaveAttachmentToMedia',
+        label: 'aposAssistant:aiToolSaveAttachmentToMedia',
         description: 'Save an image attached to this chat to Media, unchanged, when the ' +
           'user asks for it. It becomes a new Media image the site can use, or, with ' +
           '"replaces", the new file of that Media image, which keeps its title and alt ' +
@@ -295,10 +295,10 @@ module.exports = (self) => {
       await self.addNotice(req, {
         callId,
         tone: 'success',
-        title: target ? 'apostrophe:assistantUpdatedInMedia' : 'apostrophe:assistantSavedToMedia',
+        title: target ? 'aposAssistant:assistantUpdatedInMedia' : 'aposAssistant:assistantSavedToMedia',
         text: target
-          ? 'apostrophe:assistantUpdatedInMediaText'
-          : 'apostrophe:assistantSavedToMediaText',
+          ? 'aposAssistant:assistantUpdatedInMediaText'
+          : 'aposAssistant:assistantSavedToMediaText',
         interpolate: { title: saved.title },
         link: {
           _id: saved._id,

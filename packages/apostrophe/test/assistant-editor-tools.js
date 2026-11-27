@@ -428,7 +428,7 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
             titles: [ 'To publish' ],
             more: 0,
             title: {
-              key: 'apostrophe:assistantGatePublish',
+              key: 'aposAssistant:assistantGatePublish',
               values: { count: 1 }
             },
             approve: 'apostrophe:publish'
@@ -619,7 +619,7 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
         };
       };
       const worded = {
-        key: 'apostrophe:assistantGateStylesLocale',
+        key: 'aposAssistant:assistantGateStylesLocale',
         values: { locale: 'English' }
       };
 
@@ -652,16 +652,16 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
       const req = userReq(editor);
       apos.aposAssistant.addGate('update_document', 'worded', () => ({
         title: {
-          key: 'apostrophe:assistantGateStylesLocale',
+          key: 'aposAssistant:assistantGateStylesLocale',
           values: { locale: 'English' }
         },
         text: {
-          key: 'apostrophe:assistantGateLive'
+          key: 'aposAssistant:assistantGateLive'
         },
-        approve: 'apostrophe:assistantApplyNow',
+        approve: 'aposAssistant:assistantApplyNow',
         alternatives: [ {
           name: 'elsewhere',
-          label: 'apostrophe:assistantOpenStyles',
+          label: 'aposAssistant:assistantOpenStyles',
           message: 'the user wants it done elsewhere'
         } ]
       }));
@@ -670,12 +670,12 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
       const waiting = await runToEnd(req, chat, 'Rename one note');
       const { gate } = waiting.asks[0].payload;
       assert.deepEqual(gate.title, {
-        key: 'apostrophe:assistantGateStylesLocale',
+        key: 'aposAssistant:assistantGateStylesLocale',
         values: { locale: 'English' }
       });
       // One line becomes a list of lines
-      assert.deepEqual(gate.text, [ { key: 'apostrophe:assistantGateLive' } ]);
-      assert.equal(gate.approve, 'apostrophe:assistantApplyNow');
+      assert.deepEqual(gate.text, [ { key: 'aposAssistant:assistantGateLive' } ]);
+      assert.equal(gate.approve, 'aposAssistant:assistantApplyNow');
       assert.equal(gate.count, 1);
       for (const answer of [
         {
@@ -716,7 +716,7 @@ describe('Assistant: questions, confirmations, the plan and gates', function () 
       const waiting = await runToEnd(req, chat, 'Plan it');
       assert.deepEqual(waiting.asks[0].payload.gate, {
         tool: 'write_plan',
-        label: 'apostrophe:aiToolWritePlan',
+        label: 'aposAssistant:aiToolWritePlan',
         count: 1,
         typeLabel: null,
         titles: [],

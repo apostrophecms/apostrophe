@@ -182,17 +182,17 @@ describe('Assistant: Global Styles', function () {
       assert.equal(waiting.status, 'waiting');
       const { gate } = waiting.asks[0].payload;
       assert.deepEqual(gate.title, {
-        key: 'apostrophe:assistantGateStylesLocale',
+        key: 'aposAssistant:assistantGateStylesLocale',
         values: { locale: 'English' }
       });
-      assert.deepEqual(gate.text, [ { key: 'apostrophe:assistantGateLive' } ]);
-      assert.equal(gate.approve, 'apostrophe:assistantApplyNow');
+      assert.deepEqual(gate.text, [ { key: 'aposAssistant:assistantGateLive' } ]);
+      assert.equal(gate.approve, 'aposAssistant:assistantApplyNow');
       assert.deepEqual(gate.alternatives.map(({ name, label }) => ({
         name,
         label
       })), [ {
         name: 'window',
-        label: 'apostrophe:assistantOpenStyles'
+        label: 'aposAssistant:assistantOpenStyles'
       } ]);
 
       await apos.aposAssistant.answer(req, chat._id, {
@@ -220,12 +220,12 @@ describe('Assistant: Global Styles', function () {
       const waiting = await runToEnd(req, chat, 'Darker accent in all locales');
       const { gate } = waiting.asks[0].payload;
       assert.deepEqual(gate.title, {
-        key: 'apostrophe:assistantGateStylesLocales',
+        key: 'aposAssistant:assistantGateStylesLocales',
         values: { count: 3 }
       });
       assert.deepEqual(gate.text, [
         { list: [ 'English', 'French', 'German' ] },
-        { key: 'apostrophe:assistantGateLive' }
+        { key: 'aposAssistant:assistantGateLive' }
       ]);
       assert.equal(gate.alternatives, undefined);
       // The window is no answer to it

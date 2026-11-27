@@ -9,7 +9,7 @@
         v-if="kind === 'continued'"
         class="apos-assistant-summary__text"
       >
-        {{ $t('apostrophe:assistantContinuedFrom') }}
+        {{ $t('aposAssistant:assistantContinuedFrom') }}
         <button
           v-if="sourceShown"
           type="button"
@@ -25,7 +25,7 @@
       <span
         v-else
         class="apos-assistant-summary__text"
-      >{{ $t('apostrophe:assistantSummarized') }}</span>
+      >{{ $t('aposAssistant:assistantSummarized') }}</span>
       <button
         v-if="instructions.length"
         type="button"
@@ -35,7 +35,7 @@
         data-apos-test="assistant-summary-toggle"
         @click="open = !open"
       >
-        {{ $t(open ? 'apostrophe:assistantHideSummary' : 'apostrophe:assistantShowSummary') }}
+        {{ $t(open ? 'aposAssistant:assistantHideSummary' : 'aposAssistant:assistantShowSummary') }}
       </button>
     </div>
     <div
@@ -44,11 +44,11 @@
       :id="regionId"
       class="apos-assistant-summary__preview"
       role="region"
-      :aria-label="$t('apostrophe:assistantSummaryRegion')"
+      :aria-label="$t('aposAssistant:assistantSummaryRegion')"
       data-apos-test="assistant-summary-preview"
     >
       <h3 class="apos-assistant-summary__heading">
-        {{ $t('apostrophe:assistantSummaryInstructions') }}
+        {{ $t('aposAssistant:assistantSummaryInstructions') }}
       </h3>
       <ul class="apos-assistant-summary__items">
         <li
@@ -98,7 +98,7 @@ const open = ref(false);
 const regionId = `apos-assistant-summary-${createId()}`;
 
 const instructions = computed(() => props.summary?.instructions || []);
-const sourceTitle = computed(() => props.source?.title || $t('apostrophe:assistantUntitled'));
+const sourceTitle = computed(() => props.source?.title || $t('aposAssistant:assistantUntitled'));
 // A link while the earlier chat exists
 const sourceShown = computed(() => Boolean(props.source &&
   store.getChat(props.source.chatId)));

@@ -46,7 +46,7 @@ module.exports = (self) => {
       self.addAskKind('confirm', { accept: self.acceptConfirmAnswer });
       self.apos.ai.addTool({
         name: 'ask_editor',
-        label: 'apostrophe:aiToolAskEditor',
+        label: 'aposAssistant:aiToolAskEditor',
         description: 'Ask the user and wait for the answers. Only when you can\'t go on ' +
           'without their direction: a choice between real alternatives, or details the ' +
           'task is missing. Each call interrupts them once, so ask everything you need ' +
@@ -180,7 +180,7 @@ module.exports = (self) => {
       });
       self.apos.ai.addTool({
         name: 'confirm',
-        label: 'apostrophe:aiToolConfirm',
+        label: 'aposAssistant:aiToolConfirm',
         description: 'Ask the user before you go on, and wait for the answer. Use it ' +
           'before anything they might not expect: removing content, changing many ' +
           'documents, a step that takes over their screen. Go on only when "approved" ' +
@@ -239,7 +239,7 @@ module.exports = (self) => {
       });
       self.apos.ai.addTool({
         name: 'write_plan',
-        label: 'apostrophe:aiToolWritePlan',
+        label: 'aposAssistant:aiToolWritePlan',
         description: 'Show the user your plan for this request while you work. For a ' +
           'task of several steps; not for one done in a call or two. A plan the user ' +
           'wants to approve is sent here before you start, then confirmed with ' +

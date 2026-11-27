@@ -4,7 +4,7 @@
     class="apos-assistant-gauge"
     role="meter"
     tabindex="0"
-    :aria-label="$t('apostrophe:assistantChatLength')"
+    :aria-label="$t('aposAssistant:assistantChatLength')"
     aria-valuemin="0"
     aria-valuemax="100"
     :aria-valuenow="percent"
@@ -84,8 +84,8 @@ const percent = computed(() => {
   return (value >= SHOWN_FROM) ? value : null;
 });
 const sentence = computed(() => ((percent.value >= 100)
-  ? $t('apostrophe:assistantGaugeFull')
-  : $t('apostrophe:assistantGaugePercent', { percent: percent.value })));
+  ? $t('aposAssistant:assistantGaugeFull')
+  : $t('aposAssistant:assistantGaugePercent', { percent: percent.value })));
 const tokens = computed(() => {
   if ((usageDisplay !== 'tokens') || (percent.value >= 100)) {
     return null;
@@ -94,7 +94,7 @@ const tokens = computed(() => {
     notation: 'compact',
     maximumFractionDigits: 1
   });
-  return $t('apostrophe:assistantGaugeTokens', {
+  return $t('aposAssistant:assistantGaugeTokens', {
     measure: format.format(length.value.measure),
     threshold: format.format(length.value.threshold)
   });

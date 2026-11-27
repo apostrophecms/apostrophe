@@ -8,7 +8,7 @@
         'apos-assistant-tabs__scroll--after': hidden.after
       }"
       role="group"
-      :aria-label="$t('apostrophe:assistantChatTabs')"
+      :aria-label="$t('aposAssistant:assistantChatTabs')"
       @wheel="onWheel"
       @scroll.passive="measure"
     >
@@ -48,7 +48,7 @@
           </svg>
           <AposAssistantThinking
             v-else-if="tab.thinking"
-            :label="$t('apostrophe:assistantRunning')"
+            :label="$t('aposAssistant:assistantRunning')"
           />
           <AposIndicator
             v-else
@@ -61,7 +61,7 @@
         <button
           type="button"
           class="apos-assistant-tabs__close"
-          :aria-label="$t('apostrophe:assistantCloseTab', { title: tab.title })"
+          :aria-label="$t('aposAssistant:assistantCloseTab', { title: tab.title })"
           data-apos-test="assistant-tab-close"
           @click="closeTab(tab.id)"
         >
@@ -74,10 +74,10 @@
     </div>
     <div class="apos-assistant-tabs__actions">
       <button
-        v-apos-tooltip="'apostrophe:assistantNewChat'"
+        v-apos-tooltip="'aposAssistant:assistantNewChat'"
         type="button"
         class="apos-assistant-tabs__action"
-        :aria-label="$t('apostrophe:assistantNewChat')"
+        :aria-label="$t('aposAssistant:assistantNewChat')"
         data-apos-test="assistant-new-chat"
         @click="newChat"
       >
@@ -88,11 +88,11 @@
       </button>
       <button
         ref="menuButton"
-        v-apos-tooltip="'apostrophe:assistantAllChats'"
+        v-apos-tooltip="'aposAssistant:assistantAllChats'"
         type="button"
         class="apos-assistant-tabs__action"
         :class="{ 'apos-assistant-tabs__action--open': menuOpen }"
-        :aria-label="$t('apostrophe:assistantAllChats')"
+        :aria-label="$t('aposAssistant:assistantAllChats')"
         :aria-expanded="menuOpen ? 'true' : 'false'"
         data-apos-test="assistant-all-chats"
         @click="menuOpen = !menuOpen"
@@ -192,11 +192,11 @@ const tabs = computed(() => store.tabs.map(id => {
 function getWaiting(step) {
   if (step?.state === 'attention') {
     return step.label
-      ? $t('apostrophe:assistantWaitingForYouTo', { action: $t(step.label) })
-      : $t('apostrophe:assistantWaitingForYou');
+      ? $t('aposAssistant:assistantWaitingForYouTo', { action: $t(step.label) })
+      : $t('aposAssistant:assistantWaitingForYou');
   }
   if (step?.state === 'hold') {
-    return $t('apostrophe:assistantWaiting');
+    return $t('aposAssistant:assistantWaiting');
   }
   return null;
 }
@@ -227,11 +227,11 @@ function closeMenu({ focus }) {
 
 function getTitle(id, chat) {
   if (id === NEW_CHAT) {
-    return $t('apostrophe:assistantNewChat');
+    return $t('aposAssistant:assistantNewChat');
   }
   // A chat not read yet keeps the title it last showed
   return store.getTabTitle(id) || getChatTitle(chat, $t) ||
-    $t(chat ? 'apostrophe:assistantNewChat' : 'apostrophe:assistantLoading');
+    $t(chat ? 'aposAssistant:assistantNewChat' : 'aposAssistant:assistantLoading');
 }
 </script>
 

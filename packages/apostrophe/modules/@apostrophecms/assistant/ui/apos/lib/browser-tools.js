@@ -440,7 +440,7 @@ async function openStandaloneEditor({ _id, until }, open, release) {
   if (until !== 'closed') {
     return { executed: true };
   }
-  release('apostrophe:assistantWaitingEditor');
+  release('aposAssistant:assistantWaitingEditor');
   const result = await new Promise((resolve) => {
     const onClosed = (closed) => {
       if (closed.id === id) {
@@ -494,7 +494,7 @@ async function finish(item, until, release) {
   if (until !== 'closed') {
     return { executed: true };
   }
-  release('apostrophe:assistantWaitingEditor');
+  release('aposAssistant:assistantWaitingEditor');
   const result = await new Promise((resolve) => {
     const onResolved = (modal) => {
       if (modal.id === item.id) {

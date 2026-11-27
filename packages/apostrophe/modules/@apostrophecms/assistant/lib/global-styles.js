@@ -41,29 +41,29 @@ module.exports = (self) => {
           ...new Set(styles.map(doc => self.apos.aposHarness.getLocaleOf(doc)))
         ];
         const pageLocale = self.getPageLocale(await getScreen());
-        const live = { key: 'apostrophe:assistantGateLive' };
+        const live = { key: 'aposAssistant:assistantGateLive' };
         if (locales.length > 1) {
           return {
             title: {
-              key: 'apostrophe:assistantGateStylesLocales',
+              key: 'aposAssistant:assistantGateStylesLocales',
               values: { count: locales.length }
             },
             text: [ { list: locales.map(getLocaleLabel) }, live ],
-            approve: 'apostrophe:assistantApplyNow'
+            approve: 'aposAssistant:assistantApplyNow'
           };
         }
         return {
           title: {
-            key: 'apostrophe:assistantGateStylesLocale',
+            key: 'aposAssistant:assistantGateStylesLocale',
             values: { locale: getLocaleLabel(locales[0]) }
           },
           text: live,
-          approve: 'apostrophe:assistantApplyNow',
+          approve: 'aposAssistant:assistantApplyNow',
           // The window edits this page's locale and nothing else
           ...((locales[0] === pageLocale) && {
             alternatives: [ {
               name: 'window',
-              label: 'apostrophe:assistantOpenStyles',
+              label: 'aposAssistant:assistantOpenStyles',
               message: OPEN_MESSAGE
             } ]
           })

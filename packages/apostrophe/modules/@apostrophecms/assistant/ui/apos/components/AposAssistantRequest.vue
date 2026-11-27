@@ -27,7 +27,7 @@
         <ul
           v-if="request.chips?.length"
           class="apos-assistant-request__chips"
-          :aria-label="$t('apostrophe:assistantSentAbout')"
+          :aria-label="$t('aposAssistant:assistantSentAbout')"
           data-apos-test="assistant-request-chips"
         >
           <li
@@ -49,8 +49,8 @@
           v-if="running"
           type="button"
           class="apos-assistant-request__stop"
-          :aria-label="$t('apostrophe:assistantStop')"
-          :title="$t('apostrophe:assistantStop')"
+          :aria-label="$t('aposAssistant:assistantStop')"
+          :title="$t('aposAssistant:assistantStop')"
           :aria-disabled="stopping ? 'true' : null"
           data-apos-test="assistant-request-stop"
           @click="stop"
@@ -107,7 +107,7 @@
       class="apos-assistant-request__notice"
       data-apos-test="assistant-request-retried"
     >
-      {{ $t(running ? 'apostrophe:assistantRetrying' : 'apostrophe:assistantRetried') }}
+      {{ $t(running ? 'aposAssistant:assistantRetrying' : 'aposAssistant:assistantRetried') }}
     </p>
     <AposAssistantSteps
       v-if="!running && request.steps?.length"
@@ -188,13 +188,13 @@
           data-apos-test="assistant-gate-more"
           @click="gateExpanded = true"
         >
-          {{ $t('apostrophe:assistantGateShowMore', { count: hiddenGateCount }) }}
+          {{ $t('aposAssistant:assistantGateShowMore', { count: hiddenGateCount }) }}
         </button>
         <p
           v-else-if="gateNames.more"
           class="apos-assistant-request__gate-rest"
         >
-          {{ $t('apostrophe:assistantGateAndMore', { count: gateNames.more }) }}
+          {{ $t('aposAssistant:assistantGateAndMore', { count: gateNames.more }) }}
         </p>
       </template>
     </AposAssistantActivity>
@@ -203,7 +203,7 @@
       class="apos-assistant-request__notice"
       data-apos-test="assistant-request-stopped"
     >
-      {{ $t(request.planCancelled ? 'apostrophe:assistantPlanCancelledNotice' : 'apostrophe:assistantStopped') }}
+      {{ $t(request.planCancelled ? 'aposAssistant:assistantPlanCancelledNotice' : 'aposAssistant:assistantStopped') }}
     </p>
     <div
       v-if="footer"
@@ -249,14 +249,14 @@
     <AposAssistantActivity
       v-if="suggestion"
       tone="general"
-      :title="$t('apostrophe:assistantSuggestTitle')"
-      :text="$t('apostrophe:assistantSuggestText')"
+      :title="$t('aposAssistant:assistantSuggestTitle')"
+      :text="$t('aposAssistant:assistantSuggestText')"
       :actions="[ {
         name: 'continueInNewChat',
-        label: $t('apostrophe:assistantContinueInNewChat'),
+        label: $t('aposAssistant:assistantContinueInNewChat'),
         disabled: revertBlocked
       } ]"
-      :dismiss-label="$t('apostrophe:assistantNotNow')"
+      :dismiss-label="$t('aposAssistant:assistantNotNow')"
       data-apos-test="assistant-suggestion"
       @action="onAction"
       @dismiss="store.dismissSuggestion(request.chatId, suggestion._id)"
@@ -264,7 +264,7 @@
     <AposAssistantActivity
       v-if="confirmation"
       tone="warning"
-      :title="$t('apostrophe:assistantRevertConfirm', { count: confirmation.requestIds.length })"
+      :title="$t('aposAssistant:assistantRevertConfirm', { count: confirmation.requestIds.length })"
       :actions="[
         {
           name: 'cancelRevert',
@@ -274,7 +274,7 @@
         },
         {
           name: 'confirmRevert',
-          label: $t('apostrophe:assistantRevert'),
+          label: $t('aposAssistant:assistantRevert'),
           kind: 'primary'
         }
       ]"
@@ -312,7 +312,7 @@
       v-bind="revertFailure"
       :actions="[ {
         name: 'retryRevert',
-        label: $t('apostrophe:assistantRetry'),
+        label: $t('aposAssistant:assistantRetry'),
         disabled: retrying
       } ]"
       data-apos-test="assistant-revert-failed"
@@ -394,25 +394,25 @@ const ALTERNATIVE = 'alternative-';
 // Why a request failed, in the editor's words, by the stored error's name
 const ERRORS = {
   aiRetry: {
-    title: 'apostrophe:assistantErrorProvider',
-    text: 'apostrophe:assistantErrorProviderText'
+    title: 'aposAssistant:assistantErrorProvider',
+    text: 'aposAssistant:assistantErrorProviderText'
   },
   aiContextOverflow: {
-    title: 'apostrophe:assistantErrorTooLong',
-    text: 'apostrophe:assistantErrorTooLongText'
+    title: 'aposAssistant:assistantErrorTooLong',
+    text: 'aposAssistant:assistantErrorTooLongText'
   },
   aiRefusal: {
-    title: 'apostrophe:assistantErrorRefusal',
-    text: 'apostrophe:assistantErrorRefusalText'
+    title: 'aposAssistant:assistantErrorRefusal',
+    text: 'aposAssistant:assistantErrorRefusalText'
   },
   interrupted: {
-    title: 'apostrophe:assistantErrorInterrupted',
-    text: 'apostrophe:assistantErrorInterruptedText'
+    title: 'aposAssistant:assistantErrorInterrupted',
+    text: 'aposAssistant:assistantErrorInterruptedText'
   }
 };
 const ERROR = {
-  title: 'apostrophe:assistantError',
-  text: 'apostrophe:assistantErrorText'
+  title: 'aposAssistant:assistantError',
+  text: 'aposAssistant:assistantErrorText'
 };
 
 const $t = inject('i18n');
@@ -450,23 +450,23 @@ const revertBlocked = computed(() => Boolean(chat.value?.openRequest ||
 // wouldn't know the work in progress
 const continueLabel = computed(() => {
   if (chat.value?.openRevert) {
-    return $t('apostrophe:assistantRevertBusy');
+    return $t('aposAssistant:assistantRevertBusy');
   }
   if (chat.value?.openRequest) {
-    return $t('apostrophe:assistantContinueUnavailable');
+    return $t('aposAssistant:assistantContinueUnavailable');
   }
-  return $t('apostrophe:assistantContinueFrom');
+  return $t('aposAssistant:assistantContinueFrom');
 });
 const revertLabel = computed(() => {
   if (chat.value?.openRevert) {
-    return $t('apostrophe:assistantRevertBusy');
+    return $t('aposAssistant:assistantRevertBusy');
   }
   if (chat.value?.openRequest) {
-    return $t('apostrophe:assistantRevertUnavailable');
+    return $t('aposAssistant:assistantRevertUnavailable');
   }
   return props.after
-    ? $t('apostrophe:assistantRevertThisAndAfter', { count: props.after })
-    : $t('apostrophe:assistantRevertThis');
+    ? $t('aposAssistant:assistantRevertThisAndAfter', { count: props.after })
+    : $t('aposAssistant:assistantRevertThis');
 });
 // The confirmation's lines, each split into the number, the text and the
 // names it keeps
@@ -515,18 +515,18 @@ const revertFailure = computed(() => ((props.revert?.status === 'failed')
 // The latest step's label replaces the one before it
 const status = computed(() => {
   if (stopping.value) {
-    return $t('apostrophe:assistantStopping');
+    return $t('aposAssistant:assistantStopping');
   }
   if (browserStep.value) {
     return getBrowserStatus(browserStep.value);
   }
   const progress = store.progress[props.request._id];
   if (progress?.retrying) {
-    return $t('apostrophe:assistantStillRetrying');
+    return $t('aposAssistant:assistantStillRetrying');
   }
   return progress?.label
     ? `${$t(progress.label)}...`
-    : $t('apostrophe:assistantThinking');
+    : $t('aposAssistant:assistantThinking');
 });
 
 // The files sent with the message: an image's thumbnail shown from the
@@ -578,7 +578,7 @@ const gateNames = computed(() => {
     return null;
   }
   return {
-    names: gate.titles.map(each => each || $t('apostrophe:assistantUntitled')),
+    names: gate.titles.map(each => each || $t('aposAssistant:assistantUntitled')),
     more: gate.more || 0
   };
 });
@@ -598,7 +598,7 @@ const lockedTitles = computed(() => {
   }
   return new Intl.ListFormat(apos.i18n.adminLocale, {
     type: 'conjunction'
-  }).format(locked.map(doc => doc.title || $t('apostrophe:assistantUntitled')));
+  }).format(locked.map(doc => doc.title || $t('aposAssistant:assistantUntitled')));
 });
 
 const activities = computed(() => {
@@ -616,7 +616,7 @@ const activities = computed(() => {
       actions: [
         {
           name: 'notNow',
-          label: $t('apostrophe:assistantNotNow'),
+          label: $t('aposAssistant:assistantNotNow'),
           kind: 'quiet',
           disabled: answering.value
         },
@@ -628,7 +628,7 @@ const activities = computed(() => {
         })),
         {
           name: 'continue',
-          label: $t(gate?.approve || 'apostrophe:assistantContinue'),
+          label: $t(gate?.approve || 'aposAssistant:assistantContinue'),
           kind: alternatives.length ? 'accent' : 'primary',
           disabled: answering.value
         }
@@ -639,8 +639,8 @@ const activities = computed(() => {
     list.push({
       name: 'skipped',
       tone: 'general',
-      title: $t('apostrophe:assistantQuestionSkipped'),
-      text: $t('apostrophe:assistantQuestionSkippedText')
+      title: $t('aposAssistant:assistantQuestionSkipped'),
+      text: $t('aposAssistant:assistantQuestionSkippedText')
     });
   }
   // Retry is a send: only on the latest request of an idle chat
@@ -655,7 +655,7 @@ const activities = computed(() => {
       actions: canRetry
         ? [ {
           name: 'retry',
-          label: $t('apostrophe:assistantRetry'),
+          label: $t('aposAssistant:assistantRetry'),
           disabled: retrying.value
         } ]
         : []
@@ -665,16 +665,16 @@ const activities = computed(() => {
     list.push({
       name: 'length',
       tone: 'warning',
-      title: $t('apostrophe:assistantCutOff'),
-      text: $t('apostrophe:assistantCutOffText')
+      title: $t('aposAssistant:assistantCutOff'),
+      text: $t('aposAssistant:assistantCutOffText')
     });
   }
   if (request.finishReason === 'maxSteps') {
     list.push({
       name: 'maxSteps',
       tone: 'warning',
-      title: $t('apostrophe:assistantOutOfSteps'),
-      text: $t('apostrophe:assistantOutOfStepsText')
+      title: $t('aposAssistant:assistantOutOfSteps'),
+      text: $t('aposAssistant:assistantOutOfStepsText')
     });
   }
   if (lockedTitles.value) {
@@ -688,19 +688,19 @@ const activities = computed(() => {
       titles: lockedTitles.value
     };
     const text = (length === 1)
-      ? (name ? 'apostrophe:assistantLockedBy' : 'apostrophe:assistantLockedText')
-      : (name ? 'apostrophe:assistantLockedManyBy' : 'apostrophe:assistantLockedManyText');
+      ? (name ? 'aposAssistant:assistantLockedBy' : 'aposAssistant:assistantLockedText')
+      : (name ? 'aposAssistant:assistantLockedManyBy' : 'aposAssistant:assistantLockedManyText');
     list.push({
       name: 'locked',
       tone: 'error',
       title: (length === 1)
-        ? $t('apostrophe:assistantLocked', values)
-        : $t('apostrophe:assistantLockedMany', { count: length }),
+        ? $t('aposAssistant:assistantLocked', values)
+        : $t('aposAssistant:assistantLockedMany', { count: length }),
       text: $t(text, values),
       actions: canRetry
         ? [ {
           name: 'retryLocked',
-          label: $t('apostrophe:assistantRetry'),
+          label: $t('aposAssistant:assistantRetry'),
           disabled: retrying.value
         } ]
         : []
@@ -729,27 +729,27 @@ const footer = computed(() => {
     const name = [ provider, model ].filter(Boolean).join(' - ');
     parts.push(name);
     rows.push({
-      label: $t('apostrophe:assistantUsageModel'),
+      label: $t('aposAssistant:assistantUsageModel'),
       value: name
     });
   }
   if ((usageDisplay === 'tokens') && usage) {
     const input = usage.inputTokens || 0;
     const output = usage.outputTokens || 0;
-    parts.push($t('apostrophe:assistantTokens', {
+    parts.push($t('aposAssistant:assistantTokens', {
       count: input + output,
       tokens: format.format(input + output)
     }));
     rows.push({
-      label: $t('apostrophe:assistantUsageInput'),
+      label: $t('aposAssistant:assistantUsageInput'),
       value: usage.cacheReadTokens
-        ? $t('apostrophe:assistantUsageCached', {
+        ? $t('aposAssistant:assistantUsageCached', {
           input: format.format(input),
           cached: format.format(usage.cacheReadTokens)
         })
         : format.format(input)
     }, {
-      label: $t('apostrophe:assistantUsageOutput'),
+      label: $t('aposAssistant:assistantUsageOutput'),
       value: format.format(output)
     });
   }
@@ -764,7 +764,7 @@ const footer = computed(() => {
   }
   if (duration) {
     rows.push({
-      label: $t('apostrophe:assistantUsageDuration'),
+      label: $t('aposAssistant:assistantUsageDuration'),
       value: duration
     });
   }
@@ -779,11 +779,11 @@ function formatDuration(ms) {
   const minutes = Math.floor(total / 60);
   const seconds = total % 60;
   return minutes
-    ? $t('apostrophe:assistantDurationMinutes', {
+    ? $t('aposAssistant:assistantDurationMinutes', {
       minutes,
       seconds
     })
-    : $t('apostrophe:assistantDurationSeconds', { seconds });
+    : $t('aposAssistant:assistantDurationSeconds', { seconds });
 }
 
 function stop() {
@@ -796,19 +796,19 @@ function stop() {
 function getBrowserStatus(step) {
   const { holder } = step;
   if ((step.state === 'hold') && holder.requestId) {
-    return $t('apostrophe:assistantWaitingChat', {
-      title: holder.title || $t('apostrophe:assistantNewChat')
+    return $t('aposAssistant:assistantWaitingChat', {
+      title: holder.title || $t('aposAssistant:assistantNewChat')
     });
   }
   if (step.state === 'hold') {
-    return $t(holder.modal ? 'apostrophe:assistantWaitingModal' : 'apostrophe:assistantWaitingUnsaved');
+    return $t(holder.modal ? 'aposAssistant:assistantWaitingModal' : 'aposAssistant:assistantWaitingUnsaved');
   }
   if ((step.state === 'released') && step.status) {
     return $t(step.status);
   }
   return step.label
     ? `${$t(step.label)}...`
-    : $t('apostrophe:assistantThinking');
+    : $t('aposAssistant:assistantThinking');
 }
 
 // The model's own confirmation is its words; a gate's states the step and
@@ -832,13 +832,13 @@ function getConfirmText(payload) {
     };
   }
   const title = (gate.count > 1)
-    ? $t('apostrophe:assistantGateDocuments', {
+    ? $t('aposAssistant:assistantGateDocuments', {
       count: gate.count,
       type: gate.typeLabel
         ? $t(gate.typeLabel)
-        : $t('apostrophe:assistantDocuments')
+        : $t('aposAssistant:assistantDocuments')
     })
-    : $t('apostrophe:assistantGateStep', {
+    : $t('aposAssistant:assistantGateStep', {
       label: gate.label ? $t(gate.label) : gate.tool
     });
   // The titles are a list of their own (`gateNames`)
@@ -908,7 +908,7 @@ async function onAction(name) {
   // the editor's own
   if (name === 'retryLocked') {
     store.send(props.request.chatId, {
-      message: $t('apostrophe:assistantLockedRetryMessage', {
+      message: $t('aposAssistant:assistantLockedRetryMessage', {
         titles: lockedTitles.value
       })
     });

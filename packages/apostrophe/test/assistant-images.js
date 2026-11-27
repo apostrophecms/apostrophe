@@ -150,8 +150,8 @@ describe('Assistant: images', function () {
     assert.deepEqual(notice, {
       callId: 'call-gen',
       tone: 'success',
-      title: 'apostrophe:assistantSavedToMedia',
-      text: 'apostrophe:assistantSavedToMediaText',
+      title: 'aposAssistant:assistantSavedToMedia',
+      text: 'aposAssistant:assistantSavedToMediaText',
       interpolate: { title: 'Night launch' },
       link: {
         _id: image._id,
@@ -356,7 +356,7 @@ describe('Assistant: images', function () {
     // The image keeps its own title and alt
     assert.equal(updated.title, 'Hero product shot');
     assert.equal(updated.alt, 'The hero');
-    assert.equal(done.notices[0].title, 'apostrophe:assistantUpdatedInMedia');
+    assert.equal(done.notices[0].title, 'aposAssistant:assistantUpdatedInMedia');
     // The copy went with the ask
     assert.equal(await countRequestFiles(done), 0);
 
@@ -399,8 +399,8 @@ describe('Assistant: images', function () {
     });
     const [ failed ] = done.notices;
     assert.equal(failed.tone, 'error');
-    assert.equal(failed.title, 'apostrophe:assistantNotSavedToMedia');
-    assert.equal(failed.text, 'apostrophe:assistantSaveLocked');
+    assert.equal(failed.title, 'aposAssistant:assistantNotSavedToMedia');
+    assert.equal(failed.text, 'aposAssistant:assistantSaveLocked');
     assert.deepEqual(failed.interpolate, {
       title: 'Locked hero',
       name: 'other'
@@ -409,7 +409,7 @@ describe('Assistant: images', function () {
     // The action's data is the server's
     assert.deepEqual(apos.aposAssistant.renderRequest(done).notices[0].action, {
       name: 'saveToMedia',
-      label: 'apostrophe:assistantRetry'
+      label: 'aposAssistant:assistantRetry'
     });
     assert.equal((await findImage(hero)).attachment._id, hero.attachment._id);
 
@@ -421,7 +421,7 @@ describe('Assistant: images', function () {
       requestId: done._id,
       noticeId: failed._id
     });
-    assert.equal(again.notices[0].text, 'apostrophe:assistantSaveLocked');
+    assert.equal(again.notices[0].text, 'aposAssistant:assistantSaveLocked');
     assert.equal(again.notices[0].action.name, 'saveToMedia');
     // Run once: a second click finds it gone
     await assert.rejects(retry(req, chat, done, failed), { name: 'invalid' });
@@ -431,7 +431,7 @@ describe('Assistant: images', function () {
     await apos.doc.unlock(userReq(other), draft, 'other-tab');
     const saved = await retry(req, chat, again, again.notices[0]);
     assert.equal(saved.status, 'completed');
-    assert.equal(saved.notices[0].title, 'apostrophe:assistantUpdatedInMedia');
+    assert.equal(saved.notices[0].title, 'aposAssistant:assistantUpdatedInMedia');
     const updated = await findImage(hero);
     assert.notEqual(updated.attachment._id, hero.attachment._id);
     // Named after the image it replaced
@@ -482,13 +482,13 @@ describe('Assistant: images', function () {
       _id: apos.util.generateId(),
       callId: null,
       tone: 'error',
-      title: 'apostrophe:assistantNotSavedToMedia',
+      title: 'aposAssistant:assistantNotSavedToMedia',
       text: null,
       interpolate: {},
       link: null,
       action: {
         name: 'flaky',
-        label: 'apostrophe:assistantRetry'
+        label: 'aposAssistant:assistantRetry'
       }
     };
     await apos.aposAssistant.requests.updateOne({ _id: done._id }, {
@@ -500,7 +500,7 @@ describe('Assistant: images', function () {
       const source = await apos.aposAssistant.getRequest(req, done._id);
       assert.deepEqual(apos.aposAssistant.renderRequest(source).notices[0].action, {
         name: 'flaky',
-        label: 'apostrophe:assistantRetry'
+        label: 'aposAssistant:assistantRetry'
       });
       const ran = await retry(req, chat, done, notice);
       assert.equal(ran.status, 'completed');

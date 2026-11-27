@@ -62,7 +62,7 @@ module.exports = (self) => {
       }
       self.apos.ai.addTool({
         name: 'describe_images',
-        label: 'apostrophe:aiToolDescribeImages',
+        label: 'aposAssistant:aiToolDescribeImages',
         description: 'See images as text: what each one shows, any text in it quoted. ' +
           'Media images go in "images": you never see them yourself, so use this before ' +
           'writing alt text, titles or tags for an image, or choosing among images by ' +
@@ -82,7 +82,7 @@ module.exports = (self) => {
             ...(output.attachments || []).map(attachment => (attachment.error
               ? { text: attachment.title }
               : {
-                text: 'apostrophe:aiStepLookedAt',
+                text: 'aposAssistant:aiStepLookedAt',
                 title: attachment.title
               }))
           ]
@@ -116,7 +116,7 @@ module.exports = (self) => {
       });
       self.apos.ai.addTool({
         name: 'delegate',
-        label: 'apostrophe:aiToolDelegate',
+        label: 'aposAssistant:aiToolDelegate',
         description: 'Hand a research task to a separate read-only assistant and get back ' +
           'only its answer, keeping the bulk reading out of this conversation. Use it ' +
           'when answering takes many reads whose full content you don\'t need: finding ' +

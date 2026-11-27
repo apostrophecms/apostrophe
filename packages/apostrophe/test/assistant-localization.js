@@ -181,7 +181,7 @@ describe('Assistant: localizing selected widgets', function () {
       multiple: true
     });
     assert.deepEqual(apos.aposAssistant.getBrowserData(req).widgetOperations, {
-      assistantLocalize: 'apostrophe:assistantLocalizePrompt'
+      assistantLocalize: 'aposAssistant:assistantLocalizePrompt'
     });
     assert.throws(() => apos.aposAssistant.addWidgetOperation('bad', { label: 'Bad' }),
       /needs a label and a prompt/);

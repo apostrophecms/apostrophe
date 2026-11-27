@@ -25,7 +25,7 @@
       :text="failed.text"
       :actions="[ {
         name: 'retry',
-        label: $t('apostrophe:assistantRetry'),
+        label: $t('aposAssistant:assistantRetry'),
         disabled: busy
       } ]"
       @action="retry"
@@ -33,14 +33,14 @@
     <AposAssistantActivity
       v-if="!running && unsaved"
       tone="warning"
-      :text="$t('apostrophe:assistantRevertUnsaved')"
+      :text="$t('aposAssistant:assistantRevertUnsaved')"
       data-apos-test="assistant-revert-unsaved"
     />
     <AposAssistantActivity
       v-if="!running && listed.length && !revert.dismissed"
       tone="warning"
       :title="listTitle"
-      :dismiss-label="$t('apostrophe:assistantRevertDismiss')"
+      :dismiss-label="$t('aposAssistant:assistantRevertDismiss')"
       data-apos-test="assistant-revert-kept"
       @dismiss="dismiss"
     >
@@ -64,7 +64,7 @@
               :data-apos-test="`assistant-revert-${doc.view}`"
               @click="showDocument(doc)"
             >
-              {{ $t((doc.view === 'seeChanges') ? 'apostrophe:assistantRevertSeeChanges' : 'apostrophe:assistantRevertVersions') }}
+              {{ $t((doc.view === 'seeChanges') ? 'aposAssistant:assistantRevertSeeChanges' : 'aposAssistant:assistantRevertVersions') }}
             </button>
             <button
               v-if="doc.outcome === 'locked'"
@@ -74,7 +74,7 @@
               data-apos-test="assistant-revert-retry"
               @click="retry"
             >
-              {{ $t('apostrophe:assistantRetry') }}
+              {{ $t('aposAssistant:assistantRetry') }}
             </button>
           </span>
         </li>
@@ -83,8 +83,8 @@
     <AposAssistantActivity
       v-if="!running && live.length && !revert.dismissed"
       tone="warning"
-      :title="$t('apostrophe:assistantRevertStillLive', { count: live.length })"
-      :dismiss-label="$t('apostrophe:assistantRevertDismiss')"
+      :title="$t('aposAssistant:assistantRevertStillLive', { count: live.length })"
+      :dismiss-label="$t('aposAssistant:assistantRevertDismiss')"
       data-apos-test="assistant-revert-live"
       @dismiss="dismiss"
     >
@@ -109,7 +109,7 @@
               data-apos-test="assistant-revert-live-versions"
               @click="showDocument({ ...doc, view: doc.publishedView })"
             >
-              {{ $t('apostrophe:assistantRevertVersions') }}
+              {{ $t('aposAssistant:assistantRevertVersions') }}
             </button>
           </span>
         </li>
@@ -148,11 +148,11 @@ const busy = computed(() => store.isPending(props.revert.chatId, 'retryRevert',
 const running = computed(() => props.revert.status === 'running');
 const count = computed(() => props.revert.requestIds.length);
 const title = computed(() => ((props.revert.cause === 'planCancel')
-  ? $t('apostrophe:assistantPlanCancelledTitle')
-  : $t('apostrophe:assistantReverted', { count: count.value })));
+  ? $t('aposAssistant:assistantPlanCancelledTitle')
+  : $t('aposAssistant:assistantReverted', { count: count.value })));
 const text = computed(() => $t((props.revert.cause === 'planCancel')
-  ? 'apostrophe:assistantPlanCancelledText'
-  : 'apostrophe:assistantRevertedText'));
+  ? 'aposAssistant:assistantPlanCancelledText'
+  : 'aposAssistant:assistantRevertedText'));
 const status = computed(() => getRevertStatus(props.revert, store.revertProgress, $t));
 // A retry for the locked documents that failed
 const failed = computed(() => ((props.revert.status === 'failed')
@@ -166,8 +166,8 @@ const unsaved = computed(() => modalStore.stack.some(entry => {
 }));
 const listed = computed(() => getNotReverted(props.revert));
 const listTitle = computed(() => $t(listed.value.some(doc => doc.partly)
-  ? 'apostrophe:assistantRevertNotFully'
-  : 'apostrophe:assistantRevertNotReverted', { count: listed.value.length }));
+  ? 'aposAssistant:assistantRevertNotFully'
+  : 'aposAssistant:assistantRevertNotReverted', { count: listed.value.length }));
 const live = computed(() => getStillLive(props.revert));
 
 function retry() {

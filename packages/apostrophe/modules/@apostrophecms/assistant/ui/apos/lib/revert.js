@@ -21,37 +21,37 @@ const NOT_REVERTED = [ 'kept', 'unrestorable', 'locked' ];
 export function getConfirmLines(documents, $t) {
   const lines = [];
   const of = test => documents.filter(test);
-  add('apostrophe:assistantRevertPutBack', of(doc => doc.outcome === 'putBack'));
+  add('aposAssistant:assistantRevertPutBack', of(doc => doc.outcome === 'putBack'));
   // Live as published: what the assistant published, then what someone
   // published with changes the revert puts back
-  add('apostrophe:assistantRevertPublished', of(doc => doc.published), {}, true);
-  add('apostrophe:assistantRevertLive', of(doc => doc.live && !doc.published), {}, true);
+  add('aposAssistant:assistantRevertPublished', of(doc => doc.published), {}, true);
+  add('aposAssistant:assistantRevertLive', of(doc => doc.live && !doc.published), {}, true);
   for (const outcome of [ 'deleted', 'archived' ]) {
     const removed = of(doc => doc.outcome === outcome);
     add(
-      (outcome === 'deleted') ? 'apostrophe:assistantRevertDeleted' : 'apostrophe:assistantRevertArchived',
+      (outcome === 'deleted') ? 'aposAssistant:assistantRevertDeleted' : 'aposAssistant:assistantRevertArchived',
       removed,
       { type: getTypeLabel(removed, $t) }
     );
   }
   const kept = of(doc => doc.outcome === 'kept');
-  add('apostrophe:assistantRevertChanged', kept.filter(doc => !doc.partly && (doc.reason !== 'used')), {}, true);
-  add('apostrophe:assistantRevertPartly', kept.filter(doc => doc.partly && (doc.reason !== 'used')), {}, true);
-  add('apostrophe:assistantRevertUsed', kept.filter(doc => doc.reason === 'used'), {}, true);
+  add('aposAssistant:assistantRevertChanged', kept.filter(doc => !doc.partly && (doc.reason !== 'used')), {}, true);
+  add('aposAssistant:assistantRevertPartly', kept.filter(doc => doc.partly && (doc.reason !== 'used')), {}, true);
+  add('aposAssistant:assistantRevertUsed', kept.filter(doc => doc.reason === 'used'), {}, true);
   const unrestorable = of(doc => doc.outcome === 'unrestorable');
-  add('apostrophe:assistantRevertUnrestorable', unrestorable.filter(doc => !doc.partly), {}, true);
-  add('apostrophe:assistantRevertUnrestorablePartly', unrestorable.filter(doc => doc.partly), {}, true);
-  add('apostrophe:assistantRevertInEditor', of(doc => (doc.outcome === 'locked') &&
+  add('aposAssistant:assistantRevertUnrestorable', unrestorable.filter(doc => !doc.partly), {}, true);
+  add('aposAssistant:assistantRevertUnrestorablePartly', unrestorable.filter(doc => doc.partly), {}, true);
+  add('aposAssistant:assistantRevertInEditor', of(doc => (doc.outcome === 'locked') &&
     (doc.reason === 'editor')), {}, true);
   const locked = of(doc => (doc.outcome === 'locked') && (doc.reason !== 'editor'));
   const holders = [ ...new Set(locked.map(doc => doc.lockedBy)) ];
   if ((holders.length === 1) && holders[0]) {
-    add('apostrophe:assistantRevertLockedBy', locked, { name: holders[0] }, true);
+    add('aposAssistant:assistantRevertLockedBy', locked, { name: holders[0] }, true);
   } else {
-    add('apostrophe:assistantRevertLockedElsewhere', locked, {}, true);
+    add('aposAssistant:assistantRevertLockedElsewhere', locked, {}, true);
   }
   // A document the assistant only published has its own line above
-  add('apostrophe:assistantRevertAlready', of(doc => (doc.outcome === 'reverted') && !doc.published));
+  add('aposAssistant:assistantRevertAlready', of(doc => (doc.outcome === 'reverted') && !doc.published));
   return lines;
 
   function add(key, list, params = {}, named = false) {
@@ -77,11 +77,11 @@ export function getConfirmLines(documents, $t) {
 export function getRevertStatus(revert, progress, $t) {
   const latest = progress[revert._id] || revert.progress;
   return latest
-    ? $t('apostrophe:assistantReverting', {
+    ? $t('aposAssistant:assistantReverting', {
       done: latest.done,
       count: latest.total
     })
-    : $t('apostrophe:assistantRevertingStart');
+    : $t('aposAssistant:assistantRevertingStart');
 }
 
 /**
@@ -96,16 +96,16 @@ export function getRevertFailure(revert, $t) {
   const { progress } = revert;
   if (!progress?.done) {
     return {
-      title: $t('apostrophe:assistantRevertFailed'),
-      text: $t('apostrophe:assistantRevertFailedText')
+      title: $t('aposAssistant:assistantRevertFailed'),
+      text: $t('aposAssistant:assistantRevertFailedText')
     };
   }
   return {
-    title: $t('apostrophe:assistantRevertStopped', {
+    title: $t('aposAssistant:assistantRevertStopped', {
       done: progress.done,
       count: progress.total
     }),
-    text: $t('apostrophe:assistantRevertStoppedText', { count: progress.done })
+    text: $t('aposAssistant:assistantRevertStoppedText', { count: progress.done })
   };
 }
 
@@ -141,8 +141,8 @@ export function getStillLive(revert) {
  */
 export function getLiveReason(doc, $t) {
   return $t(doc.published
-    ? 'apostrophe:assistantRevertReasonPublishedByAssistant'
-    : 'apostrophe:assistantRevertReasonLiveChanges');
+    ? 'aposAssistant:assistantRevertReasonPublishedByAssistant'
+    : 'aposAssistant:assistantRevertReasonLiveChanges');
 }
 
 /**
@@ -155,7 +155,7 @@ export function getLiveReason(doc, $t) {
 export function getReason(doc, $t) {
   const reason = getReasonText(doc, $t);
   return doc.partly
-    ? $t('apostrophe:assistantRevertReasonPartly', { reason })
+    ? $t('aposAssistant:assistantRevertReasonPartly', { reason })
     : reason;
 }
 
@@ -163,36 +163,36 @@ function getReasonText({
   outcome, reason, lockedBy
 }, $t) {
   if ((outcome === 'locked') && (reason === 'editor')) {
-    return $t('apostrophe:assistantRevertReasonEditor');
+    return $t('aposAssistant:assistantRevertReasonEditor');
   }
   if (outcome === 'locked') {
     return lockedBy
-      ? $t('apostrophe:assistantRevertReasonLockedBy', { name: lockedBy })
-      : $t('apostrophe:assistantRevertReasonLocked');
+      ? $t('aposAssistant:assistantRevertReasonLockedBy', { name: lockedBy })
+      : $t('aposAssistant:assistantRevertReasonLocked');
   }
   if (outcome === 'unrestorable') {
     const why = {
-      permission: 'apostrophe:assistantRevertWhyPermission',
-      widgetType: 'apostrophe:assistantRevertWhyWidgetType',
-      related: 'apostrophe:assistantRevertWhyRelated',
-      layout: 'apostrophe:assistantRevertWhyLayout',
-      system: 'apostrophe:assistantRevertWhySystem'
+      permission: 'aposAssistant:assistantRevertWhyPermission',
+      widgetType: 'aposAssistant:assistantRevertWhyWidgetType',
+      related: 'aposAssistant:assistantRevertWhyRelated',
+      layout: 'aposAssistant:assistantRevertWhyLayout',
+      system: 'aposAssistant:assistantRevertWhySystem'
     }[reason];
     return why
-      ? $t('apostrophe:assistantRevertReasonUnrestorableWhy', { why: $t(why) })
-      : $t('apostrophe:assistantRevertReasonUnrestorable');
+      ? $t('aposAssistant:assistantRevertReasonUnrestorableWhy', { why: $t(why) })
+      : $t('aposAssistant:assistantRevertReasonUnrestorable');
   }
   return $t({
-    archived: 'apostrophe:assistantRevertReasonArchived',
-    removed: 'apostrophe:assistantRevertReasonRemoved',
-    published: 'apostrophe:assistantRevertReasonPublished',
-    children: 'apostrophe:assistantRevertReasonChildren',
-    used: 'apostrophe:assistantRevertReasonUsed'
-  }[reason] || 'apostrophe:assistantRevertReasonEdited');
+    archived: 'aposAssistant:assistantRevertReasonArchived',
+    removed: 'aposAssistant:assistantRevertReasonRemoved',
+    published: 'aposAssistant:assistantRevertReasonPublished',
+    children: 'aposAssistant:assistantRevertReasonChildren',
+    used: 'aposAssistant:assistantRevertReasonUsed'
+  }[reason] || 'aposAssistant:assistantRevertReasonEdited');
 }
 
 export function getTitle(doc, $t) {
-  return doc.title || $t('apostrophe:assistantUntitled');
+  return doc.title || $t('aposAssistant:assistantUntitled');
 }
 
 /**
@@ -207,7 +207,7 @@ export function formatNames(names, $t) {
   const shown = names.slice(0, NAMES_MAX);
   const more = names.length - shown.length;
   const items = more
-    ? [ ...shown, $t('apostrophe:assistantRevertNamesMore', { count: more }) ]
+    ? [ ...shown, $t('aposAssistant:assistantRevertNamesMore', { count: more }) ]
     : shown;
   const format = new Intl.ListFormat(apos.i18n.adminLocale, { type: 'conjunction' });
   let index = 0;
@@ -352,7 +352,7 @@ function getTypeLabel(documents, $t) {
   const types = [ ...new Set(documents.map(doc => doc.type)) ];
   const [ first ] = documents;
   if ((types.length !== 1) || !first?.label) {
-    return $t((documents.length === 1) ? 'apostrophe:document' : 'apostrophe:assistantDocuments');
+    return $t((documents.length === 1) ? 'apostrophe:document' : 'aposAssistant:assistantDocuments');
   }
   return $t((documents.length === 1) ? first.label : (first.pluralLabel || first.label));
 }

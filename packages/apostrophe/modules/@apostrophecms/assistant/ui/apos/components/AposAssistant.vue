@@ -3,7 +3,7 @@
     class="apos-assistant"
     data-apos-test="assistant"
     :modal="modal"
-    :modal-title="{ key: 'apostrophe:assistantTitle' }"
+    :modal-title="{ key: 'aposAssistant:assistantTitle' }"
     :modal-data="modalData"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
@@ -21,7 +21,7 @@
     <template #primaryControls>
       <AposButton
         type="subtle"
-        label="apostrophe:assistantClose"
+        label="aposAssistant:assistantClose"
         icon="chevron-down-icon"
         :icon-only="true"
         :modifiers="[ 'small', 'no-motion' ]"

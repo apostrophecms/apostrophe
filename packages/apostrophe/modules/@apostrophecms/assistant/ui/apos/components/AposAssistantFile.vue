@@ -15,7 +15,7 @@
       v-if="isGone"
       class="apos-assistant-file__chip"
       role="img"
-      :aria-label="$t('apostrophe:assistantFileGoneLabel', { name })"
+      :aria-label="$t('aposAssistant:assistantFileGoneLabel', { name })"
     >
       <svg
         class="apos-assistant-file__glyph"
@@ -37,7 +37,7 @@
         aria-hidden="true"
       >
         <span class="apos-assistant-file__name">{{ shortName }}</span>
-        <span class="apos-assistant-file__meta">{{ $t('apostrophe:assistantFileGone') }}</span>
+        <span class="apos-assistant-file__meta">{{ $t('aposAssistant:assistantFileGone') }}</span>
       </span>
     </span>
     <component
@@ -89,8 +89,8 @@
       v-if="removable"
       type="button"
       class="apos-assistant-file__remove"
-      :aria-label="$t('apostrophe:assistantFileRemove', { name })"
-      :title="$t('apostrophe:assistantFileRemove', { name })"
+      :aria-label="$t('aposAssistant:assistantFileRemove', { name })"
+      :title="$t('aposAssistant:assistantFileRemove', { name })"
       data-apos-test="assistant-file-remove"
       @click="emit('remove')"
     >
@@ -198,7 +198,7 @@ const openerAttrs = computed(() => {
   if (opener.value === 'button') {
     return {
       type: 'button',
-      'aria-label': $t('apostrophe:assistantFileOpen', { name: props.name }),
+      'aria-label': $t('aposAssistant:assistantFileOpen', { name: props.name }),
       'data-apos-test': 'assistant-file-open'
     };
   }
@@ -207,7 +207,7 @@ const openerAttrs = computed(() => {
     return {
       href: props.href,
       download: props.name,
-      title: $t('apostrophe:assistantFileDownload', { name: props.name }),
+      title: $t('aposAssistant:assistantFileDownload', { name: props.name }),
       'data-apos-test': 'assistant-file-download'
     };
   }

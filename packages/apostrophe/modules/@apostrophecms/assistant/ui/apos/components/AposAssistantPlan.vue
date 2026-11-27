@@ -2,7 +2,7 @@
   <AposAssistantDock
     tone="default"
     role="group"
-    :label="$t('apostrophe:assistantPlan')"
+    :label="$t('aposAssistant:assistantPlan')"
     :collapsed="collapsed"
     data-apos-test="assistant-plan"
     :data-apos-failed="failed ? 'true' : null"
@@ -14,12 +14,12 @@
       <div
         class="apos-assistant-plan__confirm"
         role="group"
-        :aria-label="$t('apostrophe:assistantPlanCancelConfirm')"
+        :aria-label="$t('aposAssistant:assistantPlanCancelConfirm')"
         data-apos-test="assistant-plan-confirm"
         @keydown.esc.stop.prevent="closeConfirm"
       >
         <p class="apos-assistant-plan__confirm-copy">
-          {{ $t('apostrophe:assistantPlanCancelConfirm') }}
+          {{ $t('aposAssistant:assistantPlanCancelConfirm') }}
         </p>
         <button
           type="button"
@@ -81,10 +81,10 @@
           class="apos-assistant-plan__label"
           aria-live="polite"
           data-apos-test="assistant-plan-label"
-        >{{ $t('apostrophe:assistantPlanStep', { step: current + 1, count: steps.length }) }}<span
+        >{{ $t('aposAssistant:assistantPlanStep', { step: current + 1, count: steps.length }) }}<span
           v-if="failed"
           class="apos-sr-only"
-        >{{ ` ${$t('apostrophe:assistantPlanStepFailed')}` }}</span></span>
+        >{{ ` ${$t('aposAssistant:assistantPlanStepFailed')}` }}</span></span>
       </button>
       <button
         v-if="cancellable"
@@ -102,7 +102,7 @@
         role="status"
         data-apos-test="assistant-plan-cancelling"
       >
-        {{ $t('apostrophe:assistantPlanCancelling') }}
+        {{ $t('aposAssistant:assistantPlanCancelling') }}
       </p>
     </template>
     <ol
@@ -183,10 +183,10 @@ const ICONS = {
 
 // What a screen reader hears before each step
 const STATES = {
-  done: 'apostrophe:assistantPlanDone',
-  active: 'apostrophe:assistantPlanActive',
-  pending: 'apostrophe:assistantPlanPending',
-  failed: 'apostrophe:assistantPlanFailed'
+  done: 'aposAssistant:assistantPlanDone',
+  active: 'aposAssistant:assistantPlanActive',
+  pending: 'aposAssistant:assistantPlanPending',
+  failed: 'aposAssistant:assistantPlanFailed'
 };
 
 const listId = `apos-assistant-plan-${createId()}`;

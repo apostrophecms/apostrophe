@@ -24,12 +24,19 @@ describe('Assistant: module and options', function () {
     }, { modules: browserToolModule('keeps') });
   });
 
-  it('keeps its UI out of the build unless enabled', async function () {
+  it('keeps its UI and its strings out of the browser unless enabled', async function () {
     await withApos({}, async (apos) => {
       assert.equal(apos.asset.isBuildEnabled('@apostrophecms/assistant'), false);
+      assert(!Object.hasOwn(apos.i18n.getBrowserBundles('en'), 'aposAssistant'));
+      // The server still has them
+      assert.equal(apos.task.getReq().t('aposAssistant:assistantRetry'), 'Retry');
     });
     await withApos({ enabled: true }, async (apos) => {
       assert.equal(apos.asset.isBuildEnabled('@apostrophecms/assistant'), true);
+      assert.equal(
+        apos.i18n.getBrowserBundles('en').aposAssistant.assistantRetry,
+        'Retry'
+      );
     });
   });
 

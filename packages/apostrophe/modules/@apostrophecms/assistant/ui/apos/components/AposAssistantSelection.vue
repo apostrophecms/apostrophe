@@ -4,7 +4,7 @@
     ref="row"
     class="apos-assistant-selection"
     role="group"
-    :aria-label="$t('apostrophe:assistantSelection')"
+    :aria-label="$t('aposAssistant:assistantSelection')"
     data-apos-test="assistant-selection"
   >
     <AposAssistantChip
@@ -12,8 +12,8 @@
       :key="chip.id"
       :title="chip.label"
       kind="widget"
-      :remove-label="$t('apostrophe:assistantDeselect', { label: chip.label })"
-      :action-label="$t('apostrophe:assistantShowWidget', { label: chip.label })"
+      :remove-label="$t('aposAssistant:assistantDeselect', { label: chip.label })"
+      :action-label="$t('aposAssistant:assistantShowWidget', { label: chip.label })"
       data-apos-test="assistant-selection-chip"
       @remove="deselect(chip.id, $event)"
       @action="show(chip.id)"
@@ -59,7 +59,7 @@ const chips = computed(() => {
     const label = type && window.apos.modules[`${type}-widget`]?.label;
     return {
       id,
-      label: $t(label || 'apostrophe:assistantWidget')
+      label: $t(label || 'aposAssistant:assistantWidget')
     };
   });
 });
