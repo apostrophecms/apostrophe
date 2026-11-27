@@ -57,8 +57,7 @@ module.exports = {
         // save; a document without `updatedAt` is not checked. The error
         // says who saved it: `updatedBy` is still the last save's here,
         // since `beforeSave` sets it after this. `me` when it was the
-        // door's own user, in the admin UI. `askBeforeOverwrite` carries
-        // the door's choice of refusal (see `withDoor`)
+        // door's own user, in the admin UI
         checkUnchanged(req, doc) {
           const expected = req.aposHarnessExpected;
           if (!expected || expected.checked || (expected.docId !== doc._id)) {
@@ -70,8 +69,7 @@ module.exports = {
             throw self.apos.error('conflict', {
               me: Boolean(by._id && (by._id === req.user?._id)),
               title: by.title || null,
-              username: by.username || null,
-              askBeforeOverwrite: Boolean(self.getDoor(req)?.askBeforeOverwrite)
+              username: by.username || null
             });
           }
         }
