@@ -730,6 +730,9 @@ module.exports = {
               // Best possible match
               return name;
             }
+            if (matchedHostname && !best) {
+              best = name;
+            }
           } else if (options.hostname) {
             if (matchedHostname) {
               if (!best) {
