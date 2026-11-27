@@ -447,6 +447,8 @@ describe('Assistant: describe_images and delegate', function () {
       assert(resultOf(request, 'call-delegate').output.screen);
       const { refused } = resultOf(request, 'call-update').output;
       assert.equal(refused[0].reason, 'changed');
+      // Saved by someone else: the assistant asks before overwriting it
+      assert.match(refused[0].message, /only if the user asks you to/);
     });
   });
 
