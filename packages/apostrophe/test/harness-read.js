@@ -72,6 +72,16 @@ describe('Harness: read tools and the schema read', function () {
             autopublish: true
           }
         },
+        'read-event': {
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              day: { type: 'date' },
+              doors: { type: 'time' },
+              endsAt: { type: 'dateAndTime' }
+            }
+          }
+        },
         'read-hero-widget': {
           extend: '@apostrophecms/widget-type',
           options: {
@@ -983,6 +993,19 @@ describe('Harness: read tools and the schema read', function () {
         assert(legend.includes(`\n${entry}`), entry);
       }
       assert.equal(legend.includes('\ncolor:'), false);
+      assert.equal(legend.includes('\ndate'), false);
+    });
+
+    it('should give the value shapes of date and time fields', async function () {
+      const { schema, legend } = await run('get_schema', { types: [ 'read-event' ] });
+      const lines = schema.split('\n');
+
+      assert(lines.includes('day: date'));
+      assert(lines.includes('doors: time'));
+      assert(lines.includes('endsAt: dateAndTime'));
+      assert(legend.includes('\ndate: "YYYY-MM-DD".'));
+      assert(legend.includes('\ntime: 24-hour, "HH:MM:SS".'));
+      assert(legend.includes('\ndateAndTime: UTC, as "2026-12-01T14:00:00.000Z"'));
     });
 
     it('should read folded fields in full, by dot path, one type at a time', async function () {

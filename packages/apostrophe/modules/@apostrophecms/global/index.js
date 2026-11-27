@@ -46,7 +46,8 @@ module.exports = {
       slug: 'global'
     },
     showPermissions: true,
-    replicate: true
+    replicate: true,
+    aiWhen: 'Global site settings, shared by every page.'
   },
   fields: {
     remove: [
