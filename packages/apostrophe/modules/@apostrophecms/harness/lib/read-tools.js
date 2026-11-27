@@ -30,7 +30,10 @@ module.exports = (self) => {
         '(its draft has changes not yet published). A type that publishes on save or has ' +
         'no drafts is always live and carries neither "modified" nor, without drafts, ' +
         '"lastPublishedAt". Ordered by "sort", else a "query" by relevance and a type ' +
-        'listing by "updatedAt".',
+        'listing by "updatedAt". A result with a "url" also has a "richTextPermalink": ' +
+        'the href that links to it from rich text only, following the document when its ' +
+        'URL changes; with "?updateTitle=1" instead of "=0" the link text shows its title, ' +
+        'kept in sync. A plain URL in a rich text href is only for links outside the site.',
       input: () => ({
         type: 'object',
         properties: {
