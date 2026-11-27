@@ -456,7 +456,8 @@ describe('Harness: doors, the write path and guards', function () {
       assert.equal(written[0].title, 'An article');
       assert.equal(written[0].locale, 'en');
       assert.equal(written[0].published, false);
-      assert.match(written[0].notice, /draft/);
+      assert.match(written[0].notice, /saved in the draft/);
+      assert.match(written[0].notice, /A logged-in editor sees it in the draft view\./);
       assert.equal((await findDraft(article._id)).body, 'Written');
       const [ version ] = await apos.docVersions.find(userReq('ann'), {
         docId: article.aposDocId

@@ -94,6 +94,18 @@ describe('Harness: what each door reads', function () {
     }
   });
 
+  it('should keep the MCP server\'s browser section out of the assistant\'s instructions', function () {
+    const req = apos.aposHarness.withDoor(apos.task.getReq({ mode: 'draft' }), {
+      door: 'assistant',
+      lockId: 'guidance-test',
+      requestId: 'guidance-test'
+    });
+    const instructions = apos.aposAssistant.getRunInstructions(req, {});
+
+    assert(instructions.length > 0);
+    assert.doesNotMatch(instructions, /In a browser on this site, only look and preview/);
+  });
+
   for (const door of [ 'assistant', 'mcp' ]) {
     it(`should name no tool the ${door} door lacks in anything its model reads`, async function () {
       assert.deepEqual(await findForeignTools(apos, door), []);

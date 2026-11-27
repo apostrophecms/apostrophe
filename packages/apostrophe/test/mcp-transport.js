@@ -3,6 +3,7 @@ const t = require('../test-lib/test.js');
 const {
   PATH, TOKEN, createMcpApos, getUrl, initializeMessage, withClient, post, readJsonOrSse
 } = require('./utils/mcp.js');
+const { MODEL_TEXTS } = require('../modules/@apostrophecms/mcp/lib/http.js');
 
 // The MCP server is off by default and adds no route. Enabled, it serves
 // the current spec and 2025-era clients from one route, through
@@ -75,6 +76,16 @@ describe('MCP: module and transport', function () {
       await withClient(apos, 'legacy', (client) => {
         assert.match(client.getNegotiatedProtocolVersion(), /^2025-/);
         assert.equal(client.getInstructions(), expectedInstructions(apos));
+      });
+    });
+
+    it('ends the instructions with its own section, for a tool that can also browse the site', async function () {
+      await withClient(apos, 'auto', (client) => {
+        const section = client.getInstructions().split('\n\n').at(-1);
+        assert.match(section, /^In a browser on this site, only look and preview\./);
+        assert.match(section, /never through the browser, the site's API or its AI assistant/);
+        assert.match(section, /close editors you opened without saving and exit edit mode/);
+        assert.match(section, /ask the user; never take control\.$/);
       });
     });
 
@@ -159,11 +170,12 @@ describe('MCP: module and transport', function () {
   });
 });
 
-// As the connected user's request builds them, through the mcp door
+// As the connected user's request builds them, through the mcp door, with
+// the server's own section
 function expectedInstructions(apos) {
   return apos.aposHarness.getInstructions(apos.aposHarness.withDoor(apos.task.getReq(), {
     door: 'mcp',
     lockId: 'instructions',
     requestId: 'instructions'
-  }));
+  }), MODEL_TEXTS);
 }
