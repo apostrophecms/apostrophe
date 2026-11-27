@@ -855,3 +855,160 @@ describe('no redirection to first locale', function() {
     assert.strictEqual(response.headers.location, undefined);
   });
 });
+
+describe('match locale', function() {
+  this.timeout(t.timeout);
+
+  let apos;
+
+  before(async function() {
+    apos = await t.create({
+      root: module,
+      baseUrl: 'http://localhost:3000',
+      modules: {
+        '@apostrophecms/i18n': {
+          options: {
+            locales: {
+              en: {
+                label: 'English',
+                hostname: 'en.localhost:3000',
+                prefix: '/en'
+              },
+              'en-CA': {
+                label: 'Canada',
+                hostname: 'ca.localhost:3000',
+                prefix: '/en-ca'
+              },
+              'fr-CA': {
+                label: 'French Canada',
+                hostname: 'ca.localhost:3000',
+                prefix: '/fr-ca'
+              },
+              es: {
+                label: 'Spain',
+                prefix: '/es'
+              },
+              it: {
+                label: 'Italy',
+                prefix: '/it'
+              }
+            }
+          }
+        },
+        echo: {
+          apiRoutes(self) {
+            return {
+              get: {
+                // Returns current URL
+                'locale-info': (req) => {
+                  return {
+                    locale: req.locale,
+                    prefix: req.prefix,
+                    url: req.url
+                  };
+                }
+              },
+            }
+          }
+        }
+      }
+    });
+  });
+
+  after(async function() {
+    this.timeout(t.timeout);
+    return t.destroy(apos);
+  });
+
+  this.timeout(t.timeout);
+
+  it('should return the first locale', async function() {
+    const server = apos.modules['@apostrophecms/express'].server;
+
+    const response = await apos.http.get(`http://localhost:${server.address().port}/api/v1/echo/locale-info`, {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
+    });
+
+    const actual = response.body;
+    const expected = {
+      locale: 'en',
+      prefix: 'http://en.localhost:3000/en',
+      url: '/api/v1/echo/locale-info'
+    };
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should return the locale when hostname matches', async function() {
+    const server = apos.modules['@apostrophecms/express'].server;
+
+    const response = await apos.http.get(`http://en.localhost:${server.address().port}/api/v1/echo/locale-info`, {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
+    });
+
+    const actual = response.body;
+    const expected = {
+      locale: 'en',
+      prefix: 'http://en.localhost:3000/en',
+      url: '/api/v1/echo/locale-info'
+    };
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should return the locale when prefix matches', async function() {
+    const server = apos.modules['@apostrophecms/express'].server;
+
+    const response = await apos.http.get(`http://localhost:${server.address().port}/es/api/v1/echo/locale-info`, {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
+    });
+
+    const actual = response.body;
+    const expected = {
+      locale: 'es',
+      prefix: 'http://localhost:3000/es',
+      url: '/api/v1/echo/locale-info'
+    };
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should return the locale when hostname and prefix matches', async function() {
+    const server = apos.modules['@apostrophecms/express'].server;
+
+    const response = await apos.http.get(`http://ca.localhost:${server.address().port}/fr-ca/api/v1/echo/locale-info`, {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
+    });
+
+    const actual = response.body;
+    const expected = {
+      locale: 'fr-CA',
+      prefix: 'http://ca.localhost:3000/fr-ca',
+      url: '/api/v1/echo/locale-info'
+    };
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should return the best locale when hostname matches and there was no prefix provided', async function() {
+    const server = apos.modules['@apostrophecms/express'].server;
+
+    const response = await apos.http.get(`http://ca.localhost:${server.address().port}/api/v1/echo/locale-info`, {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
+    });
+
+    const actual = response.body;
+    const expected = {
+      locale: 'en-CA',
+      prefix: 'http://ca.localhost:3000/en-ca',
+      url: '/api/v1/echo/locale-info'
+    };
+    assert.deepEqual(actual, expected);
+  });
+});
