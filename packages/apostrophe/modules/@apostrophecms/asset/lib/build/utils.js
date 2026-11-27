@@ -15,8 +15,8 @@ module.exports = {
   // configuration only (see moog's `getMetadata`). The module works as
   // usual on the server; project level modules improving it bring no UI
   // either. `modulesMeta` is the metadata of the registered modules.
-  getInactiveModules(modulesMeta) {
-    const inactive = new Set();
+  getBuildDisabledModules(modulesMeta) {
+    const disabled = new Set();
     for (const {
       build, options, __meta
     } of modulesMeta) {
@@ -27,10 +27,10 @@ module.exports = {
         ? enable(options)
         : enable;
       if (!isEnabled) {
-        inactive.add(__meta.name);
+        disabled.add(__meta.name);
       }
     }
-    return inactive;
+    return disabled;
   },
 
   // Walk through the modules, detect `build` property and
@@ -46,7 +46,7 @@ module.exports = {
   //   }
   // }
   // The new `build` format (`enable`, true by default, is not a build
-  // vendor: see `getInactiveModules()`):
+  // vendor: see `getBuildDisabledModules()`):
   // {
   //   build: {
   //     enable: true | false | (options) => Boolean,
@@ -79,14 +79,14 @@ module.exports = {
   // }
   // `modulesMeta` is the metadata of the modules when the caller has it
   // already, otherwise it is read with `getMetadata` for each of
-  // `modulesToInstantiate`. `isInactive(name)` tells the module levels
-  // whose bundles are left out (see `getInactiveModules()`).
+  // `modulesToInstantiate`. `isBuildEnabled(name)` tells the module levels
+  // whose bundles are built (see `getBuildDisabledModules()`).
   async getBuildExtensions({
     modulesMeta,
     getMetadata,
     modulesToInstantiate,
     rebundleModulesConfig = {},
-    isInactive = () => false
+    isBuildEnabled = () => true
   }) {
     if (!modulesMeta) {
       modulesMeta = [];
@@ -100,7 +100,7 @@ module.exports = {
     const configsPerAlias = getModulesBuildConfigs(
       modulesMeta,
       rebundleModules,
-      isInactive
+      isBuildEnabled
     );
 
     const configs = {};
@@ -124,7 +124,7 @@ module.exports = {
 
 };
 
-function getModulesBuildConfigs(modulesMeta, rebundleModules, isInactive) {
+function getModulesBuildConfigs(modulesMeta, rebundleModules, isBuildEnabled) {
   const result = {};
 
   for (const meta of modulesMeta) {
@@ -133,7 +133,7 @@ function getModulesBuildConfigs(modulesMeta, rebundleModules, isInactive) {
       chain: __meta.chain,
       buildConfigs: build,
       rebundleModules,
-      isInactive
+      isBuildEnabled
     });
 
     for (const [ alias, configs ] of Object.entries(configsPerAlias)) {
@@ -190,7 +190,7 @@ function getModulesBuildConfigs(modulesMeta, rebundleModules, isInactive) {
 };
 
 function formatBuildConfigs({
-  chain, buildConfigs, rebundleModules, isInactive, result = {}
+  chain, buildConfigs, rebundleModules, isBuildEnabled, result = {}
 }) {
   Object.entries(buildConfigs)
     .forEach(([ name, options ], i) => {
@@ -201,7 +201,7 @@ function formatBuildConfigs({
 
       for (const [ alias, config ] of Object.entries(options)) {
         // Whether the module's UI is built at all, not a build vendor (see
-        // `getInactiveModules()`)
+        // `getBuildDisabledModules()`)
         if (alias === 'enable') {
           continue;
         }
@@ -217,8 +217,9 @@ function formatBuildConfigs({
           extensions = {},
           extensionOptions = {}
         } = config;
-        // An inactive module's bundles are its UI sources: none is built
-        const bundleNames = isInactive(chain[i].name) ? [] : Object.keys(bundles);
+        // A module's bundles are its UI sources: none is built when its build
+        // is disabled
+        const bundleNames = isBuildEnabled(chain[i].name) ? Object.keys(bundles) : [];
 
         // Remapping only for the explicitly defined by the module bundle
         // configurations

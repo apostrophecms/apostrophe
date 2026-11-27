@@ -4,7 +4,7 @@ const util = require('node:util');
 const { glob } = require('../../lib/path');
 const {
   getBuildExtensions,
-  getInactiveModules,
+  getBuildDisabledModules,
   fillExtraBundles
 } = require('./utils');
 const Concat = require('concat-with-sourcemaps');
@@ -26,11 +26,11 @@ module.exports = (self) => {
       for (const name of self.getRegisteredModules()) {
         modulesMeta.push(await self.apos.synth.getMetadata(name));
       }
-      self.inactiveModules = getInactiveModules(modulesMeta);
+      self.buildDisabledModules = getBuildDisabledModules(modulesMeta);
       self.moduleBuildExtensions = await getBuildExtensions({
         modulesMeta,
         rebundleModulesConfig: self.options.rebundleModules,
-        isInactive: self.isInactive
+        isBuildEnabled: self.isBuildEnabled
       });
     },
 

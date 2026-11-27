@@ -56,13 +56,13 @@ module.exports = {
 
   transformRebundledFor,
 
-  // `isInactive(name)` tells the module levels whose bundles are left out
-  // (see `getInactiveModules()` in lib/build/utils).
+  // `isBuildEnabled(name)` tells the module levels whose bundles are built
+  // (see `getBuildDisabledModules()` in lib/build/utils).
   async getWebpackExtensions ({
     getMetadata,
     modulesToInstantiate,
     rebundleModulesConfig = {},
-    isInactive = () => false
+    isBuildEnabled = () => true
   }) {
     const modulesMeta = [];
     // NOTE: this is important, it must be sequential due to getMetadata side
@@ -78,7 +78,7 @@ module.exports = {
     } = getModulesWebpackConfigs(
       modulesMeta,
       rebundleModules,
-      isInactive
+      isBuildEnabled
     );
 
     const verifiedBundles = await verifyBundlesEntryPoints(foundBundles);
@@ -209,7 +209,7 @@ async function findSymlinks(where, sub = '') {
   return result;
 }
 
-function getModulesWebpackConfigs (modulesMeta, rebundleModules, isInactive) {
+function getModulesWebpackConfigs (modulesMeta, rebundleModules, isBuildEnabled) {
   const {
     extensions, extensionOptions, bundles
   } = modulesMeta.reduce((modulesAcc, meta) => {
@@ -219,7 +219,7 @@ function getModulesWebpackConfigs (modulesMeta, rebundleModules, isInactive) {
       __meta.chain,
       webpack,
       rebundleModules,
-      isInactive
+      isBuildEnabled
     );
 
     if (!configs.length) {
@@ -494,7 +494,7 @@ function verifyRebundleConfig(config = []) {
 }
 
 // Gather and transform all available webpack configs
-function formatConfigs (chain, webpackConfigs, rebundleModules, isInactive) {
+function formatConfigs (chain, webpackConfigs, rebundleModules, isBuildEnabled) {
   return Object.entries(webpackConfigs)
     .map(([ name, config ], i) => {
 
@@ -507,8 +507,9 @@ function formatConfigs (chain, webpackConfigs, rebundleModules, isInactive) {
         extensions = {},
         extensionOptions = {}
       } = config;
-      // An inactive module's bundles are its UI sources: none is built
-      const bundleNames = isInactive(chain[i].name) ? [] : Object.keys(bundles);
+      // A module's bundles are its UI sources: none is built when its build is
+      // disabled
+      const bundleNames = isBuildEnabled(chain[i].name) ? Object.keys(bundles) : [];
 
       // Remapping only for the explicitly defined by the module bundle
       // configurations

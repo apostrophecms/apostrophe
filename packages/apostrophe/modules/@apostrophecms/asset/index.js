@@ -145,9 +145,10 @@ module.exports = {
     // The namespace filled by `setBuildExtensions()` (`build` property).
     self.moduleBuildExtensions = {};
     // Modules whose UI sources no build includes, also filled by
-    // `setBuildExtensions()` (see `getInactiveModules()` in lib/build/utils).
-    // First, the `webpack` property processing below leaves them out too.
-    self.inactiveModules = new Set();
+    // `setBuildExtensions()` (see `getBuildDisabledModules()` in
+    // lib/build/utils). First, the `webpack` property processing below leaves
+    // them out too.
+    self.buildDisabledModules = new Set();
     await self.setBuildExtensions();
 
     // The namespace filled by `setWebpackExtensions()` (`webpack` property
@@ -753,7 +754,7 @@ module.exports = {
           getMetadata: self.apos.synth.getMetadata,
           modulesToInstantiate: self.getRegisteredModules(),
           rebundleModulesConfig: self.options.rebundleModules,
-          isInactive: self.isInactive
+          isBuildEnabled: self.isBuildEnabled
         });
 
         // For testing purposes, we can pass a result object
@@ -922,17 +923,18 @@ module.exports = {
         if (!lockPath) {
           return null;
         }
-        // A module becoming active or inactive changes what is built, like a
+        // A module's build turned on or off changes what is built, like a
         // dependency change
-        const inactive = [ ...self.inactiveModules ].sort().join(',');
+        const disabled = [ ...self.buildDisabledModules ].sort().join(',');
         return self.apos.util.md5(
-          await fs.readFile(lockPath, 'utf8') + `\ninactive:${inactive}`
+          await fs.readFile(lockPath, 'utf8') + `\nbuildDisabled:${disabled}`
         );
       },
 
-      // A module or chain entry name, its project level `my-` form included
-      isInactive(name) {
-        return self.inactiveModules.has(name.replace(/(^|\/)my-/, '$1'));
+      // Whether the UI of a module is built (see `build.enable`), by module or
+      // chain entry name, its project level `my-` form included
+      isBuildEnabled(name) {
+        return !self.buildDisabledModules.has(name.replace(/(^|\/)my-/, '$1'));
       },
 
       // Where the lock file hash from the last build is persisted.
