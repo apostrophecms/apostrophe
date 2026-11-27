@@ -42,6 +42,10 @@ describe('I18n-static', function() {
         value: 'aposMultisite'
       },
       {
+        label: 'aposAssistant',
+        value: 'aposAssistant'
+      },
+      {
         label: 'aposI18nStatic',
         value: 'aposI18nStatic'
       }
@@ -61,6 +65,10 @@ describe('I18n-static', function() {
       {
         label: 'aposMultisite',
         value: 'aposMultisite'
+      },
+      {
+        label: 'aposAssistant',
+        value: 'aposAssistant'
       },
       {
         label: 'aposI18nStatic',
@@ -118,6 +126,19 @@ describe('I18n-static', function() {
       },
       {
         _id: 'aposMultisite',
+        pieces: [ {
+          title: 'label',
+          namespace: 'aposI18nStatic',
+          valueSingular: 'I18n Static Phrase',
+          type: '@apostrophecms/i18n-static',
+          aposLocale: 'en:draft',
+          aposMode: 'draft',
+          metaType: 'doc',
+          slug: 'label'
+        } ]
+      },
+      {
+        _id: 'aposAssistant',
         pieces: [ {
           title: 'label',
           namespace: 'aposI18nStatic',
